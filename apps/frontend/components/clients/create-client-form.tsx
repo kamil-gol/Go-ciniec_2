@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/api/clients'
 import type { ClientType } from '@/types'
+import { toast } from 'sonner'
 
 interface CreateClientFormProps {
   onSuccess?: () => void
@@ -16,7 +16,6 @@ interface CreateClientFormProps {
 }
 
 export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps) {
-  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [clientType, setClientType] = useState<ClientType>('INDIVIDUAL')
   const [formData, setFormData] = useState({
@@ -39,20 +38,12 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
     e.preventDefault()
 
     if (!formData.firstName || !formData.lastName || !formData.phone) {
-      toast({
-        title: 'Błąd walidacji',
-        description: 'Wypełnij wszystkie wymagane pola',
-        variant: 'destructive',
-      })
+      toast.error('Wypełnij wszystkie wymagane pola')
       return
     }
 
     if (isCompany && !formData.companyName) {
-      toast({
-        title: 'Błąd walidacji',
-        description: 'Podaj nazwę firmy',
-        variant: 'destructive',
-      })
+      toast.error('Podaj nazwę firmy')
       return
     }
 
@@ -78,10 +69,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
       }
 
       await createClient(payload)
-      toast({
-        title: 'Sukces',
-        description: isCompany ? 'Firma została dodana' : 'Klient został dodany',
-      })
+      toast.success(isCompany ? 'Firma została dodana' : 'Klient został dodany',)
       
       // Reset form
       setFormData({
@@ -110,11 +98,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
         error.message ||
         'Nie udało się dodać klienta'
       
-      toast({
-        title: 'Błąd',
-        description: errorMessage,
-        variant: 'destructive',
-      })
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }

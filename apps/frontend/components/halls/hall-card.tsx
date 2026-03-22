@@ -15,10 +15,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import Link from 'next/link'
 import { useState } from 'react'
-import { useToast } from '@/hooks/use-toast'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
+import { toast } from 'sonner'
 
 const accent = moduleAccents.halls
 
@@ -28,18 +28,13 @@ interface HallCardProps {
 }
 
 export function HallCard({ hall, onUpdate }: HallCardProps) {
-  const { toast } = useToast()
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const [deleting, setDeleting] = useState(false)
   const [togglingMultiple, setTogglingMultiple] = useState(false)
 
   const handleDelete = async () => {
     if (hall.isWholeVenue) {
-      toast({
-        title: 'Operacja zablokowana',
-        description: 'Nie można usunąć sali "Cały Obiekt". Jest wymagana do logiki rezerwacji.',
-        variant: 'destructive',
-      })
+      toast.error('Nie można usunąć sali "Cały Obiekt". Jest wymagana do logiki rezerwacji.')
       return
     }
 
@@ -48,18 +43,11 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
     try {
       setDeleting(true)
       await deleteHall(hall.id)
-      toast({
-        title: 'Sukces',
-        description: `Sala "${hall.name}" została usunięta`,
-      })
+      toast.success(`Sala "${hall.name}" została usunięta`)
       onUpdate()
     } catch (error: any) {
       console.error('Error deleting hall:', error)
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć sali',
-        variant: 'destructive',
-      })
+      toast.error(error.response?.data?.message || 'Nie udało się usunąć sali')
     } finally {
       setDeleting(false)
     }
@@ -69,20 +57,13 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
     try {
       setTogglingMultiple(true)
       await updateHall(hall.id, { allowMultipleBookings: !hall.allowMultipleBookings })
-      toast({
-        title: 'Zaktualizowano',
-        description: hall.allowMultipleBookings
+      toast.success(hall.allowMultipleBookings
           ? `Sala "${hall.name}" — tryb wyłączności (jedna rezerwacja)`
-          : `Sala "${hall.name}" — tryb wielu rezerwacji`,
-      })
+          : `Sala "${hall.name}" — tryb wielu rezerwacji`)
       onUpdate()
     } catch (error: any) {
       console.error('Error toggling multiple bookings:', error)
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zmienić trybu rezerwacji',
-        variant: 'destructive',
-      })
+      toast.error(error.response?.data?.message || 'Nie udało się zmienić trybu rezerwacji')
     } finally {
       setTogglingMultiple(false)
     }

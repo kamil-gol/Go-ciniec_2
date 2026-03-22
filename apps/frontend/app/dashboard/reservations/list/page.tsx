@@ -9,12 +9,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { ReservationsList } from '@/components/reservations/reservations-list'
 import { CreateReservationForm } from '@/components/reservations/create-reservation-form'
 import { getReservations } from '@/lib/api/reservations'
-import { useToast } from '@/hooks/use-toast'
 import { PageLayout, PageHero, StatCard } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
+import { toast } from 'sonner'
 
 export default function ReservationsListPage() {
-  const { toast } = useToast()
   const searchParams = useSearchParams()
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [reservations, setReservations] = useState<any[]>([])
@@ -48,11 +47,7 @@ export default function ReservationsListPage() {
       setReservations(data)
     } catch (error: any) {
       console.error('Error loading reservations:', error)
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować rezerwacji',
-        variant: 'destructive',
-      })
+      toast.error('Nie udało się załadować rezerwacji')
     } finally {
       setLoading(false)
     }

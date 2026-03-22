@@ -74,8 +74,8 @@ vi.mock('@/hooks/use-menu', () => ({
   usePackageCategories: (...args: any[]) => mockUsePackageCategories(...args),
 }));
 
-vi.mock('@/hooks/use-toast', () => ({
-  useToast: () => ({ toast: mockToast }),
+vi.mock('sonner', () => ({
+  toast: Object.assign(mockToast, { success: mockToast, error: mockToast }),
 }));
 
 vi.mock('@/lib/utils', () => ({

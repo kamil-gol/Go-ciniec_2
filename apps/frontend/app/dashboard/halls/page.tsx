@@ -8,12 +8,11 @@ import { Card } from '@/components/ui/card'
 import { getHalls, type Hall } from '@/lib/api/halls'
 import Link from 'next/link'
 import { HallCard } from '@/components/halls/hall-card'
-import { useToast } from '@/hooks/use-toast'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
+import { toast } from 'sonner'
 
 export default function HallsPage() {
-  const { toast } = useToast()
   const [halls, setHalls] = useState<Hall[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -29,11 +28,7 @@ export default function HallsPage() {
       setHalls(data.halls || [])
     } catch (error: any) {
       console.error('Error loading halls:', error)
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować sal',
-        variant: 'destructive',
-      })
+      toast.error('Nie udało się załadować sal')
     } finally {
       setLoading(false)
     }

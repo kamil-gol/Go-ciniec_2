@@ -15,7 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useToast } from '@/hooks/use-toast'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import {
   addClientContact,
@@ -24,6 +23,7 @@ import {
   type ClientContact,
   type CreateClientContactInput,
 } from '@/lib/api/clients'
+import { toast } from 'sonner'
 
 interface ContactsManagerProps {
   clientId: string
@@ -51,7 +51,6 @@ const EMPTY_FORM: ContactFormData = {
 }
 
 export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate }: ContactsManagerProps) {
-  const { toast } = useToast()
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -93,11 +92,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
     e.preventDefault()
 
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      toast({
-        title: 'Błąd walidacji',
-        description: 'Imię i nazwisko są wymagane',
-        variant: 'destructive',
-      })
+      toast.error('Imię i nazwisko są wymagane')
       return
     }
 
@@ -115,20 +110,16 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
 
       if (editingId) {
         await updateClientContact(clientId, editingId, payload)
-        toast({ title: 'Sukces', description: 'Osoba kontaktowa została zaktualizowana' })
+        toast.success('Osoba kontaktowa została zaktualizowana')
       } else {
         await addClientContact(clientId, payload)
-        toast({ title: 'Sukces', description: 'Osoba kontaktowa została dodana' })
+        toast.success('Osoba kontaktowa została dodana')
       }
 
       closeForm()
       onUpdate()
     } catch (error: any) {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.error || error.response?.data?.message || error.message || 'Wystąpił błąd',
-        variant: 'destructive',
-      })
+      toast.error(error.response?.data?.error || error.response?.data?.message || error.message || 'Wystąpił błąd')
     } finally {
       setLoading(false)
     }
@@ -140,14 +131,10 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
     try {
       setDeletingId(contactId)
       await removeClientContact(clientId, contactId)
-      toast({ title: 'Sukces', description: `Usunięto osobę kontaktową: ${contactName}` })
+      toast.success(`Usunięto osobę kontaktową: ${contactName}`)
       onUpdate()
     } catch (error: any) {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.error || error.response?.data?.message || 'Nie udało się usunąć kontaktu',
-        variant: 'destructive',
-      })
+      toast.error(error.response?.data?.error || error.response?.data?.message || 'Nie udało się usunąć kontaktu')
     } finally {
       setDeletingId(null)
     }
@@ -156,15 +143,12 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
   const handleTogglePrimary = async (contact: ClientContact) => {
     try {
       await updateClientContact(clientId, contact.id, { isPrimary: !contact.isPrimary })
-      toast({
-        title: 'Sukces',
-        description: contact.isPrimary
+      toast.success(contact.isPrimary
           ? `${contact.firstName} ${contact.lastName} nie jest już główną osobą kontaktową`
-          : `${contact.firstName} ${contact.lastName} ustawiony jako główna osoba kontaktowa`,
-      })
+          : `${contact.firstName} ${contact.lastName} ustawiony jako główna osoba kontaktowa`)
       onUpdate()
     } catch {
-      toast({ title: 'Błąd', description: 'Nie udało się zmienić statusu kontaktu', variant: 'destructive' })
+      toast.error('Nie udało się zmienić statusu kontaktu')
     }
   }
 

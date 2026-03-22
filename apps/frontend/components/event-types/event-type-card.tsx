@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 interface EventTypeCardProps {
   eventType: EventType
@@ -26,7 +26,6 @@ interface EventTypeCardProps {
 }
 
 export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: EventTypeCardProps) {
-  const { toast } = useToast()
   const router = useRouter()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [toggling, setToggling] = useState(false)
@@ -41,13 +40,10 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
     try {
       setToggling(true)
       await updateEventType(eventType.id, { isActive: checked })
-      toast({
-        title: checked ? 'Aktywowany' : 'Dezaktywowany',
-        description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'został dezaktywowany'}`,
-      })
+      toast.success(`Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'został dezaktywowany'}`)
       onUpdate()
     } catch {
-      toast({ title: 'Błąd', description: 'Nie udało się zmienić statusu', variant: 'destructive' })
+      toast.error('Nie udało się zmienić statusu')
     } finally {
       setToggling(false)
     }

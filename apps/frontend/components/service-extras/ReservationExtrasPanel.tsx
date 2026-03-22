@@ -39,8 +39,8 @@ import {
   useRemoveReservationExtra,
   useUpdateReservationExtra,
 } from '@/hooks/use-service-extras';
-import { useToast } from '@/hooks/use-toast';
 import type {
+import { toast } from 'sonner'
   ReservationExtra,
   ExtraStatus,
 } from '@/types/service-extra.types';
@@ -110,7 +110,6 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
   const assignExtra = useAssignExtra(reservationId);
   const removeExtra = useRemoveReservationExtra(reservationId);
   const updateExtra = useUpdateReservationExtra(reservationId);
-  const { toast } = useToast();
 
   const extras = extrasData?.data || [];
   const totalPrice = extrasData?.totalExtrasPrice || 0;
@@ -130,15 +129,12 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
   const handleAddExtra = async () => {
     if (readOnly) return;
     if (!selectedItemId) {
-      toast({ title: 'Wybierz pozycję', variant: 'destructive' });
+      toast.error('Wybierz pozycję');
       return;
     }
 
     if (selectedItem?.requiresNote && !note.trim()) {
-      toast({
-        title: `Pole "${selectedItem.noteLabel || 'Uwagi'}" jest wymagane`,
-        variant: 'destructive',
-      });
+      toast.error(`Pole "${selectedItem.noteLabel || 'Uwagi'}" jest wymagane`);
       return;
     }
 
@@ -149,14 +145,10 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
         note: note.trim() || undefined,
         customPrice: customPrice ? parseFloat(customPrice) : undefined,
       });
-      toast({ title: 'Usługa dodana', description: selectedItem?.name });
+      toast.success('Usługa dodana: ' + selectedItem?.name);
       resetAddForm();
     } catch (error: any) {
-      toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się dodać',
-        variant: 'destructive',
-      });
+      toast.error(error?.response?.data?.message || 'Nie udało się dodać');
     }
   };
 
@@ -164,13 +156,9 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
     if (readOnly) return;
     try {
       await removeExtra.mutateAsync(extraId);
-      toast({ title: 'Usługa usunięta', description: name });
+      toast.success('Usługa usunięta: ' + name);
     } catch (error: any) {
-      toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się usunąć',
-        variant: 'destructive',
-      });
+      toast.error(error?.response?.data?.message || 'Nie udało się usunąć');
     }
   };
 
@@ -179,11 +167,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
     try {
       await updateExtra.mutateAsync({ extraId, data: { status } });
     } catch (error: any) {
-      toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zaktualizować',
-        variant: 'destructive',
-      });
+      toast.error(error?.response?.data?.message || 'Nie udało się zaktualizować');
     }
   };
 
@@ -193,11 +177,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
     try {
       await updateExtra.mutateAsync({ extraId, data: { quantity: newQuantity } });
     } catch (error: any) {
-      toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zaktualizować ilości',
-        variant: 'destructive',
-      });
+      toast.error(error?.response?.data?.message || 'Nie udało się zaktualizować ilości');
     }
   };
 
@@ -223,13 +203,9 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
         extraId,
         data: { note: trimmed || null },
       });
-      toast({ title: trimmed ? 'Notatka zapisana' : 'Notatka usunięta' });
+      toast.success(trimmed ? 'Notatka zapisana' : 'Notatka usunięta');
     } catch (error: any) {
-      toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zapisać notatki',
-        variant: 'destructive',
-      });
+      toast.error(error?.response?.data?.message || 'Nie udało się zapisać notatki');
     } finally {
       setSavingNoteId(null);
       setEditingNoteId(null);

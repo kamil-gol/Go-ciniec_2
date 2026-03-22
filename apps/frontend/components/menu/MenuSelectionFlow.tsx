@@ -32,7 +32,7 @@ import { Check, Users, Sparkles, UtensilsCrossed, RefreshCw, Info } from 'lucide
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner'
 
 interface DishSelection {
   dishId: string
@@ -79,7 +79,6 @@ export function MenuSelectionFlow({
   onComplete,
   className
 }: MenuSelectionFlowProps) {
-  const { toast } = useToast()
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentStep, setCurrentStep] = useState<Step>('template');
   const [selectedTemplate, setSelectedTemplate] = useState<MenuTemplate>();
@@ -201,7 +200,7 @@ export function MenuSelectionFlow({
       return;
     }
     if (!canNavigateToStep(stepId)) {
-      toast({ title: 'Nie można przejść dalej', description: 'Uzupełnij poprzednie kroki.', variant: 'destructive' });
+      toast.error('Uzupełnij poprzednie kroki.');
       return;
     }
     setCurrentStep(stepId);
@@ -213,7 +212,7 @@ export function MenuSelectionFlow({
       setSelectedPackage(undefined);
       setDishSelections([]);
       setCategoryExtras([]);
-      toast({ title: 'Menu zmienione', description: 'Wybierz ponownie pakiet i dania.' });
+      toast.success('Wybierz ponownie pakiet i dania.');
     } else {
       setSelectedTemplate(template);
     }
@@ -240,7 +239,7 @@ export function MenuSelectionFlow({
 
   const handleComplete = (selections?: CategorySelection[], extras?: CategoryExtraResult[]) => {
     if (!selectedTemplate || !selectedPackage) {
-      toast({ title: 'Błąd', description: 'Nie wybrano menu lub pakietu.', variant: 'destructive' });
+      toast.error('Nie wybrano menu lub pakietu.');
       return;
     }
 

@@ -14,13 +14,12 @@ import {
 } from '@/lib/api/event-types-api'
 import { EventTypeFormDialog } from '@/components/event-types/event-type-form-dialog'
 import { EventTypeDeleteDialog } from '@/components/event-types/event-type-delete-dialog'
-import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 export default function EventTypeDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { toast } = useToast()
   const [eventType, setEventType] = useState<EventTypeWithCounts | null>(null)
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
@@ -34,16 +33,12 @@ export default function EventTypeDetailPage() {
       const data = await getEventTypeById(params.id as string)
       setEventType(data)
     } catch {
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować typu wydarzenia',
-        variant: 'destructive',
-      })
+      toast.error('Nie udało się załadować typu wydarzenia')
       router.push('/dashboard/event-types')
     } finally {
       setLoading(false)
     }
-  }, [params.id, toast, router])
+  }, [params.id, router])
 
   useEffect(() => {
     loadEventType()
@@ -54,13 +49,10 @@ export default function EventTypeDetailPage() {
     try {
       setToggling(true)
       await updateEventType(eventType.id, { isActive: checked })
-      toast({
-        title: checked ? 'Aktywowany' : 'Dezaktywowany',
-        description: `Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'został dezaktywowany'}`,
-      })
+      toast.success(`Typ "${eventType.name}" ${checked ? 'jest teraz aktywny' : 'został dezaktywowany'}`)
       loadEventType()
     } catch {
-      toast({ title: 'Błąd', description: 'Nie udało się zmienić statusu', variant: 'destructive' })
+      toast.error('Nie udało się zmienić statusu')
     } finally {
       setToggling(false)
     }

@@ -8,13 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getHallById, type Hall } from '@/lib/api/halls'
 import { HallReservationsCalendar } from '@/components/halls/hall-reservations-calendar'
-import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 export default function HallDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const { toast } = useToast()
   const [hall, setHall] = useState<Hall | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -25,11 +24,7 @@ export default function HallDetailsPage() {
       setHall(data)
     } catch (error: any) {
       console.error('Error loading hall:', error)
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować sali',
-        variant: 'destructive',
-      })
+      toast.error('Nie udało się załadować sali')
       router.push('/dashboard/halls')
     } finally {
       setLoading(false)

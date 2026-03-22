@@ -10,13 +10,12 @@ import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { getHallById, updateHall } from '@/lib/api/halls'
-import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 export default function EditHallPage() {
   const params = useParams()
   const router = useRouter()
-  const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [isWholeVenue, setIsWholeVenue] = useState(false)
@@ -43,11 +42,7 @@ export default function EditHallPage() {
       })
     } catch (error: any) {
       console.error('Error loading hall:', error)
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować sali',
-        variant: 'destructive',
-      })
+      toast.error('Nie udało się załadować sali')
       router.push('/dashboard/halls')
     } finally {
       setLoading(false)
@@ -62,11 +57,7 @@ export default function EditHallPage() {
     e.preventDefault()
     
     if (!formData.name || formData.capacity <= 0) {
-      toast({
-        title: 'Błąd walidacji',
-        description: 'Wypełnij wszystkie wymagane pola',
-        variant: 'destructive',
-      })
+      toast.error('Wypełnij wszystkie wymagane pola')
       return
     }
 
@@ -76,18 +67,11 @@ export default function EditHallPage() {
         ? { capacity: formData.capacity, description: formData.description, amenities: formData.amenities }
         : formData
       await updateHall(params.id as string, dataToSend)
-      toast({
-        title: 'Sukces',
-        description: 'Sala została zaktualizowana',
-      })
+      toast.success('Sala została zaktualizowana',)
       router.push('/dashboard/halls')
     } catch (error: any) {
       console.error('Error updating hall:', error)
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować sali',
-        variant: 'destructive',
-      })
+      toast.error(error.response?.data?.message || 'Nie udało się zaktualizować sali')
     } finally {
       setSaving(false)
     }

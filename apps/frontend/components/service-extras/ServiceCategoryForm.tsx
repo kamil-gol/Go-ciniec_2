@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useCreateCategory, useUpdateCategory } from '@/hooks/use-service-extras';
-import { useToast } from '@/hooks/use-toast';
 import type {
+import { toast } from 'sonner'
   ServiceCategory,
   CreateServiceCategoryInput,
 } from '@/types/service-extra.types';
@@ -43,7 +43,6 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
 
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
-  const { toast } = useToast();
 
   const isLoading = createCategory.isPending || updateCategory.isPending;
 
@@ -58,12 +57,12 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
     e.preventDefault();
 
     if (!name.trim()) {
-      toast({ title: 'Nazwa jest wymagana', variant: 'destructive' });
+      toast.error('Nazwa jest wymagana');
       return;
     }
 
     if (!slug.trim()) {
-      toast({ title: 'Slug jest wymagany', variant: 'destructive' });
+      toast.error('Slug jest wymagany');
       return;
     }
 
@@ -81,7 +80,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
             isExclusive,
           },
         });
-        toast({ title: 'Kategoria zaktualizowana', description: name });
+        toast.success('Kategoria zaktualizowana: ' + name);
       } else {
         const data: CreateServiceCategoryInput = {
           name: name.trim(),
@@ -93,15 +92,11 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
           isExclusive,
         };
         await createCategory.mutateAsync(data);
-        toast({ title: 'Kategoria utworzona', description: name });
+        toast.success('Kategoria utworzona: ' + name);
       }
       onClose();
     } catch (error: any) {
-      toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zapisać',
-        variant: 'destructive',
-      });
+      toast.error(error?.response?.data?.message || 'Nie udało się zapisać');
     }
   };
 

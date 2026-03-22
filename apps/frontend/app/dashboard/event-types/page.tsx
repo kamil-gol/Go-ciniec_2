@@ -5,16 +5,15 @@ import { Plus, Search, Theater, Calendar, FileText, Eye, EyeOff, TrendingUp } fr
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { useToast } from '@/hooks/use-toast'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { getEventTypes, getEventTypeStats, type EventType, type EventTypeStats } from '@/lib/api/event-types-api'
 import { EventTypeCard } from '@/components/event-types/event-type-card'
 import { EventTypeFormDialog } from '@/components/event-types/event-type-form-dialog'
 import { EventTypeDeleteDialog } from '@/components/event-types/event-type-delete-dialog'
+import { toast } from 'sonner'
 
 export default function EventTypesPage() {
-  const { toast } = useToast()
   const [eventTypes, setEventTypes] = useState<EventType[]>([])
   const [stats, setStats] = useState<EventTypeStats[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,11 +38,7 @@ export default function EventTypesPage() {
       setStats(statsData)
     } catch (error: any) {
       console.error('Error loading event types:', error)
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować typów wydarzeń',
-        variant: 'destructive',
-      })
+      toast.error('Nie udało się załadować typów wydarzeń')
     } finally {
       setLoading(false)
     }

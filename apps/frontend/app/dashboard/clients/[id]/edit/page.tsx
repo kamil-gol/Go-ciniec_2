@@ -9,14 +9,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { useClient, useUpdateClient } from '@/lib/api/clients'
-import { useToast } from '@/hooks/use-toast'
 import type { ClientType } from '@/types'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 export default function EditClientPage() {
   const params = useParams()
   const router = useRouter()
-  const { toast } = useToast()
   const clientId = params.id as string
 
   const { data: client, isLoading, error } = useClient(clientId)
@@ -62,20 +61,12 @@ export default function EditClientPage() {
     e.preventDefault()
 
     if (!formData.firstName || !formData.lastName || !formData.phone) {
-      toast({
-        title: 'Błąd walidacji',
-        description: 'Wypełnij wszystkie wymagane pola',
-        variant: 'destructive',
-      })
+      toast.error('Wypełnij wszystkie wymagane pola')
       return
     }
 
     if (isCompany && !formData.companyName) {
-      toast({
-        title: 'Błąd walidacji',
-        description: 'Podaj nazwę firmy',
-        variant: 'destructive',
-      })
+      toast.error('Podaj nazwę firmy')
       return
     }
 
@@ -110,18 +101,11 @@ export default function EditClientPage() {
         id: clientId,
         data: payload,
       })
-      toast({
-        title: 'Sukces',
-        description: isCompany ? 'Dane firmy zostały zaktualizowane' : 'Dane klienta zostały zaktualizowane',
-      })
+      toast.success(isCompany ? 'Dane firmy zostały zaktualizowane' : 'Dane klienta zostały zaktualizowane',)
       router.push(`/dashboard/clients/${clientId}`)
     } catch (error: any) {
       console.error('Error updating client:', error)
-      toast({
-        title: 'Błąd',
-        description: error.message || 'Nie udało się zaktualizować danych klienta',
-        variant: 'destructive',
-      })
+      toast.error(error.message || 'Nie udało się zaktualizować danych klienta')
     }
   }
 

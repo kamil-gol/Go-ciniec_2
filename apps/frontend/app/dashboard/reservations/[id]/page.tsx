@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useReservation, useCancelReservation, useArchiveReservation, useUnarchiveReservation, downloadReservationPDF } from '@/lib/api/reservations'
-import { useToast } from '@/hooks/use-toast'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -31,12 +30,12 @@ import {
 } from '@/components/reservations/editable'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
+import { toast } from 'sonner'
 
 type TabType = 'details' | 'history'
 
 export default function ReservationDetailsPage() {
   const params = useParams()
-  const { toast } = useToast()
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const [downloading, setDownloading] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('details')
@@ -63,16 +62,9 @@ export default function ReservationDetailsPage() {
     try {
       setDownloading(true)
       await downloadReservationPDF(reservation.id)
-      toast({
-        title: 'Sukces',
-        description: 'PDF został pobrany',
-      })
+      toast.success('PDF został pobrany',)
     } catch {
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się pobrać PDF',
-        variant: 'destructive',
-      })
+      toast.error('Nie udało się pobrać PDF')
     } finally {
       setDownloading(false)
     }
@@ -88,17 +80,10 @@ export default function ReservationDetailsPage() {
         id: reservation.id,
         reason: 'Zarchiwizowano przez użytkownika'
       })
-      toast({
-        title: 'Sukces',
-        description: 'Rezerwacja została zarchiwizowana',
-      })
+      toast.success('Rezerwacja została zarchiwizowana',)
       refetch()
     } catch {
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się zarchiwizować rezerwacji',
-        variant: 'destructive',
-      })
+      toast.error('Nie udało się zarchiwizować rezerwacji')
     }
   }
 
@@ -110,17 +95,10 @@ export default function ReservationDetailsPage() {
         id: reservation.id,
         reason: 'Przywrócono z archiwum'
       })
-      toast({
-        title: 'Sukces',
-        description: 'Rezerwacja została przywrócona z archiwum',
-      })
+      toast.success('Rezerwacja została przywrócona z archiwum',)
       refetch()
     } catch {
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się przywrócić rezerwacji',
-        variant: 'destructive',
-      })
+      toast.error('Nie udało się przywrócić rezerwacji')
     }
   }
 
@@ -135,16 +113,9 @@ export default function ReservationDetailsPage() {
         id: reservation.id,
         input: { reason }
       })
-      toast({
-        title: 'Sukces',
-        description: 'Rezerwacja została anulowana',
-      })
+      toast.success('Rezerwacja została anulowana',)
     } catch {
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się anulować rezerwacji',
-        variant: 'destructive',
-      })
+      toast.error('Nie udało się anulować rezerwacji')
     }
   }
 

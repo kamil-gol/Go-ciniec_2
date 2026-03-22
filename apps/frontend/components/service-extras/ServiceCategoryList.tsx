@@ -55,8 +55,8 @@ import {
   useDeleteItem,
   useReorderCategories,
 } from '@/hooks/use-service-extras';
-import { useToast } from '@/hooks/use-toast';
 import type {
+import { toast } from 'sonner'
   ServiceCategory,
   ServiceItem,
 } from '@/types/service-extra.types';
@@ -115,7 +115,6 @@ export function ServiceCategoryList({
   const deleteCategory = useDeleteCategory();
   const deleteItem = useDeleteItem();
   const reorderCategories = useReorderCategories();
-  const { toast } = useToast();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -142,7 +141,7 @@ export function ServiceCategoryList({
     try {
       await reorderCategories.mutateAsync(newOrder);
     } catch {
-      toast({ title: 'Błąd', description: 'Nie udało się zmienić kolejności', variant: 'destructive' });
+      toast.error('Nie udało się zmienić kolejności');
     }
   };
 
@@ -151,17 +150,13 @@ export function ServiceCategoryList({
     try {
       if (deleteTarget.type === 'category') {
         await deleteCategory.mutateAsync(deleteTarget.id);
-        toast({ title: 'Kategoria usunięta', description: deleteTarget.name });
+        toast.success('Kategoria usunięta: ' + deleteTarget.name);
       } else {
         await deleteItem.mutateAsync(deleteTarget.id);
-        toast({ title: 'Pozycja usunięta', description: deleteTarget.name });
+        toast.success('Pozycja usunięta: ' + deleteTarget.name);
       }
     } catch (error: any) {
-      toast({
-        title: 'Błąd usuwania',
-        description: error?.response?.data?.message || 'Nie można usunąć',
-        variant: 'destructive',
-      });
+      toast.error(error?.response?.data?.message || 'Nie można usunąć');
     }
     setDeleteTarget(null);
   };

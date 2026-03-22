@@ -10,12 +10,11 @@ import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { createHall } from '@/lib/api/halls'
-import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 export default function NewHallPage() {
   const router = useRouter()
-  const { toast } = useToast()
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -30,29 +29,18 @@ export default function NewHallPage() {
     e.preventDefault()
     
     if (!formData.name || formData.capacity <= 0) {
-      toast({
-        title: 'Błąd walidacji',
-        description: 'Wypełnij wszystkie wymagane pola',
-        variant: 'destructive',
-      })
+      toast.error('Wypełnij wszystkie wymagane pola')
       return
     }
 
     try {
       setSaving(true)
       await createHall(formData)
-      toast({
-        title: 'Sukces',
-        description: 'Sala została utworzona',
-      })
+      toast.success('Sala została utworzona',)
       router.push('/dashboard/halls')
     } catch (error: any) {
       console.error('Error creating hall:', error)
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć sali',
-        variant: 'destructive',
-      })
+      toast.error(error.response?.data?.message || 'Nie udało się utworzyć sali')
     } finally {
       setSaving(false)
     }

@@ -19,8 +19,8 @@ import {
   useUpdateItem,
   useServiceCategories,
 } from '@/hooks/use-service-extras';
-import { useToast } from '@/hooks/use-toast';
 import type {
+import { toast } from 'sonner'
   ServiceItem,
   ServicePriceType,
   CreateServiceItemInput,
@@ -58,7 +58,6 @@ export function ServiceItemForm({
   const { data: categories } = useServiceCategories();
   const createItem = useCreateItem();
   const updateItem = useUpdateItem();
-  const { toast } = useToast();
 
   const isLoading = createItem.isPending || updateItem.isPending;
 
@@ -66,11 +65,11 @@ export function ServiceItemForm({
     e.preventDefault();
 
     if (!categoryId) {
-      toast({ title: 'Wybierz kategorię', variant: 'destructive' });
+      toast.error('Wybierz kategorię');
       return;
     }
     if (!name.trim()) {
-      toast({ title: 'Nazwa jest wymagana', variant: 'destructive' });
+      toast.error('Nazwa jest wymagana');
       return;
     }
 
@@ -89,7 +88,7 @@ export function ServiceItemForm({
             isActive,
           },
         });
-        toast({ title: 'Pozycja zaktualizowana', description: name });
+        toast.success('Pozycja zaktualizowana: ' + name);
       } else {
         const data: CreateServiceItemInput = {
           categoryId,
@@ -103,15 +102,11 @@ export function ServiceItemForm({
           isActive,
         };
         await createItem.mutateAsync(data);
-        toast({ title: 'Pozycja utworzona', description: name });
+        toast.success('Pozycja utworzona: ' + name);
       }
       onClose();
     } catch (error: any) {
-      toast({
-        title: 'Błąd',
-        description: error?.response?.data?.message || 'Nie udało się zapisać',
-        variant: 'destructive',
-      });
+      toast.error(error?.response?.data?.message || 'Nie udało się zapisać');
     }
   };
 

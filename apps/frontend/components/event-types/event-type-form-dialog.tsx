@@ -23,7 +23,7 @@ import {
   type CreateEventTypeData,
   type UpdateEventTypeData,
 } from '@/lib/api/event-types-api'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 interface EventTypeFormDialogProps {
   open: boolean
@@ -38,7 +38,6 @@ const DEFAULT_COLORS = [
 ]
 
 export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }: EventTypeFormDialogProps) {
-  const { toast } = useToast()
   const [saving, setSaving] = useState(false)
   const [colors, setColors] = useState<string[]>(DEFAULT_COLORS)
 
@@ -76,7 +75,7 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
     e.preventDefault()
 
     if (!name.trim()) {
-      toast({ title: 'Błąd', description: 'Nazwa typu jest wymagana', variant: 'destructive' })
+      toast.error('Nazwa typu jest wymagana')
       return
     }
 
@@ -93,7 +92,7 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
           extraHourRate,
         }
         await updateEventType(eventType.id, payload)
-        toast({ title: 'Zaktualizowano', description: `Typ "${name}" został zaktualizowany` })
+        toast.success(`Typ "${name}" został zaktualizowany`)
       } else {
         const payload: CreateEventTypeData = {
           name: name.trim(),
@@ -104,14 +103,14 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
           extraHourRate,
         }
         await createEventType(payload)
-        toast({ title: 'Utworzono', description: `Typ "${name}" został utworzony` })
+        toast.success(`Typ "${name}" został utworzony`)
       }
 
       onOpenChange(false)
       onSuccess()
     } catch (error: any) {
       const msg = error?.response?.data?.message || error?.message || 'Wystąpił błąd'
-      toast({ title: 'Błąd', description: msg, variant: 'destructive' })
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

@@ -17,7 +17,7 @@ import {
   getEventTypeById,
   type EventType,
 } from '@/lib/api/event-types-api'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 interface EventTypeDeleteDialogProps {
   open: boolean
@@ -27,7 +27,6 @@ interface EventTypeDeleteDialogProps {
 }
 
 export function EventTypeDeleteDialog({ open, onOpenChange, eventType, onSuccess }: EventTypeDeleteDialogProps) {
-  const { toast } = useToast()
   const [deleting, setDeleting] = useState(false)
   const [reservationCount, setReservationCount] = useState(0)
   const [templateCount, setTemplateCount] = useState(0)
@@ -57,12 +56,12 @@ export function EventTypeDeleteDialog({ open, onOpenChange, eventType, onSuccess
     try {
       setDeleting(true)
       await deleteEventType(eventType.id)
-      toast({ title: 'Usunięto', description: `Typ "${eventType.name}" został usunięty` })
+      toast.success(`Typ "${eventType.name}" został usunięty`)
       onOpenChange(false)
       onSuccess()
     } catch (error: any) {
       const msg = error?.response?.data?.message || error?.message || 'Nie można usunąć typu'
-      toast({ title: 'Błąd', description: msg, variant: 'destructive' })
+      toast.error(msg)
     } finally {
       setDeleting(false)
     }

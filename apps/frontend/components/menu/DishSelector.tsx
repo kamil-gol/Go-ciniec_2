@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useToast } from '@/hooks/use-toast'
 import {
   ChevronLeft, ChevronRight, AlertCircle, Check,
   Info, CheckCircle2, Lock,
@@ -15,6 +14,7 @@ import { usePackageCategories } from '@/hooks/use-menu'
 import type { PortionTarget } from '@/types/menu'
 import { PORTION_TARGET_LABELS } from '@/types/menu'
 import { formatCurrency } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface DishSelection {
   dishId: string
@@ -104,7 +104,6 @@ export function DishSelector({
   onComplete,
   onBack
 }: DishSelectorProps) {
-  const { toast } = useToast()
   const { data: categoryData, isLoading } = usePackageCategories(packageId)
   const [selections, setSelections] = useState<Record<string, Record<string, number>>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -215,11 +214,7 @@ export function DishSelector({
       const effectiveMax = getEffectiveMaxSelect(categorySettings)
 
       if (remaining <= 0) {
-        toast({
-          title: 'Limit osiągnięty',
-          description: `Możesz wybrać maksymalnie ${effectiveMax} pozycji z kategorii "${categorySettings.customLabel || categorySettings.categoryName}". Odznacz inną pozycję aby dodać nową.`,
-          variant: 'destructive',
-        })
+        toast.error(`Możesz wybrać maksymalnie ${effectiveMax} pozycji z kategorii "${categorySettings.customLabel || categorySettings.categoryName}". Odznacz inną pozycję aby dodać nową.`)
         return
       }
 
@@ -360,11 +355,7 @@ export function DishSelector({
 
     if (!isValid) {
       const errorMessages = Object.values(errorMap)
-      toast({
-        title: 'Nie można zatwierdzić wyboru',
-        description: errorMessages.join('. ') + '.',
-        variant: 'destructive',
-      })
+      toast.error(errorMessages.join('. ') + '.')
       return
     }
 

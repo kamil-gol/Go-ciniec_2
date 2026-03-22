@@ -11,7 +11,7 @@ import {
   UpdateMenuCourseInput,
   AssignDishesInput,
 } from '@/lib/api/menu-courses-api';
-import { useToast } from './use-toast';
+import { toast } from 'sonner'
 
 // ════════════════════════════════════════════════════════════════════════════
 // QUERY HOOKS
@@ -54,23 +54,15 @@ export function useCourse(id: string) {
  */
 export function useCreateCourse() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: (input: CreateMenuCourseInput) => menuCoursesApi.createCourse(input),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['menu-courses', 'package', variables.packageId] });
-      toast({
-        title: 'Sukces',
-        description: 'Kurs został utworzony',
-      });
+      toast.success('Kurs został utworzony',);
     },
     onError: (error: any) => {
-      toast({
-        variant: 'destructive',
-        title: 'Błąd',
-        description: error.error || 'Nie udało się utworzyć kursu',
-      });
+      toast.error(error.error || 'Nie udało się utworzyć kursu');
     },
   });
 }
@@ -80,7 +72,6 @@ export function useCreateCourse() {
  */
 export function useUpdateCourse() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateMenuCourseInput }) =>
@@ -88,17 +79,10 @@ export function useUpdateCourse() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['menu-courses'] });
       queryClient.invalidateQueries({ queryKey: ['menu-courses', variables.id] });
-      toast({
-        title: 'Sukces',
-        description: 'Kurs został zaktualizowany',
-      });
+      toast.success('Kurs został zaktualizowany',);
     },
     onError: (error: any) => {
-      toast({
-        variant: 'destructive',
-        title: 'Błąd',
-        description: error.error || 'Nie udało się zaktualizować kursu',
-      });
+      toast.error(error.error || 'Nie udało się zaktualizować kursu');
     },
   });
 }
@@ -108,23 +92,15 @@ export function useUpdateCourse() {
  */
 export function useDeleteCourse() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: (id: string) => menuCoursesApi.deleteCourse(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menu-courses'] });
-      toast({
-        title: 'Sukces',
-        description: 'Kurs został usunięty',
-      });
+      toast.success('Kurs został usunięty',);
     },
     onError: (error: any) => {
-      toast({
-        variant: 'destructive',
-        title: 'Błąd',
-        description: error.error || 'Nie udało się usunąć kursu',
-      });
+      toast.error(error.error || 'Nie udało się usunąć kursu');
     },
   });
 }
@@ -134,7 +110,6 @@ export function useDeleteCourse() {
  */
 export function useAssignDishes() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: ({ courseId, input }: { courseId: string; input: AssignDishesInput }) =>
@@ -142,17 +117,10 @@ export function useAssignDishes() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['menu-courses', variables.courseId] });
       queryClient.invalidateQueries({ queryKey: ['menu-courses'] });
-      toast({
-        title: 'Sukces',
-        description: 'Dania zostały przypisane',
-      });
+      toast.success('Dania zostały przypisane',);
     },
     onError: (error: any) => {
-      toast({
-        variant: 'destructive',
-        title: 'Błąd',
-        description: error.error || 'Nie udało się przypisać dań',
-      });
+      toast.error(error.error || 'Nie udało się przypisać dań');
     },
   });
 }
@@ -162,7 +130,6 @@ export function useAssignDishes() {
  */
 export function useRemoveDish() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: ({ courseId, dishId }: { courseId: string; dishId: string }) =>
@@ -170,17 +137,10 @@ export function useRemoveDish() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['menu-courses', variables.courseId] });
       queryClient.invalidateQueries({ queryKey: ['menu-courses'] });
-      toast({
-        title: 'Sukces',
-        description: 'Danie zostało usunięte z kursu',
-      });
+      toast.success('Danie zostało usunięte z kursu',);
     },
     onError: (error: any) => {
-      toast({
-        variant: 'destructive',
-        title: 'Błąd',
-        description: error.error || 'Nie udało się usunąć dania',
-      });
+      toast.error(error.error || 'Nie udało się usunąć dania');
     },
   });
 }

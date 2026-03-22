@@ -11,11 +11,11 @@ import {
 } from 'lucide-react'
 import { MenuSelectionFlow } from '@/components/menu/MenuSelectionFlow'
 import { useReservationMenu, useSelectMenu, useUpdateReservationMenu, useDeleteReservationMenu } from '@/hooks/use-menu'
-import { useToast } from '@/hooks/use-toast'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { PortionTarget } from '@/types/menu'
 import { PORTION_TARGET_LABELS } from '@/types/menu'
+import { toast } from 'sonner'
 
 interface ReservationMenuSectionProps {
   reservationId: string
@@ -49,7 +49,6 @@ export function ReservationMenuSection({
   onMenuUpdated,
   readOnly = false
 }: ReservationMenuSectionProps) {
-  const { toast } = useToast()
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const [showSelectionDialog, setShowSelectionDialog] = useState(false)
   
@@ -66,15 +65,15 @@ export function ReservationMenuSection({
     try {
       if (hasMenu) {
         await updateMenuMutation.mutateAsync({ reservationId, selection })
-        toast({ title: 'Sukces!', description: 'Menu zostało zaktualizowane' })
+        toast.success('Menu zostało zaktualizowane')
       } else {
         await selectMenuMutation.mutateAsync({ reservationId, selection })
-        toast({ title: 'Sukces!', description: 'Menu zostało dodane do rezerwacji' })
+        toast.success('Menu zostało dodane do rezerwacji')
       }
       setShowSelectionDialog(false)
       onMenuUpdated?.()
     } catch (error: any) {
-      toast({ title: 'Błąd', description: error.message || 'Nie udało się zapisać menu', variant: 'destructive' })
+      toast.error(error.message || 'Nie udało się zapisać menu')
     }
   }
 
@@ -83,10 +82,10 @@ export function ReservationMenuSection({
     if (!await confirm({ title: 'Usuwanie menu', description: 'Czy na pewno chcesz usunąć wybrane menu?', variant: 'destructive', confirmLabel: 'Usuń menu' })) return
     try {
       await deleteMenuMutation.mutateAsync(reservationId)
-      toast({ title: 'Sukces', description: 'Menu zostało usunięte' })
+      toast.success('Menu zostało usunięte')
       onMenuUpdated?.()
     } catch {
-      toast({ title: 'Błąd', description: 'Nie udało się usunąć menu', variant: 'destructive' })
+      toast.error('Nie udało się usunąć menu')
     }
   }
 

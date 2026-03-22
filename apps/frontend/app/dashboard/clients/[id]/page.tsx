@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getClientById, deleteClient } from '@/lib/api/clients'
-import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
@@ -20,6 +19,7 @@ import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
 import { DeleteClientModal } from '@/components/clients/delete-client-modal'
 import { ContactsManager } from '@/components/clients/contacts-manager'
+import { toast } from 'sonner'
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Oczekująca',
@@ -40,7 +40,6 @@ type TabType = 'details' | 'history'
 export default function ClientDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const { toast } = useToast()
   const [client, setClient] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
@@ -54,11 +53,7 @@ export default function ClientDetailsPage() {
       setClient(data)
     } catch (error: any) {
       console.error('Error loading client:', error)
-      toast({
-        title: 'Błąd',
-        description: 'Nie udało się załadować klienta',
-        variant: 'destructive',
-      })
+      toast.error('Nie udało się załadować klienta')
       router.push('/dashboard/clients')
     } finally {
       setLoading(false)
@@ -75,17 +70,10 @@ export default function ClientDetailsPage() {
     try {
       setDeleting(true)
       await deleteClient(client.id)
-      toast({
-        title: 'Sukces',
-        description: 'Dane klienta zostały zanonimizowane',
-      })
+      toast.success('Dane klienta zostały zanonimizowane',)
       router.push('/dashboard/clients')
     } catch (error: any) {
-      toast({
-        title: 'Błąd',
-        description: error?.response?.data?.error || error?.response?.data?.message || 'Nie udało się usunąć klienta',
-        variant: 'destructive',
-      })
+      toast.error(error?.response?.data?.error || error?.response?.data?.message || 'Nie udało się usunąć klienta')
     } finally {
       setDeleting(false)
       setShowDeleteModal(false)
