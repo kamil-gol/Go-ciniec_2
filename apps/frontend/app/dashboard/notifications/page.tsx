@@ -2,11 +2,17 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, CheckCheck, Calendar, CreditCard, ArrowUpFromLine, Users } from 'lucide-react'
+import { Bell, CheckCheck, Calendar, CreditCard, ArrowUpFromLine, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { PageHero, LoadingState, EmptyState } from '@/components/shared'
+import { FilterTabs } from '@/components/shared/FilterTabs'
+import { moduleAccents } from '@/lib/design-tokens'
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useUnreadCount } from '@/hooks/use-notifications'
 import type { Notification } from '@/types/notification.types'
+
+const accent = moduleAccents.notifications
 
 const typeIcons: Record<string, typeof Bell> = {
   RESERVATION_CREATED: Calendar,
@@ -98,81 +104,58 @@ export default function NotificationsPage() {
   const groupedNotifications = groupByDay(notifications)
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-            Powiadomienia
-          </h1>
-          {unreadCount > 0 && (
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-              {unreadCount} nieprzeczytanych
-            </p>
-          )}
-        </div>
-        {unreadCount > 0 && (
-          <button
-            onClick={() => markAllAsRead.mutate()}
-            className="flex items-center gap-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors"
-          >
-            <CheckCheck className="h-4 w-4" />
-            Oznacz wszystkie
-          </button>
-        )}
-      </div>
+    <div className="container mx-auto py-6 px-4 sm:py-8 sm:px-6 space-y-6 sm:space-y-8">
+      {/* Hero */}
+      <PageHero
+        accent={accent}
+        title="Powiadomienia"
+        subtitle="Bądź na bieżąco z rezerwacjami, zaliczkami i kolejką"
+        icon={Bell}
+        stats={unreadCount > 0 ? [
+          { icon: Bell, label: 'Nieprzeczytane', value: unreadCount },
+        ] : undefined}
+        action={
+          unreadCount > 0 ? (
+            <Button
+              size="lg"
+              className="bg-white text-amber-600 hover:bg-white/90 shadow-xl"
+              onClick={() => markAllAsRead.mutate()}
+            >
+              <CheckCheck className="mr-2 h-5 w-5" />
+              Oznacz wszystkie
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Filters */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => { setFilter('all'); setPage(1) }}
-          className={cn(
-            'px-4 py-2 rounded-xl text-sm font-medium transition-colors',
-            filter === 'all'
-              ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900'
-              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-          )}
-        >
-          Wszystkie
-        </button>
-        <button
-          onClick={() => { setFilter('unread'); setPage(1) }}
-          className={cn(
-            'px-4 py-2 rounded-xl text-sm font-medium transition-colors',
-            filter === 'unread'
-              ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900'
-              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-          )}
-        >
-          Nieprzeczytane
-          {unreadCount > 0 && (
-            <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold h-5 min-w-[20px] px-1">
-              {unreadCount}
-            </span>
-          )}
-        </button>
-      </div>
+      <FilterTabs
+        tabs={[
+          { key: 'all', label: 'Wszystkie' },
+          { key: 'unread', label: 'Nieprzeczytane', count: unreadCount },
+        ]}
+        activeKey={filter}
+        onChange={(key) => { setFilter(key as 'all' | 'unread'); setPage(1) }}
+      />
 
       {/* Loading */}
-      {isLoading && (
-        <div className="flex justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-indigo-500" />
-        </div>
-      )}
+      {isLoading && <LoadingState variant="skeleton" rows={5} />}
 
       {/* Empty state */}
       {!isLoading && notifications.length === 0 && (
-        <div className="text-center py-16">
-          <Bell className="h-12 w-12 mx-auto text-neutral-300 dark:text-neutral-600 mb-4" />
-          <p className="text-neutral-500 dark:text-neutral-400">
-            {filter === 'unread' ? 'Brak nieprzeczytanych powiadomień' : 'Brak powiadomień'}
-          </p>
-        </div>
+        <EmptyState
+          icon={Bell}
+          title={filter === 'unread' ? 'Brak nieprzeczytanych' : 'Brak powiadomień'}
+          description={filter === 'unread'
+            ? 'Wszystkie powiadomienia zostały przeczytane'
+            : 'Powiadomienia pojawią się tutaj automatycznie'
+          }
+        />
       )}
 
       {/* Notifications grouped by day */}
       {!isLoading && Object.entries(groupedNotifications).map(([dayKey, dayNotifs]) => (
-        <div key={dayKey} className="mb-6">
+        <div key={dayKey}>
           <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3 px-1">
             {formatDate(dayNotifs[0].createdAt)}
           </h2>
@@ -191,7 +174,7 @@ export default function NotificationsPage() {
                   className={cn(
                     'flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:shadow-md',
                     !notif.read
-                      ? 'bg-white dark:bg-neutral-800 border-indigo-200/60 dark:border-indigo-800/40 shadow-sm'
+                      ? 'bg-white dark:bg-neutral-800 border-amber-200/60 dark:border-amber-800/40 shadow-sm'
                       : 'bg-neutral-50/50 dark:bg-neutral-800/50 border-neutral-200/50 dark:border-neutral-700/30'
                   )}
                 >
@@ -207,7 +190,7 @@ export default function NotificationsPage() {
                         {notif.title}
                       </p>
                       {!notif.read && (
-                        <span className="h-2 w-2 rounded-full bg-indigo-500 flex-shrink-0" />
+                        <span className="h-2 w-2 rounded-full bg-amber-500 flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-2">
@@ -226,24 +209,28 @@ export default function NotificationsPage() {
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-8">
-          <button
+        <div className="flex items-center justify-center gap-3 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
+            <ChevronLeft className="h-4 w-4 mr-1" />
             Poprzednia
-          </button>
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">
+          </Button>
+          <span className="text-sm text-neutral-500 dark:text-neutral-400 tabular-nums">
             {page} z {pagination.totalPages}
           </span>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
             disabled={page === pagination.totalPages}
-            className="px-4 py-2 rounded-xl text-sm font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Następna
-          </button>
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
         </div>
       )}
     </div>
