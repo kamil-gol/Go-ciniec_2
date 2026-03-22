@@ -26,7 +26,7 @@ class ReservationStatusService {
       where: { id },
       include: { client: true, hall: true },
     });
-    if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
+    if (!existingReservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
 
     this.validateStatusTransition(existingReservation.status, data.status);
 
@@ -37,7 +37,7 @@ class ReservationStatusService {
         ? new Date(existingReservation.date)
         : null;
       if (eventDate && eventDate > new Date()) {
-        throw new Error(RESERVATION.CANNOT_COMPLETE_BEFORE_EVENT);
+        throw new AppError(RESERVATION.CANNOT_COMPLETE_BEFORE_EVENT, 400);
       }
     }
 
@@ -133,11 +133,11 @@ class ReservationStatusService {
       where: { id },
       include: { client: true, hall: true },
     });
-    if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
+    if (!existingReservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
 
-    if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(RESERVATION.ALREADY_CANCELLED);
-    if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(RESERVATION.CANNOT_CANCEL_COMPLETED);
-    if (existingReservation.status === ReservationStatus.ARCHIVED) throw new Error(RESERVATION.ALREADY_ARCHIVED);
+    if (existingReservation.status === ReservationStatus.CANCELLED) throw new AppError(RESERVATION.ALREADY_CANCELLED, 409);
+    if (existingReservation.status === ReservationStatus.COMPLETED) throw new AppError(RESERVATION.CANNOT_CANCEL_COMPLETED, 409);
+    if (existingReservation.status === ReservationStatus.ARCHIVED) throw new AppError(RESERVATION.ALREADY_ARCHIVED, 409);
 
     await prisma.$transaction(async (tx) => {
       // #172: Instant archive — status ARCHIVED + archivedAt set
@@ -231,8 +231,8 @@ class ReservationStatusService {
       where: { id },
       include: { client: true, hall: true },
     });
-    if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
-    if (reservation.archivedAt) throw new Error(RESERVATION.ALREADY_ARCHIVED);
+    if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
+    if (reservation.archivedAt) throw new AppError(RESERVATION.ALREADY_ARCHIVED, 409);
 
     await prisma.reservation.update({
       where: { id },
@@ -256,8 +256,8 @@ class ReservationStatusService {
       where: { id },
       include: { client: true, hall: true },
     });
-    if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
-    if (!reservation.archivedAt) throw new Error(RESERVATION.NOT_ARCHIVED);
+    if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
+    if (!reservation.archivedAt) throw new AppError(RESERVATION.NOT_ARCHIVED, 409);
 
     await prisma.reservation.update({
       where: { id },
@@ -319,7 +319,7 @@ class ReservationStatusService {
     };
 
     if (!validTransitions[currentStatus]?.includes(newStatus)) {
-      throw new Error(RESERVATION.STATUS_TRANSITION_INVALID(currentStatus, newStatus));
+      throw new AppError(RESERVATION.STATUS_TRANSITION_INVALID(currentStatus, newStatus), 400);
     }
   }
 

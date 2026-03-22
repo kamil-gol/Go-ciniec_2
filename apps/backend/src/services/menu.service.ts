@@ -11,6 +11,7 @@
 import { Prisma } from '@/prisma-client';
 import { prisma } from '@/lib/prisma';
 import { logChange, diffObjects } from '../utils/audit-logger';
+import { AppError } from '../utils/AppError';
 import { MENU_CRUD } from '../i18n/pl';
 import { 
   MenuTemplate, 
@@ -60,7 +61,7 @@ export class MenuService {
         }
       }
     });
-    if (!template) throw new Error(MENU_CRUD.TEMPLATE_NOT_FOUND);
+    if (!template) throw new AppError(MENU_CRUD.TEMPLATE_NOT_FOUND, 404);
     return template;
   }
 
@@ -77,7 +78,7 @@ export class MenuService {
         }
       }
     });
-    if (!template) throw new Error(MENU_CRUD.NO_ACTIVE_MENU(eventTypeId));
+    if (!template) throw new AppError(MENU_CRUD.NO_ACTIVE_MENU(eventTypeId), 404);
     return template;
   }
 
@@ -105,7 +106,7 @@ export class MenuService {
 
   async updateMenuTemplate(id: string, data: UpdateMenuTemplateInput, userId: string) {
     const existing = await prisma.menuTemplate.findUnique({ where: { id } });
-    if (!existing) throw new Error(MENU_CRUD.TEMPLATE_NOT_FOUND);
+    if (!existing) throw new AppError(MENU_CRUD.TEMPLATE_NOT_FOUND, 404);
 
     const template = await prisma.menuTemplate.update({
       where: { id },
@@ -133,12 +134,12 @@ export class MenuService {
 
   async deleteMenuTemplate(id: string, userId: string) {
     const existing = await prisma.menuTemplate.findUnique({ where: { id } });
-    if (!existing) throw new Error(MENU_CRUD.TEMPLATE_NOT_FOUND);
+    if (!existing) throw new AppError(MENU_CRUD.TEMPLATE_NOT_FOUND, 404);
 
     const usageCount = await prisma.reservationMenuSnapshot.count({
       where: { menuData: { path: ['templateId'], equals: id } }
     });
-    if (usageCount > 0) throw new Error(MENU_CRUD.CANNOT_DELETE_TEMPLATE(usageCount));
+    if (usageCount > 0) throw new AppError(MENU_CRUD.CANNOT_DELETE_TEMPLATE(usageCount), 409);
 
     await prisma.menuTemplate.delete({ where: { id } });
 
@@ -247,7 +248,7 @@ export class MenuService {
         }
       }
     });
-    if (!pkg) throw new Error(MENU_CRUD.PACKAGE_NOT_FOUND);
+    if (!pkg) throw new AppError(MENU_CRUD.PACKAGE_NOT_FOUND, 404);
     return pkg;
   }
 
@@ -280,7 +281,7 @@ export class MenuService {
     const currentPackage = await prisma.menuPackage.findUnique({
       where: { id }, select: { name: true, pricePerAdult: true, pricePerChild: true, pricePerToddler: true }
     });
-    if (!currentPackage) throw new Error(MENU_CRUD.PACKAGE_NOT_FOUND);
+    if (!currentPackage) throw new AppError(MENU_CRUD.PACKAGE_NOT_FOUND, 404);
 
     const priceChanges: Array<{ fieldName: string; oldValue: number; newValue: number }> = [];
 
@@ -330,12 +331,12 @@ export class MenuService {
 
   async deletePackage(id: string, userId: string) {
     const existing = await prisma.menuPackage.findUnique({ where: { id }, select: { name: true } });
-    if (!existing) throw new Error(MENU_CRUD.PACKAGE_NOT_FOUND);
+    if (!existing) throw new AppError(MENU_CRUD.PACKAGE_NOT_FOUND, 404);
 
     const usageCount = await prisma.reservationMenuSnapshot.count({
       where: { menuData: { path: ['packageId'], equals: id } }
     });
-    if (usageCount > 0) throw new Error(MENU_CRUD.CANNOT_DELETE_PACKAGE(usageCount));
+    if (usageCount > 0) throw new AppError(MENU_CRUD.CANNOT_DELETE_PACKAGE(usageCount), 409);
 
     await prisma.menuPackage.delete({ where: { id } });
 

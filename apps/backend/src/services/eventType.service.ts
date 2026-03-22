@@ -7,6 +7,7 @@
 import { prisma } from '@/lib/prisma';
 import { CreateEventTypeDTO, UpdateEventTypeDTO, EventTypeResponse, EventTypeStatsResponse } from '../types/eventType.types';
 import { logChange, diffObjects } from '../utils/audit-logger';
+import { AppError } from '../utils/AppError';
 import { EVENT_TYPE } from '../i18n/pl';
 
 // Predefined colors for event types
@@ -32,11 +33,11 @@ function isValidColor(color: string): boolean {
 export class EventTypeService {
   async createEventType(data: CreateEventTypeDTO, userId: string): Promise<EventTypeResponse> {
     if (!data.name || data.name.trim().length === 0) {
-      throw new Error(EVENT_TYPE.NAME_REQUIRED);
+      throw new AppError(EVENT_TYPE.NAME_REQUIRED, 400);
     }
 
     if (data.color && !isValidColor(data.color)) {
-      throw new Error(EVENT_TYPE.INVALID_COLOR);
+      throw new AppError(EVENT_TYPE.INVALID_COLOR, 400);
     }
 
     const existingType = await prisma.eventType.findFirst({
@@ -44,7 +45,7 @@ export class EventTypeService {
     });
 
     if (existingType) {
-      throw new Error(EVENT_TYPE.NAME_EXISTS);
+      throw new AppError(EVENT_TYPE.NAME_EXISTS, 409);
     }
 
     const eventType = await prisma.eventType.create({
@@ -103,27 +104,27 @@ export class EventTypeService {
       }
     });
 
-    if (!eventType) throw new Error(EVENT_TYPE.NOT_FOUND);
+    if (!eventType) throw new AppError(EVENT_TYPE.NOT_FOUND, 404);
     return eventType as any;
   }
 
   async updateEventType(id: string, data: UpdateEventTypeDTO, userId: string): Promise<EventTypeResponse> {
     const existingType = await prisma.eventType.findUnique({ where: { id } });
-    if (!existingType) throw new Error(EVENT_TYPE.NOT_FOUND);
+    if (!existingType) throw new AppError(EVENT_TYPE.NOT_FOUND, 404);
 
     if (data.name !== undefined && data.name.trim().length === 0) {
-      throw new Error(EVENT_TYPE.NAME_EMPTY);
+      throw new AppError(EVENT_TYPE.NAME_EMPTY, 400);
     }
 
     if (data.color !== undefined && data.color !== null && !isValidColor(data.color)) {
-      throw new Error(EVENT_TYPE.INVALID_COLOR);
+      throw new AppError(EVENT_TYPE.INVALID_COLOR, 400);
     }
 
     if (data.name && data.name.trim() !== existingType.name) {
       const typeWithSameName = await prisma.eventType.findFirst({
         where: { name: data.name.trim(), id: { not: id } }
       });
-      if (typeWithSameName) throw new Error(EVENT_TYPE.NAME_EXISTS);
+      if (typeWithSameName) throw new AppError(EVENT_TYPE.NAME_EXISTS, 409);
     }
 
     const updateData: Record<string, any> = {};
@@ -160,7 +161,7 @@ export class EventTypeService {
 
   async toggleActive(id: string, userId: string): Promise<EventTypeResponse> {
     const existingType = await prisma.eventType.findUnique({ where: { id } });
-    if (!existingType) throw new Error(EVENT_TYPE.NOT_FOUND);
+    if (!existingType) throw new AppError(EVENT_TYPE.NOT_FOUND, 404);
 
     const eventType = await prisma.eventType.update({
       where: { id },
@@ -185,14 +186,14 @@ export class EventTypeService {
 
   async deleteEventType(id: string, userId: string): Promise<void> {
     const existingType = await prisma.eventType.findUnique({ where: { id } });
-    if (!existingType) throw new Error(EVENT_TYPE.NOT_FOUND);
+    if (!existingType) throw new AppError(EVENT_TYPE.NOT_FOUND, 404);
 
     const reservationCount = await prisma.reservation.count({
       where: { eventTypeId: id }
     });
 
     if (reservationCount > 0) {
-      throw new Error(EVENT_TYPE.CANNOT_DELETE_WITH_RESERVATIONS(reservationCount));
+      throw new AppError(EVENT_TYPE.CANNOT_DELETE_WITH_RESERVATIONS(reservationCount), 409);
     }
 
     const menuTemplateCount = await prisma.menuTemplate.count({
@@ -200,7 +201,7 @@ export class EventTypeService {
     });
 
     if (menuTemplateCount > 0) {
-      throw new Error(EVENT_TYPE.CANNOT_DELETE_WITH_TEMPLATES(menuTemplateCount));
+      throw new AppError(EVENT_TYPE.CANNOT_DELETE_WITH_TEMPLATES(menuTemplateCount), 409);
     }
 
     await prisma.eventType.delete({ where: { id } });

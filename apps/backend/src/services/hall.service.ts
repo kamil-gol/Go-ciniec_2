@@ -10,6 +10,7 @@
 import { prisma } from '@/lib/prisma';
 import { CreateHallDTO, UpdateHallDTO, HallResponse } from '../types/hall.types';
 import { logChange, diffObjects } from '../utils/audit-logger';
+import { AppError } from '../utils/AppError';
 import { HALL } from '../i18n/pl';
 
 export class HallService {
@@ -43,7 +44,7 @@ export class HallService {
    */
   async getHallById(id: string): Promise<HallResponse> {
     const hall = await prisma.hall.findUnique({ where: { id } });
-    if (!hall) throw new Error(HALL.NOT_FOUND);
+    if (!hall) throw new AppError(HALL.NOT_FOUND, 404);
     return hall as any;
   }
 
@@ -79,7 +80,7 @@ export class HallService {
     }>;
   }> {
     const hall = await prisma.hall.findUnique({ where: { id: hallId } });
-    if (!hall) throw new Error(HALL.NOT_FOUND);
+    if (!hall) throw new AppError(HALL.NOT_FOUND, 404);
 
     const startDT = new Date(startDateTime);
     const endDT = new Date(endDateTime);
@@ -136,7 +137,7 @@ export class HallService {
     if (data.isWholeVenue) {
       const existing = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
       if (existing) {
-        throw new Error('Sala "Ca\u0142y Obiekt" ju\u017C istnieje. Mo\u017Ce by\u0107 tylko jedna.');
+        throw new AppError('Sala "Ca\u0142y Obiekt" ju\u017C istnieje. Mo\u017Ce by\u0107 tylko jedna.', 409);
       }
     }
 
@@ -182,15 +183,15 @@ export class HallService {
    */
   async updateHall(id: string, data: UpdateHallDTO, userId: string): Promise<HallResponse> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
-    if (!existingHall) throw new Error(HALL.NOT_FOUND);
+    if (!existingHall) throw new AppError(HALL.NOT_FOUND, 404);
 
     // Protection for "Ca\u0142y Obiekt"
     if (existingHall.isWholeVenue) {
       if (data.isActive === false) {
-        throw new Error('Nie mo\u017Cna dezaktywowa\u0107 sali "Ca\u0142y Obiekt". Jest wymagana do logiki rezerwacji.');
+        throw new AppError('Nie mo\u017Cna dezaktywowa\u0107 sali "Ca\u0142y Obiekt". Jest wymagana do logiki rezerwacji.', 403);
       }
       if (data.name !== undefined && data.name !== existingHall.name) {
-        throw new Error('Nie mo\u017Cna zmieni\u0107 nazwy sali "Ca\u0142y Obiekt".');
+        throw new AppError('Nie mo\u017Cna zmieni\u0107 nazwy sali "Ca\u0142y Obiekt".', 403);
       }
     }
 
@@ -232,10 +233,10 @@ export class HallService {
    */
   async toggleActive(id: string, userId: string): Promise<HallResponse> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
-    if (!existingHall) throw new Error(HALL.NOT_FOUND);
+    if (!existingHall) throw new AppError(HALL.NOT_FOUND, 404);
 
     if (existingHall.isWholeVenue) {
-      throw new Error('Nie mo\u017Cna dezaktywowa\u0107 sali "Ca\u0142y Obiekt".');
+      throw new AppError('Nie mo\u017Cna dezaktywowa\u0107 sali "Ca\u0142y Obiekt".', 403);
     }
 
     const hall = await prisma.hall.update({
@@ -265,10 +266,10 @@ export class HallService {
    */
   async deleteHall(id: string, userId: string): Promise<void> {
     const existingHall = await prisma.hall.findUnique({ where: { id } });
-    if (!existingHall) throw new Error(HALL.NOT_FOUND);
+    if (!existingHall) throw new AppError(HALL.NOT_FOUND, 404);
 
     if (existingHall.isWholeVenue) {
-      throw new Error('Nie mo\u017Cna usun\u0105\u0107 sali "Ca\u0142y Obiekt". Jest wymagana do logiki rezerwacji.');
+      throw new AppError('Nie mo\u017Cna usun\u0105\u0107 sali "Ca\u0142y Obiekt". Jest wymagana do logiki rezerwacji.', 403);
     }
 
     await prisma.hall.update({

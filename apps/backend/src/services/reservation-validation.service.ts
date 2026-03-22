@@ -5,6 +5,7 @@
  * allowWithWholeVenue — Strzecha Tyl/Przod/Gora coexist with whole venue
  */
 import { prisma } from '@/lib/prisma';
+import { AppError } from '../utils/AppError';
 import { RESERVATION } from '../i18n/pl';
 import { ReservationStatus } from '../types/reservation.types';
 
@@ -40,7 +41,7 @@ export async function validateCapacityForTimeRange(
 
   // Case 1: Hall does NOT allow multiple bookings → any overlap is a block
   if (!hall.allowMultipleBookings) {
-    throw new Error(RESERVATION.MULTIPLE_BOOKINGS_DISABLED);
+    throw new AppError(RESERVATION.MULTIPLE_BOOKINGS_DISABLED, 409);
   }
 
   // Case 2: Hall allows multiple bookings → check aggregate capacity
@@ -48,7 +49,7 @@ export async function validateCapacityForTimeRange(
   const availableCapacity = Math.max(0, hall.capacity - occupiedCapacity);
 
   if (newGuests > availableCapacity) {
-    throw new Error(RESERVATION.CAPACITY_EXCEEDED(newGuests, availableCapacity, hall.capacity));
+    throw new AppError(RESERVATION.CAPACITY_EXCEEDED(newGuests, availableCapacity, hall.capacity), 409);
   }
 }
 
@@ -90,7 +91,7 @@ export async function checkWholeVenueConflict(
     if (conflict) {
       const clientName = conflict.client ? `${conflict.client.firstName} ${conflict.client.lastName}` : 'nieznany klient';
       const hallName = (conflict as any).hall?.name || 'inna sala';
-      throw new Error(`Nie można zarezerwować całego obiektu — sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`);
+      throw new AppError(`Nie można zarezerwować całego obiektu — sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`, 409);
     }
   } else {
     if (hall.allowWithWholeVenue) return;
@@ -108,7 +109,7 @@ export async function checkWholeVenueConflict(
 
     if (conflict) {
       const clientName = conflict.client ? `${conflict.client.firstName} ${conflict.client.lastName}` : 'nieznany klient';
-      throw new Error(`Nie można zarezerwować tej sali — cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`);
+      throw new AppError(`Nie można zarezerwować tej sali — cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`, 409);
     }
   }
 }

@@ -87,7 +87,7 @@ function calculateExtrasTotalPrice(
 export class ReservationService {
   async createReservation(data: CreateReservationDTO, userId: string): Promise<any> {
     if (!data.hallId || !data.clientId || !data.eventTypeId) {
-      throw new Error(RESERVATION.HALL_CLIENT_EVENT_REQUIRED);
+      throw new AppError(RESERVATION.HALL_CLIENT_EVENT_REQUIRED, 400);
     }
     await this.validateUserId(userId);
 
@@ -95,35 +95,35 @@ export class ReservationService {
     const hasLegacyFormat = data.date && data.startTime && data.endTime;
 
     if (!hasNewFormat && !hasLegacyFormat) {
-      throw new Error(RESERVATION.DATE_FORMAT_REQUIRED);
+      throw new AppError(RESERVATION.DATE_FORMAT_REQUIRED, 400);
     }
 
     const hall = await prisma.hall.findUnique({ where: { id: data.hallId } });
-    if (!hall) throw new Error(HALL.NOT_FOUND);
-    if (!hall.isActive) throw new Error(HALL.NOT_ACTIVE);
+    if (!hall) throw new AppError(HALL.NOT_FOUND, 404);
+    if (!hall.isActive) throw new AppError(HALL.NOT_ACTIVE, 400);
 
     const client = await prisma.client.findUnique({ where: { id: data.clientId } });
-    if (!client) throw new Error(CLIENT.NOT_FOUND);
+    if (!client) throw new AppError(CLIENT.NOT_FOUND, 404);
 
     const eventType = await prisma.eventType.findUnique({ where: { id: data.eventTypeId } });
-    if (!eventType) throw new Error(EVENT_TYPE.NOT_FOUND);
+    if (!eventType) throw new AppError(EVENT_TYPE.NOT_FOUND, 404);
 
     const customValidation = validateCustomEventFields(eventType.name, data);
-    if (!customValidation.valid) throw new Error(customValidation.error);
+    if (!customValidation.valid) throw new AppError(customValidation.error!, 400);
 
     let adults = data.adults ?? 0;
     let children = data.children ?? 0;
     let toddlers = data.toddlers ?? 0;
 
     if (adults === 0 && children === 0 && toddlers === 0) {
-      throw new Error(RESERVATION.GUESTS_REQUIRED);
+      throw new AppError(RESERVATION.GUESTS_REQUIRED, 400);
     }
 
     const guests = calculateTotalGuests(adults, children, toddlers);
 
     // #165: Single-reservation capacity check (guests alone exceed hall capacity)
     if (guests > hall.capacity) {
-      throw new Error(RESERVATION.GUESTS_EXCEED_CAPACITY(guests, hall.capacity));
+      throw new AppError(RESERVATION.GUESTS_EXCEED_CAPACITY(guests, hall.capacity), 400);
     }
 
     let pricePerAdult: number;
@@ -138,13 +138,13 @@ export class ReservationService {
         where: { id: data.menuPackageId },
         include: { menuTemplate: true },
       });
-      if (!menuPackage) throw new Error(MENU.PACKAGE_NOT_FOUND);
+      if (!menuPackage) throw new AppError(MENU.PACKAGE_NOT_FOUND, 404);
 
       if (menuPackage.minGuests && guests < menuPackage.minGuests) {
-        throw new Error(MENU.MIN_GUESTS(menuPackage.minGuests));
+        throw new AppError(MENU.MIN_GUESTS(menuPackage.minGuests), 400);
       }
       if (menuPackage.maxGuests && guests > menuPackage.maxGuests) {
-        throw new Error(MENU.MAX_GUESTS(menuPackage.maxGuests));
+        throw new AppError(MENU.MAX_GUESTS(menuPackage.maxGuests), 400);
       }
 
       pricePerAdult = Number(menuPackage.pricePerAdult);
@@ -152,7 +152,7 @@ export class ReservationService {
       pricePerToddler = Number(menuPackage.pricePerToddler);
     } else {
       if (data.pricePerAdult === undefined || data.pricePerChild === undefined) {
-        throw new Error(RESERVATION.PRICE_REQUIRED);
+        throw new AppError(RESERVATION.PRICE_REQUIRED, 400);
       }
       pricePerAdult = data.pricePerAdult;
       pricePerChild = data.pricePerChild;
@@ -190,12 +190,12 @@ export class ReservationService {
       priceBeforeDiscountVal = totalWithSurcharge;
 
       if (data.discountType === 'PERCENTAGE') {
-        if (data.discountValue > 100) throw new Error('Rabat procentowy nie może przekroczyć 100%');
+        if (data.discountValue > 100) throw new AppError('Rabat procentowy nie może przekroczyć 100%', 400);
         discountAmountVal = Math.round((totalWithSurcharge * data.discountValue) / 100 * 100) / 100;
       } else {
         discountAmountVal = data.discountValue;
         if (discountAmountVal > totalWithSurcharge) {
-          throw new Error(`Rabat kwotowy (${discountAmountVal} PLN) nie może przekroczyć ceny (${totalWithSurcharge} PLN)`);
+          throw new AppError(`Rabat kwotowy (${discountAmountVal} PLN) nie może przekroczyć ceny (${totalWithSurcharge} PLN)`, 400);
         }
       }
       finalTotalPrice = Math.round((totalWithSurcharge - discountAmountVal) * 100) / 100;
@@ -206,8 +206,8 @@ export class ReservationService {
     if (hasNewFormat && data.startDateTime && data.endDateTime) {
       const startDT = new Date(data.startDateTime);
       const endDT = new Date(data.endDateTime);
-      if (startDT < new Date()) throw new Error(RESERVATION.DATE_IN_FUTURE);
-      if (startDT >= endDT) throw new Error(RESERVATION.END_AFTER_START);
+      if (startDT < new Date()) throw new AppError(RESERVATION.DATE_IN_FUTURE, 400);
+      if (startDT >= endDT) throw new AppError(RESERVATION.END_AFTER_START, 400);
 
       // #165: Capacity-based overlap check instead of binary block
       await validateCapacityForTimeRange(hall, startDT, endDT, guests);
@@ -223,8 +223,8 @@ export class ReservationService {
       const reservationDate = new Date(data.date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      if (reservationDate < today) throw new Error(RESERVATION.DATE_IN_FUTURE);
-      if (data.startTime >= data.endTime) throw new Error(RESERVATION.END_AFTER_START);
+      if (reservationDate < today) throw new AppError(RESERVATION.DATE_IN_FUTURE, 400);
+      if (data.startTime >= data.endTime) throw new AppError(RESERVATION.END_AFTER_START, 400);
 
       // #165: Capacity-based overlap check for legacy format
       const startDT = new Date(`${data.date}T${data.startTime}:00`);
@@ -242,7 +242,7 @@ export class ReservationService {
       const deadline = new Date(data.confirmationDeadline);
       const eventStart = new Date(data.startDateTime);
       if (!validateConfirmationDeadline(deadline, eventStart)) {
-        throw new Error(RESERVATION.CONFIRMATION_DEADLINE);
+        throw new AppError(RESERVATION.CONFIRMATION_DEADLINE, 400);
       }
     }
 
@@ -415,7 +415,7 @@ export class ReservationService {
       include: { menuSnapshot: true, client: true, hall: true },
     });
 
-    if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
+    if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
 
     // #144: Also block menu updates for ARCHIVED reservations
     if (
@@ -423,7 +423,7 @@ export class ReservationService {
       reservation.status === ReservationStatus.CANCELLED ||
       reservation.status === ReservationStatus.ARCHIVED
     ) {
-      throw new Error(MENU.CANNOT_UPDATE_MENU);
+      throw new AppError(MENU.CANNOT_UPDATE_MENU, 409);
     }
 
     const clientName = reservation.client ? `${(reservation.client as any).firstName} ${(reservation.client as any).lastName}` : 'N/A';
@@ -461,13 +461,13 @@ export class ReservationService {
         where: { id: data.menuPackageId },
         include: { menuTemplate: true },
       });
-      if (!menuPackage) throw new Error(MENU.PACKAGE_NOT_FOUND);
+      if (!menuPackage) throw new AppError(MENU.PACKAGE_NOT_FOUND, 404);
 
       if (menuPackage.minGuests && guests < menuPackage.minGuests) {
-        throw new Error(MENU.MIN_GUESTS(menuPackage.minGuests));
+        throw new AppError(MENU.MIN_GUESTS(menuPackage.minGuests), 400);
       }
       if (menuPackage.maxGuests && guests > menuPackage.maxGuests) {
-        throw new Error(MENU.MAX_GUESTS(menuPackage.maxGuests));
+        throw new AppError(MENU.MAX_GUESTS(menuPackage.maxGuests), 400);
       }
 
       const selectedOptions: any[] = [];
@@ -534,7 +534,7 @@ export class ReservationService {
       return { message: MENU.MENU_UPDATED, totalPrice: newTotalPrice };
     }
 
-    throw new Error(MENU.INVALID_MENU_DATA);
+    throw new AppError(MENU.INVALID_MENU_DATA, 400);
   }
 
   async getReservations(filters?: ReservationFilters): Promise<ReservationResponse[]> {
@@ -637,7 +637,7 @@ export class ReservationService {
       },
     });
 
-    if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
+    if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
 
     // Enrich with computed extrasTotalPrice
     const extras = (reservation as any).extras || [];
@@ -664,7 +664,7 @@ export class ReservationService {
       where: { id },
       include: { hall: true, eventType: true, menuSnapshot: true, client: true },
     });
-    if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
+    if (!existingReservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
 
     // ══ Etap 5: Notatka wewnętrzna — edytowalna niezależnie od statusu rezerwacji ══
     const isOnlyInternalNotes = data.internalNotes !== undefined && Object.keys(data).every((k) => k === 'internalNotes');
@@ -691,9 +691,9 @@ export class ReservationService {
       return await this.getReservationById(id);
     }
 
-    if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(RESERVATION.CANNOT_UPDATE_COMPLETED);
-    if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(RESERVATION.CANNOT_UPDATE_CANCELLED);
-    if (existingReservation.status === ReservationStatus.ARCHIVED) throw new Error(RESERVATION.CANNOT_UPDATE_ARCHIVED);
+    if (existingReservation.status === ReservationStatus.COMPLETED) throw new AppError(RESERVATION.CANNOT_UPDATE_COMPLETED, 409);
+    if (existingReservation.status === ReservationStatus.CANCELLED) throw new AppError(RESERVATION.CANNOT_UPDATE_CANCELLED, 409);
+    if (existingReservation.status === ReservationStatus.ARCHIVED) throw new AppError(RESERVATION.CANNOT_UPDATE_ARCHIVED, 409);
 
     // #176: eventTypeId is immutable after creation — silently ignore if sent
     // Changing eventType would invalidate menu (scoped per eventType), orphan custom fields,
@@ -725,13 +725,13 @@ export class ReservationService {
     const detectedChanges = detectReservationChanges(existingReservation, data);
     if (detectedChanges.length > 0) {
       if (!data.reason || data.reason.length < 10) {
-        throw new Error(RESERVATION.REASON_REQUIRED);
+        throw new AppError(RESERVATION.REASON_REQUIRED, 400);
       }
     }
 
     if (existingReservation.eventType) {
       const customValidation = validateCustomEventFields(existingReservation.eventType.name, data);
-      if (!customValidation.valid) throw new Error(customValidation.error);
+      if (!customValidation.valid) throw new AppError(customValidation.error!, 400);
     }
 
     const updateData: any = {};
@@ -741,15 +741,15 @@ export class ReservationService {
     const hallChanged = data.hallId !== undefined && data.hallId !== existingReservation.hallId;
     if (hallChanged) {
       const newHall = await prisma.hall.findUnique({ where: { id: data.hallId! } });
-      if (!newHall) throw new Error(HALL.NOT_FOUND);
-      if (!newHall.isActive) throw new Error(HALL.NOT_ACTIVE);
+      if (!newHall) throw new AppError(HALL.NOT_FOUND, 404);
+      if (!newHall.isActive) throw new AppError(HALL.NOT_ACTIVE, 400);
       effectiveHall = newHall as any;
       updateData.hallId = data.hallId;
     }
 
     if (data.startDateTime) {
       const newStart = new Date(data.startDateTime);
-      if (newStart < new Date()) throw new Error(RESERVATION.DATE_IN_FUTURE);
+      if (newStart < new Date()) throw new AppError(RESERVATION.DATE_IN_FUTURE, 400);
       updateData.startDateTime = newStart;
     }
     if (data.endDateTime) updateData.endDateTime = new Date(data.endDateTime);
@@ -758,7 +758,7 @@ export class ReservationService {
     const finalStart = data.startDateTime ? new Date(data.startDateTime) : existingReservation.startDateTime;
     const finalEnd = data.endDateTime ? new Date(data.endDateTime) : existingReservation.endDateTime;
 
-    if (finalStart && finalEnd && finalStart >= finalEnd) throw new Error(RESERVATION.END_AFTER_START);
+    if (finalStart && finalEnd && finalStart >= finalEnd) throw new AppError(RESERVATION.END_AFTER_START, 400);
 
     if (data.adults !== undefined) updateData.adults = data.adults;
     if (data.children !== undefined) updateData.children = data.children;
@@ -782,7 +782,7 @@ export class ReservationService {
 
     // Single-reservation capacity guard (guests alone exceed hall.capacity)
     if (effectiveHall && finalGuests > (effectiveHall as any).capacity) {
-      throw new Error(RESERVATION.GUESTS_EXCEED_CAPACITY(finalGuests, (effectiveHall as any).capacity));
+      throw new AppError(RESERVATION.GUESTS_EXCEED_CAPACITY(finalGuests, (effectiveHall as any).capacity), 400);
     }
 
     const hasMenuSnapshot = !!existingReservation.menuSnapshot;
@@ -867,7 +867,7 @@ export class ReservationService {
       const deadline = new Date(data.confirmationDeadline);
       const eventStart = finalStart || (data.startDateTime ? new Date(data.startDateTime) : null);
       if (eventStart && !validateConfirmationDeadline(deadline, eventStart)) {
-        throw new Error(RESERVATION.CONFIRMATION_DEADLINE);
+        throw new AppError(RESERVATION.CONFIRMATION_DEADLINE, 400);
       }
       updateData.confirmationDeadline = deadline;
     }

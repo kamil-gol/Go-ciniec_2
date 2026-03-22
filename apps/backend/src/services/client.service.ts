@@ -16,6 +16,7 @@ import {
   ClientContactResponse,
 } from '../types/client.types';
 import { logChange, diffObjects } from '../utils/audit-logger';
+import { AppError } from '../utils/AppError';
 import { CLIENT } from '../i18n/pl';
 
 /** Statusy rezerwacji blokujące usunięcie klienta */
@@ -38,28 +39,28 @@ export class ClientService {
 
     // ── Shared validation ──
     if (data.email && !this.isValidEmail(data.email)) {
-      throw new Error(CLIENT.INVALID_EMAIL);
+      throw new AppError(CLIENT.INVALID_EMAIL, 400);
     }
 
     if (!data.phone) {
-      throw new Error(CLIENT.PHONE_REQUIRED);
+      throw new AppError(CLIENT.PHONE_REQUIRED, 400);
     }
 
     const phoneDigits = data.phone.replace(/\D/g, '');
     if (phoneDigits.length < 9) {
-      throw new Error(CLIENT.PHONE_MIN_DIGITS);
+      throw new AppError(CLIENT.PHONE_MIN_DIGITS, 400);
     }
 
     // ── Company-specific validation ──
     if (clientType === 'COMPANY') {
       if (!data.companyName || data.companyName.trim() === '') {
-        throw new Error(CLIENT.COMPANY_NAME_REQUIRED);
+        throw new AppError(CLIENT.COMPANY_NAME_REQUIRED, 400);
       }
       if (!data.nip || data.nip.trim() === '') {
-        throw new Error(CLIENT.NIP_REQUIRED);
+        throw new AppError(CLIENT.NIP_REQUIRED, 400);
       }
       if (!this.isValidNip(data.nip)) {
-        throw new Error(CLIENT.NIP_INVALID);
+        throw new AppError(CLIENT.NIP_INVALID, 400);
       }
 
       // Check NIP uniqueness
@@ -67,7 +68,7 @@ export class ClientService {
         where: { nip: data.nip.replace(/\D/g, ''), isDeleted: false },
       });
       if (existingByNip) {
-        throw new Error(CLIENT.NIP_DUPLICATE(data.nip));
+        throw new AppError(CLIENT.NIP_DUPLICATE(data.nip), 409);
       }
     }
 
@@ -82,7 +83,7 @@ export class ClientService {
         },
       });
       if (existingClient) {
-        throw new Error(`Klient ${data.firstName} ${data.lastName} z numerem ${data.phone} już istnieje`);
+        throw new AppError(`Klient ${data.firstName} ${data.lastName} z numerem ${data.phone} już istnieje`, 409);
       }
     }
 
@@ -232,7 +233,7 @@ export class ClientService {
     });
 
     if (!client) {
-      throw new Error(CLIENT.NOT_FOUND);
+      throw new AppError(CLIENT.NOT_FOUND, 404);
     }
 
     return client as any;
@@ -242,22 +243,22 @@ export class ClientService {
     const existingClient = await prisma.client.findUnique({ where: { id } });
 
     if (!existingClient) {
-      throw new Error(CLIENT.NOT_FOUND);
+      throw new AppError(CLIENT.NOT_FOUND, 404);
     }
 
     if (existingClient.isDeleted) {
-      throw new Error(CLIENT.ALREADY_DELETED);
+      throw new AppError(CLIENT.ALREADY_DELETED, 409);
     }
 
     if (data.email && !this.isValidEmail(data.email)) {
-      throw new Error(CLIENT.INVALID_EMAIL);
+      throw new AppError(CLIENT.INVALID_EMAIL, 400);
     }
 
     // Phone validation
     if (data.phone) {
       const phoneDigits = data.phone.replace(/\D/g, '');
       if (phoneDigits.length < 9) {
-        throw new Error(CLIENT.PHONE_MIN_DIGITS);
+        throw new AppError(CLIENT.PHONE_MIN_DIGITS, 400);
       }
 
       // Duplicate check for INDIVIDUAL
@@ -276,7 +277,7 @@ export class ClientService {
         });
 
         if (clientWithSameDetails) {
-          throw new Error(`Klient ${firstName} ${lastName} z numerem ${data.phone} już istnieje`);
+          throw new AppError(`Klient ${firstName} ${lastName} z numerem ${data.phone} już istnieje`, 409);
         }
       }
     }
@@ -286,14 +287,14 @@ export class ClientService {
     if (effectiveType === 'COMPANY') {
       if (data.nip) {
         if (!this.isValidNip(data.nip)) {
-          throw new Error(CLIENT.NIP_INVALID);
+          throw new AppError(CLIENT.NIP_INVALID, 400);
         }
         const nipClean = data.nip.replace(/\D/g, '');
         const existingByNip = await prisma.client.findFirst({
           where: { nip: nipClean, id: { not: id }, isDeleted: false },
         });
         if (existingByNip) {
-          throw new Error(CLIENT.NIP_DUPLICATE(data.nip));
+          throw new AppError(CLIENT.NIP_DUPLICATE(data.nip), 409);
         }
       }
     }
@@ -351,11 +352,11 @@ export class ClientService {
     });
 
     if (!existingClient) {
-      throw new Error(CLIENT.NOT_FOUND);
+      throw new AppError(CLIENT.NOT_FOUND, 404);
     }
 
     if (existingClient.isDeleted) {
-      throw new Error(CLIENT.ALREADY_DELETED);
+      throw new AppError(CLIENT.ALREADY_DELETED, 409);
     }
 
     const activeReservationCount = await prisma.reservation.count({
@@ -366,7 +367,7 @@ export class ClientService {
     });
 
     if (activeReservationCount > 0) {
-      throw new Error(CLIENT.CANNOT_DELETE_WITH_ACTIVE_RESERVATIONS(activeReservationCount));
+      throw new AppError(CLIENT.CANNOT_DELETE_WITH_ACTIVE_RESERVATIONS(activeReservationCount), 409);
     }
 
     await prisma.$transaction(async (tx) => {
@@ -431,7 +432,7 @@ export class ClientService {
   }> {
     const client = await prisma.client.findUnique({ where: { id } });
     if (!client) {
-      throw new Error(CLIENT.NOT_FOUND);
+      throw new AppError(CLIENT.NOT_FOUND, 404);
     }
 
     const [active, completed, cancelled, archived] = await Promise.all([
@@ -465,9 +466,9 @@ export class ClientService {
   async addContact(clientId: string, data: CreateClientContactDTO, userId: string): Promise<ClientContactResponse> {
     const client = await prisma.client.findUnique({ where: { id: clientId } });
 
-    if (!client) throw new Error(CLIENT.NOT_FOUND);
-    if (client.clientType !== 'COMPANY') throw new Error(CLIENT.CONTACT_ONLY_FOR_COMPANY);
-    if (!data.firstName || !data.lastName) throw new Error(CLIENT.CONTACT_NAME_REQUIRED);
+    if (!client) throw new AppError(CLIENT.NOT_FOUND, 404);
+    if (client.clientType !== 'COMPANY') throw new AppError(CLIENT.CONTACT_ONLY_FOR_COMPANY, 400);
+    if (!data.firstName || !data.lastName) throw new AppError(CLIENT.CONTACT_NAME_REQUIRED, 400);
 
     // If new contact is primary, unset other primaries
     if (data.isPrimary) {
@@ -508,7 +509,7 @@ export class ClientService {
       where: { id: contactId, clientId },
     });
 
-    if (!contact) throw new Error(CLIENT.CONTACT_NOT_FOUND);
+    if (!contact) throw new AppError(CLIENT.CONTACT_NOT_FOUND, 404);
 
     // If setting as primary, unset others
     if (data.isPrimary) {
@@ -554,7 +555,7 @@ export class ClientService {
       include: { client: { select: { companyName: true } } },
     });
 
-    if (!contact) throw new Error(CLIENT.CONTACT_NOT_FOUND);
+    if (!contact) throw new AppError(CLIENT.CONTACT_NOT_FOUND, 404);
 
     await prisma.clientContact.delete({ where: { id: contactId } });
 

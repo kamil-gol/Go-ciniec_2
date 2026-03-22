@@ -13,6 +13,7 @@
 
 import { Prisma } from '@/prisma-client';
 import { prisma } from '@/lib/prisma';
+import { AppError } from '../utils/AppError';
 import { logChange } from '../utils/audit-logger';
 import { RESERVATION, MENU, MENU_SELECTION } from '../i18n/pl';
 import {
@@ -29,7 +30,7 @@ class ReservationMenuService {
       where: { id: reservationId },
       include: { eventType: true, client: true }
     });
-    if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
+    if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
 
     const adults = input.adults ?? reservation.adults;
     const children = input.children ?? reservation.children;
@@ -46,7 +47,7 @@ class ReservationMenuService {
         }
       }
     });
-    if (!menuPackage) throw new Error(MENU.PACKAGE_NOT_FOUND);
+    if (!menuPackage) throw new AppError(MENU.PACKAGE_NOT_FOUND, 404);
 
     if (input.dishSelections && input.dishSelections.length > 0) {
       await this.validateDishSelections(input.dishSelections, menuPackage.categorySettings);
@@ -220,7 +221,7 @@ class ReservationMenuService {
 
   async getReservationMenu(reservationId: string): Promise<any> {
     const snapshot = await prisma.reservationMenuSnapshot.findUnique({ where: { reservationId } });
-    if (!snapshot) throw new Error(MENU_SELECTION.NOT_SELECTED);
+    if (!snapshot) throw new AppError(MENU_SELECTION.NOT_SELECTED, 404);
     return this.formatMenuResponse(snapshot, snapshot.adultsCount, snapshot.childrenCount, snapshot.toddlersCount);
   }
 
@@ -273,7 +274,7 @@ class ReservationMenuService {
         errors.push(MENU_SELECTION.CATEGORY_MAX(categorySetting.category.name, maxSelect, totalQuantity));
       }
     }
-    if (errors.length > 0) throw new Error(`${MENU_SELECTION.VALIDATION_FAILED}: ${errors.join('; ')}`);
+    if (errors.length > 0) throw new AppError(`${MENU_SELECTION.VALIDATION_FAILED}: ${errors.join('; ')}`, 400);
   }
 
   /**
