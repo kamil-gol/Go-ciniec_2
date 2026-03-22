@@ -7,7 +7,7 @@
 # ============================================
 
 # === Stage: base ===
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json* ./
@@ -32,7 +32,7 @@ ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
 RUN npm run build
 
 # === Stage: prod ===
-FROM node:20-alpine AS prod
+FROM node:22-alpine AS prod
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 

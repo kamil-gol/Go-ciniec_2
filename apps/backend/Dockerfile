@@ -7,7 +7,7 @@
 # ============================================
 
 # === Stage: base ===
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 WORKDIR /app
 
 # System dependencies (OpenSSL for Prisma, fonts for PDF)
@@ -34,7 +34,7 @@ RUN npx prisma generate
 RUN npx tsc --skipLibCheck --noEmitOnError false || true
 
 # === Stage: prod ===
-FROM node:20-slim AS prod
+FROM node:22-slim AS prod
 WORKDIR /app
 
 RUN apt-get update && \
