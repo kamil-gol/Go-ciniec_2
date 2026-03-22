@@ -194,6 +194,17 @@ export const moduleAccents: Record<string, ModuleAccent> = {
     badge: 'bg-cyan-100 dark:bg-cyan-900/30',
     badgeText: 'text-cyan-700 dark:text-cyan-300',
   },
+  notifications: {
+    name: 'Powiadomienia',
+    gradient: 'from-yellow-600 via-yellow-500 to-amber-600',
+    gradientSubtle: 'from-yellow-500/5 via-amber-500/5 to-yellow-500/5',
+    iconBg: 'from-yellow-500 to-amber-500',
+    text: 'text-yellow-600',
+    textDark: 'dark:text-yellow-400',
+    ring: 'ring-yellow-500/20',
+    badge: 'bg-yellow-100 dark:bg-yellow-900/30',
+    badgeText: 'text-yellow-700 dark:text-yellow-300',
+  },
 } as const
 
 /**
