@@ -50,7 +50,7 @@
     "zod": "^3.22.4"
   },
   "overrides": {
-    "glob": "^11.0.0"
+    "glob": "^13.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
