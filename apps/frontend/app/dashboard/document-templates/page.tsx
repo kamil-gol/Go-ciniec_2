@@ -12,7 +12,6 @@ import {
   Loader2,
   Tag,
   Search,
-  Filter,
   UtensilsCrossed,
   Layers,
   BookOpen,
@@ -56,6 +55,7 @@ import {
   LoadingState,
   EmptyState,
 } from '@/components/shared';
+import { FilterTabs } from '@/components/shared/FilterTabs';
 import { moduleAccents } from '@/lib/design-tokens';
 import {
   TEMPLATE_CATEGORY_LABELS,
@@ -347,29 +347,15 @@ export default function DocumentTemplatesPage() {
             </div>
 
             {/* Row 2: Filter tabs */}
-            <div className="flex items-center gap-1 bg-white dark:bg-neutral-800 rounded-lg p-1 shadow-sm flex-wrap">
-              <Filter className="h-4 w-4 text-neutral-400 ml-2 flex-shrink-0" />
-              {filterButtons.map((btn) => {
-                const Icon = btn.icon;
-                return (
-                  <button
-                    key={btn.value}
-                    onClick={() => setActiveFilter(btn.value)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                      activeFilter === btn.value
-                        ? 'bg-cyan-100 text-cyan-700 shadow-sm dark:bg-cyan-900/30 dark:text-cyan-300'
-                        : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
-                    }`}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {btn.label}
-                    {btn.count > 0 && (
-                      <span className="ml-0.5 text-[10px] opacity-70">({btn.count})</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <FilterTabs
+              tabs={filterButtons.map((btn) => ({
+                key: btn.value,
+                label: btn.label,
+                count: btn.count,
+              }))}
+              activeKey={activeFilter}
+              onChange={(key) => setActiveFilter(key as FilterValue)}
+            />
           </div>
         </CardHeader>
 

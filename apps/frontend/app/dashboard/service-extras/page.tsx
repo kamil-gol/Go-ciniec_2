@@ -11,7 +11,6 @@ import {
   EyeOff,
   TrendingUp,
   Sparkles,
-  Filter,
 } from 'lucide-react';
 import { useServiceCategories } from '@/hooks/use-service-extras';
 import { ServiceCategoryList } from '@/components/service-extras/ServiceCategoryList';
@@ -33,6 +32,7 @@ import {
   LoadingState,
   EmptyState,
 } from '@/components/shared';
+import { FilterTabs } from '@/components/shared/FilterTabs';
 import { moduleAccents } from '@/lib/design-tokens';
 import type { ServiceCategory, ServiceItem } from '@/types/service-extra.types';
 
@@ -202,30 +202,17 @@ export default function ServiceExtrasPage() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               {/* View mode tabs */}
-              <div className="flex items-center gap-1 bg-white dark:bg-neutral-800 rounded-lg p-1 shadow-sm overflow-x-auto">
-                <Filter className="h-4 w-4 text-neutral-400 ml-2 flex-shrink-0" />
-                {viewButtons.map((btn) => {
-                  const Icon = btn.icon;
-                  return (
-                    <button
-                      key={btn.value}
-                      onClick={() => setViewMode(btn.value)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                        viewMode === btn.value
-                          ? 'bg-purple-100 text-purple-700 shadow-sm dark:bg-purple-900/30 dark:text-purple-300'
-                          : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
-                      }`}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      {btn.label}
-                      {btn.count > 0 && (
-                        <span className="ml-0.5 text-[10px] opacity-70">({btn.count})</span>
-                      )}
-                    </button>
-                  );
-                })}
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <FilterTabs
+                  tabs={viewButtons.map((btn) => ({
+                    key: btn.value,
+                    label: btn.label,
+                    count: btn.count,
+                  }))}
+                  activeKey={viewMode}
+                  onChange={(key) => setViewMode(key as ViewMode)}
+                />
                 {/* Active/All toggle */}
-                <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700 mx-1" />
                 <button
                   onClick={() => setShowInactive(!showInactive)}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${

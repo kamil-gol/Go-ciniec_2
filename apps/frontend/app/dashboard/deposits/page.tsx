@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Search,
   Sparkles,
-  Filter,
   TrendingUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -20,6 +19,7 @@ import { CreateDepositForm } from '@/components/deposits/create-deposit-form'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, DepositStats, DepositStatus } from '@/lib/api/deposits'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
+import { FilterTabs } from '@/components/shared/FilterTabs'
 import { moduleAccents } from '@/lib/design-tokens'
 import { toast } from 'sonner'
 
@@ -184,25 +184,15 @@ export default function DepositsPage() {
               <CardTitle>Lista Zaliczek</CardTitle>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex items-center gap-1 bg-white dark:bg-neutral-800 rounded-lg p-1 shadow-sm overflow-x-auto">
-                <Filter className="h-4 w-4 text-neutral-400 ml-2 flex-shrink-0" />
-                {filterButtons.map((btn) => (
-                  <button
-                    key={btn.value}
-                    onClick={() => setStatusFilter(btn.value)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
-                      statusFilter === btn.value
-                        ? 'bg-rose-100 text-rose-700 shadow-sm dark:bg-rose-900/30 dark:text-rose-300'
-                        : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
-                    }`}
-                  >
-                    {btn.label}
-                    {btn.count !== undefined && btn.count > 0 && (
-                      <span className="ml-1 text-[10px] opacity-70">({btn.count})</span>
-                    )}
-                  </button>
-                ))}
-              </div>
+              <FilterTabs
+                tabs={filterButtons.map((btn) => ({
+                  key: btn.value,
+                  label: btn.label,
+                  count: btn.count,
+                }))}
+                activeKey={statusFilter}
+                onChange={(key) => setStatusFilter(key as FilterStatus)}
+              />
               <div className="relative w-full sm:w-64 min-w-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                 <Input
