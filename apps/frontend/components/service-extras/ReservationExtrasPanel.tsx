@@ -40,10 +40,10 @@ import {
   useUpdateReservationExtra,
 } from '@/hooks/use-service-extras';
 import type {
-import { toast } from 'sonner'
   ReservationExtra,
   ExtraStatus,
 } from '@/types/service-extra.types';
+import { toast } from 'sonner'
 
 const STATUS_CONFIG: Record<
   ExtraStatus,

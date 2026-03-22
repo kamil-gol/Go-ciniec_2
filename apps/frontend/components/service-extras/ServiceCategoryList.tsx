@@ -56,10 +56,10 @@ import {
   useReorderCategories,
 } from '@/hooks/use-service-extras';
 import type {
-import { toast } from 'sonner'
   ServiceCategory,
   ServiceItem,
 } from '@/types/service-extra.types';
+import { toast } from 'sonner'
 
 // Constants
 
