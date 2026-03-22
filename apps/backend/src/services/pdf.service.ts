@@ -2,344 +2,80 @@ import PDFDocument from 'pdfkit';
 import { Readable } from 'stream';
 import * as fs from 'fs';
 import companySettingsService from './company-settings.service';
-import documentTemplateService from './document-template.service';
 
-// ═══════════════ INTERFACES ═══════════════
+// ═══════════════ IMPORTS FROM EXTRACTED MODULES ═══════════════
 
-interface DishSelection {
-  dishId: string;
-  dishName: string;
-  quantity: number;
-  allergens?: string[];
-  description?: string;
-}
+import type {
+  CategorySelection,
+  MenuData,
+  MenuSnapshot,
+  ReservationExtraForPDF,
+  ReservationPDFData,
+  CategoryExtraForPDF,
+  PaymentConfirmationData,
+  RestaurantData,
+  MenuCardPDFData,
+  RevenueReportPDFData,
+  OccupancyReportPDFData,
+  PdfLayoutConfig,
+  CateringOrderItemForPDF,
+  CateringQuotePDFData,
+  CateringKitchenPrintData,
+  CateringInvoicePDFData,
+  CateringOrderPDFData,
+} from './pdf/pdf.types';
 
-interface CategorySelection {
-  categoryId: string;
-  categoryName: string;
-  dishes: DishSelection[];
-}
+import {
+  ALLERGEN_LABELS,
+  COLORS,
+  DEFAULT_COLORS,
+  setColors,
+  resetColors,
+  STATUS_MAP,
+  DELIVERY_TYPE_LABELS,
+  PAYMENT_METHOD_LABELS,
+} from './pdf/pdf.types';
 
-interface MenuData {
-  packageId?: string;
-  packageName?: string;
-  dishSelections?: CategorySelection[];
-  selectedOptions?: any[];
-}
+import {
+  formatDate,
+  formatTime,
+  formatCurrency,
+  translateDayOfWeek,
+  collectAllAllergens,
+  loadPdfConfig,
+  getRegularFont,
+  getBoldFont,
+} from './pdf/pdf.utils';
 
-interface MenuSnapshot {
-  id: string;
-  menuData: any;
-  packagePrice: number;
-  optionsPrice: number;
-  totalMenuPrice: number;
-  adultsCount: number;
-  childrenCount: number;
-  toddlersCount: number;
-  selectedAt: Date;
-}
+import type { PdfDrawContext } from './pdf/pdf.primitives';
+import {
+  drawHeaderBanner,
+  drawSectionHeader,
+  safePageBreak,
+  drawInfoBox,
+  calculateInfoBoxHeight,
+  drawSeparator,
+  drawInlineFooter,
+  drawCompactTable,
+  drawAllergenSection,
+  drawImportantInfoSection,
+} from './pdf/pdf.primitives';
 
-interface ReservationExtraForPDF {
-  serviceItem: {
-    name: string;
-    priceType: string;
-    category?: { name: string } | null;
-  };
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  priceType: string;
-  note?: string | null;
-  status: string;
-}
+// ═══════════════ RE-EXPORTS (preserve public API) ═══════════════
 
-export interface ReservationPDFData {
-  id: string;
-  client: {
-    firstName: string;
-    lastName: string;
-    email?: string;
-    phone: string;
-    address?: string;
-  };
-  hall?: {
-    name: string;
-  };
-  eventType?: {
-    name: string;
-    standardHours?: number | null;
-    extraHourRate?: number | null;
-  };
-  customEventType?: string;
-  date?: string;
-  startTime?: string;
-  endTime?: string;
-  startDateTime?: Date;
-  endDateTime?: Date;
-  adults: number;
-  children: number;
-  toddlers: number;
-  guests: number;
-  pricePerAdult: number;
-  pricePerChild: number;
-  pricePerToddler: number;
-  totalPrice: number;
-  extrasTotalPrice?: number;
-  extraHoursCost?: number | null;
-  // #137: Venue surcharge fields
-  venueSurcharge?: number | null;
-  venueSurchargeLabel?: string | null;
-  // #216: Discount fields
-  discountType?: string | null;
-  discountValue?: number | null;
-  discountAmount?: number | null;
-  priceBeforeDiscount?: number | null;
-  status: string;
-  notes?: string;
-  birthdayAge?: number;
-  anniversaryYear?: number;
-  anniversaryOccasion?: string;
-  deposit?: {
-    amount: number;
-    dueDate: string;
-    status: string;
-    paid: boolean;
-  };
-  deposits?: Array<{
-    amount: number;
-    dueDate: Date | string;
-    status: string;
-    paid: boolean;
-  }>;
-  menuData?: MenuData;
-  menuSnapshot?: MenuSnapshot;
-  reservationExtras?: ReservationExtraForPDF[];
-  // #216: Category extras (extra dishes beyond package limit)
-  categoryExtras?: CategoryExtraForPDF[];
-  createdAt: Date;
-}
-
-export interface CategoryExtraForPDF {
-  categoryName: string;
-  quantity: number;
-  pricePerItem: number;
-  guestCount: number;
-  portionTarget: string;
-  totalPrice: number;
-}
-
-export interface PaymentConfirmationData {
-  depositId: string;
-  amount: number;
-  paidAt: Date;
-  paymentMethod: string;
-  paymentReference?: string;
-  client: {
-    firstName: string;
-    lastName: string;
-    email?: string;
-    phone: string;
-    address?: string;
-  };
-  reservation: {
-    id: string;
-    date: string;
-    startTime: string;
-    endTime: string;
-    hall?: string;
-    eventType?: string;
-    guests: number;
-    totalPrice: number;
-  };
-}
-
-interface RestaurantData {
-  name: string;
-  address: string;
-  phone: string;
-  email: string;
-  website?: string;
-  nip?: string;
-}
-
-// ═══════════════ MENU CARD PDF TYPES ═══════════════
-
-interface MenuCardDish {
-  name: string;
-  description?: string | null;
-  allergens?: string[];
-}
-
-interface MenuCardCourse {
-  name: string;
-  description?: string | null;
-  icon?: string | null;
-  minSelect: number;
-  maxSelect: number;
-  dishes: MenuCardDish[];
-}
-
-interface MenuCardOption {
-  name: string;
-  description?: string | null;
-  category: string;
-  priceType: string;
-  priceAmount: number;
-  isRequired?: boolean;
-}
-
-interface MenuCardPackage {
-  name: string;
-  description?: string | null;
-  shortDescription?: string | null;
-  pricePerAdult: number;
-  pricePerChild: number;
-  pricePerToddler: number;
-  badgeText?: string | null;
-  includedItems?: string[];
-  courses: MenuCardCourse[];
-  options: MenuCardOption[];
-}
-
-export interface MenuCardPDFData {
-  templateName: string;
-  templateDescription?: string | null;
-  variant?: string | null;
-  eventTypeName: string;
-  eventTypeColor?: string | null;
-  packages: MenuCardPackage[];
-}
-
-// ═══════════════ REPORT PDF TYPES — Zadanie 4 ═══════════════
-
-export interface RevenueReportPDFData {
-  filters: { dateFrom: string; dateTo: string; groupBy?: string };
-  summary: {
-    totalRevenue: number;
-    avgRevenuePerReservation: number;
-    totalReservations: number;
-    completedReservations: number;
-    pendingRevenue: number;
-    growthPercent: number;
-    extrasRevenue?: number;
-    categoryExtrasRevenue?: number; // #216
-  };
-  breakdown: Array<{ period: string; revenue: number; count: number; avgRevenue: number }>;
-  byHall: Array<{ hallName: string; revenue: number; count: number; avgRevenue: number }>;
-  byEventType: Array<{ eventTypeName: string; revenue: number; count: number; avgRevenue: number }>;
-  byServiceItem?: Array<{ name: string; revenue: number; count: number; avgRevenue: number }>;
-  byCategoryExtra?: Array<{ categoryName: string; revenue: number; count: number; totalQuantity: number; avgRevenue: number }>; // #216
-}
-
-export interface OccupancyReportPDFData {
-  filters: { dateFrom: string; dateTo: string };
-  summary: {
-    avgOccupancy: number;
-    peakDay: string;
-    peakHall?: string;
-    totalReservations: number;
-    totalDaysInPeriod: number;
-  };
-  halls: Array<{ hallName: string; occupancy: number; reservations: number; avgGuestsPerReservation: number }>;
-  peakHours: Array<{ hour: number; count: number }>;
-  peakDaysOfWeek: Array<{ dayOfWeek: string; count: number }>;
-}
-
-// ═══════════════ CONSTANTS ═══════════════
-
-const ALLERGEN_LABELS: Record<string, string> = {
-  gluten: 'Gluten',
-  lactose: 'Laktoza',
-  eggs: 'Jajka',
-  nuts: 'Orzechy',
-  fish: 'Ryby',
-  soy: 'Soja',
-  shellfish: 'Skorupiaki',
-  peanuts: 'Orzeszki ziemne',
-};
-
-/** PDF layout config interfaces */
-interface PdfSectionConfig {
-  id: string;
-  enabled: boolean;
-  order: number;
-}
-
-interface PdfLayoutConfig {
-  colors?: Record<string, string>;
-  sections: PdfSectionConfig[];
-}
-
-/** Premium color palette (mutable — overridden per-render from DB config) */
-let COLORS = {
-  primary: '#1a2332',       // Dark navy — headers, banners
-  primaryLight: '#2c3e50',  // Lighter navy — section headers
-  accent: '#c8a45a',        // Gold accent — premium feel
-  success: '#27ae60',       // Green — paid, confirmed
-  warning: '#f39c12',       // Orange — pending
-  danger: '#e74c3c',        // Red — cancelled
-  info: '#3498db',          // Blue — reserved
-  textDark: '#1a2332',      // Body text
-  textMuted: '#7f8c8d',     // Secondary text
-  textLight: '#bdc3c7',     // Disabled text
-  border: '#dce1e8',        // Table borders, separators
-  bgLight: '#f4f6f9',       // Alternating rows, boxes
-  bgWhite: '#ffffff',       // Main background
-  allergen: '#e67e22',      // Allergen labels
-  purple: '#8e44ad',        // Optional extras
-};
-
-/** Snapshot of default colors for reset after each render */
-const DEFAULT_COLORS = { ...COLORS };
-
-/** Load PDF layout config from DB, returns null if not found */
-async function loadPdfConfig(slug: string): Promise<PdfLayoutConfig | null> {
-  try {
-    const template = await documentTemplateService.getBySlug(slug);
-    return JSON.parse(template.content) as PdfLayoutConfig;
-  } catch {
-    return null;
-  }
-}
-
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  RESERVED: { label: 'REZERWACJA', color: COLORS.info },
-  PENDING: { label: 'OCZEKUJĄCA', color: COLORS.warning },
-  CONFIRMED: { label: 'POTWIERDZONA', color: COLORS.success },
-  COMPLETED: { label: 'ZAKOŃCZONA', color: COLORS.textMuted },
-  CANCELLED: { label: 'ANULOWANA', color: COLORS.danger },
-  // Catering-specific statuses
-  DRAFT: { label: 'SZKIC', color: COLORS.textMuted },
-  INQUIRY: { label: 'ZAPYTANIE', color: COLORS.info },
-  QUOTED: { label: 'WYCENIONE', color: COLORS.warning },
-  IN_PREPARATION: { label: 'W PRZYGOTOWANIU', color: COLORS.info },
-  READY: { label: 'GOTOWE', color: COLORS.success },
-  DELIVERED: { label: 'DOSTARCZONE', color: COLORS.success },
-};
-
-const DELIVERY_TYPE_LABELS: Record<string, string> = {
-  PICKUP: 'Odbiór osobisty',
-  DELIVERY: 'Dostawa',
-  ON_SITE: 'Na miejscu',
-};
-
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  TRANSFER: 'Przelew bankowy',
-  CASH: 'Gotówka',
-  BLIK: 'BLIK',
-  CARD: 'Karta płatnicza',
-};
-
-/** Polish day-of-week translations (shared helper) */
-const DAY_OF_WEEK_PL: Record<string, string> = {
-  'Monday': 'Poniedziałek',
-  'Tuesday': 'Wtorek',
-  'Wednesday': 'Środa',
-  'Thursday': 'Czwartek',
-  'Friday': 'Piątek',
-  'Saturday': 'Sobota',
-  'Sunday': 'Niedziela',
-};
+export type {
+  ReservationPDFData,
+  CategoryExtraForPDF,
+  PaymentConfirmationData,
+  MenuCardPDFData,
+  RevenueReportPDFData,
+  OccupancyReportPDFData,
+  CateringOrderItemForPDF,
+  CateringQuotePDFData,
+  CateringKitchenPrintData,
+  CateringInvoicePDFData,
+  CateringOrderPDFData,
+} from './pdf/pdf.types';
 
 // ═══════════════ PDF SERVICE ═══════════════
 
@@ -425,435 +161,12 @@ export class PDFService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // ██  SHARED PREMIUM HELPERS
-  // ═══════════════════════════════════════════════════════════════
-
-  /**
-   * Premium header banner — navy background + gold accent + restaurant info.
-   * Optionally shows a status badge in the top-right corner.
-   * Used by: reservation, payment confirmation, menu card, reports.
-   */
-  private drawHeaderBanner(
-    doc: PDFKit.PDFDocument,
-    badgeLabel?: string,
-    badgeColor?: string
-  ): void {
-    const bannerHeight = 65;
-    const pageWidth = doc.page.width;
-
-    // Dark navy banner
-    doc.rect(0, 0, pageWidth, bannerHeight).fill(COLORS.primary);
-
-    // Gold accent line at bottom
-    doc.rect(0, bannerHeight - 3, pageWidth, 3).fill(COLORS.accent);
-
-    // Restaurant name
-    doc.fillColor('#ffffff').fontSize(18).font(this.getBoldFont());
-    doc.text(this.restaurantData.name, 40, 14, { width: pageWidth - 200 });
-
-    // Contact info
-    doc.fontSize(7).font(this.getRegularFont()).fillColor(COLORS.textLight);
-    const contactParts: string[] = [];
-    if (this.restaurantData.phone) contactParts.push(this.restaurantData.phone);
-    if (this.restaurantData.email) contactParts.push(this.restaurantData.email);
-    if (this.restaurantData.website) contactParts.push(this.restaurantData.website);
-    if (contactParts.length > 0) {
-      doc.text(contactParts.join('  |  '), 40, 38, { width: pageWidth - 200 });
-    }
-    if (this.restaurantData.nip) {
-      doc.text(`NIP: ${this.restaurantData.nip}`, 40, 50, { width: pageWidth - 200 });
-    }
-
-    // Status badge (top-right) — optional
-    if (badgeLabel) {
-      const color = badgeColor || COLORS.textMuted;
-      const badgeWidth = 120;
-      const badgeHeight = 22;
-      const badgeX = pageWidth - badgeWidth - 40;
-      const badgeY = 20;
-
-      doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 4).fill(color);
-      doc.fillColor('#ffffff').fontSize(9).font(this.getBoldFont());
-      doc.text(badgeLabel, badgeX, badgeY + 6, { width: badgeWidth, align: 'center' });
-    }
-  }
-
-  /**
-   * Premium section header — bold title.
-   */
-  private drawSectionHeader(
-    doc: PDFKit.PDFDocument,
-    title: string,
-    left: number,
-    pageWidth: number
-  ): void {
-    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
-    doc.text(title, left, doc.y);
-    doc.moveDown(0.3);
-  }
-
-  /**
-   * Safe page break — adds a new page if remaining space is less than minSpace.
-   * Returns the current Y position after potential page break.
-   */
-  private safePageBreak(doc: PDFKit.PDFDocument, minSpace: number = 100): number {
-    if (doc.y > doc.page.height - minSpace) {
-      doc.addPage();
-      doc.y = 50;
-    }
-    return doc.y;
-  }
-
-  /**
-   * Info box with title, accent bar, and content lines.
-   */
-  private drawInfoBox(
-    doc: PDFKit.PDFDocument,
-    title: string,
-    x: number,
-    y: number,
-    width: number,
-    lines: string[]
-  ): void {
-    const boxHeight = this.calculateInfoBoxHeight(lines.length);
-
-    doc.rect(x, y, width, boxHeight).fill(COLORS.bgLight);
-    doc.rect(x, y, 3, boxHeight).fill(COLORS.accent);
-
-    doc.fillColor(COLORS.textMuted).fontSize(7).font(this.getBoldFont());
-    doc.text(title, x + 12, y + 8, { width: width - 20 });
-
-    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textDark);
-    let lineY = y + 22;
-    lines.forEach((line, i) => {
-      if (i === 0) {
-        doc.font(this.getBoldFont()).fontSize(10);
-      } else {
-        doc.font(this.getRegularFont()).fontSize(8);
-      }
-      doc.text(line, x + 12, lineY, { width: width - 20 });
-      lineY += i === 0 ? 15 : 12;
-    });
-  }
-
-  private calculateInfoBoxHeight(lineCount: number): number {
-    return Math.max(60, 28 + lineCount * 13);
-  }
-
-  /**
-   * Thin horizontal separator line.
-   */
-  private drawSeparator(doc: PDFKit.PDFDocument, left: number, width: number): void {
-    const y = doc.y;
-    doc.strokeColor(COLORS.border).lineWidth(0.5)
-       .moveTo(left, y).lineTo(left + width, y).stroke();
-  }
-
-  /**
-   * Inline footer — sits in the flow (no absolute positioning).
-   */
-  private drawInlineFooter(doc: PDFKit.PDFDocument, left: number, pageWidth: number): void {
-    this.drawSeparator(doc, left, pageWidth);
-    doc.moveDown(0.4);
-
-    doc.fontSize(7).fillColor(COLORS.textMuted).font(this.getRegularFont());
-
-    const footerParts: string[] = [
-      `Dziękujemy za wybór restauracji ${this.restaurantData.name}!`,
-    ];
-    const contactParts: string[] = [];
-    if (this.restaurantData.phone) contactParts.push(this.restaurantData.phone);
-    if (this.restaurantData.email) contactParts.push(this.restaurantData.email);
-    if (contactParts.length > 0) {
-      footerParts.push(`W razie pytań: ${contactParts.join(' | ')}`);
-    }
-    doc.text(footerParts.join('  |  '), left, doc.y, {
-      align: 'center', width: pageWidth,
-    });
-
-    doc.moveDown(0.2);
-    doc.fontSize(6).fillColor(COLORS.textLight);
-    doc.text(
-      `Dokument wygenerowany automatycznie przez system ${this.restaurantData.name}`,
-      left, doc.y,
-      { align: 'center', width: pageWidth },
-    );
-  }
-
-  /**
-   * Compact table with header row, alternating backgrounds, page-break support.
-   * Row height is calculated dynamically based on the tallest cell content.
-   */
-  private drawCompactTable(
-    doc: PDFKit.PDFDocument,
-    headers: string[],
-    rows: string[][],
-    colWidths: number[],
-    startX: number
-  ): void {
-    const minRowHeight = 16;
-    const headerHeight = 18;
-    const cellPadding = 4;
-    const cellFontSize = 7;
-    const totalWidth = colWidths.reduce((a, b) => a + b, 0);
-    let y = doc.y;
-
-    // Header row
-    doc.rect(startX, y, totalWidth, headerHeight).fill(COLORS.primaryLight);
-    let x = startX;
-    headers.forEach((header, i) => {
-      doc.fillColor('#ffffff').fontSize(cellFontSize).font(this.getBoldFont());
-      doc.text(header, x + 5, y + 5, { width: colWidths[i] - 10 });
-      x += colWidths[i];
-    });
-    y += headerHeight;
-
-    // Data rows — dynamic height based on text content
-    rows.forEach((row, rowIndex) => {
-      /* istanbul ignore next */
-      if (y > doc.page.height - 80) {
-        doc.addPage();
-        y = 50;
-      }
-
-      // Calculate the tallest cell in this row
-      let maxCellHeight = minRowHeight;
-      row.forEach((cell, i) => {
-        const isFirstCol = i === 0;
-        doc.fontSize(cellFontSize)
-           .font(isFirstCol ? this.getBoldFont() : this.getRegularFont());
-        const textHeight = doc.heightOfString(cell, { width: colWidths[i] - 10 });
-        const cellHeight = textHeight + cellPadding * 2;
-        if (cellHeight > maxCellHeight) maxCellHeight = cellHeight;
-      });
-
-      if (rowIndex % 2 === 0) {
-        doc.rect(startX, y, totalWidth, maxCellHeight).fill(COLORS.bgLight);
-      }
-
-      x = startX;
-      row.forEach((cell, i) => {
-        const isFirstCol = i === 0;
-        doc.fillColor(COLORS.textDark)
-           .fontSize(cellFontSize)
-           .font(isFirstCol ? this.getBoldFont() : this.getRegularFont());
-        doc.text(cell, x + 5, y + cellPadding, { width: colWidths[i] - 10 });
-        x += colWidths[i];
-      });
-      y += maxCellHeight;
-    });
-
-    // Bottom border
-    doc.strokeColor(COLORS.border).lineWidth(0.5)
-       .moveTo(startX, y).lineTo(startX + totalWidth, y).stroke();
-
-    doc.y = y + 3;
-  }
-
-  /**
-   * Translate English day-of-week name to Polish.
-   * Shared helper used by report builders.
-   */
-  private translateDayOfWeek(day: string): string {
-    return DAY_OF_WEEK_PL[day] || day;
-  }
-
-  /**
-   * Collect all allergens from all packages/courses into a single map.
-   * Returns Map<allergenKey, Set<dishName>> for global deduplication.
-   */
-  private collectAllAllergens(packages: MenuCardPackage[]): Map<string, Set<string>> {
-    const allergenToDishes = new Map<string, Set<string>>();
-
-    for (const pkg of packages) {
-      for (const course of pkg.courses) {
-        for (const dish of course.dishes) {
-          if (dish.allergens && dish.allergens.length > 0) {
-            for (const allergen of dish.allergens) {
-              if (!allergenToDishes.has(allergen)) {
-                allergenToDishes.set(allergen, new Set());
-              }
-              allergenToDishes.get(allergen)!.add(dish.name);
-            }
-          }
-        }
-      }
-    }
-
-    return allergenToDishes;
-  }
-
-  /**
-   * Draw a compact allergen summary section at the end of the menu card PDF.
-   * Lists each allergen once with all dishes that contain it.
-   */
-  private drawAllergenSection(
-    doc: PDFKit.PDFDocument,
-    allergenMap: Map<string, Set<string>>,
-    left: number,
-    pageWidth: number
-  ): void {
-    if (allergenMap.size === 0) return;
-
-    this.safePageBreak(doc, 120);
-
-    doc.moveDown(0.5);
-    this.drawSeparator(doc, left, pageWidth);
-    doc.moveDown(0.5);
-
-    // Section header
-    doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.allergen);
-    doc.text('INFORMACJA O ALERGENACH', left, doc.y);
-    doc.moveDown(0.3);
-
-    doc.fontSize(7).font(this.getRegularFont()).fillColor(COLORS.textMuted);
-    doc.text(
-      'Poniżej znajduje się lista alergenów występujących w daniach z karty menu.',
-      left, doc.y, { width: pageWidth }
-    );
-    doc.moveDown(0.4);
-
-    // Build table rows: Allergen | Dishes
-    const rows: string[][] = [];
-    for (const [allergen, dishNames] of allergenMap) {
-      const label = ALLERGEN_LABELS[allergen] || allergen;
-      const dishes = Array.from(dishNames).join(', ');
-      rows.push([label, dishes]);
-    }
-
-    const colWidths = [
-      Math.round(pageWidth * 0.20),
-      Math.round(pageWidth * 0.80),
-    ];
-    this.drawCompactTable(doc, ['Alergen', 'Występuje w daniach'], rows, colWidths, left);
-  }
-
-  /**
-   * Draw "Ważne informacje" section — reservation terms and payment rules.
-   * Displayed as a compact box with gold accent bar before the footer.
-   * Accepts optional eventDate to calculate guest confirmation deadline dynamically.
-   * Banner color: gold (>30d), orange (3-30d), red (<=3d).
-   * For <30 days the deadline shown is today's date (reservation day).
-   */
-  private drawImportantInfoSection(
-    doc: PDFKit.PDFDocument,
-    left: number,
-    pageWidth: number,
-    eventDate?: Date
-  ): void {
-    this.safePageBreak(doc, 200);
-
-    doc.moveDown(0.5);
-    this.drawSeparator(doc, left, pageWidth);
-    doc.moveDown(0.5);
-
-    // ── Calculate days until event for dynamic text ──
-    const now = new Date();
-    let daysUntilEvent: number | null = null;
-    if (eventDate) {
-      daysUntilEvent = Math.ceil(
-        (eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-      );
-    }
-
-    // ── Highlighted banner with guest confirmation deadline ──
-    if (eventDate && daysUntilEvent !== null) {
-      let bannerText: string;
-      let bannerColor: string;
-
-      if (daysUntilEvent > 30) {
-        const deadline = new Date(eventDate);
-        deadline.setDate(deadline.getDate() - 30);
-        bannerText = `TERMIN POTWIERDZENIA LICZBY GOŚCI: ${this.formatDate(deadline)}`;
-        bannerColor = COLORS.accent;
-      } else if (daysUntilEvent > 3) {
-        bannerText = `TERMIN POTWIERDZENIA LICZBY GOŚCI: ${this.formatDate(now)}`;
-        bannerColor = COLORS.warning;
-      } else {
-        bannerText = `TERMIN POTWIERDZENIA LICZBY GOŚCI: ${this.formatDate(now)}`;
-        bannerColor = COLORS.danger;
-      }
-
-      const bannerHeight = 20;
-      const bannerY = doc.y;
-      doc.rect(left, bannerY, pageWidth, bannerHeight).fill(bannerColor);
-      doc.fillColor('#ffffff').fontSize(8).font(this.getBoldFont());
-      doc.text(bannerText, left + 10, bannerY + 5, { width: pageWidth - 20, align: 'center' });
-      doc.y = bannerY + bannerHeight + 6;
-    }
-
-    // Section title with icon-like accent
-    const titleY = doc.y;
-    doc.rect(left, titleY, pageWidth, 18).fill(COLORS.primaryLight);
-    doc.rect(left, titleY, 4, 18).fill(COLORS.accent);
-    doc.fillColor('#ffffff').fontSize(9).font(this.getBoldFont());
-    doc.text('WAŻNE INFORMACJE', left + 14, titleY + 4, { width: pageWidth - 20 });
-
-    doc.y = titleY + 22;
-
-    // ── Dynamic info items based on days until event ──
-
-    // Point 1 — menu confirmation (with last-minute fallback)
-    const menuItem = 'Ustalenie menu następuje nie później niż 30 dni przed przyjęciem. '
-      + 'W przypadku rezerwacji złożonej w terminie krótszym niż 30 dni przed wydarzeniem '
-      + '— menu należy ustalić niezwłocznie przy rezerwacji.';
-
-    // Point 2 — guest count confirmation (3 variants based on daysUntilEvent)
-    let guestItem: string;
-    if (daysUntilEvent !== null && daysUntilEvent <= 3) {
-      // Variant C: <= 3 days — no changes possible
-      guestItem = 'Ostateczna liczba gości powinna zostać potwierdzona niezwłocznie '
-        + 'przy rezerwacji. Ze względu na bliski termin wydarzenia, zmiana '
-        + 'potwierdzonej liczby gości nie jest możliwa.';
-    } else if (daysUntilEvent !== null && daysUntilEvent <= 30) {
-      // Variant B: 3-30 days — immediate confirmation, but 10% reduction still possible
-      guestItem = 'W przypadku rezerwacji złożonej w terminie krótszym niż 30 dni '
-        + 'przed przyjęciem — potwierdzenie liczby gości wymagane jest niezwłocznie '
-        + 'przy rezerwacji. Potwierdzoną liczbę można zmniejszyć maks. o 10% do 3 dni przed terminem.';
-    } else {
-      // Variant A: > 30 days (or no eventDate) — standard
-      guestItem = 'Potwierdzoną liczbę gości można zmniejszyć maks. '
-        + 'o 10% do 3 dni przed terminem.';
-    }
-
-    // Point 3 — payment terms (unchanged)
-    const paymentItem = 'Warunki płatności: 500,00 zł przy rezerwacji terminu, 50% całości na 3 dni '
-      + 'przed przyjęciem, pozostała kwota w dniu przyjęcia (przed rozpoczęciem lub do godz. 20:00).';
-
-    const items = [menuItem, guestItem, paymentItem];
-
-    // Info items — numbered list in a light box
-    const boxY = doc.y;
-
-    // Calculate box height
-    doc.fontSize(7).font(this.getRegularFont());
-    let totalTextHeight = 0;
-    items.forEach((item) => {
-      totalTextHeight += doc.heightOfString(`0.  ${item}`, { width: pageWidth - 36 }) + 5;
-    });
-    const boxHeight = totalTextHeight + 16;
-
-    doc.rect(left, boxY, pageWidth, boxHeight).fill(COLORS.bgLight);
-    doc.rect(left, boxY, 4, boxHeight).fill(COLORS.accent);
-
-    let itemY = boxY + 8;
-    items.forEach((item, idx) => {
-      // Number circle
-      const circleX = left + 16;
-      const circleY = itemY + 3;
-      doc.circle(circleX, circleY, 5).fill(COLORS.accent);
-      doc.fillColor(COLORS.primary).fontSize(6).font(this.getBoldFont());
-      doc.text(`${idx + 1}`, circleX - 3, circleY - 3, { width: 6, align: 'center' });
-
-      // Item text
-      doc.fillColor(COLORS.textDark).fontSize(7).font(this.getRegularFont());
-      const textHeight = doc.heightOfString(item, { width: pageWidth - 36 });
-      doc.text(item, left + 26, itemY, { width: pageWidth - 36 });
-      itemY += textHeight + 5;
-    });
-
-    doc.y = boxY + boxHeight + 3;
+  /** Build a PdfDrawContext for the extracted primitive functions */
+  private getDrawContext(): PdfDrawContext {
+    return {
+      useCustomFonts: this.useCustomFonts,
+      restaurantData: this.restaurantData,
+    };
   }
 
   // ═══════════════ PUBLIC API ═══════════════
@@ -1011,10 +324,11 @@ export class PDFService {
   // ═══════════════════════════════════════════════════════════════
 
   private async buildReservationPDF(doc: PDFKit.PDFDocument, r: ReservationPDFData): Promise<void> {
+    const ctx = this.getDrawContext();
     // Load layout config from DB (colors, section order/visibility)
     const config = await loadPdfConfig('pdf-layout-reservation');
     if (config?.colors) {
-      COLORS = { ...DEFAULT_COLORS, ...config.colors };
+      setColors({ ...DEFAULT_COLORS, ...config.colors });
     }
 
     try {
@@ -1026,25 +340,25 @@ export class PDFService {
         header: () => {
           /* istanbul ignore next */
           const statusInfo = STATUS_MAP[r.status] || { label: r.status, color: COLORS.textMuted };
-          this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
+          drawHeaderBanner(doc, ctx, statusInfo.label, statusInfo.color);
         },
         title_meta: () => {
           doc.y = 80;
-          doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+          doc.fillColor(COLORS.textDark).fontSize(16).font(getBoldFont(this.useCustomFonts));
           doc.text('POTWIERDZENIE REZERWACJI', left, doc.y, { align: 'center', width: pageWidth });
           doc.moveDown(0.2);
-          doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
-          doc.text(`Nr: ${r.id}  |  Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+          doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
+          doc.text(`Nr: ${r.id}  |  Wygenerowano: ${formatDate(new Date())}`, left, doc.y, {
             align: 'center', width: pageWidth,
           });
           doc.moveDown(0.6);
-          this.drawSeparator(doc, left, pageWidth);
+          drawSeparator(doc, left, pageWidth);
           doc.moveDown(0.5);
         },
         client_event: () => {
           this.drawClientAndEventColumns(doc, r, left, pageWidth);
           doc.moveDown(0.4);
-          this.drawSeparator(doc, left, pageWidth);
+          drawSeparator(doc, left, pageWidth);
           doc.moveDown(0.4);
         },
         menu: () => {
@@ -1052,12 +366,12 @@ export class PDFService {
           if (menuSnapshot && menuSnapshot.menuData) {
             this.drawMenuTable(doc, menuSnapshot, left, pageWidth);
             doc.moveDown(0.3);
-            this.drawSeparator(doc, left, pageWidth);
+            drawSeparator(doc, left, pageWidth);
             doc.moveDown(0.4);
           } else if (r.menuData?.dishSelections && r.menuData.dishSelections.length > 0) {
             this.drawMenuTableLegacy(doc, r.menuData, left, pageWidth);
             doc.moveDown(0.3);
-            this.drawSeparator(doc, left, pageWidth);
+            drawSeparator(doc, left, pageWidth);
             doc.moveDown(0.4);
           }
         },
@@ -1065,7 +379,7 @@ export class PDFService {
           if (r.reservationExtras && r.reservationExtras.length > 0) {
             this.drawExtrasInline(doc, r.reservationExtras, left, pageWidth);
             doc.moveDown(0.3);
-            this.drawSeparator(doc, left, pageWidth);
+            drawSeparator(doc, left, pageWidth);
             doc.moveDown(0.4);
           }
         },
@@ -1073,7 +387,7 @@ export class PDFService {
           if (r.categoryExtras && r.categoryExtras.length > 0) {
             this.drawCategoryExtras(doc, r.categoryExtras, left, pageWidth);
             doc.moveDown(0.3);
-            this.drawSeparator(doc, left, pageWidth);
+            drawSeparator(doc, left, pageWidth);
             doc.moveDown(0.4);
           }
         },
@@ -1084,11 +398,11 @@ export class PDFService {
           if (r.notes) {
             doc.moveDown(0.4);
             const noteIndent = 10;
-            doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
+            doc.fontSize(8).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
             doc.text('Uwagi:', left, doc.y);
             doc.moveDown(0.15);
             const noteLines = r.notes.split('\n').filter(line => line.trim() !== '');
-            doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
+            doc.font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
             noteLines.forEach((line) => {
               doc.text(line.trim(), left + noteIndent, doc.y, { width: pageWidth - noteIndent });
             });
@@ -1100,11 +414,11 @@ export class PDFService {
             : r.date
               ? new Date(r.date)
               : undefined;
-          this.drawImportantInfoSection(doc, left, pageWidth, eventDate);
+          drawImportantInfoSection(doc, ctx, left, pageWidth, eventDate);
         },
         footer: () => {
           doc.moveDown(1);
-          this.drawInlineFooter(doc, left, pageWidth);
+          drawInlineFooter(doc, ctx, left, pageWidth);
         },
       };
 
@@ -1120,7 +434,7 @@ export class PDFService {
       }
     } finally {
       // Restore default colors
-      COLORS = { ...DEFAULT_COLORS };
+      resetColors();
     }
   }
 
@@ -1131,11 +445,12 @@ export class PDFService {
     left: number,
     pageWidth: number
   ): void {
+    const ctx = this.getDrawContext();
     const colGap = 20;
     const colWidth = (pageWidth - colGap) / 2;
     const startY = doc.y;
 
-    this.drawInfoBox(doc, 'KLIENT', left, startY, colWidth, [
+    drawInfoBox(doc, ctx, 'KLIENT', left, startY, colWidth, [
       `${r.client.firstName} ${r.client.lastName}`,
       r.client.email || '',
       r.client.phone,
@@ -1147,8 +462,8 @@ export class PDFService {
     let dateStr = '';
     let timeStr = '';
     if (r.startDateTime && r.endDateTime) {
-      dateStr = this.formatDate(r.startDateTime);
-      timeStr = `${this.formatTime(r.startDateTime)} - ${this.formatTime(r.endDateTime)}`;
+      dateStr = formatDate(r.startDateTime);
+      timeStr = `${formatTime(r.startDateTime)} - ${formatTime(r.endDateTime)}`;
     } else if (r.date && r.startTime && r.endTime) {
       dateStr = r.date;
       timeStr = `${r.startTime} - ${r.endTime}`;
@@ -1186,11 +501,11 @@ export class PDFService {
       eventDetails.push(`Rocznica: ${r.anniversaryYear} lat${r.anniversaryOccasion ? ` (${r.anniversaryOccasion})` : ''}`);
     }
 
-    this.drawInfoBox(doc, 'WYDARZENIE', left + colWidth + colGap, startY, colWidth,
+    drawInfoBox(doc, ctx, 'WYDARZENIE', left + colWidth + colGap, startY, colWidth,
       eventDetails.filter(Boolean)
     );
 
-    const boxHeight = this.calculateInfoBoxHeight(Math.max(
+    const boxHeight = calculateInfoBoxHeight(Math.max(
       [r.client.firstName, r.client.email, r.client.phone, r.client.address].filter(Boolean).length,
       eventDetails.filter(Boolean).length
     ));
@@ -1204,12 +519,13 @@ export class PDFService {
     left: number,
     pageWidth: number
   ): void {
+    const ctx = this.getDrawContext();
     /* istanbul ignore next */
     const packageName = menuSnapshot.menuData?.packageName || menuSnapshot.menuData?.package?.name || '';
-    this.drawSectionHeader(doc, 'WYBRANE MENU', left, pageWidth);
+    drawSectionHeader(doc, ctx, 'WYBRANE MENU', left, pageWidth);
     if (packageName) {
-      doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
-      doc.text(`Pakiet: ${packageName}  |  Cena menu: ${this.formatCurrency(menuSnapshot.totalMenuPrice)}`, left, doc.y);
+      doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
+      doc.text(`Pakiet: ${packageName}  |  Cena menu: ${formatCurrency(menuSnapshot.totalMenuPrice)}`, left, doc.y);
     }
     doc.moveDown(0.3);
 
@@ -1236,7 +552,7 @@ export class PDFService {
     });
 
     const colWidths = [Math.round(pageWidth * 0.22), Math.round(pageWidth * 0.08), Math.round(pageWidth * 0.70)];
-    this.drawCompactTable(doc, ['Kategoria', 'Ilość', 'Wybrane dania'], tableRows, colWidths, left);
+    drawCompactTable(doc, ctx, ['Kategoria', 'Ilość', 'Wybrane dania'], tableRows, colWidths, left);
 
     if (allAllergens.size > 0) {
       doc.moveDown(0.2);
@@ -1253,9 +569,10 @@ export class PDFService {
     left: number,
     pageWidth: number
   ): void {
-    this.drawSectionHeader(doc, 'WYBRANE DANIA', left, pageWidth);
+    const ctx = this.getDrawContext();
+    drawSectionHeader(doc, ctx, 'WYBRANE DANIA', left, pageWidth);
     if (menuData.packageName) {
-      doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+      doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
       doc.text(`Pakiet: ${menuData.packageName}`, left, doc.y);
     }
     doc.moveDown(0.3);
@@ -1279,7 +596,7 @@ export class PDFService {
     });
 
     const colWidths = [Math.round(pageWidth * 0.22), Math.round(pageWidth * 0.08), Math.round(pageWidth * 0.70)];
-    this.drawCompactTable(doc, ['Kategoria', 'Ilość', 'Wybrane dania'], tableRows, colWidths, left);
+    drawCompactTable(doc, ctx, ['Kategoria', 'Ilość', 'Wybrane dania'], tableRows, colWidths, left);
 
     if (allAllergens.size > 0) {
       doc.moveDown(0.2);
@@ -1297,7 +614,8 @@ export class PDFService {
     left: number,
     pageWidth: number
   ): void {
-    this.drawSectionHeader(doc, 'USŁUGI DODATKOWE', left, pageWidth);
+    const ctx = this.getDrawContext();
+    drawSectionHeader(doc, ctx, 'USŁUGI DODATKOWE', left, pageWidth);
 
     const grouped = new Map<string, ReservationExtraForPDF[]>();
     for (const extra of extras) {
@@ -1307,12 +625,12 @@ export class PDFService {
     }
 
     for (const [categoryName, items] of grouped) {
-      doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.primaryLight);
+      doc.fontSize(8).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.primaryLight);
       doc.text(`${categoryName}:`, left, doc.y);
       doc.moveDown(0.1);
 
       for (const item of items) {
-        doc.font(this.getRegularFont()).fontSize(8).fillColor(COLORS.textDark);
+        doc.font(getRegularFont(this.useCustomFonts)).fontSize(8).fillColor(COLORS.textDark);
 
         const itemTotal = Number(item.totalPrice);
         let chipText: string;
@@ -1321,20 +639,20 @@ export class PDFService {
             chipText = `${item.serviceItem.name} (Gratis)`;
             break;
           case 'PER_PERSON':
-            chipText = `${item.serviceItem.name} (${this.formatCurrency(itemTotal)})`;
+            chipText = `${item.serviceItem.name} (${formatCurrency(itemTotal)})`;
             break;
           case 'PER_UNIT':
-            chipText = `${item.serviceItem.name} ${item.quantity}szt. (${this.formatCurrency(itemTotal)})`;
+            chipText = `${item.serviceItem.name} ${item.quantity}szt. (${formatCurrency(itemTotal)})`;
             break;
           case 'FLAT':
           default:
-            chipText = `${item.serviceItem.name} (${this.formatCurrency(itemTotal)})`;
+            chipText = `${item.serviceItem.name} (${formatCurrency(itemTotal)})`;
             break;
         }
 
         if (item.note) {
-          doc.font(this.getBoldFont()).text(`${chipText}`, left + 10, doc.y, { continued: true });
-          doc.font(this.getRegularFont()).fontSize(7).fillColor(COLORS.textMuted);
+          doc.font(getBoldFont(this.useCustomFonts)).text(`${chipText}`, left + 10, doc.y, { continued: true });
+          doc.font(getRegularFont(this.useCustomFonts)).fontSize(7).fillColor(COLORS.textMuted);
           doc.text(`  — Uwaga: ${item.note}`, { width: pageWidth - 20 });
         } else {
           doc.text(`${chipText}`, left + 10, doc.y, { width: pageWidth - 20 });
@@ -1351,15 +669,16 @@ export class PDFService {
     left: number,
     pageWidth: number
   ): void {
+    const ctx = this.getDrawContext();
     const PORTION_LABELS: Record<string, string> = {
       ALL: 'wszyscy',
       ADULTS_ONLY: 'dorośli',
       CHILDREN_ONLY: 'dzieci',
     };
 
-    this.safePageBreak(doc, 60);
+    safePageBreak(doc, 60);
 
-    doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.primaryLight);
+    doc.fontSize(9).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.primaryLight);
     doc.text('DODATKOWO PŁATNE PORCJE', left, doc.y);
     doc.moveDown(0.3);
 
@@ -1370,7 +689,7 @@ export class PDFService {
     const col4 = left + 310;  // Osoby
     const rightEdge = left + pageWidth;
 
-    doc.fontSize(7).font(this.getBoldFont()).fillColor(COLORS.textMuted);
+    doc.fontSize(7).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
     doc.text('Kategoria', col1, doc.y);
     doc.text('Ilość', col2, doc.y - doc.currentLineHeight(), { width: 50 });
     doc.text('Cena/szt.', col3, doc.y - doc.currentLineHeight(), { width: 70 });
@@ -1384,15 +703,15 @@ export class PDFService {
     doc.moveDown(0.2);
 
     // Rows
-    doc.font(this.getRegularFont()).fontSize(8).fillColor(COLORS.textDark);
+    doc.font(getRegularFont(this.useCustomFonts)).fontSize(8).fillColor(COLORS.textDark);
     for (const extra of categoryExtras) {
       const y = doc.y;
       const portionLabel = PORTION_LABELS[extra.portionTarget] || extra.portionTarget;
       doc.text(extra.categoryName, col1, y, { width: 170 });
       doc.text(String(extra.quantity), col2, y, { width: 50 });
-      doc.text(this.formatCurrency(extra.pricePerItem), col3, y, { width: 70 });
+      doc.text(formatCurrency(extra.pricePerItem), col3, y, { width: 70 });
       doc.text(`${extra.guestCount} (${portionLabel})`, col4, y, { width: 80 });
-      doc.text(this.formatCurrency(extra.totalPrice), rightEdge - 80, y, { width: 80, align: 'right' });
+      doc.text(formatCurrency(extra.totalPrice), rightEdge - 80, y, { width: 80, align: 'right' });
       doc.moveDown(0.15);
     }
 
@@ -1402,9 +721,9 @@ export class PDFService {
     doc.strokeColor(COLORS.border).lineWidth(0.3)
        .moveTo(col1, doc.y).lineTo(rightEdge, doc.y).stroke();
     doc.moveDown(0.2);
-    doc.font(this.getBoldFont()).fontSize(8);
+    doc.font(getBoldFont(this.useCustomFonts)).fontSize(8);
     doc.text('Razem dodatkowo płatne porcje:', col1, doc.y);
-    doc.text(this.formatCurrency(totalCategoryExtras), rightEdge - 80, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
+    doc.text(formatCurrency(totalCategoryExtras), rightEdge - 80, doc.y - doc.currentLineHeight(), { width: 80, align: 'right' });
     doc.moveDown(0.3);
   }
 
@@ -1415,6 +734,7 @@ export class PDFService {
     left: number,
     pageWidth: number
   ): void {
+    const ctx = this.getDrawContext();
     const extrasTotalCalc = (r.reservationExtras || [])
       .reduce((sum, e) => sum + Number(e.totalPrice), 0);
     const categoryExtrasTotalCalc = (r.categoryExtras || [])
@@ -1453,13 +773,13 @@ export class PDFService {
     if (depositsForDisplay.length > 0) rowCount += depositsForDisplay.length + 1;
     const boxHeight = 22 + rowCount * 13 + (depositsForDisplay.length > 0 ? 14 : 0);
 
-    this.safePageBreak(doc, boxHeight + 15);
+    safePageBreak(doc, boxHeight + 15);
     const boxY = doc.y;
 
     doc.rect(left, boxY, pageWidth, boxHeight).fill(COLORS.bgLight);
     doc.rect(left, boxY, 3, boxHeight).fill(COLORS.accent);
 
-    doc.fillColor(COLORS.textDark).fontSize(9).font(this.getBoldFont());
+    doc.fillColor(COLORS.textDark).fontSize(9).font(getBoldFont(this.useCustomFonts));
     doc.text('PODSUMOWANIE', left + 12, boxY + 7);
 
     let y = boxY + 22;
@@ -1468,42 +788,42 @@ export class PDFService {
     const valueWidth = 100;
     const valueX = rightEdge - valueWidth;
 
-    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textDark);
+    doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textDark);
 
     if (r.adults > 0 && r.pricePerAdult > 0) {
       const adultTotal = r.adults * Number(r.pricePerAdult);
-      doc.text(`Dorośli: ${r.adults} os. x ${this.formatCurrency(r.pricePerAdult)}`, labelX, y);
-      doc.text(this.formatCurrency(adultTotal), valueX, y, { width: valueWidth, align: 'right' });
+      doc.text(`Dorośli: ${r.adults} os. x ${formatCurrency(r.pricePerAdult)}`, labelX, y);
+      doc.text(formatCurrency(adultTotal), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
     }
     /* istanbul ignore next */
     if (r.children > 0 && r.pricePerChild > 0) {
       const childTotal = r.children * Number(r.pricePerChild);
-      doc.text(`Dzieci (4-12 lat): ${r.children} os. x ${this.formatCurrency(r.pricePerChild)}`, labelX, y);
-      doc.text(this.formatCurrency(childTotal), valueX, y, { width: valueWidth, align: 'right' });
+      doc.text(`Dzieci (4-12 lat): ${r.children} os. x ${formatCurrency(r.pricePerChild)}`, labelX, y);
+      doc.text(formatCurrency(childTotal), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
     }
     /* istanbul ignore next */
     if (r.toddlers > 0 && r.pricePerToddler > 0) {
       const toddlerTotal = r.toddlers * Number(r.pricePerToddler);
-      doc.text(`Maluchy (0-3 lata): ${r.toddlers} os. x ${this.formatCurrency(r.pricePerToddler)}`, labelX, y);
-      doc.text(this.formatCurrency(toddlerTotal), valueX, y, { width: valueWidth, align: 'right' });
+      doc.text(`Maluchy (0-3 lata): ${r.toddlers} os. x ${formatCurrency(r.pricePerToddler)}`, labelX, y);
+      doc.text(formatCurrency(toddlerTotal), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
     }
     if (extrasTotalCalc > 0) {
       doc.text('Usługi dodatkowe', labelX, y);
-      doc.text(this.formatCurrency(extrasTotalCalc), valueX, y, { width: valueWidth, align: 'right' });
+      doc.text(formatCurrency(extrasTotalCalc), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
     }
     if (categoryExtrasTotalCalc > 0) {
       doc.text('Dodatkowo płatne porcje', labelX, y);
-      doc.text(this.formatCurrency(categoryExtrasTotalCalc), valueX, y, { width: valueWidth, align: 'right' });
+      doc.text(formatCurrency(categoryExtrasTotalCalc), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
     }
     if (venueSurchargeAmount > 0) {
       const surchargeLabel = r.venueSurchargeLabel || 'Dopłata za cały obiekt';
       doc.text(surchargeLabel, labelX, y);
-      doc.text(this.formatCurrency(venueSurchargeAmount), valueX, y, { width: valueWidth, align: 'right' });
+      doc.text(formatCurrency(venueSurchargeAmount), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
     }
     if (extraHoursCostAmt > 0) {
@@ -1512,10 +832,10 @@ export class PDFService {
         ? Math.round(extraHoursCostAmt / extraHourRate * 10) / 10
         : 0;
       const extraLabel = extraHourRate > 0
-        ? `Dodatkowe godziny: ${extraHoursCount}h \u00d7 ${this.formatCurrency(extraHourRate)}/h`
+        ? `Dodatkowe godziny: ${extraHoursCount}h \u00d7 ${formatCurrency(extraHourRate)}/h`
         : 'Dodatkowe godziny';
       doc.text(extraLabel, labelX, y);
-      doc.text(this.formatCurrency(extraHoursCostAmt), valueX, y, { width: valueWidth, align: 'right' });
+      doc.text(formatCurrency(extraHoursCostAmt), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
     }
 
@@ -1523,7 +843,7 @@ export class PDFService {
     if (hasDiscount) {
       const priceBeforeDiscount = Number(r.priceBeforeDiscount) || (displayTotal + discountAmount);
       doc.text('Suma przed rabatem', labelX, y);
-      doc.text(this.formatCurrency(priceBeforeDiscount), valueX, y, { width: valueWidth, align: 'right' });
+      doc.text(formatCurrency(priceBeforeDiscount), valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
 
       const discountLabel = r.discountType === 'PERCENTAGE'
@@ -1531,7 +851,7 @@ export class PDFService {
         : 'Rabat';
       doc.fillColor('#c0392b');
       doc.text(discountLabel, labelX, y);
-      doc.text(`-${this.formatCurrency(discountAmount)}`, valueX, y, { width: valueWidth, align: 'right' });
+      doc.text(`-${formatCurrency(discountAmount)}`, valueX, y, { width: valueWidth, align: 'right' });
       y += 13;
       doc.fillColor(COLORS.textDark);
     }
@@ -1541,9 +861,9 @@ export class PDFService {
        .moveTo(labelX, y).lineTo(rightEdge, y).stroke();
     y += 5;
 
-    doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.fontSize(9).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
     doc.text('RAZEM', labelX, y);
-    doc.text(this.formatCurrency(displayTotal), valueX, y, { width: valueWidth, align: 'right' });
+    doc.text(formatCurrency(displayTotal), valueX, y, { width: valueWidth, align: 'right' });
     y += 14;
 
     if (depositsForDisplay.length > 0) {
@@ -1556,7 +876,7 @@ export class PDFService {
         const dep = depositsForDisplay[i];
         /* istanbul ignore next */
         const dueDate = dep.dueDate instanceof Date
-          ? this.formatDate(dep.dueDate)
+          ? formatDate(dep.dueDate)
           : dep.dueDate;
         // Use numbered prefix only when there are multiple deposits
         const labelPrefix = depositsForDisplay.length > 1 ? `Zaliczka ${i + 1}` : 'Zaliczka';
@@ -1564,18 +884,18 @@ export class PDFService {
           ? `${labelPrefix} (opłacona)`
           : `${labelPrefix} (termin: ${dueDate})`;
 
-        doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.success);
+        doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.success);
         doc.text(depositLabel, labelX, y);
 
         if (dep.paid) {
           // Paid: full-width amount aligned with RAZEM/DO ZAPŁATY
-          doc.text(`-${this.formatCurrency(Number(dep.amount))}`, valueX, y, { width: valueWidth, align: 'right' });
+          doc.text(`-${formatCurrency(Number(dep.amount))}`, valueX, y, { width: valueWidth, align: 'right' });
         } else {
           // Unpaid: narrower amount to leave room for badge
-          doc.text(`-${this.formatCurrency(Number(dep.amount))}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
+          doc.text(`-${formatCurrency(Number(dep.amount))}`, depositValueX, y, { width: depositValueWidth, align: 'right' });
           const depositBadgeX = depositValueX + depositValueWidth + depositBadgeGap;
           doc.roundedRect(depositBadgeX, y - 1, depositBadgeWidth, 11, 3).fill(COLORS.warning);
-          doc.fillColor('#ffffff').fontSize(5.5).font(this.getBoldFont());
+          doc.fillColor('#ffffff').fontSize(5.5).font(getBoldFont(this.useCustomFonts));
           doc.text('OCZEK.', depositBadgeX, y + 1, { width: depositBadgeWidth, align: 'center' });
         }
 
@@ -1589,9 +909,9 @@ export class PDFService {
       // DO ZAPŁATY = totalPrice minus sum of ALL active deposits
       const totalDeposited = depositsForDisplay.reduce((sum: number, d: any) => sum + Number(d.amount), 0);
       const remaining = displayTotal - totalDeposited;
-      doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.primary);
+      doc.fontSize(10).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.primary);
       doc.text('DO ZAPŁATY', labelX, y);
-      doc.text(this.formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
+      doc.text(formatCurrency(remaining), valueX, y, { width: valueWidth, align: 'right' });
     }
 
     doc.y = boxY + boxHeight + 3;
@@ -1605,25 +925,26 @@ export class PDFService {
     doc: PDFKit.PDFDocument,
     data: PaymentConfirmationData
   ): void {
+    const ctx = this.getDrawContext();
     const left = 40;
     const pageWidth = doc.page.width - 80;
 
     // ── 1. HEADER BANNER with „OPŁACONA" badge ──
-    this.drawHeaderBanner(doc, 'OPŁACONA', COLORS.success);
+    drawHeaderBanner(doc, ctx, 'OPŁACONA', COLORS.success);
 
     // ── 2. TITLE + META ──
     doc.y = 80;
-    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.fillColor(COLORS.textDark).fontSize(16).font(getBoldFont(this.useCustomFonts));
     doc.text('POTWIERDZENIE WPŁATY ZALICZKI', left, doc.y, { align: 'center', width: pageWidth });
 
     doc.moveDown(0.2);
-    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
-    doc.text(`Nr: ${data.depositId}  |  Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+    doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
+    doc.text(`Nr: ${data.depositId}  |  Wygenerowano: ${formatDate(new Date())}`, left, doc.y, {
       align: 'center', width: pageWidth,
     });
 
     doc.moveDown(0.6);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
 
     // ── 3. TWO-COLUMN: KLIENT | WPŁATA ──
@@ -1631,7 +952,7 @@ export class PDFService {
     const colWidth = (pageWidth - colGap) / 2;
     const startY = doc.y;
 
-    this.drawInfoBox(doc, 'KLIENT', left, startY, colWidth, [
+    drawInfoBox(doc, ctx, 'KLIENT', left, startY, colWidth, [
       `${data.client.firstName} ${data.client.lastName}`,
       data.client.email || '',
       data.client.phone,
@@ -1641,22 +962,22 @@ export class PDFService {
     /* istanbul ignore next */
     const methodLabel = PAYMENT_METHOD_LABELS[data.paymentMethod] || data.paymentMethod;
     const paymentLines: string[] = [
-      this.formatCurrency(data.amount),
-      `Data: ${this.formatDate(data.paidAt)}`,
+      formatCurrency(data.amount),
+      `Data: ${formatDate(data.paidAt)}`,
       `Metoda: ${methodLabel}`,
     ];
     if (data.paymentReference) {
       paymentLines.push(`Ref: ${data.paymentReference}`);
     }
 
-    this.drawInfoBox(doc, 'SZCZEGÓŁY WPŁATY', left + colWidth + colGap, startY, colWidth, paymentLines);
+    drawInfoBox(doc, ctx, 'SZCZEGÓŁY WPŁATY', left + colWidth + colGap, startY, colWidth, paymentLines);
 
     const leftLines = [data.client.firstName, data.client.email, data.client.phone, data.client.address].filter(Boolean).length;
-    const boxHeight = this.calculateInfoBoxHeight(Math.max(leftLines, paymentLines.length));
+    const boxHeight = calculateInfoBoxHeight(Math.max(leftLines, paymentLines.length));
     doc.y = startY + boxHeight + 5;
 
     doc.moveDown(0.4);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.4);
 
     // ── 4. RESERVATION INFO BOX (full-width) ──
@@ -1667,13 +988,13 @@ export class PDFService {
     resLines.push(`Gości: ${data.reservation.guests}`);
     resLines.push(`Nr rezerwacji: ${data.reservation.id}`);
 
-    this.drawInfoBox(doc, 'REZERWACJA', left, doc.y, pageWidth, resLines);
-    const resBoxHeight = this.calculateInfoBoxHeight(resLines.length);
+    drawInfoBox(doc, ctx, 'REZERWACJA', left, doc.y, pageWidth, resLines);
+    const resBoxHeight = calculateInfoBoxHeight(resLines.length);
     doc.y = doc.y + resBoxHeight + 5;
 
     // ── 5. FOOTER (sekcja finansowa usunieta - #172) ──
     doc.moveDown(1);
-    this.drawInlineFooter(doc, left, pageWidth);
+    drawInlineFooter(doc, ctx, left, pageWidth);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1681,48 +1002,49 @@ export class PDFService {
   // ═══════════════════════════════════════════════════════════════
 
   private buildMenuCardPremium(doc: PDFKit.PDFDocument, data: MenuCardPDFData): void {
+    const ctx = this.getDrawContext();
     const left = 40;
     const pageWidth = doc.page.width - 80;
 
     // ── 1. HEADER BANNER with „KARTA MENU" badge ──
-    this.drawHeaderBanner(doc, 'KARTA MENU', COLORS.accent);
+    drawHeaderBanner(doc, ctx, 'KARTA MENU', COLORS.accent);
 
     // ── 2. TITLE + META ──
     doc.y = 80;
-    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.fillColor(COLORS.textDark).fontSize(16).font(getBoldFont(this.useCustomFonts));
     doc.text(data.templateName.toUpperCase(), left, doc.y, { align: 'center', width: pageWidth });
 
     doc.moveDown(0.2);
     const subtitleParts: string[] = [data.eventTypeName];
     if (data.variant) subtitleParts.push(data.variant);
-    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.fontSize(9).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
     doc.text(subtitleParts.join('  |  '), left, doc.y, { align: 'center', width: pageWidth });
 
     if (data.templateDescription) {
       doc.moveDown(0.3);
-      doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+      doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
       doc.text(data.templateDescription, left, doc.y, { align: 'center', width: pageWidth });
     }
 
     doc.moveDown(0.2);
     doc.fontSize(7).fillColor(COLORS.textLight);
-    doc.text(`Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+    doc.text(`Wygenerowano: ${formatDate(new Date())}`, left, doc.y, {
       align: 'center', width: pageWidth,
     });
 
     doc.moveDown(0.6);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
 
     // ── 3. PACKAGES ──
     data.packages.forEach((pkg, pkgIndex) => {
       if (pkgIndex > 0) {
         doc.moveDown(0.5);
-        this.drawSeparator(doc, left, pageWidth);
+        drawSeparator(doc, left, pageWidth);
         doc.moveDown(0.5);
       }
 
-      this.safePageBreak(doc, 200);
+      safePageBreak(doc, 200);
 
       // Package header box — navy background + gold accent
       const pkgHeaderY = doc.y;
@@ -1735,35 +1057,35 @@ export class PDFService {
         const pkgBadgeWidth = 90;
         const pkgBadgeX = left + pageWidth - pkgBadgeWidth - 10;
         doc.roundedRect(pkgBadgeX, pkgHeaderY + 8, pkgBadgeWidth, 18, 4).fill(COLORS.accent);
-        doc.fillColor(COLORS.primary).fontSize(7).font(this.getBoldFont());
+        doc.fillColor(COLORS.primary).fontSize(7).font(getBoldFont(this.useCustomFonts));
         doc.text(pkg.badgeText, pkgBadgeX, pkgHeaderY + 12, { width: pkgBadgeWidth, align: 'center' });
       }
 
       // Package name
-      doc.fillColor('#ffffff').fontSize(14).font(this.getBoldFont());
+      doc.fillColor('#ffffff').fontSize(14).font(getBoldFont(this.useCustomFonts));
       doc.text(pkg.name, left + 15, pkgHeaderY + 10, { width: pageWidth - 130 });
 
       // Prices
-      doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textLight);
-      const priceParts = [`${this.formatCurrency(pkg.pricePerAdult)}/os. dorosła`];
-      if (pkg.pricePerChild > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerChild)}/dziecko`);
-      if (pkg.pricePerToddler > 0) priceParts.push(`${this.formatCurrency(pkg.pricePerToddler)}/maluch`);
+      doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textLight);
+      const priceParts = [`${formatCurrency(pkg.pricePerAdult)}/os. dorosła`];
+      if (pkg.pricePerChild > 0) priceParts.push(`${formatCurrency(pkg.pricePerChild)}/dziecko`);
+      if (pkg.pricePerToddler > 0) priceParts.push(`${formatCurrency(pkg.pricePerToddler)}/maluch`);
       doc.text(priceParts.join('  |  '), left + 15, pkgHeaderY + 32, { width: pageWidth - 40 });
 
       doc.y = pkgHeaderY + headerHeight + 8;
 
       // Description
       if (pkg.description) {
-        doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+        doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
         doc.text(pkg.description, left, doc.y, { width: pageWidth });
         doc.moveDown(0.3);
       }
 
       // Included items — info box style
       if (pkg.includedItems && pkg.includedItems.length > 0) {
-        doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.success);
+        doc.fontSize(8).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.success);
         doc.text('W cenie: ', left, doc.y, { continued: true });
-        doc.font(this.getRegularFont()).fillColor(COLORS.textDark);
+        doc.font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textDark);
         doc.text(pkg.includedItems.join(', '), { width: pageWidth - 60 });
         doc.moveDown(0.3);
       }
@@ -1771,7 +1093,7 @@ export class PDFService {
       // ── COURSES — 2-column tables (no allergens per course) ──
       if (pkg.courses.length > 0) {
         pkg.courses.forEach((course) => {
-          this.safePageBreak(doc, 120);
+          safePageBreak(doc, 120);
           doc.moveDown(0.4);
 
           // Course header
@@ -1779,14 +1101,14 @@ export class PDFService {
             ? `wybierz ${course.minSelect}`
             : `wybierz ${course.minSelect}-${course.maxSelect}`;
 
-          doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.primaryLight);
+          doc.fontSize(10).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.primaryLight);
           doc.text(course.name, left, doc.y, { continued: true });
-          doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+          doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
           doc.text(`  (${selectText} z ${course.dishes.length})`);
 
           /* istanbul ignore next */
           if (course.description) {
-            doc.fontSize(7).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+            doc.fontSize(7).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
             doc.text(course.description, left, doc.y);
           }
 
@@ -1808,8 +1130,9 @@ export class PDFService {
             Math.round(pageWidth * 0.35),
             Math.round(pageWidth * 0.65),
           ];
-          this.drawCompactTable(
+          drawCompactTable(
             doc,
+            ctx,
             ['Danie', 'Opis'],
             dishRows,
             dishColWidths,
@@ -1825,10 +1148,10 @@ export class PDFService {
       const activeOptions = pkg.options.filter(o => !o.isRequired);
 
       if (requiredOptions.length > 0) {
-        this.safePageBreak(doc, 80);
+        safePageBreak(doc, 80);
         doc.moveDown(0.5);
 
-        doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.success);
+        doc.fontSize(9).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.success);
         doc.text('W PAKIECIE', left, doc.y);
         doc.moveDown(0.2);
 
@@ -1837,21 +1160,21 @@ export class PDFService {
           opt.description || '',
         ]);
         const reqColWidths = [Math.round(pageWidth * 0.40), Math.round(pageWidth * 0.60)];
-        this.drawCompactTable(doc, ['Opcja', 'Opis'], reqRows, reqColWidths, left);
+        drawCompactTable(doc, ctx, ['Opcja', 'Opis'], reqRows, reqColWidths, left);
       }
 
       if (activeOptions.length > 0) {
-        this.safePageBreak(doc, 80);
+        safePageBreak(doc, 80);
         doc.moveDown(0.5);
 
-        doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.purple);
+        doc.fontSize(9).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.purple);
         doc.text('OPCJE DODATKOWE', left, doc.y);
         doc.moveDown(0.2);
 
         const optRows = activeOptions.map(opt => {
           const priceLabel = opt.priceType === 'PER_PERSON'
-            ? `+${this.formatCurrency(opt.priceAmount)}/os.`
-            : `+${this.formatCurrency(opt.priceAmount)}`;
+            ? `+${formatCurrency(opt.priceAmount)}/os.`
+            : `+${formatCurrency(opt.priceAmount)}`;
           return [
             opt.name,
             opt.description || '',
@@ -1863,17 +1186,17 @@ export class PDFService {
           Math.round(pageWidth * 0.45),
           Math.round(pageWidth * 0.25),
         ];
-        this.drawCompactTable(doc, ['Opcja', 'Opis', 'Cena'], optRows, optColWidths, left);
+        drawCompactTable(doc, ctx, ['Opcja', 'Opis', 'Cena'], optRows, optColWidths, left);
       }
     });
 
     // ── 4. GLOBAL ALLERGEN SECTION (at the end, before footer) ──
-    const allergenMap = this.collectAllAllergens(data.packages);
-    this.drawAllergenSection(doc, allergenMap, left, pageWidth);
+    const allergenMap = collectAllAllergens(data.packages);
+    drawAllergenSection(doc, ctx, allergenMap, left, pageWidth);
 
     // ── 5. FOOTER ──
     doc.moveDown(1);
-    this.drawInlineFooter(doc, left, pageWidth);
+    drawInlineFooter(doc, ctx, left, pageWidth);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1881,62 +1204,63 @@ export class PDFService {
   // ═══════════════════════════════════════════════════════════════
 
   private buildRevenueReportPDF(doc: PDFKit.PDFDocument, data: RevenueReportPDFData): void {
+    const ctx = this.getDrawContext();
     const left = 40;
     const pageWidth = doc.page.width - 80;
 
     // ── 1. HEADER BANNER ──
-    this.drawHeaderBanner(doc, 'RAPORT', COLORS.info);
+    drawHeaderBanner(doc, ctx, 'RAPORT', COLORS.info);
 
     // ── 2. TITLE + META ──
     doc.y = 80;
-    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.fillColor(COLORS.textDark).fontSize(16).font(getBoldFont(this.useCustomFonts));
     doc.text('RAPORT PRZYCHODÓW', left, doc.y, { align: 'center', width: pageWidth });
 
     doc.moveDown(0.2);
-    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
     const metaParts: string[] = [`Okres: ${data.filters.dateFrom} - ${data.filters.dateTo}`];
     if (data.filters.groupBy) metaParts.push(`Grupowanie: ${data.filters.groupBy}`);
-    metaParts.push(`Wygenerowano: ${this.formatDate(new Date())}`);
+    metaParts.push(`Wygenerowano: ${formatDate(new Date())}`);
     doc.text(metaParts.join('  |  '), left, doc.y, { align: 'center', width: pageWidth });
 
     doc.moveDown(0.6);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
 
     // ── 3. SUMMARY INFO BOX ──
     const summaryLines: string[] = [
-      `Całkowity przychód: ${this.formatCurrency(data.summary.totalRevenue)}`,
-      `Średni przychód na rezerwację: ${this.formatCurrency(data.summary.avgRevenuePerReservation)}`,
+      `Całkowity przychód: ${formatCurrency(data.summary.totalRevenue)}`,
+      `Średni przychód na rezerwację: ${formatCurrency(data.summary.avgRevenuePerReservation)}`,
       `Liczba rezerwacji: ${data.summary.totalReservations}`,
       `Ukończone rezerwacje: ${data.summary.completedReservations}`,
-      `Oczekujący przychód: ${this.formatCurrency(data.summary.pendingRevenue)}`,
+      `Oczekujący przychód: ${formatCurrency(data.summary.pendingRevenue)}`,
       `Wzrost: ${data.summary.growthPercent}%`,
     ];
     if (data.summary.extrasRevenue !== undefined && data.summary.extrasRevenue > 0) {
-      summaryLines.push(`Przychody z usług dodatkowych: ${this.formatCurrency(data.summary.extrasRevenue)}`);
+      summaryLines.push(`Przychody z usług dodatkowych: ${formatCurrency(data.summary.extrasRevenue)}`);
     }
     if (data.summary.categoryExtrasRevenue !== undefined && data.summary.categoryExtrasRevenue > 0) {
-      summaryLines.push(`Przychody z dodatkowo płatnych porcji: ${this.formatCurrency(data.summary.categoryExtrasRevenue)}`);
+      summaryLines.push(`Przychody z dodatkowo płatnych porcji: ${formatCurrency(data.summary.categoryExtrasRevenue)}`);
     }
 
-    this.drawInfoBox(doc, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
-    const summaryBoxHeight = this.calculateInfoBoxHeight(summaryLines.length);
+    drawInfoBox(doc, ctx, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
+    const summaryBoxHeight = calculateInfoBoxHeight(summaryLines.length);
     doc.y = doc.y + summaryBoxHeight + 5;
 
     doc.moveDown(0.4);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.4);
 
     // ── 4. BREAKDOWN BY PERIOD ──
     if (data.breakdown.length > 0) {
-      this.safePageBreak(doc, 100);
-      this.drawSectionHeader(doc, 'ROZKŁAD WG OKRESU', left, pageWidth);
+      safePageBreak(doc, 100);
+      drawSectionHeader(doc, ctx, 'ROZKŁAD WG OKRESU', left, pageWidth);
 
       const breakdownRows = data.breakdown.slice(0, 20).map(item => [
         item.period,
-        this.formatCurrency(item.revenue),
+        formatCurrency(item.revenue),
         `${item.count}`,
-        this.formatCurrency(item.avgRevenue),
+        formatCurrency(item.avgRevenue),
       ]);
       const breakdownCols = [
         Math.round(pageWidth * 0.30),
@@ -1944,23 +1268,23 @@ export class PDFService {
         Math.round(pageWidth * 0.20),
         Math.round(pageWidth * 0.25),
       ];
-      this.drawCompactTable(doc, ['Okres', 'Przychód', 'Liczba', 'Średnia'], breakdownRows, breakdownCols, left);
+      drawCompactTable(doc, ctx, ['Okres', 'Przychód', 'Liczba', 'Średnia'], breakdownRows, breakdownCols, left);
 
       doc.moveDown(0.4);
-      this.drawSeparator(doc, left, pageWidth);
+      drawSeparator(doc, left, pageWidth);
       doc.moveDown(0.4);
     }
 
     // ── 5. BY HALL ──
     if (data.byHall.length > 0) {
-      this.safePageBreak(doc, 100);
-      this.drawSectionHeader(doc, 'PRZYCHODY WG SAL', left, pageWidth);
+      safePageBreak(doc, 100);
+      drawSectionHeader(doc, ctx, 'PRZYCHODY WG SAL', left, pageWidth);
 
       const hallRows = data.byHall.slice(0, 20).map(item => [
         item.hallName,
-        this.formatCurrency(item.revenue),
+        formatCurrency(item.revenue),
         `${item.count}`,
-        this.formatCurrency(item.avgRevenue),
+        formatCurrency(item.avgRevenue),
       ]);
       const hallCols = [
         Math.round(pageWidth * 0.30),
@@ -1968,23 +1292,23 @@ export class PDFService {
         Math.round(pageWidth * 0.20),
         Math.round(pageWidth * 0.25),
       ];
-      this.drawCompactTable(doc, ['Sala', 'Przychód', 'Liczba', 'Średnia'], hallRows, hallCols, left);
+      drawCompactTable(doc, ctx, ['Sala', 'Przychód', 'Liczba', 'Średnia'], hallRows, hallCols, left);
 
       doc.moveDown(0.4);
-      this.drawSeparator(doc, left, pageWidth);
+      drawSeparator(doc, left, pageWidth);
       doc.moveDown(0.4);
     }
 
     // ── 6. BY EVENT TYPE ──
     if (data.byEventType.length > 0) {
-      this.safePageBreak(doc, 100);
-      this.drawSectionHeader(doc, 'PRZYCHODY WG TYPU WYDARZENIA', left, pageWidth);
+      safePageBreak(doc, 100);
+      drawSectionHeader(doc, ctx, 'PRZYCHODY WG TYPU WYDARZENIA', left, pageWidth);
 
       const eventRows = data.byEventType.slice(0, 20).map(item => [
         item.eventTypeName,
-        this.formatCurrency(item.revenue),
+        formatCurrency(item.revenue),
         `${item.count}`,
-        this.formatCurrency(item.avgRevenue),
+        formatCurrency(item.avgRevenue),
       ]);
       const eventCols = [
         Math.round(pageWidth * 0.30),
@@ -1992,26 +1316,26 @@ export class PDFService {
         Math.round(pageWidth * 0.20),
         Math.round(pageWidth * 0.25),
       ];
-      this.drawCompactTable(doc, ['Typ wydarzenia', 'Przychód', 'Liczba', 'Średnia'], eventRows, eventCols, left);
+      drawCompactTable(doc, ctx, ['Typ wydarzenia', 'Przychód', 'Liczba', 'Średnia'], eventRows, eventCols, left);
 
       doc.moveDown(0.4);
-      this.drawSeparator(doc, left, pageWidth);
+      drawSeparator(doc, left, pageWidth);
       doc.moveDown(0.4);
     }
 
     // ── 7. BY SERVICE ITEM (extras) ──
     if (data.byServiceItem && data.byServiceItem.length > 0) {
-      this.safePageBreak(doc, 100);
+      safePageBreak(doc, 100);
 
-      doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.purple);
+      doc.fontSize(11).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.purple);
       doc.text('USŁUGI DODATKOWE — PRZYCHODY', left, doc.y);
       doc.moveDown(0.3);
 
       const extrasRows = data.byServiceItem.slice(0, 20).map(item => [
         item.name,
-        this.formatCurrency(item.revenue),
+        formatCurrency(item.revenue),
         `${item.count}`,
-        this.formatCurrency(item.avgRevenue),
+        formatCurrency(item.avgRevenue),
       ]);
       const extrasCols = [
         Math.round(pageWidth * 0.30),
@@ -2019,34 +1343,34 @@ export class PDFService {
         Math.round(pageWidth * 0.20),
         Math.round(pageWidth * 0.25),
       ];
-      this.drawCompactTable(doc, ['Usługa', 'Przychód', 'Użyć', 'Śr. przychód'], extrasRows, extrasCols, left);
+      drawCompactTable(doc, ctx, ['Usługa', 'Przychód', 'Użyć', 'Śr. przychód'], extrasRows, extrasCols, left);
 
       // Total extras row
       if (data.summary.extrasRevenue && data.summary.extrasRevenue > 0) {
         doc.moveDown(0.2);
-        doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.purple);
-        doc.text(`Razem extras: ${this.formatCurrency(data.summary.extrasRevenue)}`, left, doc.y);
+        doc.fontSize(9).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.purple);
+        doc.text(`Razem extras: ${formatCurrency(data.summary.extrasRevenue)}`, left, doc.y);
         doc.fillColor(COLORS.textDark);
       }
 
       doc.moveDown(0.4);
-      this.drawSeparator(doc, left, pageWidth);
+      drawSeparator(doc, left, pageWidth);
       doc.moveDown(0.4);
     }
 
     // ── 8. BY CATEGORY EXTRA (dodatkowo płatne porcje) #216 ──
     if (data.byCategoryExtra && data.byCategoryExtra.length > 0) {
-      this.safePageBreak(doc, 100);
+      safePageBreak(doc, 100);
 
-      doc.fontSize(11).font(this.getBoldFont()).fillColor('#D97706');
+      doc.fontSize(11).font(getBoldFont(this.useCustomFonts)).fillColor('#D97706');
       doc.text('DODATKOWO PŁATNE PORCJE — PRZYCHODY', left, doc.y);
       doc.moveDown(0.3);
 
       const catExtrasRows = data.byCategoryExtra.slice(0, 20).map(item => [
         item.categoryName,
-        this.formatCurrency(item.revenue),
+        formatCurrency(item.revenue),
         `${item.totalQuantity}`,
-        this.formatCurrency(item.avgRevenue),
+        formatCurrency(item.avgRevenue),
       ]);
       const catExtrasCols = [
         Math.round(pageWidth * 0.30),
@@ -2054,23 +1378,23 @@ export class PDFService {
         Math.round(pageWidth * 0.20),
         Math.round(pageWidth * 0.25),
       ];
-      this.drawCompactTable(doc, ['Kategoria', 'Przychód', 'Porcje', 'Śr. przychód'], catExtrasRows, catExtrasCols, left);
+      drawCompactTable(doc, ctx, ['Kategoria', 'Przychód', 'Porcje', 'Śr. przychód'], catExtrasRows, catExtrasCols, left);
 
       if (data.summary.categoryExtrasRevenue && data.summary.categoryExtrasRevenue > 0) {
         doc.moveDown(0.2);
-        doc.fontSize(9).font(this.getBoldFont()).fillColor('#D97706');
-        doc.text(`Razem dodatkowo płatne porcje: ${this.formatCurrency(data.summary.categoryExtrasRevenue)}`, left, doc.y);
+        doc.fontSize(9).font(getBoldFont(this.useCustomFonts)).fillColor('#D97706');
+        doc.text(`Razem dodatkowo płatne porcje: ${formatCurrency(data.summary.categoryExtrasRevenue)}`, left, doc.y);
         doc.fillColor(COLORS.textDark);
       }
 
       doc.moveDown(0.4);
-      this.drawSeparator(doc, left, pageWidth);
+      drawSeparator(doc, left, pageWidth);
       doc.moveDown(0.4);
     }
 
     // ── 9. FOOTER ──
     doc.moveDown(0.5);
-    this.drawInlineFooter(doc, left, pageWidth);
+    drawInlineFooter(doc, ctx, left, pageWidth);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -2078,49 +1402,50 @@ export class PDFService {
   // ═══════════════════════════════════════════════════════════════
 
   private buildOccupancyReportPDF(doc: PDFKit.PDFDocument, data: OccupancyReportPDFData): void {
+    const ctx = this.getDrawContext();
     const left = 40;
     const pageWidth = doc.page.width - 80;
 
     // ── 1. HEADER BANNER ──
-    this.drawHeaderBanner(doc, 'RAPORT', COLORS.info);
+    drawHeaderBanner(doc, ctx, 'RAPORT', COLORS.info);
 
     // ── 2. TITLE + META ──
     doc.y = 80;
-    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.fillColor(COLORS.textDark).fontSize(16).font(getBoldFont(this.useCustomFonts));
     doc.text('RAPORT ZAJĘTOŚCI', left, doc.y, { align: 'center', width: pageWidth });
 
     doc.moveDown(0.2);
-    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
     doc.text(
-      `Okres: ${data.filters.dateFrom} - ${data.filters.dateTo}  |  Wygenerowano: ${this.formatDate(new Date())}`,
+      `Okres: ${data.filters.dateFrom} - ${data.filters.dateTo}  |  Wygenerowano: ${formatDate(new Date())}`,
       left, doc.y, { align: 'center', width: pageWidth }
     );
 
     doc.moveDown(0.6);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
 
     // ── 3. SUMMARY INFO BOX ──
     const summaryLines: string[] = [
       `Średnia zajętość: ${data.summary.avgOccupancy}%`,
-      `Najpopularniejszy dzień: ${this.translateDayOfWeek(data.summary.peakDay)}`,
+      `Najpopularniejszy dzień: ${translateDayOfWeek(data.summary.peakDay)}`,
       `Najpopularniejsza sala: ${data.summary.peakHall || 'Brak danych'}`,
       `Liczba rezerwacji: ${data.summary.totalReservations}`,
       `Dni w okresie: ${data.summary.totalDaysInPeriod}`,
     ];
 
-    this.drawInfoBox(doc, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
-    const summaryBoxHeight = this.calculateInfoBoxHeight(summaryLines.length);
+    drawInfoBox(doc, ctx, 'PODSUMOWANIE', left, doc.y, pageWidth, summaryLines);
+    const summaryBoxHeight = calculateInfoBoxHeight(summaryLines.length);
     doc.y = doc.y + summaryBoxHeight + 5;
 
     doc.moveDown(0.4);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.4);
 
     // ── 4. HALLS RANKING ──
     if (data.halls.length > 0) {
-      this.safePageBreak(doc, 100);
-      this.drawSectionHeader(doc, 'ZAJĘTOŚĆ SAL', left, pageWidth);
+      safePageBreak(doc, 100);
+      drawSectionHeader(doc, ctx, 'ZAJĘTOŚĆ SAL', left, pageWidth);
 
       const hallRows = data.halls.slice(0, 20).map(hall => [
         hall.hallName,
@@ -2134,17 +1459,17 @@ export class PDFService {
         Math.round(pageWidth * 0.25),
         Math.round(pageWidth * 0.25),
       ];
-      this.drawCompactTable(doc, ['Sala', 'Zajętość %', 'Rezerwacje', 'Śr. gości'], hallRows, hallCols, left);
+      drawCompactTable(doc, ctx, ['Sala', 'Zajętość %', 'Rezerwacje', 'Śr. gości'], hallRows, hallCols, left);
 
       doc.moveDown(0.4);
-      this.drawSeparator(doc, left, pageWidth);
+      drawSeparator(doc, left, pageWidth);
       doc.moveDown(0.4);
     }
 
     // ── 5. PEAK HOURS ──
     if (data.peakHours.length > 0) {
-      this.safePageBreak(doc, 100);
-      this.drawSectionHeader(doc, 'NAJPOPULARNIEJSZE GODZINY', left, pageWidth);
+      safePageBreak(doc, 100);
+      drawSectionHeader(doc, ctx, 'NAJPOPULARNIEJSZE GODZINY', left, pageWidth);
 
       const hourRows = data.peakHours.slice(0, 20).map(hour => [
         `${hour.hour}:00`,
@@ -2154,88 +1479,36 @@ export class PDFService {
         Math.round(pageWidth * 0.50),
         Math.round(pageWidth * 0.50),
       ];
-      this.drawCompactTable(doc, ['Godzina', 'Liczba rezerwacji'], hourRows, hourCols, left);
+      drawCompactTable(doc, ctx, ['Godzina', 'Liczba rezerwacji'], hourRows, hourCols, left);
 
       doc.moveDown(0.4);
-      this.drawSeparator(doc, left, pageWidth);
+      drawSeparator(doc, left, pageWidth);
       doc.moveDown(0.4);
     }
 
     // ── 6. PEAK DAYS OF WEEK ──
     if (data.peakDaysOfWeek.length > 0) {
-      this.safePageBreak(doc, 100);
-      this.drawSectionHeader(doc, 'NAJPOPULARNIEJSZE DNI TYGODNIA', left, pageWidth);
+      safePageBreak(doc, 100);
+      drawSectionHeader(doc, ctx, 'NAJPOPULARNIEJSZE DNI TYGODNIA', left, pageWidth);
 
       const dayRows = data.peakDaysOfWeek.map(day => [
-        this.translateDayOfWeek(day.dayOfWeek),
+        translateDayOfWeek(day.dayOfWeek),
         `${day.count}`,
       ]);
       const dayCols = [
         Math.round(pageWidth * 0.50),
         Math.round(pageWidth * 0.50),
       ];
-      this.drawCompactTable(doc, ['Dzień tygodnia', 'Liczba rezerwacji'], dayRows, dayCols, left);
+      drawCompactTable(doc, ctx, ['Dzień tygodnia', 'Liczba rezerwacji'], dayRows, dayCols, left);
 
       doc.moveDown(0.4);
     }
 
     // ── 7. FOOTER ──
     doc.moveDown(0.5);
-    this.drawInlineFooter(doc, left, pageWidth);
+    drawInlineFooter(doc, ctx, left, pageWidth);
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // ██  SHARED FORMATTERS
-  // ═══════════════════════════════════════════════════════════════
-
-  private getRegularFont(): string {
-    return this.useCustomFonts ? 'DejaVu' : 'Helvetica';
-  }
-
-  private getBoldFont(): string {
-    return this.useCustomFonts ? 'DejaVu-Bold' : 'Helvetica-Bold';
-  }
-
-  private formatDate(date: Date | string): string {
-    const d = date instanceof Date ? date : new Date(date);
-    if (isNaN(d.getTime())) return String(date);
-    return new Intl.DateTimeFormat('pl-PL', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(d);
-  }
-
-  private formatTime(date: Date | string): string {
-    const d = date instanceof Date ? date : new Date(date);
-    if (isNaN(d.getTime())) return String(date);
-    return new Intl.DateTimeFormat('pl-PL', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(d);
-  }
-
-  /* istanbul ignore next */
-  private formatDateTime(date: Date | string): string {
-    const d = date instanceof Date ? date : new Date(date);
-    if (isNaN(d.getTime())) return String(date);
-    return new Intl.DateTimeFormat('pl-PL', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(d);
-  }
-
-  private formatCurrency(amount: number | string): string {
-    /* istanbul ignore next */
-    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('pl-PL', {
-      style: 'currency',
-      currency: 'PLN',
-    }).format(numAmount);
-  }
 
     // ═══════════════ CATERING PDF GENERATION ═══════════════
 
@@ -2316,9 +1589,10 @@ export class PDFService {
     // ═══════════════ CATERING PDF BUILDERS ═══════════════
 
   private async buildCateringQuotePDF(doc: PDFKit.PDFDocument, data: CateringQuotePDFData): Promise<void> {
+    const ctx = this.getDrawContext();
     const config = await loadPdfConfig('pdf-layout-catering');
     if (config?.colors) {
-      COLORS = { ...DEFAULT_COLORS, ...config.colors };
+      setColors({ ...DEFAULT_COLORS, ...config.colors });
     }
 
     try {
@@ -2328,17 +1602,17 @@ export class PDFService {
       const sectionRenderers: Record<string, () => void> = {
         header: () => {
           const statusInfo = STATUS_MAP[data.status] || { label: data.status, color: COLORS.textMuted };
-          this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
+          drawHeaderBanner(doc, ctx, statusInfo.label, statusInfo.color);
         },
         title_meta: () => {
           doc.y = 80;
-          doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+          doc.fillColor(COLORS.textDark).fontSize(16).font(getBoldFont(this.useCustomFonts));
           doc.text('WYCENA CATERING', left, doc.y, { align: 'center', width: pageWidth });
           doc.moveDown(0.2);
-          doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
-          doc.text(`Nr: ${data.orderNumber} | Data wygenerowania: ${this.formatDate(new Date())}`, left, doc.y, { align: 'center', width: pageWidth });
+          doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
+          doc.text(`Nr: ${data.orderNumber} | Data wygenerowania: ${formatDate(new Date())}`, left, doc.y, { align: 'center', width: pageWidth });
           doc.moveDown(0.6);
-          this.drawSeparator(doc, left, pageWidth);
+          drawSeparator(doc, left, pageWidth);
           doc.moveDown(0.5);
         },
         client_info: () => {
@@ -2346,53 +1620,53 @@ export class PDFService {
           if (data.client.companyName) clientLines.push(data.client.companyName);
           if (data.client.email) clientLines.push(data.client.email);
           if (data.client.address) clientLines.push(data.client.address);
-          this.drawInfoBox(doc, 'KLIENT', left, doc.y, pageWidth, clientLines);
-          const boxHeight = this.calculateInfoBoxHeight(clientLines.length);
+          drawInfoBox(doc, ctx, 'KLIENT', left, doc.y, pageWidth, clientLines);
+          const boxHeight = calculateInfoBoxHeight(clientLines.length);
           doc.y += boxHeight + 5;
           doc.moveDown(0.4);
         },
         event_info: () => {
-          doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
-          doc.text(`Data wydarzenia: ${this.formatDate(data.eventDate)}`, left, doc.y);
+          doc.fontSize(9).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
+          doc.text(`Data wydarzenia: ${formatDate(data.eventDate)}`, left, doc.y);
           doc.text(`Typ dostawy: ${DELIVERY_TYPE_LABELS[data.deliveryType] ?? data.deliveryType}`, left, doc.y);
           if (data.deliveryAddress) doc.text(`Adres: ${data.deliveryAddress}`, left, doc.y);
           doc.text(`Liczba osób: ${(data as any).guestsCount ?? data.guests ?? '—'}`, left, doc.y);
           doc.moveDown(0.4);
-          this.drawSeparator(doc, left, pageWidth);
+          drawSeparator(doc, left, pageWidth);
           doc.moveDown(0.4);
         },
         items_table: () => {
-          doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
+          doc.fontSize(11).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
           doc.text('POZYCJE ZAMÓWIENIA', left, doc.y);
           doc.moveDown(0.3);
           const itemRows = data.items.map(item => [
             (item.dishNameSnapshot ?? item.productName ?? '—') + (item.extraDescription ? ` (${item.extraDescription})` : ''),
             `${item.quantity}`,
-            this.formatCurrency(item.unitPrice),
-            this.formatCurrency(item.totalPrice),
+            formatCurrency(item.unitPrice),
+            formatCurrency(item.totalPrice),
           ]);
           const colWidths = [Math.round(pageWidth * 0.50), Math.round(pageWidth * 0.15), Math.round(pageWidth * 0.17), Math.round(pageWidth * 0.18)];
-          this.drawCompactTable(doc, ['Danie', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
+          drawCompactTable(doc, ctx, ['Danie', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
           doc.moveDown(0.4);
         },
         totals: () => {
-          doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
-          doc.text(`Suma częściowa: ${this.formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
-          if (data.discountAmount && data.discountAmount > 0) doc.text(`Rabat: -${this.formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
-          doc.text(`DO ZAPŁATY: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
+          doc.fontSize(10).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
+          doc.text(`Suma częściowa: ${formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
+          if (data.discountAmount && data.discountAmount > 0) doc.text(`Rabat: -${formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
+          doc.text(`DO ZAPŁATY: ${formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
         },
         notes: () => {
           if (data.notes) {
             doc.moveDown(0.4);
-            doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
+            doc.fontSize(8).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
             doc.text('Uwagi:', left, doc.y);
-            doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
+            doc.font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
             doc.text(data.notes, left, doc.y);
           }
         },
         footer: () => {
           doc.moveDown(1);
-          this.drawInlineFooter(doc, left, pageWidth);
+          drawInlineFooter(doc, ctx, left, pageWidth);
         },
       };
 
@@ -2406,32 +1680,33 @@ export class PDFService {
         }
       }
     } finally {
-      COLORS = { ...DEFAULT_COLORS };
+      resetColors();
     }
   }
 
   private buildCateringKitchenPDF(doc: PDFKit.PDFDocument, data: CateringKitchenPrintData): void {
+    const ctx = this.getDrawContext();
     const left = 40;
     const pageWidth = doc.page.width - 80;
-    this.drawHeaderBanner(doc, 'DRUK KUCHENNY', COLORS.primary);
+    drawHeaderBanner(doc, ctx, 'DRUK KUCHENNY', COLORS.primary);
     doc.y = 80;
-    doc.fillColor(COLORS.textDark).fontSize(18).font(this.getBoldFont());
+    doc.fillColor(COLORS.textDark).fontSize(18).font(getBoldFont(this.useCustomFonts));
     doc.text('DRUK KUCHENNY', left, doc.y, { align: 'center', width: pageWidth });
     doc.moveDown(0.2);
-    doc.fontSize(9).font(this.getRegularFont()).fillColor(COLORS.textMuted);
+    doc.fontSize(9).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
     doc.text(`Nr zamówienia: ${data.orderNumber}`, left, doc.y, { align: 'center', width: pageWidth });
     doc.moveDown(0.6);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
-    doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
-    doc.text(`Data wydarzenia: ${this.formatDate(data.eventDate)}`, left, doc.y);
+    doc.fontSize(10).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
+    doc.text(`Data wydarzenia: ${formatDate(data.eventDate)}`, left, doc.y);
     doc.text(`Typ dostawy: ${DELIVERY_TYPE_LABELS[data.deliveryType] ?? data.deliveryType}`, left, doc.y);
     if (data.deliveryAddress) doc.text(`Adres dostawy: ${data.deliveryAddress}`, left, doc.y);
     doc.text(`Liczba gości: ${(data as any).guestsCount ?? data.guests ?? '—'}`, left, doc.y);
     doc.moveDown(0.5);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
-    doc.fontSize(12).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.fontSize(12).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
     doc.text('DO PRZYGOTOWANIA', left, doc.y);
     doc.moveDown(0.3);
     const itemRows = data.items.map(item => [
@@ -2439,38 +1714,39 @@ export class PDFService {
       `${item.quantity}`,
     ]);
     const colWidths = [Math.round(pageWidth * 0.75), Math.round(pageWidth * 0.25)];
-    this.drawCompactTable(doc, ['Danie', 'Ilość'], itemRows, colWidths, left);
+    drawCompactTable(doc, ctx, ['Danie', 'Ilość'], itemRows, colWidths, left);
     if (data.notes) {
       doc.moveDown(0.5);
-      doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
+      doc.fontSize(9).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
       doc.text('Uwagi klienta:', left, doc.y);
-      doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
+      doc.font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
       doc.text(data.notes, left, doc.y);
     }
     doc.moveDown(1);
-    this.drawInlineFooter(doc, left, pageWidth);
+    drawInlineFooter(doc, ctx, left, pageWidth);
   }
 
     private buildCateringOrderPDF(doc: PDFKit.PDFDocument, data: CateringOrderPDFData): void {
+    const ctx = this.getDrawContext();
     const left = 40;
     const pageWidth = doc.page.width - 80;
 
     // Header banner with status
     const statusInfo = STATUS_MAP[data.status] || { label: data.status, color: COLORS.textMuted };
-    this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
+    drawHeaderBanner(doc, ctx, statusInfo.label, statusInfo.color);
 
     // Title + metadata
     doc.y = 80;
-    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.fillColor(COLORS.textDark).fontSize(16).font(getBoldFont(this.useCustomFonts));
     doc.text('SZCZEGÓŁY ZAMÓWIENIA CATERING', left, doc.y, { align: 'center', width: pageWidth });
     doc.moveDown(0.2);
-    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
-    doc.text(`Nr: ${data.orderNumber} | Wygenerowano: ${this.formatDate(new Date())}`, left, doc.y, {
+    doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
+    doc.text(`Nr: ${data.orderNumber} | Wygenerowano: ${formatDate(new Date())}`, left, doc.y, {
       align: 'center',
       width: pageWidth,
     });
     doc.moveDown(0.6);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
 
     // Client + Event info (two columns)
@@ -2482,203 +1758,108 @@ export class PDFService {
     if (data.client.companyName) clientLines.push(data.client.companyName);
     if (data.client.email) clientLines.push(data.client.email);
     if (data.client.address) clientLines.push(data.client.address);
-    this.drawInfoBox(doc, 'KLIENT', left, startY, colWidth, clientLines);
+    drawInfoBox(doc, ctx, 'KLIENT', left, startY, colWidth, clientLines);
 
     const deliveryLabel = DELIVERY_TYPE_LABELS[data.deliveryType] ?? data.deliveryType;
     const eventLines = [
-      this.formatDate(data.eventDate),
+      formatDate(data.eventDate),
       `Typ dostawy: ${deliveryLabel}`,
       `Liczba osób: ${data.guestsCount ?? data.guests ?? '—'}`,
     ];
     if (data.deliveryAddress) eventLines.push(`Adres: ${data.deliveryAddress}`);
-    this.drawInfoBox(doc, 'WYDARZENIE', left + colWidth + colGap, startY, colWidth, eventLines);
+    drawInfoBox(doc, ctx, 'WYDARZENIE', left + colWidth + colGap, startY, colWidth, eventLines);
 
-    const boxHeight = this.calculateInfoBoxHeight(Math.max(clientLines.length, eventLines.length));
+    const boxHeight = calculateInfoBoxHeight(Math.max(clientLines.length, eventLines.length));
     doc.y = startY + boxHeight + 5;
     doc.moveDown(0.4);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.4);
 
     // Items table
-    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.fontSize(11).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
     doc.text('POZYCJE ZAMÓWIENIA', left, doc.y);
     doc.moveDown(0.3);
 
     const itemRows = data.items.map(item => [
       (item.dishNameSnapshot ?? item.productName ?? '—') + (item.extraDescription ? ` (${item.extraDescription})` : ''),
       `${item.quantity}`,
-      this.formatCurrency(item.unitPrice),
-      this.formatCurrency(item.totalPrice),
+      formatCurrency(item.unitPrice),
+      formatCurrency(item.totalPrice),
     ]);
     const colWidths = [Math.round(pageWidth * 0.50), Math.round(pageWidth * 0.15), Math.round(pageWidth * 0.17), Math.round(pageWidth * 0.18)];
-    this.drawCompactTable(doc, ['Danie', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
+    drawCompactTable(doc, ctx, ['Danie', 'Ilość', 'Cena jedn.', 'Razem'], itemRows, colWidths, left);
 
     doc.moveDown(0.4);
 
     // Financial summary
-    doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
-    doc.text(`Suma częściowa: ${this.formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
+    doc.fontSize(10).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
+    doc.text(`Suma częściowa: ${formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
     if (data.discountAmount && data.discountAmount > 0)
-      doc.text(`Rabat: -${this.formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
-    doc.text(`DO ZAPŁATY: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
+      doc.text(`Rabat: -${formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
+    doc.text(`DO ZAPŁATY: ${formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
 
     // Notes
     if (data.notes) {
       doc.moveDown(0.4);
-      doc.fontSize(8).font(this.getBoldFont()).fillColor(COLORS.textDark);
+      doc.fontSize(8).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
       doc.text('Uwagi:', left, doc.y);
-      doc.font(this.getRegularFont()).fillColor(COLORS.textMuted);
+      doc.font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
       doc.text(data.notes, left, doc.y);
     }
 
     // Footer
     doc.moveDown(1);
-    this.drawInlineFooter(doc, left, pageWidth);
+    drawInlineFooter(doc, ctx, left, pageWidth);
   }
 
   private buildCateringInvoicePDF(doc: PDFKit.PDFDocument, data: CateringInvoicePDFData): void {
+    const ctx = this.getDrawContext();
     const left = 40;
     const pageWidth = doc.page.width - 80;
     const statusInfo = STATUS_MAP[data.status] || { label: data.status, color: COLORS.textMuted };
-    this.drawHeaderBanner(doc, statusInfo.label, statusInfo.color);
+    drawHeaderBanner(doc, ctx, statusInfo.label, statusInfo.color);
     doc.y = 80;
-    doc.fillColor(COLORS.textDark).fontSize(16).font(this.getBoldFont());
+    doc.fillColor(COLORS.textDark).fontSize(16).font(getBoldFont(this.useCustomFonts));
     doc.text('FAKTURA PRO FORMA', left, doc.y, { align: 'center', width: pageWidth });
     doc.moveDown(0.2);
-    doc.fontSize(8).font(this.getRegularFont()).fillColor(COLORS.textMuted);
-    doc.text(`Nr: ${data.orderNumber} | Data wystawienia: ${this.formatDate(new Date())}`, left, doc.y, { align: 'center', width: pageWidth });
+    doc.fontSize(8).font(getRegularFont(this.useCustomFonts)).fillColor(COLORS.textMuted);
+    doc.text(`Nr: ${data.orderNumber} | Data wystawienia: ${formatDate(new Date())}`, left, doc.y, { align: 'center', width: pageWidth });
     doc.moveDown(0.6);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.5);
     const clientLines = [data.client.firstName + ' ' + data.client.lastName, data.client.phone];
     if (data.client.companyName) clientLines.push(data.client.companyName);
     if (data.client.nip) clientLines.push(`NIP: ${data.client.nip}`);
     if (data.client.email) clientLines.push(data.client.email);
     if (data.client.address) clientLines.push(data.client.address);
-    this.drawInfoBox(doc, 'NABYWCA', left, doc.y, pageWidth, clientLines);
-    const boxHeight = this.calculateInfoBoxHeight(clientLines.length);
+    drawInfoBox(doc, ctx, 'NABYWCA', left, doc.y, pageWidth, clientLines);
+    const boxHeight = calculateInfoBoxHeight(clientLines.length);
     doc.y += boxHeight + 5;
     doc.moveDown(0.4);
-    doc.fontSize(9).font(this.getBoldFont()).fillColor(COLORS.textDark);
-    doc.text(`Data wydarzenia: ${this.formatDate(data.eventDate)}`, left, doc.y);
+    doc.fontSize(9).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
+    doc.text(`Data wydarzenia: ${formatDate(data.eventDate)}`, left, doc.y);
     doc.text(`Typ dostawy: ${DELIVERY_TYPE_LABELS[data.deliveryType] ?? data.deliveryType}`, left, doc.y);
-    this.drawSeparator(doc, left, pageWidth);
+    drawSeparator(doc, left, pageWidth);
     doc.moveDown(0.4);
-    doc.fontSize(11).font(this.getBoldFont()).fillColor(COLORS.textDark);
+    doc.fontSize(11).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
     doc.text('POZYCJE', left, doc.y);
     doc.moveDown(0.3);
     const itemRows = data.items.map(item => [
       (item.dishNameSnapshot ?? item.productName ?? '—') + (item.extraDescription ? ` (${item.extraDescription})` : ''),
       `${item.quantity}`,
-      this.formatCurrency(item.unitPrice),
-      this.formatCurrency(item.totalPrice),
+      formatCurrency(item.unitPrice),
+      formatCurrency(item.totalPrice),
     ]);
     const colWidths = [Math.round(pageWidth * 0.50), Math.round(pageWidth * 0.15), Math.round(pageWidth * 0.17), Math.round(pageWidth * 0.18)];
-    this.drawCompactTable(doc, ['Nazwa', 'Ilość', 'Cena jedn.', 'Wartość'], itemRows, colWidths, left);
+    drawCompactTable(doc, ctx, ['Nazwa', 'Ilość', 'Cena jedn.', 'Wartość'], itemRows, colWidths, left);
     doc.moveDown(0.4);
-    doc.fontSize(10).font(this.getBoldFont()).fillColor(COLORS.textDark);
-    doc.text(`Netto: ${this.formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
-    if (data.discountAmount && data.discountAmount > 0) doc.text(`Rabat: -${this.formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
-    doc.text(`DO ZAPŁATY: ${this.formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
+    doc.fontSize(10).font(getBoldFont(this.useCustomFonts)).fillColor(COLORS.textDark);
+    doc.text(`Netto: ${formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
+    if (data.discountAmount && data.discountAmount > 0) doc.text(`Rabat: -${formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
+    doc.text(`DO ZAPŁATY: ${formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
     doc.moveDown(1);
-    this.drawInlineFooter(doc, left, pageWidth);
+    drawInlineFooter(doc, ctx, left, pageWidth);
   }
-}
-
-
-// ═══════════════ CATERING PDF TYPES ═══════════════
-
-export interface CateringOrderItemForPDF {
-  dishNameSnapshot?: string;
-  productName?: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  extraDescription?: string;
-  note?: string;
-}
-
-export interface CateringQuotePDFData {
-  id: string;
-  orderNumber: string;
-  client: {
-    firstName: string;
-    lastName: string;
-    email?: string;
-    phone: string;
-    companyName?: string;
-    address?: string;
-  };
-  eventDate: Date;
-  deliveryType: string;
-  deliveryAddress?: string;
-  guests: number;
-  items: CateringOrderItemForPDF[];
-  subtotal: number;
-  discountAmount?: number;
-  totalPrice: number;
-  status: string;
-  notes?: string;
-  createdAt: Date;
-}
-
-export interface CateringKitchenPrintData {
-  id: string;
-  orderNumber: string;
-  eventDate: Date;
-  deliveryType: string;
-  deliveryAddress?: string;
-  guests: number;
-  items: CateringOrderItemForPDF[];
-  notes?: string;
-}
-
-export interface CateringInvoicePDFData {
-  id: string;
-  orderNumber: string;
-  client: {
-    firstName: string;
-    lastName: string;
-    email?: string;
-    phone: string;
-    companyName?: string;
-    address?: string;
-    nip?: string;
-  };
-  eventDate: Date;
-  deliveryType: string;
-  deliveryAddress?: string;
-  items: CateringOrderItemForPDF[];
-  subtotal: number;
-  discountAmount?: number;
-  totalPrice: number;
-  status: string;
-  createdAt: Date;
-}
-
-export interface CateringOrderPDFData {
-  id: string;
-  orderNumber: string;
-  client: {
-    firstName: string;
-    lastName: string;
-    email?: string;
-    phone: string;
-    companyName?: string;
-    address?: string;
-  };
-  eventDate: Date | string;
-  deliveryType: string;
-  deliveryAddress?: string;
-  guestsCount?: number;
-  guests?: number;
-  items: CateringOrderItemForPDF[];
-  subtotal: number;
-  discountAmount?: number;
-  totalPrice: number;
-  status: string;
-  notes?: string;
-  createdAt: Date;
 }
 
 export const pdfService = new PDFService();
