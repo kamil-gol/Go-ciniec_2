@@ -2,7 +2,7 @@
  * Unit tests for #216: categoryExtras revenue in revenue reports
  * Tests calculateExtrasRevenue + categoryExtras aggregation logic.
  */
-import { calculatePortions } from '@services/reports.service';
+import { calculatePortions } from '@services/reports';
 
 // ═════════════════════════════════════════════════════════════════
 // calculatePortions — portionTarget for category extras pricing

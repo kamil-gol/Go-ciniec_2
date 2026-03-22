@@ -3,7 +3,7 @@
  * Uses real zod validation (inline schemas in controller).
  */
 
-jest.mock('../../../services/reports.service', () => ({
+jest.mock('../../../services/reports', () => ({
   __esModule: true,
   default: {
     getRevenueReport: jest.fn(),
@@ -22,7 +22,7 @@ jest.mock('../../../services/reports-export.service', () => ({
 }));
 
 import { ReportsController } from '../../../controllers/reports.controller';
-import reportsService from '../../../services/reports.service';
+import reportsService from '../../../services/reports';
 import reportsExportService from '../../../services/reports-export.service';
 
 const ctrl = new ReportsController();

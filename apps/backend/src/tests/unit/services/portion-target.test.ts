@@ -8,7 +8,7 @@
  * - Mixed report scenario: 3 target types in one package
  */
 
-import { calculatePortions } from '../../../services/reports.service';
+import { calculatePortions } from '../../../services/reports';
 
 // ═══════════════════════════════════════════
 // 1. calculatePortions() — pure function

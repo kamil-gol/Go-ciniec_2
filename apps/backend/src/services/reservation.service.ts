@@ -43,6 +43,9 @@ import { reservationCategoryExtraService } from './reservationCategoryExtra.serv
 import reservationMenuService from './reservation-menu.service';
 import { RESERVATION, MENU, HALL, CLIENT, EVENT_TYPE, VENUE_SURCHARGE } from '../i18n/pl';
 import notificationService from './notification.service';
+import { validateCapacityForTimeRange, checkWholeVenueConflict } from './reservation-validation.service';
+import { reservationStatusService } from './reservation-status.service';
+import { createHistoryEntry } from './reservation-history.helper';
 
 function sanitizeString(value: any): string | null {
   if (value === null || value === undefined || value === '') return null;
@@ -207,8 +210,8 @@ export class ReservationService {
       if (startDT >= endDT) throw new Error(RESERVATION.END_AFTER_START);
 
       // #165: Capacity-based overlap check instead of binary block
-      await this.validateCapacityForTimeRange(hall, startDT, endDT, guests);
-      await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
+      await validateCapacityForTimeRange(hall, startDT, endDT, guests);
+      await checkWholeVenueConflict(data.hallId, startDT, endDT);
 
       /* istanbul ignore next */
       if (startDT.getFullYear() > new Date().getFullYear()) {
@@ -226,8 +229,8 @@ export class ReservationService {
       // #165: Capacity-based overlap check for legacy format
       const startDT = new Date(`${data.date}T${data.startTime}:00`);
       const endDT = new Date(`${data.date}T${data.endTime}:00`);
-      await this.validateCapacityForTimeRange(hall, startDT, endDT, guests);
-      await this.checkWholeVenueConflict(data.hallId, startDT, endDT);
+      await validateCapacityForTimeRange(hall, startDT, endDT, guests);
+      await checkWholeVenueConflict(data.hallId, startDT, endDT);
 
       /* istanbul ignore next */
       if (reservationDate.getFullYear() > new Date().getFullYear()) {
@@ -366,7 +369,7 @@ export class ReservationService {
       });
     }
 
-    await this.createHistoryEntry(
+    await createHistoryEntry(
       reservation.id,
       userId,
       'CREATED',
@@ -444,7 +447,7 @@ export class ReservationService {
         await prisma.reservationMenuSnapshot.delete({ where: { id: reservation.menuSnapshot.id } });
       }
 
-      await this.createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Pakiet menu', 'Brak', 'Menu usunięte z rezerwacji');
+      await createHistoryEntry(reservationId, userId, 'MENU_REMOVED', 'menu', 'Pakiet menu', 'Brak', 'Menu usunięte z rezerwacji');
 
       // #217: logChange removed — createHistoryEntry already covers MENU_REMOVED
 
@@ -516,7 +519,7 @@ export class ReservationService {
       // Recalculate totalPrice including extras + discount + surcharge
       const newTotalPrice = await recalculateReservationTotalPrice(reservationId);
 
-      await this.createHistoryEntry(
+      await createHistoryEntry(
         reservationId,
         userId,
         'MENU_UPDATED',
@@ -675,7 +678,7 @@ export class ReservationService {
         where: { id },
         data: { internalNotes: newValue },
       });
-      await this.createHistoryEntry(
+      await createHistoryEntry(
         id,
         userId,
         'NOTE_UPDATED',
@@ -773,8 +776,8 @@ export class ReservationService {
 
     // #165: Capacity-based overlap + capacity check on hall/time/guests change
     if ((hallChanged || data.startDateTime || data.endDateTime || guestsChanged) && finalStart && finalEnd && effectiveHall) {
-      await this.validateCapacityForTimeRange(effectiveHall as any, finalStart, finalEnd, finalGuests, id);
-      await this.checkWholeVenueConflict(effectiveHallId, finalStart, finalEnd, id);
+      await validateCapacityForTimeRange(effectiveHall as any, finalStart, finalEnd, finalGuests, id);
+      await checkWholeVenueConflict(effectiveHallId, finalStart, finalEnd, id);
     }
 
     // Single-reservation capacity guard (guests alone exceed hall.capacity)
@@ -833,7 +836,7 @@ export class ReservationService {
 
         if (!oldIsWholeVenue && newIsWholeVenue) {
           console.log(`[Reservation] Venue surcharge APPLIED for ${id}: +${newSurcharge} PLN (hall changed to whole venue)`);
-          await this.createHistoryEntry(
+          await createHistoryEntry(
             id,
             userId,
             'SURCHARGE_APPLIED',
@@ -844,10 +847,10 @@ export class ReservationService {
           );
         } else if (oldIsWholeVenue && !newIsWholeVenue) {
           console.log(`[Reservation] Venue surcharge REMOVED for ${id}: -${oldSurcharge} PLN (hall changed to normal)`);
-          await this.createHistoryEntry(id, userId, 'SURCHARGE_REMOVED', 'venueSurcharge', String(oldSurcharge), '0', VENUE_SURCHARGE.AUDIT_REMOVED);
+          await createHistoryEntry(id, userId, 'SURCHARGE_REMOVED', 'venueSurcharge', String(oldSurcharge), '0', VENUE_SURCHARGE.AUDIT_REMOVED);
         } else {
           console.log(`[Reservation] Venue surcharge RECALCULATED for ${id}: ${oldSurcharge} → ${newSurcharge} PLN`);
-          await this.createHistoryEntry(
+          await createHistoryEntry(
             id,
             userId,
             'SURCHARGE_RECALC',
@@ -887,7 +890,7 @@ export class ReservationService {
 
     if (detectedChanges.length > 0) {
       const changesSummary = formatChangesSummary(detectedChanges);
-      await this.createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'różne', 'różne', `${data.reason}
+      await createHistoryEntry(id, userId, 'UPDATED', 'multiple', 'różne', 'różne', `${data.reason}
 
 Zmiany:
 ${changesSummary}`);
@@ -929,404 +932,21 @@ ${changesSummary}`);
     return reservation as any;
   }
 
+  // Status operations delegated to ReservationStatusService
   async updateStatus(id: string, data: UpdateStatusDTO, userId: string): Promise<any> {
-    await this.validateUserId(userId);
-    const existingReservation = await prisma.reservation.findUnique({
-      where: { id },
-      include: { client: true, hall: true },
-    });
-    if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
-
-    this.validateStatusTransition(existingReservation.status, data.status);
-
-    if (data.status === ReservationStatus.COMPLETED) {
-      const eventDate = existingReservation.startDateTime
-        ? new Date(existingReservation.startDateTime)
-        : existingReservation.date
-        ? new Date(existingReservation.date)
-        : null;
-      if (eventDate && eventDate > new Date()) {
-        throw new Error(RESERVATION.CANNOT_COMPLETE_BEFORE_EVENT);
-      }
-    }
-
-    // #172: Cancellation = instant archive (CANCELLED → ARCHIVED + archivedAt)
-    if (data.status === ReservationStatus.CANCELLED) {
-      const reservation = await prisma.$transaction(async (tx) => {
-        const updatedReservation = await tx.reservation.update({
-          where: { id },
-          data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() },
-          include: RESERVATION_INCLUDE,
-        });
-
-        const cancelledDeposits = await this.cascadeCancelDeposits(tx, id, userId, data.reason);
-
-        await tx.reservationHistory.create({
-          data: {
-            reservationId: id,
-            changedByUserId: userId,
-            changeType: 'STATUS_CHANGED',
-            fieldName: 'status',
-            oldValue: existingReservation.status,
-            newValue: 'CANCELLED',
-            reason: data.reason
-              ? `${data.reason}${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`
-              : `Zmiana statusu${cancelledDeposits > 0 ? ` | Auto-anulowano ${cancelledDeposits} zaliczek` : ''}`,
-          },
-        });
-
-        // #172: Auto-archive history entry
-        await tx.reservationHistory.create({
-          data: {
-            reservationId: id,
-            changedByUserId: userId,
-            changeType: 'AUTO_ARCHIVED',
-            fieldName: 'archivedAt',
-            oldValue: null,
-            newValue: new Date().toISOString(),
-            reason: 'Automatyczna archiwizacja po anulowaniu rezerwacji',
-          },
-        });
-
-        return updatedReservation;
-      });
-
-      // #217: logChange removed — reservationHistory entries inside transaction already cover this
-
-      // #128: Notification — status changed (cancellation)
-      const cancelClient = existingReservation.client as any;
-      if (cancelClient) {
-        notificationService.createForAll({
-          type: 'STATUS_CHANGED',
-          title: 'Rezerwacja anulowana',
-          message: `${cancelClient.firstName} ${cancelClient.lastName} — rezerwacja została anulowana`,
-          entityType: 'RESERVATION',
-          entityId: id,
-          excludeUserId: userId,
-        });
-      }
-
-      return reservation as any;
-    }
-
-    const reservation = await prisma.reservation.update({
-      where: { id },
-      data: { status: data.status },
-      include: RESERVATION_INCLUDE,
-    });
-
-    await this.createHistoryEntry(id, userId, 'STATUS_CHANGED', 'status', existingReservation.status, data.status, data.reason || 'Zmiana statusu');
-
-    // #217: logChange removed — createHistoryEntry already covers STATUS_CHANGED
-
-    // #128: Notification — status changed
-    const statusClient = existingReservation.client as any;
-    const statusLabels: Record<string, string> = {
-      PENDING: 'Oczekująca', RESERVED: 'Zarezerwowana', CONFIRMED: 'Potwierdzona',
-      CANCELLED: 'Anulowana', COMPLETED: 'Zakończona', ARCHIVED: 'Zarchiwizowana',
-    };
-    if (statusClient) {
-      notificationService.createForAll({
-        type: 'STATUS_CHANGED',
-        title: 'Zmiana statusu rezerwacji',
-        message: `${statusClient.firstName} ${statusClient.lastName} — ${statusLabels[existingReservation.status] || existingReservation.status} → ${statusLabels[data.status] || data.status}`,
-        entityType: 'RESERVATION',
-        entityId: id,
-        excludeUserId: userId,
-      });
-    }
-
-    return reservation as any;
+    return reservationStatusService.updateStatus(id, data, userId);
   }
 
-  // #172: Cancellation = instant archive
   async cancelReservation(id: string, userId: string, reason?: string): Promise<void> {
-    await this.validateUserId(userId);
-    const existingReservation = await prisma.reservation.findUnique({
-      where: { id },
-      include: { client: true, hall: true },
-    });
-    if (!existingReservation) throw new Error(RESERVATION.NOT_FOUND);
-
-    if (existingReservation.status === ReservationStatus.CANCELLED) throw new Error(RESERVATION.ALREADY_CANCELLED);
-    if (existingReservation.status === ReservationStatus.COMPLETED) throw new Error(RESERVATION.CANNOT_CANCEL_COMPLETED);
-    if (existingReservation.status === ReservationStatus.ARCHIVED) throw new Error(RESERVATION.ALREADY_ARCHIVED);
-
-    await prisma.$transaction(async (tx) => {
-      // #172: Instant archive — status ARCHIVED + archivedAt set
-      await tx.reservation.update({
-        where: { id },
-        data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() },
-      });
-
-      const cancelledCount = await this.cascadeCancelDeposits(tx, id, userId, reason);
-
-      await tx.reservationHistory.create({
-        data: {
-          reservationId: id,
-          changedByUserId: userId,
-          changeType: 'CANCELLED',
-          fieldName: 'status',
-          oldValue: existingReservation.status,
-          newValue: 'CANCELLED',
-          reason: reason
-            ? `${reason}${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`
-            : `Rezerwacja anulowana${cancelledCount > 0 ? ` | Auto-anulowano ${cancelledCount} zaliczek` : ''}`,
-        },
-      });
-
-      // #172: Auto-archive history entry
-      await tx.reservationHistory.create({
-        data: {
-          reservationId: id,
-          changedByUserId: userId,
-          changeType: 'AUTO_ARCHIVED',
-          fieldName: 'archivedAt',
-          oldValue: null,
-          newValue: new Date().toISOString(),
-          reason: 'Automatyczna archiwizacja po anulowaniu rezerwacji',
-        },
-      });
-    });
-
-    // #217: logChange removed — reservationHistory entries inside transaction already cover CANCEL + AUTO_ARCHIVED
-
-    // #128: Notification — reservation cancelled
-    const cancelClient = existingReservation.client as any;
-    if (cancelClient) {
-      notificationService.createForAll({
-        type: 'STATUS_CHANGED',
-        title: 'Rezerwacja anulowana',
-        message: `${cancelClient.firstName} ${cancelClient.lastName} — rezerwacja została anulowana`,
-        entityType: 'RESERVATION',
-        entityId: id,
-        excludeUserId: userId,
-      });
-    }
-
-    // #129: Check queue for matching date — notify staff if someone is waiting
-    if (existingReservation.startDateTime) {
-      const eventDate = new Date(existingReservation.startDateTime);
-      const dateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
-      const nextDay = new Date(dateOnly);
-      nextDay.setDate(nextDay.getDate() + 1);
-
-      const queueEntries = await prisma.reservation.findMany({
-        where: {
-          status: ReservationStatus.RESERVED,
-          reservationQueueDate: { gte: dateOnly, lt: nextDay },
-        },
-        include: { client: true },
-        orderBy: { reservationQueuePosition: 'asc' },
-      });
-
-      if (queueEntries.length > 0) {
-        const dateStr = dateOnly.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const names = queueEntries
-          .slice(0, 3)
-          .map((q: any, i: number) => `${q.client?.firstName} ${q.client?.lastName} (poz. ${i + 1})`)
-          .join(', ');
-        const extra = queueEntries.length > 3 ? ` i ${queueEntries.length - 3} więcej` : '';
-
-        notificationService.createForAll({
-          type: 'QUEUE_MATCH',
-          title: 'Zwolnił się termin — ktoś czeka w kolejce',
-          message: `Anulowano rezerwację na ${dateStr} — w kolejce: ${names}${extra}`,
-          entityType: 'QUEUE',
-          entityId: undefined,
-          excludeUserId: userId,
-        });
-      }
-    }
+    return reservationStatusService.cancelReservation(id, userId, reason);
   }
 
   async archiveReservation(id: string, userId: string, reason?: string): Promise<void> {
-    await this.validateUserId(userId);
-    const reservation = await prisma.reservation.findUnique({
-      where: { id },
-      include: { client: true, hall: true },
-    });
-    if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
-    if (reservation.archivedAt) throw new Error(RESERVATION.ALREADY_ARCHIVED);
-
-    await prisma.reservation.update({
-      where: { id },
-      data: { status: ReservationStatus.ARCHIVED, archivedAt: new Date() },
-    });
-
-    await this.createHistoryEntry(
-      id,
-      userId,
-      'ARCHIVED',
-      'archivedAt',
-      'null',
-      new Date().toISOString(),
-      reason || 'Rezerwacja zarchiwizowana'
-    );
-
-    // #217: logChange removed — createHistoryEntry already covers ARCHIVE
+    return reservationStatusService.archiveReservation(id, userId, reason);
   }
 
   async unarchiveReservation(id: string, userId: string, reason?: string): Promise<void> {
-    await this.validateUserId(userId);
-    const reservation = await prisma.reservation.findUnique({
-      where: { id },
-      include: { client: true, hall: true },
-    });
-    if (!reservation) throw new Error(RESERVATION.NOT_FOUND);
-    if (!reservation.archivedAt) throw new Error(RESERVATION.NOT_ARCHIVED);
-
-    await prisma.reservation.update({
-      where: { id },
-      data: { status: ReservationStatus.CANCELLED, archivedAt: null },
-    });
-
-    await this.createHistoryEntry(
-      id,
-      userId,
-      'UNARCHIVED',
-      'archivedAt',
-      reservation.archivedAt.toISOString(),
-      'null',
-      reason || 'Rezerwacja przywrócona z archiwum'
-    );
-
-    // #217: logChange removed — createHistoryEntry already covers UNARCHIVE
-  }
-
-  private async cascadeCancelDeposits(tx: any, reservationId: string, userId: string, reason?: string): Promise<number> {
-    const pendingDeposits = await tx.deposit.findMany({
-      where: { reservationId, status: { in: ['PENDING', 'OVERDUE'] } },
-    });
-
-    if (pendingDeposits.length === 0) return 0;
-
-    await tx.deposit.updateMany({
-      where: { reservationId, status: { in: ['PENDING', 'OVERDUE'] } },
-      data: { status: 'CANCELLED', updatedAt: new Date() },
-    });
-
-    const totalCancelledAmount = pendingDeposits.reduce((sum: number, d: any) => sum + Number(d.amount), 0);
-
-    for (const deposit of pendingDeposits) {
-      await tx.reservationHistory.create({
-        data: {
-          reservationId,
-          changedByUserId: userId,
-          changeType: 'DEPOSIT_CANCEL',
-          fieldName: 'deposit',
-          oldValue: deposit.status,
-          newValue: 'CANCELLED',
-          reason: `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł auto-anulowana z powodu anulowania rezerwacji${
-            reason ? `: ${reason}` : ''
-          }`,
-        },
-      });
-    }
-
-    // #217: setTimeout(0) logChange removed — reservationHistory entries in loop already cover each deposit cancellation
-
-    return pendingDeposits.length;
-  }
-
-  /**
-   * #165: Validate capacity for a time range — central capacity-based overlap logic.
-   *
-   * Decision tree:
-   * 1. hall.allowMultipleBookings === false → any overlap = block (MULTIPLE_BOOKINGS_DISABLED)
-   * 2. hall.allowMultipleBookings === true → aggregate occupied + newGuests vs capacity
-   * If exceeded → CAPACITY_EXCEEDED with available/total info
-   */
-  private async validateCapacityForTimeRange(
-    hall: { id: string; capacity: number; allowMultipleBookings: boolean },
-    startDateTime: Date,
-    endDateTime: Date,
-    newGuests: number,
-    excludeReservationId?: string
-  ): Promise<void> {
-    const where: any = {
-      hallId: hall.id,
-      status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
-      archivedAt: null,
-      AND: [{ startDateTime: { lt: endDateTime } }, { endDateTime: { gt: startDateTime } }],
-    };
-    if (excludeReservationId) where.id = { not: excludeReservationId };
-
-    const overlapping = await prisma.reservation.findMany({
-      where,
-      select: { id: true, guests: true },
-    });
-
-    if (overlapping.length === 0) return; // no conflicts at all
-
-    // Case 1: Hall does NOT allow multiple bookings → any overlap is a block
-    if (!hall.allowMultipleBookings) {
-      throw new Error(RESERVATION.MULTIPLE_BOOKINGS_DISABLED);
-    }
-
-    // Case 2: Hall allows multiple bookings → check aggregate capacity
-    const occupiedCapacity = overlapping.reduce((sum, r) => sum + (r.guests || 0), 0);
-    const availableCapacity = Math.max(0, hall.capacity - occupiedCapacity);
-
-    if (newGuests > availableCapacity) {
-      throw new Error(RESERVATION.CAPACITY_EXCEEDED(newGuests, availableCapacity, hall.capacity));
-    }
-  }
-
-  /**
-   * Check whole-venue conflict with allowWithWholeVenue support.
-   */
-  private async checkWholeVenueConflict(hallId: string, startDateTime: Date, endDateTime: Date, excludeReservationId?: string): Promise<void> {
-    const hall = await prisma.hall.findUnique({ where: { id: hallId } });
-    if (!hall) return;
-
-    const activeStatuses = [ReservationStatus.PENDING, ReservationStatus.CONFIRMED];
-    const baseWhere: any = {
-      status: { in: activeStatuses },
-      archivedAt: null,
-      AND: [{ startDateTime: { lt: endDateTime } }, { endDateTime: { gt: startDateTime } }],
-    };
-    if (excludeReservationId) {
-      baseWhere.id = { not: excludeReservationId };
-    }
-
-    if (hall.isWholeVenue) {
-      const conflict = await prisma.reservation.findFirst({
-        where: {
-          ...baseWhere,
-          hallId: { not: hallId },
-          hall: { allowWithWholeVenue: false },
-        },
-        include: {
-          hall: { select: { name: true } },
-          client: { select: { firstName: true, lastName: true } },
-        },
-      });
-
-      if (conflict) {
-        const clientName = conflict.client ? `${conflict.client.firstName} ${conflict.client.lastName}` : 'nieznany klient';
-        const hallName = (conflict as any).hall?.name || 'inna sala';
-        throw new Error(`Nie można zarezerwować całego obiektu — sala "${hallName}" ma już rezerwację w tym terminie (${clientName}).`);
-      }
-    } else {
-      if (hall.allowWithWholeVenue) return;
-
-      const wholeVenueHall = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
-      if (!wholeVenueHall) return;
-
-      const conflict = await prisma.reservation.findFirst({
-        where: {
-          ...baseWhere,
-          hallId: wholeVenueHall.id,
-        },
-        include: { client: { select: { firstName: true, lastName: true } } },
-      });
-
-      if (conflict) {
-        const clientName = conflict.client ? `${conflict.client.firstName} ${conflict.client.lastName}` : 'nieznany klient';
-        throw new Error(`Nie można zarezerwować tej sali — cały obiekt jest już zarezerwowany w tym terminie (${clientName}).`);
-      }
-    }
+    return reservationStatusService.unarchiveReservation(id, userId, reason);
   }
 
   private async validateUserId(userId: string): Promise<void> {
@@ -1334,35 +954,6 @@ ${changesSummary}`);
     if (!user) {
       throw new AppError(401, 'Sesja wygasła lub użytkownik nie istnieje — wyloguj się i zaloguj ponownie');
     }
-  }
-
-  // #144: Added ARCHIVED as terminal state (no transitions out)
-  private validateStatusTransition(currentStatus: string, newStatus: ReservationStatus): void {
-    const validTransitions: Record<string, string[]> = {
-      [ReservationStatus.PENDING]: [ReservationStatus.CONFIRMED, ReservationStatus.CANCELLED],
-      [ReservationStatus.CONFIRMED]: [ReservationStatus.COMPLETED, ReservationStatus.CANCELLED],
-      [ReservationStatus.COMPLETED]: [],
-      [ReservationStatus.CANCELLED]: [],
-      [ReservationStatus.ARCHIVED]: [],
-    };
-
-    if (!validTransitions[currentStatus]?.includes(newStatus)) {
-      throw new Error(RESERVATION.STATUS_TRANSITION_INVALID(currentStatus, newStatus));
-    }
-  }
-
-  private async createHistoryEntry(
-    reservationId: string,
-    userId: string,
-    changeType: string,
-    fieldName: string | null,
-    oldValue: string | null,
-    newValue: string | null,
-    reason: string
-  ): Promise<void> {
-    await prisma.reservationHistory.create({
-      data: { reservationId, changedByUserId: userId, changeType, fieldName, oldValue, newValue, reason },
-    });
   }
 }
 

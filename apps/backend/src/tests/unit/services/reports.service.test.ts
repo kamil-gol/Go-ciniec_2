@@ -13,7 +13,7 @@ jest.mock('../../../lib/prisma', () => ({
   },
 }));
 
-import ReportsService from '../../../services/reports.service';
+import ReportsService from '../../../services/reports';
 import { prisma } from '../../../lib/prisma';
 
 const db = prisma as any;

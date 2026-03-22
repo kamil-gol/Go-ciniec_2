@@ -2,7 +2,7 @@
  * Unit tests for #166: calculatePortions()
  * Pure function — no DB, no mocks needed.
  */
-import { calculatePortions } from '@services/reports.service';
+import { calculatePortions } from '@services/reports';
 
 describe('calculatePortions (#166)', () => {
   const adults = 40;

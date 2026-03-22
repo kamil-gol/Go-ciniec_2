@@ -8,7 +8,7 @@
 
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import reportsService from '../services/reports.service';
+import reportsService from '../services/reports';
 import reportsExportService from '../services/reports-export.service';
 import type {
   RevenueReportFilters,

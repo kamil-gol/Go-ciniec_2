@@ -1,4 +1,4 @@
-// apps/backend/src/services/reports.service.ts
+// apps/backend/src/services/reports/reports.service.ts
 
 /**
  * Reports Service
@@ -14,23 +14,15 @@
  * FIX: added portionSize from menuData.quantity to dish mapping
  * FIX: totalPortions excludes toddlers (adults + children only)
  * FIX: removed toddlerPortions from summary dish aggregation (not displayed)
- * 🇵🇱 Spolonizowany — nazwy dni tygodnia po polsku
  */
 
 import { prisma } from '@/lib/prisma';
 import type {
   RevenueReportFilters,
   RevenueReport,
-  RevenueBreakdownItem,
-  RevenueByHallItem,
-  RevenueByEventTypeItem,
   RevenueByCategoryExtraItem,
-  GroupByPeriod,
   OccupancyReportFilters,
   OccupancyReport,
-  OccupancyByHallItem,
-  PeakHourItem,
-  PeakDayOfWeekItem,
   PreparationsReportFilters,
   PreparationsReport,
   PreparationItem,
@@ -49,108 +41,28 @@ import type {
   MenuPreparationSummaryDayGroup,
 } from '@/types/reports.types';
 
-const DAY_NAMES_PL = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
-const MONTH_NAMES_PL = [
-  'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
-  'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia',
-];
+import {
+  formatDateLabelPL,
+  extractTimeFromDateTime,
+  calculateExtrasRevenue,
+  getClientName,
+  getReservationDate,
+  calculatePortions,
+} from './report-helpers';
 
-function formatDateLabelPL(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  const dayName = DAY_NAMES_PL[d.getDay()];
-  const day = d.getDate();
-  const month = MONTH_NAMES_PL[d.getMonth()];
-  const year = d.getFullYear();
-  return `${dayName}, ${day} ${month} ${year}`;
-}
+import {
+  groupRevenueByDay,
+  groupRevenueByPeriod,
+  groupRevenueByHall,
+  groupRevenueByEventType,
+  getPreviousPeriodRevenue,
+} from './revenue-grouping';
 
-function extractTimeFromDateTime(dt: Date | string | null | undefined): string | null {
-  if (!dt) return null;
-  const d = typeof dt === 'string' ? new Date(dt) : dt;
-  if (isNaN(d.getTime())) return null;
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function calculateExtrasRevenue(
-  extras: Array<{ quantity: number; unitPrice: number | null; totalPrice: number | null; serviceItem: { basePrice: number; priceType: string; name: string; id: string } }>,
-  guests: number
-): { total: number; items: Array<{ serviceItemId: string; name: string; revenue: number }> } {
-  let total = 0;
-  const items: Array<{ serviceItemId: string; name: string; revenue: number }> = [];
-
-  for (const extra of extras) {
-    let revenue = 0;
-    if (extra.totalPrice !== null && extra.totalPrice !== undefined) {
-      revenue = Number(extra.totalPrice);
-    } else {
-      const price = extra.unitPrice !== null ? Number(extra.unitPrice) : Number(extra.serviceItem.basePrice);
-      const qty = extra.quantity || 1;
-      if (extra.serviceItem.priceType === 'PER_PERSON') {
-        revenue = price * qty * guests;
-      } else if (extra.serviceItem.priceType === 'FREE') {
-        revenue = 0;
-      } else {
-        revenue = price * qty;
-      }
-    }
-    revenue = Math.round(revenue * 100) / 100;
-    total += revenue;
-    items.push({ serviceItemId: extra.serviceItem.id, name: extra.serviceItem.name, revenue });
-  }
-
-  return { total: Math.round(total * 100) / 100, items };
-}
-
-function getClientName(client: { clientType: string; companyName?: string | null; firstName: string; lastName: string }): string {
-  if (client.clientType === 'COMPANY' && client.companyName) {
-    return client.companyName;
-  }
-  return `${client.firstName} ${client.lastName}`;
-}
-
-function getReservationDate(r: { date: string | null; startDateTime: Date | string | null }): string {
-  if (r.date) return r.date;
-  if (r.startDateTime) {
-    return new Date(r.startDateTime).toISOString().split('T')[0];
-  }
-  return '';
-}
-
-/**
- * #166: Calculate adult/children portions based on portionTarget.
- * Exported for unit testing.
- */
-export function calculatePortions(
-  portionTarget: string,
-  adults: number,
-  children: number,
-  portionSize: number
-): { adultPortions: number; childrenPortions: number; totalPortions: number } {
-  let adultPortions = 0;
-  let childrenPortions = 0;
-
-  switch (portionTarget) {
-    case 'ADULTS_ONLY':
-      adultPortions = adults * portionSize;
-      childrenPortions = 0;
-      break;
-    case 'CHILDREN_ONLY':
-      adultPortions = 0;
-      childrenPortions = children * portionSize;
-      break;
-    case 'ALL':
-    default:
-      adultPortions = adults * portionSize;
-      childrenPortions = children * portionSize;
-      break;
-  }
-
-  return {
-    adultPortions,
-    childrenPortions,
-    totalPortions: adultPortions + childrenPortions,
-  };
-}
+import {
+  analyzePeakDaysOfWeek,
+  analyzePeakHours,
+  analyzeOccupancyByHall,
+} from './occupancy-analysis';
 
 class ReportsService {
   // ============================================
@@ -221,7 +133,7 @@ class ReportsService {
       prisma.reservation.count({
         where: { ...whereClause, status: 'COMPLETED' },
       }),
-      this.getPreviousPeriodRevenue(dateFrom, dateTo, whereClause),
+      getPreviousPeriodRevenue(dateFrom, dateTo, whereClause),
     ]);
 
     const totalRevenue = reservations.reduce(
@@ -289,7 +201,7 @@ class ReportsService {
       }))
       .sort((a, b) => b.revenue - a.revenue);
 
-    const revenueByDay = this.groupRevenueByDay(reservations);
+    const revenueByDay = groupRevenueByDay(reservations);
     const maxRevenueDay = revenueByDay.sort((a, b) => b.revenue - a.revenue)[0];
 
     const completedRevenue = reservations
@@ -301,9 +213,9 @@ class ReportsService {
       ? Math.round(((totalRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100)
       : 0;
 
-    const breakdown = this.groupRevenueByPeriod(reservations, groupBy);
-    const byHall = this.groupRevenueByHall(reservations);
-    const byEventType = this.groupRevenueByEventType(reservations);
+    const breakdown = groupRevenueByPeriod(reservations, groupBy);
+    const byHall = groupRevenueByHall(reservations);
+    const byEventType = groupRevenueByEventType(reservations);
 
     return {
       summary: {
@@ -325,157 +237,6 @@ class ReportsService {
       byCategoryExtra,
       filters,
     } as any;
-  }
-
-  private async getPreviousPeriodRevenue(
-    dateFrom: string,
-    dateTo: string,
-    whereClause: any
-  ): Promise<number> {
-    const from = new Date(dateFrom);
-    const to = new Date(dateTo);
-    const periodDays = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
-
-    const prevFrom = new Date(from);
-    prevFrom.setDate(prevFrom.getDate() - periodDays);
-    const prevTo = new Date(from);
-    prevTo.setDate(prevTo.getDate() - 1);
-
-    const prevFromStr = prevFrom.toISOString().split('T')[0];
-    const prevToStr = prevTo.toISOString().split('T')[0];
-    const prevFromDT = new Date(`${prevFromStr}T00:00:00`);
-    const prevToDT = new Date(`${prevToStr}T23:59:59`);
-
-    // Build clean where without OR from parent (replace date range)
-    const { OR: _or, ...restWhere } = whereClause;
-    const result = await prisma.reservation.aggregate({
-      _sum: { totalPrice: true },
-      where: {
-        ...restWhere,
-        OR: [
-          { date: { not: null, gte: prevFromStr, lte: prevToStr } },
-          { startDateTime: { not: null, gte: prevFromDT, lte: prevToDT } },
-        ],
-      },
-    });
-
-    return Number(result._sum.totalPrice || 0);
-  }
-
-  private groupRevenueByDay(reservations: any[]): RevenueBreakdownItem[] {
-    const grouped = new Map<string, { revenue: number; count: number }>();
-    reservations.forEach(r => {
-      const period = getReservationDate(r);
-      const existing = grouped.get(period) || { revenue: 0, count: 0 };
-      grouped.set(period, {
-        revenue: existing.revenue + Number(r.totalPrice || 0),
-        count: existing.count + 1,
-      });
-    });
-    return Array.from(grouped.entries())
-      .map(([period, data]) => ({
-        period,
-        revenue: Math.round(data.revenue * 100) / 100,
-        count: data.count,
-        avgRevenue: Math.round((data.revenue / data.count) * 100) / 100,
-      }));
-  }
-
-  private groupRevenueByPeriod(
-    reservations: any[],
-    groupBy: GroupByPeriod
-  ): RevenueBreakdownItem[] {
-    const grouped = new Map<string, { revenue: number; count: number }>();
-    reservations.forEach(r => {
-      const dateStr = getReservationDate(r);
-      if (!dateStr) return;
-      const date = new Date(dateStr);
-      let period: string;
-      switch (groupBy) {
-        case 'day':
-          period = dateStr;
-          break;
-        case 'week':
-          const weekNum = this.getWeekNumber(date);
-          period = `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-          break;
-        case 'month':
-          period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          break;
-        case 'year':
-          period = `${date.getFullYear()}`;
-          break;
-      }
-      const existing = grouped.get(period) || { revenue: 0, count: 0 };
-      grouped.set(period, {
-        revenue: existing.revenue + Number(r.totalPrice || 0),
-        count: existing.count + 1,
-      });
-    });
-    return Array.from(grouped.entries())
-      .map(([period, data]) => ({
-        period,
-        revenue: Math.round(data.revenue * 100) / 100,
-        count: data.count,
-        avgRevenue: Math.round((data.revenue / data.count) * 100) / 100,
-      }))
-      .sort((a, b) => a.period.localeCompare(b.period));
-  }
-
-  private getWeekNumber(date: Date): number {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  }
-
-  private groupRevenueByHall(reservations: any[]): RevenueByHallItem[] {
-    const grouped = new Map<string, { name: string; revenue: number; count: number }>();
-    reservations.forEach(r => {
-      if (!r.hall) return;
-      const existing = grouped.get(r.hall.id) || { name: r.hall.name, revenue: 0, count: 0 };
-      grouped.set(r.hall.id, {
-        name: r.hall.name,
-        revenue: existing.revenue + Number(r.totalPrice || 0),
-        count: existing.count + 1,
-      });
-    });
-    return Array.from(grouped.entries())
-      .map(([hallId, data]) => ({
-        hallId,
-        hallName: data.name,
-        revenue: Math.round(data.revenue * 100) / 100,
-        count: data.count,
-        avgRevenue: Math.round((data.revenue / data.count) * 100) / 100,
-      }))
-      .sort((a, b) => b.revenue - a.revenue);
-  }
-
-  private groupRevenueByEventType(reservations: any[]): RevenueByEventTypeItem[] {
-    const grouped = new Map<string, { name: string; revenue: number; count: number }>();
-    reservations.forEach(r => {
-      if (!r.eventType) return;
-      const existing = grouped.get(r.eventType.id) || {
-        name: r.eventType.name,
-        revenue: 0,
-        count: 0,
-      };
-      grouped.set(r.eventType.id, {
-        name: r.eventType.name,
-        revenue: existing.revenue + Number(r.totalPrice || 0),
-        count: existing.count + 1,
-      });
-    });
-    return Array.from(grouped.entries())
-      .map(([eventTypeId, data]) => ({
-        eventTypeId,
-        eventTypeName: data.name,
-        revenue: Math.round(data.revenue * 100) / 100,
-        count: data.count,
-        avgRevenue: Math.round((data.revenue / data.count) * 100) / 100,
-      }))
-      .sort((a, b) => b.revenue - a.revenue);
   }
 
   // ============================================
@@ -522,12 +283,12 @@ class ReportsService {
       ? Math.round((daysWithReservations / totalDaysInPeriod) * 100 * 10) / 10
       : 0;
 
-    const peakDaysOfWeek = this.analyzePeakDaysOfWeek(reservations);
+    const peakDaysOfWeek = analyzePeakDaysOfWeek(reservations);
     const peakDay = peakDaysOfWeek.sort((a, b) => b.count - a.count)[0]?.dayOfWeek || 'Brak danych';
 
-    const peakHours = this.analyzePeakHours(reservations);
+    const peakHours = analyzePeakHours(reservations);
 
-    const hallsData = this.analyzeOccupancyByHall(reservations, totalDaysInPeriod);
+    const hallsData = analyzeOccupancyByHall(reservations, totalDaysInPeriod);
     const peakHall = hallsData.sort((a, b) => b.reservations - a.reservations)[0] || null;
 
     const multiBookingHalls = hallsData.filter(h => h.allowMultipleBookings && h.avgCapacityUtilization !== null);
@@ -550,97 +311,6 @@ class ReportsService {
       peakDaysOfWeek,
       filters,
     };
-  }
-
-  private analyzePeakDaysOfWeek(reservations: any[]): PeakDayOfWeekItem[] {
-    const counts = new Map<number, number>();
-    reservations.forEach(r => {
-      const dateStr = getReservationDate(r);
-      if (!dateStr) return;
-      const date = new Date(dateStr);
-      const dayOfWeek = date.getDay();
-      counts.set(dayOfWeek, (counts.get(dayOfWeek) || 0) + 1);
-    });
-    return Array.from(counts.entries())
-      .map(([dayOfWeekNum, count]) => ({
-        dayOfWeek: DAY_NAMES_PL[dayOfWeekNum],
-        dayOfWeekNum,
-        count,
-      }))
-      .sort((a, b) => b.count - a.count);
-  }
-
-  private analyzePeakHours(reservations: any[]): PeakHourItem[] {
-    const counts = new Map<number, number>();
-    reservations.forEach(r => {
-      const timeStr = r.startTime || extractTimeFromDateTime(r.startDateTime);
-      if (!timeStr) return;
-      const hour = parseInt(timeStr.split(':')[0], 10);
-      if (isNaN(hour)) return;
-      counts.set(hour, (counts.get(hour) || 0) + 1);
-    });
-    return Array.from(counts.entries())
-      .map(([hour, count]) => ({ hour, count }))
-      .sort((a, b) => b.count - a.count);
-  }
-
-  private analyzeOccupancyByHall(
-    reservations: any[],
-    totalDaysInPeriod: number
-  ): OccupancyByHallItem[] {
-    const hallData = new Map<string, {
-      name: string;
-      capacity: number | null;
-      allowMultipleBookings: boolean;
-      dates: Set<string>;
-      reservations: number;
-      totalGuests: number;
-      guestsPerDate: Map<string, number>;
-    }>();
-    reservations.forEach(r => {
-      if (!r.hall) return;
-      const existing = hallData.get(r.hall.id) || {
-        name: r.hall.name,
-        capacity: r.hall.capacity ?? null,
-        allowMultipleBookings: r.hall.allowMultipleBookings ?? false,
-        dates: new Set<string>(),
-        reservations: 0,
-        totalGuests: 0,
-        guestsPerDate: new Map<string, number>(),
-      };
-      const dateStr = getReservationDate(r);
-      existing.dates.add(dateStr);
-      existing.reservations += 1;
-      existing.totalGuests += r.guests || 0;
-      const currentDateGuests = existing.guestsPerDate.get(dateStr) || 0;
-      existing.guestsPerDate.set(dateStr, currentDateGuests + (r.guests || 0));
-      hallData.set(r.hall.id, existing);
-    });
-    return Array.from(hallData.entries())
-      .map(([hallId, data]) => {
-        let avgCapacityUtilization: number | null = null;
-        if (data.allowMultipleBookings && data.capacity && data.capacity > 0 && data.guestsPerDate.size > 0) {
-          const dailyUtilizations = Array.from(data.guestsPerDate.values())
-            .map(guests => Math.min((guests / data.capacity!) * 100, 100));
-          avgCapacityUtilization = Math.round(
-            (dailyUtilizations.reduce((sum, u) => sum + u, 0) / dailyUtilizations.length) * 10
-          ) / 10;
-        }
-
-        return {
-          hallId,
-          hallName: data.name,
-          occupancy: Math.round((data.dates.size / totalDaysInPeriod) * 100 * 10) / 10,
-          reservations: data.reservations,
-          avgGuestsPerReservation: data.reservations > 0
-            ? Math.round((data.totalGuests / data.reservations) * 10) / 10
-            : 0,
-          capacity: data.capacity,
-          allowMultipleBookings: data.allowMultipleBookings,
-          avgCapacityUtilization,
-        };
-      })
-      .sort((a, b) => b.occupancy - a.occupancy);
   }
 
   // ============================================
