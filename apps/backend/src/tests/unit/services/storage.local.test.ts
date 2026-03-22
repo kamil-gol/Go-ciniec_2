@@ -144,7 +144,11 @@ describe('LocalStorageService', () => {
     it('should list all files in bucket', async () => {
       const objects = await storage.listObjects(BUCKET);
       expect(objects.length).toBeGreaterThanOrEqual(3);
-      expect(objects.every(o => o.key && o.size >= 0 && o.lastModified)).toBe(true);
+      for (const o of objects) {
+        expect(o.key).toBeTruthy();
+        expect(typeof o.size).toBe('number');
+        expect(o.lastModified).toBeInstanceOf(Date);
+      }
     });
 
     it('should filter by prefix', async () => {
