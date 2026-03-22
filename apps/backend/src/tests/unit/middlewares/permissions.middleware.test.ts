@@ -25,9 +25,14 @@ jest.mock('@utils/logger', () => ({
 jest.mock('@middlewares/errorHandler', () => ({
   AppError: class AppError extends Error {
     statusCode: number;
-    constructor(statusCode: number, message: string) {
-      super(message);
-      this.statusCode = statusCode;
+    constructor(messageOrCode: string | number, codeOrMessage?: number | string) {
+      if (typeof messageOrCode === 'number') {
+        super(typeof codeOrMessage === 'string' ? codeOrMessage : 'Error');
+        this.statusCode = messageOrCode;
+      } else {
+        super(messageOrCode);
+        this.statusCode = typeof codeOrMessage === 'number' ? codeOrMessage : 500;
+      }
       this.name = 'AppError';
     }
   },
