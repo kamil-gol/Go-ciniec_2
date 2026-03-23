@@ -1,98 +1,26 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
-  ChevronLeft, ChevronRight, AlertCircle, Check,
-  Info, CheckCircle2, Lock,
-  User, Baby, Ban, ShoppingCart
+  ChevronLeft, ChevronRight, Info, ShoppingCart
 } from 'lucide-react'
 import { usePackageCategories } from '@/hooks/use-menu'
-import type { PortionTarget } from '@/types/menu'
-import { PORTION_TARGET_LABELS } from '@/types/menu'
 import { formatCurrency } from '@/lib/utils'
 import { toast } from 'sonner'
 
-interface DishSelection {
-  dishId: string
-  quantity: number
-}
+import { CategoryCard } from './dish-selector/CategoryCard'
+import { isCategoryInactive, getGuestCountForTarget } from './dish-selector/helpers'
+import type {
+  CategorySelection,
+  CategoryExtraResult,
+  DishSelectorResult,
+  DishSelectorProps,
+} from './dish-selector/types'
 
-interface CategorySelection {
-  categoryId: string
-  dishes: DishSelection[]
-}
-
-// #216: Category extras data returned alongside dish selections
-export interface CategoryExtraResult {
-  categoryId: string
-  packageCategorySettingsId: string
-  extraQuantity: number      // portions beyond base maxSelect
-  pricePerItem: number       // from PackageCategorySettings.extraItemPrice
-  portionTarget: string      // ALL | ADULTS_ONLY | CHILDREN_ONLY
-}
-
-export interface DishSelectorResult {
-  selections: CategorySelection[]
-  categoryExtras: CategoryExtraResult[]
-}
-
-interface DishSelectorProps {
-  packageId: string
-  adults: number
-  childrenCount: number
-  toddlers?: number
-  initialSelections?: CategorySelection[]
-  initialExtrasEnabled?: Record<string, boolean>
-  onComplete: (result: DishSelectorResult) => void
-  onBack: () => void
-}
-
-/** #166: Portion target badge for category header */
-function PortionTargetBadge({ target }: { target?: PortionTarget | string }) {
-  if (!target || target === 'ALL') return null;
-
-  const isAdults = target === 'ADULTS_ONLY';
-  const Icon = isAdults ? User : Baby;
-  const label = PORTION_TARGET_LABELS[target as PortionTarget] || target;
-
-  return (
-    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-      isAdults
-        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-        : 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300'
-    }`}>
-      <Icon className="w-3 h-3" />
-      {label}
-    </span>
-  );
-}
-
-/** #166: Check if category is inactive due to 0 relevant guests */
-function isCategoryInactive(portionTarget: string | undefined, adults: number, childrenCount: number): boolean {
-  if (portionTarget === 'ADULTS_ONLY' && adults === 0) return true;
-  if (portionTarget === 'CHILDREN_ONLY' && childrenCount === 0) return true;
-  return false;
-}
-
-function getInactiveReason(portionTarget: string | undefined): string {
-  if (portionTarget === 'ADULTS_ONLY') return 'Brak dorosłych w rezerwacji — kategoria nieaktywna';
-  if (portionTarget === 'CHILDREN_ONLY') return 'Brak dzieci w rezerwacji — kategoria nieaktywna';
-  return '';
-}
-
-/** #216: Calculate guest count based on portionTarget */
-function getGuestCountForTarget(portionTarget: string | undefined, adults: number, childrenCount: number, toddlers: number): number {
-  switch (portionTarget) {
-    case 'ADULTS_ONLY': return adults;
-    case 'CHILDREN_ONLY': return childrenCount;
-    case 'ALL':
-    default: return adults + childrenCount + toddlers;
-  }
-}
+// Re-export types for backwards compatibility
+export type { CategoryExtraResult, DishSelectorResult } from './dish-selector/types'
 
 export function DishSelector({
   packageId,
@@ -400,285 +328,28 @@ export function DishSelector({
 
       {/* Categories */}
       <div className="space-y-3">
-        {categories.map((category: any) => {
-          const total = getCategoryTotal(category.categoryId)
-          const effectiveMax = getEffectiveMaxSelect(category)
-          const remaining = getCategoryRemaining(category.categoryId)
-          const isOptional = category.minSelect === 0
-          const isValid = total >= category.minSelect && total <= effectiveMax
-          const hasError = errors[category.categoryId]
-          const isAtMaxLimit = total >= effectiveMax
-          const portionTarget = category.portionTarget as PortionTarget | undefined
-          const inactive = isCategoryInactive(portionTarget, adults, childrenCount)
-
-          // #216: Extras info
-          const hasExtrasSupport = category.extraItemPrice != null && category.maxExtra != null && Number(category.maxExtra) > 0
-          const isExtrasOn = extrasEnabled[category.categoryId] || false
-          const extraQty = getExtraQuantity(category)
-          const extraCost = getExtraCost(category)
-          const baseMax = Number(category.maxSelect)
-          const guestCount = getGuestCountForTarget(category.portionTarget, adults, childrenCount, toddlers)
-
-          return (
-            <Card key={category.categoryId} className={`border shadow-sm ${
-              inactive ? 'opacity-50 grayscale' : ''
-            }`}>
-              <CardContent className="p-4">
-                {/* Category Header */}
-                <div className={inactive ? 'mb-1' : 'mb-3'}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{category.categoryIcon}</span>
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h3 className="text-lg font-bold">{category.customLabel || category.categoryName}</h3>
-                          {/* #166: Portion target badge */}
-                          <PortionTargetBadge target={portionTarget} />
-                        </div>
-                        {/* #166: Subtitle for non-ALL targets */}
-                        {portionTarget && portionTarget !== 'ALL' && !inactive && (
-                          <span className="text-xs text-muted-foreground">
-                            Porcje liczone {portionTarget === 'ADULTS_ONLY' ? 'tylko dla dorosłych' : 'tylko dla dzieci'}
-                          </span>
-                        )}
-                        {isOptional && !inactive && !portionTarget?.startsWith('ADULTS') && !portionTarget?.startsWith('CHILDREN') && (
-                          <span className="text-xs font-medium text-muted-foreground">Opcjonalna kategoria</span>
-                        )}
-                        {isOptional && !inactive && portionTarget && portionTarget !== 'ALL' && (
-                          <span className="text-xs font-medium text-muted-foreground"> · Opcjonalna</span>
-                        )}
-                      </div>
-                    </div>
-                    {!inactive && (
-                      <div className="flex items-center gap-2">
-                        {!isAtMaxLimit && total > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            Pozostało: {remaining}
-                          </span>
-                        )}
-                        <Badge
-                          variant={isValid ? "default" : "secondary"}
-                          className={`text-sm px-2.5 py-1 ${
-                            isValid
-                              ? isOptional && total === 0
-                                ? 'bg-gradient-to-r from-slate-400 to-slate-500 text-white'
-                                : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
-                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                          }`}
-                        >
-                          {total} / {isOptional ? `0-${effectiveMax}` : `${category.minSelect}-${effectiveMax}`}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* #216: Extras toggle — only for categories that support extras */}
-                  {!inactive && hasExtrasSupport && (
-                    <div className={`mt-2 p-2.5 rounded-lg border transition-colors ${
-                      isExtrasOn
-                        ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700'
-                        : 'bg-neutral-50 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700'
-                    }`}>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={isExtrasOn}
-                          onChange={() => toggleExtras(category.categoryId)}
-                          className="w-4 h-4 rounded border-orange-300 text-orange-500 focus:ring-orange-500"
-                        />
-                        <ShoppingCart className={`w-3.5 h-3.5 ${isExtrasOn ? 'text-orange-600' : 'text-neutral-400'}`} />
-                        <span className={`text-xs font-semibold ${isExtrasOn ? 'text-orange-800 dark:text-orange-200' : 'text-neutral-600 dark:text-neutral-400'}`}>
-                          Dodatkowa płatna pozycja (+{Number(category.maxExtra)} porcji, {formatCurrency(Number(category.extraItemPrice))}/os.)
-                        </span>
-                      </label>
-                      {isExtrasOn && extraQty > 0 && (
-                        <div className="mt-1.5 ml-6 text-xs text-orange-700 dark:text-orange-300 font-medium">
-                          Extra: {extraQty} × {formatCurrency(Number(category.extraItemPrice))} × {guestCount} os. = {formatCurrency(extraCost)}
-                        </div>
-                      )}
-                      {isExtrasOn && extraQty === 0 && !extrasWarning[category.categoryId] && (
-                        <div className="mt-1.5 ml-6 text-xs text-neutral-500 dark:text-neutral-400">
-                          Limit zwiększony do {effectiveMax}. Wybierz ponad {baseMax} pozycji, aby naliczyć dodatkowe.
-                        </div>
-                      )}
-                      {extrasWarning[category.categoryId] && (
-                        <div className="mt-2 ml-6 p-2 rounded-md bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800">
-                          <div className="flex items-start gap-1.5">
-                            <AlertCircle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-xs font-medium text-red-700 dark:text-red-300">
-                              {extrasWarning[category.categoryId]}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* #166: Inactive category banner */}
-                  {inactive && (
-                    <Alert className="mt-2 py-2 bg-neutral-100 border-neutral-300 dark:bg-neutral-900 dark:border-neutral-700">
-                      <Ban className="h-3.5 w-3.5 text-neutral-500" />
-                      <AlertDescription className="text-xs text-neutral-600 dark:text-neutral-400">
-                        {getInactiveReason(portionTarget)}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {/* Progress Bar — only for active categories */}
-                  {!inactive && (
-                    <div className="relative h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden mt-2">
-                      {/* #216: Show base limit marker when extras are enabled */}
-                      {isExtrasOn && effectiveMax > baseMax && (
-                        <div
-                          className="absolute top-0 bottom-0 w-0.5 bg-orange-400 dark:bg-orange-500 z-10"
-                          style={{ left: `${(baseMax / effectiveMax) * 100}%` }}
-                          title={`Bazowy limit: ${baseMax}`}
-                        />
-                      )}
-                      <div
-                        className={`h-full transition-all duration-300 ${
-                          !isOptional && total < category.minSelect ? 'bg-gradient-to-r from-red-500 to-rose-500' :
-                          total > effectiveMax ? 'bg-gradient-to-r from-red-500 to-rose-500' :
-                          total === 0 ? '' :
-                          extraQty > 0
-                            ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-orange-500'
-                            : 'bg-gradient-to-r from-green-500 to-emerald-500'
-                        }`}
-                        style={{
-                          width: `${Math.min((total / effectiveMax) * 100, 100)}%`
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {!inactive && isAtMaxLimit && (
-                    <Alert className="mt-2 py-2 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-                      <Info className="h-3.5 w-3.5 text-blue-600" />
-                      <AlertDescription className="text-xs text-blue-900 dark:text-blue-100">
-                        Osiągnięto maksymalną liczbę pozycji. Odznacz danie aby wybrać inne.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {hasError && (
-                    <Alert variant="destructive" className="mt-2 py-2">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      <AlertDescription className="text-xs">{hasError}</AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-
-                {/* Dishes Grid — hidden for inactive categories */}
-                {!inactive && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {category.dishes.map((dish: any) => {
-                      const isSelected = !!selections[category.categoryId]?.[dish.id]
-                      const quantity = selections[category.categoryId]?.[dish.id] || 1
-                      const isDisabled = !isSelected && isAtMaxLimit
-                      const availableOptions = getAvailableQuantityOptions(category.categoryId, dish.id)
-
-                      return (
-                        <div
-                          key={dish.id}
-                          className={`group relative p-3 border rounded-lg transition-all duration-200 ${
-                            isDisabled
-                              ? 'opacity-50 cursor-not-allowed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900'
-                              : isSelected
-                                ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 shadow-md scale-[1.01] cursor-pointer'
-                                : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 hover:border-blue-300 hover:shadow-sm cursor-pointer'
-                          }`}
-                          onClick={() => !isDisabled && toggleDish(category.categoryId, dish.id)}
-                        >
-                          {isDisabled && (
-                            <div className="absolute top-2 right-2 w-5 h-5 bg-neutral-400 rounded-full flex items-center justify-center">
-                              <Lock className="h-3 w-3 text-white" />
-                            </div>
-                          )}
-
-                          {isSelected && (
-                            <div className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200">
-                              <Check className="h-3.5 w-3.5 text-white font-bold" strokeWidth={3} />
-                            </div>
-                          )}
-
-                          <div className="flex items-start gap-3">
-                            <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-                              isDisabled
-                                ? 'bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600'
-                                : isSelected
-                                  ? 'bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-500 shadow-sm'
-                                  : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-400 dark:border-neutral-500 group-hover:border-blue-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30'
-                            }`}>
-                              {isSelected && (
-                                <CheckCircle2 className="h-3.5 w-3.5 text-white" strokeWidth={3} />
-                              )}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <h4 className={`font-semibold text-sm ${
-                                isDisabled
-                                  ? 'text-neutral-400 dark:text-neutral-600'
-                                  : isSelected
-                                    ? 'text-blue-900 dark:text-blue-100'
-                                    : 'text-neutral-900 dark:text-neutral-100'
-                              }`}>
-                                {dish.name}
-                              </h4>
-                              {dish.description && (
-                                <p className={`text-xs mt-0.5 line-clamp-2 ${
-                                  isDisabled ? 'text-neutral-400' : 'text-muted-foreground'
-                                }`}>
-                                  {dish.description}
-                                </p>
-                              )}
-
-                              {dish.allergens && dish.allergens.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1.5">
-                                  {dish.allergens.map((allergen: string) => (
-                                    <Badge
-                                      key={allergen}
-                                      variant="outline"
-                                      className="text-[10px] px-1.5 py-0 border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-400"
-                                    >
-                                      {allergen}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-
-                              {isSelected && (
-                                <div className="mt-2 p-2 bg-white dark:bg-neutral-800 rounded-md border border-blue-200 dark:border-blue-800" onClick={(e) => e.stopPropagation()}>
-                                  <label className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-1 block">
-                                    Ilość porcji:
-                                  </label>
-                                  <select
-                                    value={quantity}
-                                    onChange={(e) => updateQuantity(
-                                      category.categoryId,
-                                      dish.id,
-                                      parseFloat(e.target.value)
-                                    )}
-                                    className="w-full px-3 py-1.5 border border-blue-300 dark:border-blue-700 rounded-md text-sm font-bold bg-white dark:bg-neutral-900 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
-                                  >
-                                    {availableOptions.map(opt => (
-                                      <option key={opt} value={opt}>
-                                        {opt === Math.floor(opt) ? opt : opt.toFixed(1)} {opt === 1 ? 'porcja' : opt > 1 && opt < 5 ? 'porcje' : 'porcji'}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )
-        })}
+        {categories.map((category: any) => (
+          <CategoryCard
+            key={category.categoryId}
+            category={category}
+            adults={adults}
+            childrenCount={childrenCount}
+            toddlers={toddlers}
+            selections={selections[category.categoryId] || {}}
+            errors={errors}
+            extrasEnabled={extrasEnabled[category.categoryId] || false}
+            extrasWarning={extrasWarning[category.categoryId]}
+            getCategoryTotal={getCategoryTotal}
+            getEffectiveMaxSelect={getEffectiveMaxSelect}
+            getCategoryRemaining={getCategoryRemaining}
+            getAvailableQuantityOptions={getAvailableQuantityOptions}
+            getExtraQuantity={getExtraQuantity}
+            getExtraCost={getExtraCost}
+            onToggleDish={toggleDish}
+            onUpdateQuantity={updateQuantity}
+            onToggleExtras={toggleExtras}
+          />
+        ))}
       </div>
 
       {/* #216: Total extras cost summary */}
