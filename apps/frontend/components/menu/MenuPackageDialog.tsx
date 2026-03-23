@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Loader2, Plus, X } from 'lucide-react'
-import { useCreatePackage, useUpdatePackage } from '@/hooks/use-menu-packages'
+import { useCreatePackage, useUpdatePackage } from '@/hooks/use-menu-config'
 import type { MenuPackage } from '@/lib/api/menu-packages-api'
 
 interface MenuPackageDialogProps {

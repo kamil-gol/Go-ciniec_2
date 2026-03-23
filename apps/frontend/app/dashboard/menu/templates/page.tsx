@@ -33,7 +33,7 @@ import {
   Printer,
   Loader2,
 } from 'lucide-react'
-import { useMenuTemplates, useDeleteMenuTemplate } from '@/hooks/use-menu-templates'
+import { useMenuTemplates, useDeleteMenuTemplate } from '@/hooks/use-menu-config'
 import { useEventTypes } from '@/hooks/use-event-types'
 import { MenuTemplateDialog } from '@/components/menu/MenuTemplateDialog'
 import { downloadMenuTemplatePDF } from '@/lib/api/menu-templates-api'

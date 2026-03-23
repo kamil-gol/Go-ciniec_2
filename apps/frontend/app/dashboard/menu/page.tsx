@@ -8,7 +8,7 @@ import {
 import Link from 'next/link'
 import { useMenuTemplates } from '@/hooks/use-menu'
 import { useDishes } from '@/hooks/use-dishes'
-import { useDishCategories } from '@/hooks/use-dish-categories'
+import { useDishCategories } from '@/hooks/use-menu-config'
 import { PageLayout, PageHero } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { motion } from 'framer-motion'

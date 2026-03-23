@@ -27,7 +27,7 @@ import { useEventTypes } from '@/hooks/use-event-types'
 import {
   useCreateMenuTemplate,
   useUpdateMenuTemplate,
-} from '@/hooks/use-menu-templates'
+} from '@/hooks/use-menu-config'
 import type { MenuTemplate } from '@/lib/api/menu-templates-api'
 
 interface MenuTemplateDialogProps {
