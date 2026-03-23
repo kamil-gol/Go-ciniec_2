@@ -91,7 +91,12 @@ describe('errorHandler — 500 with NODE_ENV production', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      error: 'Wewnętrzny błąd serwera',
+      success: false,
+      error: expect.objectContaining({
+        code: 'INTERNAL_ERROR',
+        message: 'Wewnętrzny błąd serwera',
+        statusCode: 500,
+      }),
     }));
     process.env.NODE_ENV = origEnv;
   });

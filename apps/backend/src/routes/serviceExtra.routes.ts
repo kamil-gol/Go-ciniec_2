@@ -9,11 +9,22 @@ import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin } from '../middlewares/roles';
 import { asyncHandler } from '../middlewares/asyncHandler';
 import { validateUUID } from '../middlewares/validateUUID';
+import { validateBody } from '../middlewares/validateBody';
+import {
+  createServiceCategorySchema,
+  updateServiceCategorySchema,
+  reorderCategoriesSchema,
+  createServiceItemSchema,
+  updateServiceItemSchema,
+  assignExtraSchema,
+  bulkAssignExtrasSchema,
+  updateReservationExtraSchema,
+} from '../validation/serviceExtra.validation';
 
 const router = Router();
 
 // ═══════════════════════════════════════════════════════════════
-// 📁 CATEGORIES (admin manages catalog)
+// CATEGORIES (admin manages catalog)
 // ═══════════════════════════════════════════════════════════════
 
 // List all categories (with items)
@@ -30,6 +41,7 @@ router.post(
   '/categories/reorder',
   authMiddleware,
   requireAdmin,
+  validateBody(reorderCategoriesSchema),
   asyncHandler(async (req, res) => {
     await serviceExtraController.reorderCategories(req, res);
   })
@@ -50,6 +62,7 @@ router.post(
   '/categories',
   authMiddleware,
   requireAdmin,
+  validateBody(createServiceCategorySchema),
   asyncHandler(async (req, res) => {
     await serviceExtraController.createCategory(req, res);
   })
@@ -61,6 +74,7 @@ router.put(
   authMiddleware,
   requireAdmin,
   validateUUID('id'),
+  validateBody(updateServiceCategorySchema),
   asyncHandler(async (req, res) => {
     await serviceExtraController.updateCategory(req, res);
   })
@@ -78,7 +92,7 @@ router.delete(
 );
 
 // ═══════════════════════════════════════════════════════════════
-// 📦 ITEMS (admin manages catalog)
+// ITEMS (admin manages catalog)
 // ═══════════════════════════════════════════════════════════════
 
 // List all items (optional filter by categoryId)
@@ -105,6 +119,7 @@ router.post(
   '/items',
   authMiddleware,
   requireAdmin,
+  validateBody(createServiceItemSchema),
   asyncHandler(async (req, res) => {
     await serviceExtraController.createItem(req, res);
   })
@@ -116,6 +131,7 @@ router.put(
   authMiddleware,
   requireAdmin,
   validateUUID('id'),
+  validateBody(updateServiceItemSchema),
   asyncHandler(async (req, res) => {
     await serviceExtraController.updateItem(req, res);
   })
@@ -133,7 +149,7 @@ router.delete(
 );
 
 // ═══════════════════════════════════════════════════════════════
-// 🔗 RESERVATION EXTRAS (user assigns to reservation)
+// RESERVATION EXTRAS (user assigns to reservation)
 // ═══════════════════════════════════════════════════════════════
 
 // Get extras for a reservation
@@ -151,6 +167,7 @@ router.post(
   '/reservations/:reservationId/extras',
   authMiddleware,
   validateUUID('reservationId'),
+  validateBody(assignExtraSchema),
   asyncHandler(async (req, res) => {
     await serviceExtraController.assignExtra(req, res);
   })
@@ -161,6 +178,7 @@ router.put(
   '/reservations/:reservationId/extras',
   authMiddleware,
   validateUUID('reservationId'),
+  validateBody(bulkAssignExtrasSchema),
   asyncHandler(async (req, res) => {
     await serviceExtraController.bulkAssignExtras(req, res);
   })
@@ -172,6 +190,7 @@ router.put(
   authMiddleware,
   validateUUID('reservationId'),
   validateUUID('extraId'),
+  validateBody(updateReservationExtraSchema),
   asyncHandler(async (req, res) => {
     await serviceExtraController.updateReservationExtra(req, res);
   })

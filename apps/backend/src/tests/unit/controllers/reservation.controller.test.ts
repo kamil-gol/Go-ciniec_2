@@ -17,6 +17,8 @@ jest.mock('../../../services/reservation.service', () => ({
     createReservation: jest.fn(),
     getReservations: jest.fn(),
     getReservationById: jest.fn(),
+    checkAvailability: jest.fn(),
+    prepareReservationForPDF: jest.fn(),
     updateReservation: jest.fn(),
     updateStatus: jest.fn(),
     cancelReservation: jest.fn(),
@@ -135,7 +137,7 @@ describe('ReservationController', () => {
     });
 
     it('should return available=true', async () => {
-      mockPrismaInstance.reservation.findMany.mockResolvedValue([]);
+      svc.checkAvailability.mockResolvedValue({ available: true, conflicts: [] });
       const response = res();
       await controller.checkAvailability(req({ query: {
         hallId: 'h-1', startDateTime: '2026-03-01T10:00', endDateTime: '2026-03-01T20:00',

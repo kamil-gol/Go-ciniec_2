@@ -51,7 +51,7 @@ describe('PackageCategoryService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.getById('x')).rejects.toThrow('Nie znaleziono ustawień kategorii');
+      await expect(packageCategoryService.getById('x')).rejects.toThrow('Category setting — nie znaleziono');
     });
   });
 
@@ -83,7 +83,7 @@ describe('PackageCategoryService', () => {
     it('should throw when not found', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
       await expect(packageCategoryService.update('x', { maxSelect: 5 }))
-        .rejects.toThrow('Nie znaleziono ustawień kategorii');
+        .rejects.toThrow('Category setting — nie znaleziono');
     });
   });
 
@@ -130,7 +130,7 @@ describe('PackageCategoryService', () => {
 
     it('should throw when not found', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.delete('x')).rejects.toThrow('Nie znaleziono ustawień kategorii');
+      await expect(packageCategoryService.delete('x')).rejects.toThrow('Category setting — nie znaleziono');
     });
   });
 });

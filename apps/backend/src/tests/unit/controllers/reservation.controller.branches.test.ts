@@ -18,6 +18,8 @@ jest.mock('../../../services/reservation.service', () => ({
     createReservation: jest.fn(),
     getReservations: jest.fn(),
     getReservationById: jest.fn(),
+    checkAvailability: jest.fn(),
+    prepareReservationForPDF: jest.fn(),
     updateReservation: jest.fn(),
     updateStatus: jest.fn(),
     cancelReservation: jest.fn(),
@@ -194,7 +196,7 @@ describe('ReservationController branches', () => {
     });
 
     it('should return available=true when no conflicts', async () => {
-      mockFindMany.mockResolvedValue([]);
+      (reservationService.checkAvailability as jest.Mock).mockResolvedValue({ available: true, conflicts: [] });
       const req = {
         query: { hallId: 'h1', startDateTime: '2026-03-01T10:00:00Z', endDateTime: '2026-03-01T18:00:00Z' }
       } as any;
@@ -205,15 +207,18 @@ describe('ReservationController branches', () => {
       }));
     });
 
-    it('should format conflicts with null client/eventType', async () => {
-      mockFindMany.mockResolvedValue([{
-        id: 'r1',
-        client: null,
-        eventType: null,
-        startDateTime: null,
-        endDateTime: null,
-        status: 'CONFIRMED',
-      }]);
+    it('should return available=false with conflicts from service', async () => {
+      (reservationService.checkAvailability as jest.Mock).mockResolvedValue({
+        available: false,
+        conflicts: [{
+          id: 'r1',
+          clientName: 'Nieznany',
+          eventType: 'Nieznany',
+          startDateTime: '',
+          endDateTime: '',
+          status: 'CONFIRMED',
+        }],
+      });
       const req = {
         query: { hallId: 'h1', startDateTime: '2026-03-01T10:00:00Z', endDateTime: '2026-03-01T18:00:00Z' }
       } as any;
@@ -223,19 +228,20 @@ describe('ReservationController branches', () => {
       expect(data.available).toBe(false);
       expect(data.conflicts[0].clientName).toBe('Nieznany');
       expect(data.conflicts[0].eventType).toBe('Nieznany');
-      expect(data.conflicts[0].startDateTime).toBe('');
-      expect(data.conflicts[0].endDateTime).toBe('');
     });
 
-    it('should format conflicts with client and eventType', async () => {
-      mockFindMany.mockResolvedValue([{
-        id: 'r2',
-        client: { firstName: 'Jan', lastName: 'Kowalski' },
-        eventType: { name: 'Wesele' },
-        startDateTime: new Date('2026-03-01T10:00:00Z'),
-        endDateTime: new Date('2026-03-01T18:00:00Z'),
-        status: 'CONFIRMED',
-      }]);
+    it('should return conflicts with client and eventType from service', async () => {
+      (reservationService.checkAvailability as jest.Mock).mockResolvedValue({
+        available: false,
+        conflicts: [{
+          id: 'r2',
+          clientName: 'Jan Kowalski',
+          eventType: 'Wesele',
+          startDateTime: '2026-03-01T10:00:00.000Z',
+          endDateTime: '2026-03-01T18:00:00.000Z',
+          status: 'CONFIRMED',
+        }],
+      });
       const req = {
         query: { hallId: 'h1', startDateTime: '2026-03-01T10:00:00Z', endDateTime: '2026-03-01T18:00:00Z' }
       } as any;
@@ -246,8 +252,8 @@ describe('ReservationController branches', () => {
       expect(c.eventType).toBe('Wesele');
     });
 
-    it('should pass excludeReservationId when provided', async () => {
-      mockFindMany.mockResolvedValue([]);
+    it('should pass excludeReservationId to service when provided', async () => {
+      (reservationService.checkAvailability as jest.Mock).mockResolvedValue({ available: true, conflicts: [] });
       const req = {
         query: {
           hallId: 'h1',
@@ -258,23 +264,26 @@ describe('ReservationController branches', () => {
       } as any;
       const res = mockRes();
       await ctrl.checkAvailability(req, res);
-      expect(mockFindMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            id: { not: 'r-exclude' },
-          }),
-        })
+      expect(reservationService.checkAvailability).toHaveBeenCalledWith(
+        'h1',
+        expect.any(Date),
+        expect.any(Date),
+        'r-exclude',
       );
     });
 
-    it('should not include id filter without excludeReservationId', async () => {
-      mockFindMany.mockResolvedValue([]);
+    it('should pass undefined excludeReservationId when not provided', async () => {
+      (reservationService.checkAvailability as jest.Mock).mockResolvedValue({ available: true, conflicts: [] });
       const req = {
         query: { hallId: 'h1', startDateTime: '2026-03-01T10:00:00Z', endDateTime: '2026-03-01T18:00:00Z' }
       } as any;
       await ctrl.checkAvailability(req, mockRes());
-      const where = mockFindMany.mock.calls[0][0].where;
-      expect(where.id).toBeUndefined();
+      expect(reservationService.checkAvailability).toHaveBeenCalledWith(
+        'h1',
+        expect.any(Date),
+        expect.any(Date),
+        undefined,
+      );
     });
   });
 
@@ -319,14 +328,16 @@ describe('ReservationController branches', () => {
 
   // ===== downloadPDF =====
   describe('downloadPDF', () => {
-    it('should throw notFound when reservation missing', async () => {
-      (reservationService.getReservationById as jest.Mock).mockResolvedValue(null);
+    it('should throw when prepareReservationForPDF fails', async () => {
+      (reservationService.prepareReservationForPDF as jest.Mock).mockRejectedValue(
+        new Error('Nie znaleziono: Reservation')
+      );
       const req = { params: { id: 'x' } } as any;
       await expect(ctrl.downloadPDF(req, mockRes())).rejects.toThrow(/Nie znaleziono/i);
     });
 
     it('should return PDF buffer', async () => {
-      (reservationService.getReservationById as jest.Mock).mockResolvedValue({ id: 'r1' });
+      (reservationService.prepareReservationForPDF as jest.Mock).mockResolvedValue({ id: 'r1' });
       (pdfService.generateReservationPDF as jest.Mock).mockResolvedValue(Buffer.from('pdf'));
       const req = { params: { id: 'r1' } } as any;
       const res = mockRes();

@@ -97,11 +97,15 @@ describe('errorHandler', () => {
       errorHandler(error, req, res, mockNext);
 
       expect(res.status).toHaveBeenCalledWith(500);
-      // In development mode, returns actual error message
+      // In development mode, returns structured error with actual message
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          error: 'Something went wrong', // actual error message in dev mode
+          error: expect.objectContaining({
+            code: 'INTERNAL_ERROR',
+            message: 'Something went wrong',
+            statusCode: 500,
+          }),
         })
       );
     });

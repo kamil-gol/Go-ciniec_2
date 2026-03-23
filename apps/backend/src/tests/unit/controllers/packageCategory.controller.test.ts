@@ -1,18 +1,19 @@
 /**
  * PackageCategoryController — Comprehensive Unit Tests
+ * Controller is thin: delegates to packageCategoryService, errors propagate to asyncHandler.
  */
-const mockPrisma: any = {
-  menuPackage: { findUnique: jest.fn() },
-  packageCategorySettings: {
-    findUnique: jest.fn(), create: jest.fn(), update: jest.fn(),
-    delete: jest.fn(), deleteMany: jest.fn(),
-  },
-  dishCategory: { findUnique: jest.fn() },
-  $transaction: jest.fn(),
+
+const mockService = {
+  getByPackageWithDishes: jest.fn(),
+  getById: jest.fn(),
+  createFromInput: jest.fn(),
+  updateById: jest.fn(),
+  deleteById: jest.fn(),
+  bulkUpdateFromInput: jest.fn(),
 };
 
-jest.mock('@/prisma-client', () => ({
-  PrismaClient: jest.fn().mockImplementation(() => mockPrisma),
+jest.mock('../../../services/packageCategory.service', () => ({
+  packageCategoryService: mockService,
 }));
 
 jest.mock('../../../validation/menu.validation', () => ({
@@ -23,6 +24,7 @@ jest.mock('../../../validation/menu.validation', () => ({
 
 import { packageCategoryController as ctrl } from '../../../controllers/packageCategory.controller';
 import { bulkUpdateCategorySettingsSchema } from '../../../validation/menu.validation';
+import { AppError } from '../../../utils/AppError';
 
 const safeParse = (bulkUpdateCategorySettingsSchema as any).safeParse as jest.Mock;
 
@@ -48,22 +50,22 @@ beforeEach(() => {
 describe('PackageCategoryController', () => {
   // ========== getByPackage ==========
   describe('getByPackage()', () => {
-    it('should return 404 when package not found', async () => {
-      mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
+    it('should throw 404 when package not found', async () => {
+      mockService.getByPackageWithDishes.mockRejectedValue(AppError.notFound('Package'));
       const response = res();
-      await ctrl.getByPackage(req({ params: { packageId: 'x' } }), response);
-      expect(response.status).toHaveBeenCalledWith(404);
+      await expect(ctrl.getByPackage(req({ params: { packageId: 'x' } }), response))
+        .rejects.toThrow('nie znaleziono');
     });
 
     it('should return categories with dishes', async () => {
-      mockPrisma.menuPackage.findUnique.mockResolvedValue({
-        id: 'pkg-1', name: 'Gold',
-        categorySettings: [{
-          id: 'cs-1', categoryId: 'cat-1',
-          category: { name: 'Zupy', slug: 'zupy', icon: 'soup', color: '#f00',
-            dishes: [{ id: 'd-1', name: 'Pomidorowa', description: 'Opis', allergens: ['gluten'], displayOrder: 1 }] },
-          minSelect: { toString: () => '1' }, maxSelect: { toString: () => '3' },
-          isRequired: true, customLabel: null, displayOrder: 0,
+      mockService.getByPackageWithDishes.mockResolvedValue({
+        packageId: 'pkg-1', packageName: 'Gold',
+        categories: [{
+          id: 'cs-1', categoryId: 'cat-1', categoryName: 'Zupy', categorySlug: 'zupy',
+          categoryIcon: 'soup', categoryColor: '#f00',
+          minSelect: 1, maxSelect: 3, isRequired: true, customLabel: 'Zupy',
+          displayOrder: 0, extraItemPrice: null, maxExtra: null, portionTarget: 'ALL',
+          dishes: [{ id: 'd-1', name: 'Pomidorowa', description: 'Opis', allergens: ['gluten'], displayOrder: 1 }],
         }],
       });
       const response = res();
@@ -74,13 +76,14 @@ describe('PackageCategoryController', () => {
     });
 
     it('should use customLabel when set', async () => {
-      mockPrisma.menuPackage.findUnique.mockResolvedValue({
-        id: 'pkg-1', name: 'Gold',
-        categorySettings: [{
-          id: 'cs-1', categoryId: 'cat-1',
-          category: { name: 'Zupy', slug: 'zupy', icon: null, color: null, dishes: [] },
-          minSelect: { toString: () => '1' }, maxSelect: { toString: () => '2' },
-          isRequired: false, customLabel: 'Nasze zupy', displayOrder: 1,
+      mockService.getByPackageWithDishes.mockResolvedValue({
+        packageId: 'pkg-1', packageName: 'Gold',
+        categories: [{
+          id: 'cs-1', categoryId: 'cat-1', categoryName: 'Zupy', categorySlug: 'zupy',
+          categoryIcon: null, categoryColor: null,
+          minSelect: 1, maxSelect: 2, isRequired: false, customLabel: 'Nasze zupy',
+          displayOrder: 1, extraItemPrice: null, maxExtra: null, portionTarget: 'ALL',
+          dishes: [],
         }],
       });
       const response = res();
@@ -89,25 +92,25 @@ describe('PackageCategoryController', () => {
       expect(data.categories[0].customLabel).toBe('Nasze zupy');
     });
 
-    it('should return 500 on error', async () => {
-      mockPrisma.menuPackage.findUnique.mockRejectedValue(new Error('db'));
+    it('should propagate unexpected errors', async () => {
+      mockService.getByPackageWithDishes.mockRejectedValue(new Error('db'));
       const response = res();
-      await ctrl.getByPackage(req({ params: { packageId: 'x' } }), response);
-      expect(response.status).toHaveBeenCalledWith(500);
+      await expect(ctrl.getByPackage(req({ params: { packageId: 'x' } }), response))
+        .rejects.toThrow('db');
     });
   });
 
   // ========== getById ==========
   describe('getById()', () => {
-    it('should return 404', async () => {
-      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
+    it('should throw 404 when not found', async () => {
+      mockService.getById.mockRejectedValue(AppError.notFound('Category setting'));
       const response = res();
-      await ctrl.getById(req({ params: { id: 'x' } }), response);
-      expect(response.status).toHaveBeenCalledWith(404);
+      await expect(ctrl.getById(req({ params: { id: 'x' } }), response))
+        .rejects.toThrow('nie znaleziono');
     });
 
     it('should return setting', async () => {
-      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue({ id: 'cs-1' });
+      mockService.getById.mockResolvedValue({ id: 'cs-1' });
       const response = res();
       await ctrl.getById(req({ params: { id: 'cs-1' } }), response);
       expect(response.json).toHaveBeenCalledWith(
@@ -115,73 +118,71 @@ describe('PackageCategoryController', () => {
       );
     });
 
-    it('should return 500 on error', async () => {
-      mockPrisma.packageCategorySettings.findUnique.mockRejectedValue(new Error('db'));
+    it('should propagate unexpected errors', async () => {
+      mockService.getById.mockRejectedValue(new Error('db'));
       const response = res();
-      await ctrl.getById(req({ params: { id: 'x' } }), response);
-      expect(response.status).toHaveBeenCalledWith(500);
+      await expect(ctrl.getById(req({ params: { id: 'x' } }), response))
+        .rejects.toThrow('db');
     });
   });
 
   // ========== create ==========
   describe('create()', () => {
-    it('should return 400 when packageId missing', async () => {
+    it('should throw 400 when packageId missing', async () => {
+      mockService.createFromInput.mockRejectedValue(AppError.badRequest('packageId and categoryId are required'));
       const response = res();
-      await ctrl.create(req({ body: { categoryId: 'c-1' } }), response);
-      expect(response.status).toHaveBeenCalledWith(400);
+      await expect(ctrl.create(req({ body: { categoryId: 'c-1' } }), response))
+        .rejects.toThrow('packageId and categoryId are required');
     });
 
-    it('should return 400 when categoryId missing', async () => {
+    it('should throw 400 when categoryId missing', async () => {
+      mockService.createFromInput.mockRejectedValue(AppError.badRequest('packageId and categoryId are required'));
       const response = res();
-      await ctrl.create(req({ body: { packageId: 'p-1' } }), response);
-      expect(response.status).toHaveBeenCalledWith(400);
+      await expect(ctrl.create(req({ body: { packageId: 'p-1' } }), response))
+        .rejects.toThrow('packageId and categoryId are required');
     });
 
-    it('should return 400 when minSelect > maxSelect', async () => {
+    it('should throw 400 when minSelect > maxSelect', async () => {
+      mockService.createFromInput.mockRejectedValue(
+        AppError.badRequest('Minimalna wartość nie może być większa niż maksymalna')
+      );
       const response = res();
-      await ctrl.create(req({ body: { packageId: 'p-1', categoryId: 'c-1', minSelect: 5, maxSelect: 2 } }), response);
-      expect(response.status).toHaveBeenCalledWith(400);
+      await expect(ctrl.create(req({ body: { packageId: 'p-1', categoryId: 'c-1', minSelect: 5, maxSelect: 2 } }), response))
+        .rejects.toThrow('Minimalna wartość');
     });
 
-    it('should return 404 when package not found', async () => {
-      mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
+    it('should throw 404 when package not found', async () => {
+      mockService.createFromInput.mockRejectedValue(AppError.notFound('Package'));
       const response = res();
-      await ctrl.create(req({ body: { packageId: 'p-1', categoryId: 'c-1', minSelect: 1, maxSelect: 3 } }), response);
-      expect(response.status).toHaveBeenCalledWith(404);
+      await expect(ctrl.create(req({ body: { packageId: 'p-1', categoryId: 'c-1', minSelect: 1, maxSelect: 3 } }), response))
+        .rejects.toThrow('nie znaleziono');
     });
 
-    it('should return 404 when category not found', async () => {
-      mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'p-1' });
-      mockPrisma.dishCategory.findUnique.mockResolvedValue(null);
+    it('should throw 404 when category not found', async () => {
+      mockService.createFromInput.mockRejectedValue(AppError.notFound('Category'));
       const response = res();
-      await ctrl.create(req({ body: { packageId: 'p-1', categoryId: 'c-1', minSelect: 1, maxSelect: 3 } }), response);
-      expect(response.status).toHaveBeenCalledWith(404);
+      await expect(ctrl.create(req({ body: { packageId: 'p-1', categoryId: 'c-1', minSelect: 1, maxSelect: 3 } }), response))
+        .rejects.toThrow('nie znaleziono');
     });
 
-    it('should return 409 when duplicate', async () => {
-      mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'p-1' });
-      mockPrisma.dishCategory.findUnique.mockResolvedValue({ id: 'c-1' });
-      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue({ id: 'existing' });
+    it('should throw 409 when duplicate', async () => {
+      mockService.createFromInput.mockRejectedValue(
+        AppError.conflict('Category setting already exists for this package')
+      );
       const response = res();
-      await ctrl.create(req({ body: { packageId: 'p-1', categoryId: 'c-1', minSelect: 1, maxSelect: 3 } }), response);
-      expect(response.status).toHaveBeenCalledWith(409);
+      await expect(ctrl.create(req({ body: { packageId: 'p-1', categoryId: 'c-1', minSelect: 1, maxSelect: 3 } }), response))
+        .rejects.toThrow('already exists');
     });
 
     it('should return 201 on success with defaults', async () => {
-      mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'p-1' });
-      mockPrisma.dishCategory.findUnique.mockResolvedValue({ id: 'c-1' });
-      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      mockPrisma.packageCategorySettings.create.mockResolvedValue({ id: 'cs-new' });
+      mockService.createFromInput.mockResolvedValue({ id: 'cs-new' });
       const response = res();
       await ctrl.create(req({ body: { packageId: 'p-1', categoryId: 'c-1' } }), response);
       expect(response.status).toHaveBeenCalledWith(201);
     });
 
     it('should return 201 with explicit values', async () => {
-      mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'p-1' });
-      mockPrisma.dishCategory.findUnique.mockResolvedValue({ id: 'c-1' });
-      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      mockPrisma.packageCategorySettings.create.mockResolvedValue({ id: 'cs-new' });
+      mockService.createFromInput.mockResolvedValue({ id: 'cs-new' });
       const response = res();
       await ctrl.create(req({ body: {
         packageId: 'p-1', categoryId: 'c-1',
@@ -189,37 +190,39 @@ describe('PackageCategoryController', () => {
         displayOrder: 3, customLabel: 'Custom',
       } }), response);
       expect(response.status).toHaveBeenCalledWith(201);
-      expect(mockPrisma.packageCategorySettings.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ isRequired: false, isEnabled: false, customLabel: 'Custom' }) })
+      expect(mockService.createFromInput).toHaveBeenCalledWith(
+        expect.objectContaining({ isRequired: false, isEnabled: false, customLabel: 'Custom' })
       );
     });
 
-    it('should return 500 on error', async () => {
-      mockPrisma.menuPackage.findUnique.mockRejectedValue(new Error('db'));
+    it('should propagate unexpected errors', async () => {
+      mockService.createFromInput.mockRejectedValue(new Error('db'));
       const response = res();
-      await ctrl.create(req({ body: { packageId: 'p-1', categoryId: 'c-1', minSelect: 1, maxSelect: 2 } }), response);
-      expect(response.status).toHaveBeenCalledWith(500);
+      await expect(ctrl.create(req({ body: { packageId: 'p-1', categoryId: 'c-1', minSelect: 1, maxSelect: 2 } }), response))
+        .rejects.toThrow('db');
     });
   });
 
   // ========== update ==========
   describe('update()', () => {
-    it('should return 400 when minSelect > maxSelect', async () => {
+    it('should throw 400 when minSelect > maxSelect', async () => {
+      mockService.updateById.mockRejectedValue(
+        AppError.badRequest('Minimalna wartość nie może być większa niż maksymalna')
+      );
       const response = res();
-      await ctrl.update(req({ params: { id: 'cs-1' }, body: { minSelect: 5, maxSelect: 2 } }), response);
-      expect(response.status).toHaveBeenCalledWith(400);
+      await expect(ctrl.update(req({ params: { id: 'cs-1' }, body: { minSelect: 5, maxSelect: 2 } }), response))
+        .rejects.toThrow('Minimalna wartość');
     });
 
-    it('should return 404 when not found', async () => {
-      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
+    it('should throw 404 when not found', async () => {
+      mockService.updateById.mockRejectedValue(AppError.notFound('Category setting'));
       const response = res();
-      await ctrl.update(req({ params: { id: 'x' }, body: { minSelect: 1 } }), response);
-      expect(response.status).toHaveBeenCalledWith(404);
+      await expect(ctrl.update(req({ params: { id: 'x' }, body: { minSelect: 1 } }), response))
+        .rejects.toThrow('nie znaleziono');
     });
 
     it('should return 200 on success', async () => {
-      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue({ id: 'cs-1' });
-      mockPrisma.packageCategorySettings.update.mockResolvedValue({ id: 'cs-1', minSelect: 2 });
+      mockService.updateById.mockResolvedValue({ id: 'cs-1', minSelect: 2 });
       const response = res();
       await ctrl.update(req({ params: { id: 'cs-1' }, body: { minSelect: 2 } }), response);
       expect(response.json).toHaveBeenCalledWith(
@@ -228,33 +231,31 @@ describe('PackageCategoryController', () => {
     });
 
     it('should skip minSelect>maxSelect check when only one provided', async () => {
-      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue({ id: 'cs-1' });
-      mockPrisma.packageCategorySettings.update.mockResolvedValue({ id: 'cs-1' });
+      mockService.updateById.mockResolvedValue({ id: 'cs-1' });
       const response = res();
       await ctrl.update(req({ params: { id: 'cs-1' }, body: { minSelect: 5 } }), response);
       expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
 
-    it('should return 500 on error', async () => {
-      mockPrisma.packageCategorySettings.findUnique.mockRejectedValue(new Error('db'));
+    it('should propagate unexpected errors', async () => {
+      mockService.updateById.mockRejectedValue(new Error('db'));
       const response = res();
-      await ctrl.update(req({ params: { id: 'x' }, body: {} }), response);
-      expect(response.status).toHaveBeenCalledWith(500);
+      await expect(ctrl.update(req({ params: { id: 'x' }, body: {} }), response))
+        .rejects.toThrow('db');
     });
   });
 
   // ========== delete ==========
   describe('delete()', () => {
-    it('should return 404 when not found', async () => {
-      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
+    it('should throw 404 when not found', async () => {
+      mockService.deleteById.mockRejectedValue(AppError.notFound('Category setting'));
       const response = res();
-      await ctrl.delete(req({ params: { id: 'x' } }), response);
-      expect(response.status).toHaveBeenCalledWith(404);
+      await expect(ctrl.delete(req({ params: { id: 'x' } }), response))
+        .rejects.toThrow('nie znaleziono');
     });
 
     it('should return 200 on success', async () => {
-      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue({ id: 'cs-1' });
-      mockPrisma.packageCategorySettings.delete.mockResolvedValue(undefined);
+      mockService.deleteById.mockResolvedValue(undefined);
       const response = res();
       await ctrl.delete(req({ params: { id: 'cs-1' } }), response);
       expect(response.json).toHaveBeenCalledWith(
@@ -262,35 +263,34 @@ describe('PackageCategoryController', () => {
       );
     });
 
-    it('should return 500 on error', async () => {
-      mockPrisma.packageCategorySettings.findUnique.mockRejectedValue(new Error('db'));
+    it('should propagate unexpected errors', async () => {
+      mockService.deleteById.mockRejectedValue(new Error('db'));
       const response = res();
-      await ctrl.delete(req({ params: { id: 'x' } }), response);
-      expect(response.status).toHaveBeenCalledWith(500);
+      await expect(ctrl.delete(req({ params: { id: 'x' } }), response))
+        .rejects.toThrow('db');
     });
   });
 
   // ========== bulkUpdate ==========
   describe('bulkUpdate()', () => {
-    it('should return 400 on validation failure', async () => {
+    it('should throw 400 on validation failure', async () => {
       safeParse.mockReturnValue({ success: false, error: { errors: [{ path: ['x'], message: 'bad' }] } });
       const response = res();
-      await ctrl.bulkUpdate(req({ params: { packageId: 'pkg-1' }, body: {} }), response);
-      expect(response.status).toHaveBeenCalledWith(400);
+      await expect(ctrl.bulkUpdate(req({ params: { packageId: 'pkg-1' }, body: {} }), response))
+        .rejects.toThrow('Błąd walidacji');
     });
 
-    it('should return 404 when package not found', async () => {
+    it('should throw 404 when package not found', async () => {
       safeParse.mockReturnValue({ success: true, data: { settings: [] } });
-      mockPrisma.menuPackage.findUnique.mockResolvedValue(null);
+      mockService.bulkUpdateFromInput.mockRejectedValue(AppError.notFound('Package'));
       const response = res();
-      await ctrl.bulkUpdate(req({ params: { packageId: 'x' } }), response);
-      expect(response.status).toHaveBeenCalledWith(404);
+      await expect(ctrl.bulkUpdate(req({ params: { packageId: 'x' } }), response))
+        .rejects.toThrow('nie znaleziono');
     });
 
     it('should return 200 with empty settings', async () => {
       safeParse.mockReturnValue({ success: true, data: { settings: [] } });
-      mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'pkg-1' });
-      mockPrisma.$transaction.mockImplementation(async (fn: any) => fn(mockPrisma));
+      mockService.bulkUpdateFromInput.mockResolvedValue([]);
       const response = res();
       await ctrl.bulkUpdate(req({ params: { packageId: 'pkg-1' } }), response);
       expect(response.json).toHaveBeenCalledWith(
@@ -303,11 +303,7 @@ describe('PackageCategoryController', () => {
         { categoryId: 'c-1', minSelect: 1, maxSelect: 3, isRequired: true, isEnabled: true, displayOrder: 0 },
       ];
       safeParse.mockReturnValue({ success: true, data: { settings } });
-      mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'pkg-1' });
-      mockPrisma.$transaction.mockImplementation(async (fn: any) => {
-        mockPrisma.packageCategorySettings.create.mockResolvedValue({ id: 'cs-new' });
-        return fn(mockPrisma);
-      });
+      mockService.bulkUpdateFromInput.mockResolvedValue([{ id: 'cs-new' }]);
       const response = res();
       await ctrl.bulkUpdate(req({ params: { packageId: 'pkg-1' } }), response);
       expect(response.json).toHaveBeenCalledWith(
@@ -320,24 +316,18 @@ describe('PackageCategoryController', () => {
         { categoryId: 'c-1', minSelect: 1, maxSelect: 2 },
       ];
       safeParse.mockReturnValue({ success: true, data: { settings } });
-      mockPrisma.menuPackage.findUnique.mockResolvedValue({ id: 'pkg-1' });
-      mockPrisma.$transaction.mockImplementation(async (fn: any) => {
-        mockPrisma.packageCategorySettings.create.mockResolvedValue({ id: 'cs-new' });
-        return fn(mockPrisma);
-      });
+      mockService.bulkUpdateFromInput.mockResolvedValue([{ id: 'cs-new' }]);
       const response = res();
       await ctrl.bulkUpdate(req({ params: { packageId: 'pkg-1' } }), response);
-      expect(mockPrisma.packageCategorySettings.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ isRequired: true, isEnabled: true, displayOrder: 0, customLabel: null }) })
-      );
+      expect(mockService.bulkUpdateFromInput).toHaveBeenCalledWith('pkg-1', settings);
     });
 
-    it('should return 500 on error', async () => {
+    it('should propagate unexpected errors', async () => {
       safeParse.mockReturnValue({ success: true, data: { settings: [] } });
-      mockPrisma.menuPackage.findUnique.mockRejectedValue(new Error('db'));
+      mockService.bulkUpdateFromInput.mockRejectedValue(new Error('db'));
       const response = res();
-      await ctrl.bulkUpdate(req({ params: { packageId: 'x' } }), response);
-      expect(response.status).toHaveBeenCalledWith(500);
+      await expect(ctrl.bulkUpdate(req({ params: { packageId: 'x' } }), response))
+        .rejects.toThrow('db');
     });
   });
 });

@@ -1,6 +1,6 @@
 /**
  * Settings Routes
- * 
+ *
  * Mounts all settings sub-modules under /api/settings:
  *   /api/settings/users          — User management
  *   /api/settings/roles          — Role management
@@ -12,11 +12,22 @@ import { Router } from 'express';
 import { authMiddleware } from '@middlewares/auth';
 import { requirePermission } from '@middlewares/permissions';
 import { asyncHandler } from '@middlewares/asyncHandler';
+import { validateBody } from '@middlewares/validateBody';
 import usersController from '@controllers/users.controller';
 import rolesController from '@controllers/roles.controller';
 import permissionsController from '@controllers/permissions.controller';
 import companySettingsController from '@controllers/company-settings.controller';
 import archiveAdminController from '@controllers/archive-admin.controller';
+import {
+  createUserSchema,
+  updateUserSchema,
+  changePasswordSchema,
+  createRoleSchema,
+  updateRoleSchema,
+  updateRolePermissionsSchema,
+  updateCompanySettingsSchema,
+  updateArchiveSettingsSchema,
+} from '../validation/settings.validation';
 
 const router = Router();
 
@@ -24,7 +35,7 @@ const router = Router();
 router.use(authMiddleware);
 
 // ═══════════════════════════════════════════════════════
-// 👤 USERS — /api/settings/users
+// USERS — /api/settings/users
 // ═══════════════════════════════════════════════════════
 router.get(
   '/users',
@@ -41,18 +52,21 @@ router.get(
 router.post(
   '/users',
   requirePermission('settings:manage_users'),
+  validateBody(createUserSchema),
   asyncHandler(usersController.createUser.bind(usersController))
 );
 
 router.put(
   '/users/:id',
   requirePermission('settings:manage_users'),
+  validateBody(updateUserSchema),
   asyncHandler(usersController.updateUser.bind(usersController))
 );
 
 router.patch(
   '/users/:id/password',
   requirePermission('settings:manage_users'),
+  validateBody(changePasswordSchema),
   asyncHandler(usersController.changePassword.bind(usersController))
 );
 
@@ -69,7 +83,7 @@ router.delete(
 );
 
 // ═══════════════════════════════════════════════════════
-// 🛡️ ROLES — /api/settings/roles
+// ROLES — /api/settings/roles
 // ═══════════════════════════════════════════════════════
 router.get(
   '/roles',
@@ -86,18 +100,21 @@ router.get(
 router.post(
   '/roles',
   requirePermission('settings:manage_roles'),
+  validateBody(createRoleSchema),
   asyncHandler(rolesController.createRole.bind(rolesController))
 );
 
 router.put(
   '/roles/:id',
   requirePermission('settings:manage_roles'),
+  validateBody(updateRoleSchema),
   asyncHandler(rolesController.updateRole.bind(rolesController))
 );
 
 router.put(
   '/roles/:id/permissions',
   requirePermission('settings:manage_roles'),
+  validateBody(updateRolePermissionsSchema),
   asyncHandler(rolesController.updateRolePermissions.bind(rolesController))
 );
 
@@ -108,7 +125,7 @@ router.delete(
 );
 
 // ═══════════════════════════════════════════════════════
-// 🔑 PERMISSIONS — /api/settings/permissions
+// PERMISSIONS — /api/settings/permissions
 // ═══════════════════════════════════════════════════════
 router.get(
   '/permissions',
@@ -123,7 +140,7 @@ router.get(
 );
 
 // ═══════════════════════════════════════════════════════
-// 🏢 COMPANY SETTINGS — /api/settings/company
+// COMPANY SETTINGS — /api/settings/company
 // ═══════════════════════════════════════════════════════
 router.get(
   '/company',
@@ -134,11 +151,12 @@ router.get(
 router.put(
   '/company',
   requirePermission('settings:manage_company'),
+  validateBody(updateCompanySettingsSchema),
   asyncHandler(companySettingsController.updateSettings.bind(companySettingsController))
 );
 
 // ═══════════════════════════════════════════════════════
-// 🗄️ ARCHIVE SETTINGS — /api/settings/archive (#144)
+// ARCHIVE SETTINGS — /api/settings/archive (#144)
 // ═══════════════════════════════════════════════════════
 router.get(
   '/archive',
@@ -149,6 +167,7 @@ router.get(
 router.put(
   '/archive',
   requirePermission('settings:manage_company'),
+  validateBody(updateArchiveSettingsSchema),
   asyncHandler(archiveAdminController.updateArchiveSettings.bind(archiveAdminController))
 );
 

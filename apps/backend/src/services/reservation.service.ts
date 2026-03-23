@@ -37,6 +37,8 @@ import {
   detectReservationChanges,
   formatChangesSummary,
 } from '../utils/reservation.utils';
+import { SelectedOptionDTO } from '../dto/menu-selection.dto';
+import { Prisma } from '@/prisma-client';
 import { calculateVenueSurcharge } from '../utils/venue-surcharge';
 import { recalculateReservationTotalPrice } from '../utils/recalculate-price';
 import { reservationCategoryExtraService } from './reservationCategoryExtra.service';
@@ -47,7 +49,7 @@ import { validateCapacityForTimeRange, checkWholeVenueConflict } from './reserva
 import { reservationStatusService } from './reservation-status.service';
 import { createHistoryEntry } from './reservation-history.helper';
 
-function sanitizeString(value: any): string | null {
+function sanitizeString(value: unknown): string | null {
   if (value === null || value === undefined || value === '') return null;
   return String(value).replace(/\x00/g, '').trim() || null;
 }
@@ -85,7 +87,7 @@ function calculateExtrasTotalPrice(
 }
 
 export class ReservationService {
-  async createReservation(data: CreateReservationDTO, userId: string): Promise<any> {
+  async createReservation(data: CreateReservationDTO, userId: string): Promise<ReservationResponse> {
     if (!data.hallId || !data.clientId || !data.eventTypeId) {
       throw new AppError(RESERVATION.HALL_CLIENT_EVENT_REQUIRED, 400);
     }
@@ -130,7 +132,7 @@ export class ReservationService {
     let pricePerChild: number;
     let pricePerToddler: number;
     let menuPackage = null;
-    const selectedOptions: any[] = [];
+    const selectedOptions: SelectedOptionDTO[] = [];
     const optionsPrice = 0;
 
     if (data.menuPackageId) {
@@ -315,10 +317,10 @@ export class ReservationService {
       const serviceItems = await prisma.serviceItem.findMany({
         where: { id: { in: serviceItemIds } },
       });
-      const itemMap = new Map(serviceItems.map((i: any) => [i.id, i]));
+      const itemMap = new Map(serviceItems.map((i) => [i.id, i]));
 
       for (const extra of data.serviceExtras) {
-        const item = itemMap.get(extra.serviceItemId) as any;
+        const item = itemMap.get(extra.serviceItemId);
         if (!item) continue;
 
         await prisma.reservationExtra.create({
@@ -404,10 +406,10 @@ export class ReservationService {
       excludeUserId: userId,
     });
 
-    return reservation as any;
+    return reservation as ReservationResponse;
   }
 
-  async updateReservationMenu(reservationId: string, data: UpdateReservationMenuDTO, userId: string): Promise<any> {
+  async updateReservationMenu(reservationId: string, data: UpdateReservationMenuDTO, userId: string): Promise<{ message: string; totalPrice?: number }> {
     await this.validateUserId(userId);
 
     const reservation = await prisma.reservation.findUnique({
@@ -426,9 +428,11 @@ export class ReservationService {
       throw new AppError(MENU.CANNOT_UPDATE_MENU, 409);
     }
 
-    const clientName = reservation.client ? `${(reservation.client as any).firstName} ${(reservation.client as any).lastName}` : 'N/A';
+    const client = reservation.client as { firstName: string; lastName: string } | null;
+    const clientName = client ? `${client.firstName} ${client.lastName}` : 'N/A';
     /* istanbul ignore next -- hall always included */
-    const hallName = (reservation.hall as any)?.name || 'N/A';
+    const hall = reservation.hall as { name: string } | null;
+    const hallName = hall?.name || 'N/A';
 
     const adults = data.adultsCount ?? reservation.adults;
     const children = data.childrenCount ?? reservation.children;
@@ -438,10 +442,9 @@ export class ReservationService {
     if (data.menuPackageId === null) {
       // Get old package name before removal
       /* istanbul ignore next -- defensive: menuData always has packageName */
-      const oldPackageName = reservation.menuSnapshot
-        ? ((reservation.menuSnapshot as any).menuData as any)?.packageName || 'Nieznany pakiet'
-        : 'Brak';
-      const oldTotalPrice = reservation.menuSnapshot ? Number((reservation.menuSnapshot as any).totalMenuPrice) : 0;
+      const menuData = reservation.menuSnapshot?.menuData as Record<string, unknown> | null;
+      const oldPackageName = menuData?.packageName as string || 'Nieznany pakiet';
+      const oldTotalPrice = reservation.menuSnapshot ? Number(reservation.menuSnapshot.totalMenuPrice) : 0;
 
       if (reservation.menuSnapshot) {
         await prisma.reservationMenuSnapshot.delete({ where: { id: reservation.menuSnapshot.id } });
@@ -470,7 +473,7 @@ export class ReservationService {
         throw new AppError(MENU.MAX_GUESTS(menuPackage.maxGuests), 400);
       }
 
-      const selectedOptions: any[] = [];
+      const selectedOptions: SelectedOptionDTO[] = [];
       const optionsPrice = 0;
       const pricePerAdult = Number(menuPackage.pricePerAdult);
       const pricePerChild = Number(menuPackage.pricePerChild);
@@ -480,8 +483,9 @@ export class ReservationService {
       const totalMenuPrice = packagePrice + optionsPrice;
 
       // Save old info for audit
-      const oldPackageName = reservation.menuSnapshot ? ((reservation.menuSnapshot as any).menuData as any)?.packageName || null : null;
-      const oldTotalPrice = reservation.menuSnapshot ? Number((reservation.menuSnapshot as any).totalMenuPrice) : 0;
+      const oldMenuData = reservation.menuSnapshot?.menuData as Record<string, unknown> | null;
+      const oldPackageNameForAudit = oldMenuData?.packageName as string || null;
+      const oldTotalPriceForAudit = reservation.menuSnapshot ? Number(reservation.menuSnapshot.totalMenuPrice) : 0;
 
       const snapshotData = {
         reservationId,
@@ -538,7 +542,7 @@ export class ReservationService {
   }
 
   async getReservations(filters?: ReservationFilters): Promise<ReservationResponse[]> {
-    const where: any = {};
+    const where: Prisma.ReservationWhereInput = {};
     if (filters?.status) where.status = filters.status;
     if (filters?.hallId) where.hallId = filters.hallId;
     if (filters?.clientId) where.clientId = filters.clientId;
@@ -572,8 +576,8 @@ export class ReservationService {
       where.status = { not: ReservationStatus.ARCHIVED };
     }
 
-    const page = (filters as any)?.page ?? 1;
-    const pageSize = (filters as any)?.pageSize ?? 100;
+    const page = filters?.page ?? 1;
+    const pageSize = filters?.pageSize ?? 100;
 
     const reservations = await prisma.reservation.findMany({
       where,
@@ -598,12 +602,12 @@ export class ReservationService {
     });
 
     // Enrich each reservation with computed extrasTotalPrice
-    return reservations.map((r: any) => {
+    return reservations.map((r) => {
       const extras = r.extras || [];
       const extrasTotalPrice = calculateExtrasTotalPrice(extras, r.guests || 0);
       const categoryExtras = r.categoryExtras || [];
       const categoryExtrasTotal = categoryExtras.reduce(
-        (sum: number, e: any) => sum + Number(e.totalPrice), 0
+        (sum: number, e) => sum + Number(e.totalPrice), 0
       );
       return {
         ...r,
@@ -612,7 +616,7 @@ export class ReservationService {
         categoryExtras,
         categoryExtrasTotal,
       };
-    }) as any[];
+    }) as ReservationResponse[];
   }
 
   async getReservationById(id: string): Promise<ReservationResponse> {
@@ -640,13 +644,13 @@ export class ReservationService {
     if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
 
     // Enrich with computed extrasTotalPrice
-    const extras = (reservation as any).extras || [];
+    const extras = reservation.extras || [];
     const extrasTotalPrice = calculateExtrasTotalPrice(extras, reservation.guests || 0);
 
     // #216: Compute category extras total
-    const categoryExtras = (reservation as any).categoryExtras || [];
+    const categoryExtras = reservation.categoryExtras || [];
     const categoryExtrasTotal = categoryExtras.reduce(
-      (sum: number, e: any) => sum + Number(e.totalPrice), 0
+      (sum: number, e) => sum + Number(e.totalPrice), 0
     );
 
     return {
@@ -655,10 +659,10 @@ export class ReservationService {
       extrasCount: extras.length,
       categoryExtras,
       categoryExtrasTotal,
-    } as any;
+    } as ReservationResponse;
   }
 
-  async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<any> {
+  async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {
     await this.validateUserId(userId);
     const existingReservation = await prisma.reservation.findUnique({
       where: { id },
@@ -670,7 +674,7 @@ export class ReservationService {
     const isOnlyInternalNotes = data.internalNotes !== undefined && Object.keys(data).every((k) => k === 'internalNotes');
     if (isOnlyInternalNotes) {
       const newValue = sanitizeString(data.internalNotes);
-      const oldValue = (existingReservation as any).internalNotes ?? null;
+      const oldValue = existingReservation.internalNotes ?? null;
       if (oldValue === newValue) {
         return await this.getReservationById(id);
       }
@@ -734,7 +738,7 @@ export class ReservationService {
       if (!customValidation.valid) throw new AppError(customValidation.error!, 400);
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.ReservationUpdateInput = {};
 
     // ══ #137: Hall change — validate new hall + recalculate surcharge ══
     let effectiveHall = existingReservation.hall;
@@ -743,7 +747,7 @@ export class ReservationService {
       const newHall = await prisma.hall.findUnique({ where: { id: data.hallId! } });
       if (!newHall) throw new AppError(HALL.NOT_FOUND, 404);
       if (!newHall.isActive) throw new AppError(HALL.NOT_ACTIVE, 400);
-      effectiveHall = newHall as any;
+      effectiveHall = newHall;
       updateData.hallId = data.hallId;
     }
 
@@ -776,13 +780,13 @@ export class ReservationService {
 
     // #165: Capacity-based overlap + capacity check on hall/time/guests change
     if ((hallChanged || data.startDateTime || data.endDateTime || guestsChanged) && finalStart && finalEnd && effectiveHall) {
-      await validateCapacityForTimeRange(effectiveHall as any, finalStart, finalEnd, finalGuests, id);
+      await validateCapacityForTimeRange(effectiveHall, finalStart, finalEnd, finalGuests, id);
       await checkWholeVenueConflict(effectiveHallId, finalStart, finalEnd, id);
     }
 
     // Single-reservation capacity guard (guests alone exceed hall.capacity)
-    if (effectiveHall && finalGuests > (effectiveHall as any).capacity) {
-      throw new AppError(RESERVATION.GUESTS_EXCEED_CAPACITY(finalGuests, (effectiveHall as any).capacity), 400);
+    if (effectiveHall && finalGuests > effectiveHall.capacity) {
+      throw new AppError(RESERVATION.GUESTS_EXCEED_CAPACITY(finalGuests, effectiveHall.capacity), 400);
     }
 
     const hasMenuSnapshot = !!existingReservation.menuSnapshot;
@@ -820,9 +824,9 @@ export class ReservationService {
     }
 
     // ══ #137: Recalculate venue surcharge — handles hall change + guest change ══
-    const oldIsWholeVenue = existingReservation.hall ? (existingReservation.hall as any).isWholeVenue : false;
-    const newIsWholeVenue = effectiveHall ? (effectiveHall as any).isWholeVenue : false;
-    const oldSurcharge = Number((existingReservation as any).venueSurcharge) || 0;
+    const oldIsWholeVenue = existingReservation.hall ? existingReservation.hall.isWholeVenue : false;
+    const newIsWholeVenue = effectiveHall ? effectiveHall.isWholeVenue : false;
+    const oldSurcharge = Number(existingReservation.venueSurcharge) || 0;
 
     if (hallChanged || guestsChanged || oldIsWholeVenue || newIsWholeVenue) {
       const surcharge = calculateVenueSurcharge(newIsWholeVenue, finalGuests);
@@ -916,7 +920,7 @@ ${changesSummary}`);
     await recalculateReservationTotalPrice(id);
 
     // #128: Notification — reservation updated
-    const updatedClient = (reservation as any).client;
+    const updatedClient = reservation.client as { firstName: string; lastName: string } | null;
     if (updatedClient) {
       const updClientName = updatedClient.firstName + ' ' + updatedClient.lastName;
       notificationService.createForAll({

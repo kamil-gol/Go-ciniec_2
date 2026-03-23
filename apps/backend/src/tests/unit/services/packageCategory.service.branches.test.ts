@@ -26,7 +26,7 @@ describe('PackageCategoryService branches', () => {
   describe('update', () => {
     it('should throw when setting not found (line 77)', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.update('x', { minSelect: 2 })).rejects.toThrow('Nie znaleziono');
+      await expect(packageCategoryService.update('x', { minSelect: 2 })).rejects.toThrow('nie znaleziono');
     });
 
     it('should update when setting exists', async () => {
@@ -69,7 +69,7 @@ describe('PackageCategoryService branches', () => {
   describe('getById', () => {
     it('should throw when not found', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.getById('x')).rejects.toThrow('Nie znaleziono');
+      await expect(packageCategoryService.getById('x')).rejects.toThrow('nie znaleziono');
     });
   });
 
@@ -77,7 +77,7 @@ describe('PackageCategoryService branches', () => {
   describe('delete', () => {
     it('should throw when not found', async () => {
       mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
-      await expect(packageCategoryService.delete('x')).rejects.toThrow('Nie znaleziono');
+      await expect(packageCategoryService.delete('x')).rejects.toThrow('nie znaleziono');
     });
   });
 
