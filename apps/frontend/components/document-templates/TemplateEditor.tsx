@@ -286,7 +286,7 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
               <EditorHeader
                 templateName={template.name}
                 templateSlug={template.slug}
-                templateDescription={template.description}
+                templateDescription={template.description ?? undefined}
                 templateVersion={template.version}
                 hasChanges={hasChanges}
                 isJson={isJson}
