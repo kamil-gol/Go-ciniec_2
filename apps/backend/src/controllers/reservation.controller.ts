@@ -1,6 +1,6 @@
 /**
  * Reservation Controller
- * Handle HTTP requests for reservation management
+ * Thin controller: parse request, call service, send response
  * MIGRATED: Uses AppError (no try/catch — errors forwarded by asyncHandler)
  * Phase 4.3: Block cancellation of reservations with paid deposits
  * Etap 5: internalNotes excluded from PDF
@@ -11,7 +11,6 @@ import reservationService from '../services/reservation.service';
 import depositService from '../services/deposit.service';
 import { pdfService } from '../services/pdf.service';
 import { AppError } from '../utils/AppError';
-import prisma from '@/lib/prisma';
 import {
   CreateReservationDTO,
   UpdateReservationDTO,
@@ -133,137 +132,27 @@ export class ReservationController {
       throw AppError.badRequest('endDateTime must be after startDateTime');
     }
 
-    // Find overlapping reservations (not cancelled)
-    const conflicts = await prisma.reservation.findMany({
-      where: {
-        hallId: hallId as string,
-        status: {
-          notIn: ['CANCELLED'],
-        },
-        ...(excludeReservationId ? { id: { not: excludeReservationId as string } } : {}),
-        // Overlap condition: existing.start < new.end AND existing.end > new.start
-        startDateTime: {
-          lt: end,
-        },
-        endDateTime: {
-          gt: start,
-        },
-      },
-      select: {
-        id: true,
-        startDateTime: true,
-        endDateTime: true,
-        status: true,
-        client: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
-        },
-        eventType: {
-          select: {
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        startDateTime: 'asc',
-      },
-    });
-
-    const formattedConflicts = conflicts.map((c) => ({
-      id: c.id,
-      clientName: c.client ? `${c.client.firstName} ${c.client.lastName}` : 'Nieznany',
-      eventType: c.eventType?.name || 'Nieznany',
-      startDateTime: c.startDateTime?.toISOString() || '',
-      endDateTime: c.endDateTime?.toISOString() || '',
-      status: c.status,
-    }));
+    const result = await reservationService.checkAvailability(
+      hallId as string,
+      start,
+      end,
+      excludeReservationId as string | undefined,
+    );
 
     res.status(200).json({
       success: true,
-      data: {
-        available: formattedConflicts.length === 0,
-        conflicts: formattedConflicts,
-      },
+      data: result,
     });
   }
 
   /**
    * Download reservation as PDF
    * GET /api/reservations/:id/pdf
-   *
-   * Maps Prisma `extras` relation → `reservationExtras` expected by pdf.service.ts
-   * Etap 5: internalNotes is stripped before PDF generation
-   * #deposits-fix: CANCELLED deposits are stripped before PDF generation
    */
   async downloadPDF(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const reservation = await reservationService.getReservationById(id) as any;
 
-    if (!reservation) throw AppError.notFound('Reservation');
-
-    // ═══ Map extras → reservationExtras for PDF compatibility ═══
-    // pdf.service.ts expects ReservationExtraForPDF[] on `reservationExtras`
-    // but reservation.service.ts returns raw Prisma data on `extras`
-    const extras = reservation.extras || [];
-    const reservationExtras = extras.map((e: any) => {
-      const unitPrice = e.customPrice !== null && e.customPrice !== undefined
-        ? Number(e.customPrice)
-        : Number(e.serviceItem.basePrice);
-      const quantity = e.quantity || 1;
-      let totalPrice: number;
-
-      if (e.serviceItem.priceType === 'PER_PERSON') {
-        totalPrice = unitPrice * quantity * (reservation.guests || 0);
-      } else if (e.serviceItem.priceType === 'FREE') {
-        totalPrice = 0;
-      } else {
-        // FLAT
-        totalPrice = unitPrice * quantity;
-      }
-      totalPrice = Math.round(totalPrice * 100) / 100;
-
-      return {
-        serviceItem: {
-          name: e.serviceItem.name,
-          priceType: e.serviceItem.priceType,
-          category: e.serviceItem.category || null,
-        },
-        quantity,
-        unitPrice,
-        totalPrice,
-        priceType: e.serviceItem.priceType,
-        note: e.note || null,
-        status: e.status || 'ACTIVE',
-      };
-    });
-
-    // #216: Map categoryExtras for PDF rendering
-    const categoryExtrasForPDF = (reservation.categoryExtras || []).map((ce: any) => ({
-      categoryName: ce.packageCategory?.category?.name || 'Kategoria',
-      quantity: Number(ce.quantity),
-      pricePerItem: Number(ce.pricePerItem),
-      guestCount: Number(ce.guestCount) || 1,
-      portionTarget: ce.portionTarget || 'ALL',
-      totalPrice: Number(ce.totalPrice),
-    }));
-
-    const pdfData = {
-      ...reservation,
-      reservationExtras,
-      categoryExtras: categoryExtrasForPDF,
-    };
-
-    // #deposits-fix (1/5): Strip CANCELLED deposits — they must NEVER appear in customer-facing PDF.
-    // This is the primary guard. pdf.service.ts also has a secondary guard in drawFinancialSummary().
-    if (Array.isArray(pdfData.deposits)) {
-      pdfData.deposits = pdfData.deposits.filter((d: any) => d.status !== 'CANCELLED');
-    }
-
-    // Etap 5: Notatka wewnętrzna NIGDY nie trafia do PDF
-    delete pdfData.internalNotes;
-
+    const pdfData = await reservationService.prepareReservationForPDF(id);
     const pdfBuffer = await pdfService.generateReservationPDF(pdfData);
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -324,7 +213,7 @@ export class ReservationController {
       throw AppError.badRequest('Status is required');
     }
 
-    // ═══ Phase 4.3: Block cancellation if reservation has paid deposits ═══
+    // Phase 4.3: Block cancellation if reservation has paid deposits
     if (data.status === 'CANCELLED') {
       const depositCheck = await depositService.checkPaidDepositsBeforeCancel(id);
       if (depositCheck.hasPaidDeposits) {
@@ -356,7 +245,7 @@ export class ReservationController {
 
     if (!userId) throw AppError.unauthorized();
 
-    // ═══ Phase 4.3: Block cancellation if reservation has paid deposits ═══
+    // Phase 4.3: Block cancellation if reservation has paid deposits
     const depositCheck = await depositService.checkPaidDepositsBeforeCancel(id);
     if (depositCheck.hasPaidDeposits) {
       throw AppError.badRequest(

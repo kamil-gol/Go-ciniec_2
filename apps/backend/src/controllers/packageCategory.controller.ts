@@ -1,19 +1,16 @@
 /**
  * Package Category Settings Controller
- * 
- * Handles CRUD for PackageCategorySettings
+ * Thin controller: parse request, call service, send response
  * Links packages to dish categories with min/max selection rules
  * Updated: #166 — Added portionTarget support (ALL | ADULTS_ONLY | CHILDREN_ONLY)
- * Fix: Sort by category.displayOrder (global order) instead of packageCategorySettings.displayOrder
+ * Refactored: all business logic moved to packageCategory.service.ts
+ * Errors propagate to asyncHandler which forwards to global error middleware
  */
 
 import { Request, Response } from 'express';
-import prisma from '@/lib/prisma';
+import { packageCategoryService } from '../services/packageCategory.service';
 import { bulkUpdateCategorySettingsSchema } from '@/validation/menu.validation';
-
-function toNumber(decimal: any): number {
-  return parseFloat(decimal.toString());
-}
+import { AppError } from '../utils/AppError';
 
 class PackageCategoryController {
   /**
@@ -21,84 +18,10 @@ class PackageCategoryController {
    * Get all categories configured for a package with their dishes
    */
   async getByPackage(req: Request, res: Response) {
-    try {
-      const { packageId } = req.params;
+    const { packageId } = req.params;
+    const data = await packageCategoryService.getByPackageWithDishes(packageId);
 
-      console.log('[PackageCategory] Fetching categories for package:', packageId);
-
-      // Fetch package with category settings
-      const menuPackage = await prisma.menuPackage.findUnique({
-        where: { id: packageId },
-        include: {
-          categorySettings: {
-            where: { isEnabled: true },
-            include: {
-              category: {
-                include: {
-                  dishes: {
-                    where: { isActive: true },
-                    orderBy: { displayOrder: 'asc' },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
-
-      if (!menuPackage) {
-        return res.status(404).json({ error: 'Package not found' });
-      }
-
-      // Sort by the GLOBAL category displayOrder (from DishCategory table)
-      // This ensures categories always appear in the order defined in "Kategorie Dań",
-      // regardless of the order they were toggled on in the package settings.
-      const sortedSettings = [...menuPackage.categorySettings].sort(
-        (a, b) => (a.category.displayOrder ?? 0) - (b.category.displayOrder ?? 0)
-      );
-
-      // Transform to frontend-friendly format
-      const categories = sortedSettings.map((setting) => ({
-        id: setting.id,
-        categoryId: setting.categoryId,
-        categoryName: setting.category.name,
-        categorySlug: setting.category.slug,
-        categoryIcon: setting.category.icon,
-        categoryColor: setting.category.color,
-        
-        minSelect: toNumber(setting.minSelect),
-        maxSelect: toNumber(setting.maxSelect),
-        isRequired: setting.isRequired,
-        portionTarget: setting.portionTarget,
-        customLabel: setting.customLabel || setting.category.name,
-        displayOrder: setting.displayOrder,
-        extraItemPrice: setting.extraItemPrice ? toNumber(setting.extraItemPrice) : null,
-        maxExtra: setting.maxExtra,
-        
-        dishes: setting.category.dishes.map((dish) => ({
-          id: dish.id,
-          name: dish.name,
-          description: dish.description,
-          allergens: dish.allergens,
-          displayOrder: dish.displayOrder,
-        })),
-      }));
-
-      console.log('[PackageCategory] Returning', categories.length, 'categories with dishes');
-
-      res.json({
-        success: true,
-        data: {
-          packageId: menuPackage.id,
-          packageName: menuPackage.name,
-          categories,
-        },
-      });
-    } catch (error: any) {
-      console.error('[PackageCategory] Error in getByPackage:', error);
-      /* istanbul ignore next -- error always has message in practice */
-      res.status(500).json({ error: error.message || 'Internal server error' });
-    }
+    res.json({ success: true, data });
   }
 
   /**
@@ -106,30 +29,10 @@ class PackageCategoryController {
    * Get single category setting
    */
   async getById(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
+    const { id } = req.params;
+    const setting = await packageCategoryService.getById(id);
 
-      const setting = await prisma.packageCategorySettings.findUnique({
-        where: { id },
-        include: {
-          category: true,
-          package: true,
-        },
-      });
-
-      if (!setting) {
-        return res.status(404).json({ error: 'Category setting not found' });
-      }
-
-      res.json({
-        success: true,
-        data: setting,
-      });
-    } catch (error: any) {
-      console.error('[PackageCategory] Error in getById:', error);
-      /* istanbul ignore next -- error always has message in practice */
-      res.status(500).json({ error: error.message || 'Internal server error' });
-    }
+    res.json({ success: true, data: setting });
   }
 
   /**
@@ -137,88 +40,13 @@ class PackageCategoryController {
    * Create category setting (Admin only)
    */
   async create(req: Request, res: Response) {
-    try {
-      const { packageId, categoryId, minSelect, maxSelect, isRequired, isEnabled, portionTarget, displayOrder, customLabel, extraItemPrice, maxExtra } = req.body;
+    const setting = await packageCategoryService.createFromInput(req.body);
 
-      // Validate required fields
-      if (!packageId || !categoryId) {
-        return res.status(400).json({ error: 'packageId and categoryId are required' });
-      }
-
-      // Validate min <= max
-      if (minSelect > maxSelect) {
-        return res.status(400).json({ error: 'Minimalna warto\u015b\u0107 nie mo\u017ce by\u0107 wi\u0119ksza ni\u017c maksymalna' });
-      }
-
-      // Validate portionTarget if provided
-      if (portionTarget && !['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY'].includes(portionTarget)) {
-        return res.status(400).json({ error: 'portionTarget musi by\u0107: ALL, ADULTS_ONLY lub CHILDREN_ONLY' });
-      }
-
-      // Check if package exists
-      const packageExists = await prisma.menuPackage.findUnique({
-        where: { id: packageId },
-      });
-
-      if (!packageExists) {
-        return res.status(404).json({ error: 'Package not found' });
-      }
-
-      // Check if category exists
-      const categoryExists = await prisma.dishCategory.findUnique({
-        where: { id: categoryId },
-      });
-
-      if (!categoryExists) {
-        return res.status(404).json({ error: 'Category not found' });
-      }
-
-      // Check if setting already exists
-      const existing = await prisma.packageCategorySettings.findUnique({
-        where: {
-          packageId_categoryId: {
-            packageId,
-            categoryId,
-          },
-        },
-      });
-
-      if (existing) {
-        return res.status(409).json({ error: 'Category setting already exists for this package' });
-      }
-
-      // Create setting
-      const setting = await prisma.packageCategorySettings.create({
-        data: {
-          packageId,
-          categoryId,
-          minSelect: minSelect || 1,
-          maxSelect: maxSelect || 1,
-          isRequired: isRequired !== undefined ? isRequired : true,
-          isEnabled: isEnabled !== undefined ? isEnabled : true,
-          portionTarget: portionTarget || 'ALL',
-          displayOrder: displayOrder || 0,
-          customLabel: customLabel || null,
-          extraItemPrice: extraItemPrice !== undefined ? extraItemPrice : null,
-          maxExtra: maxExtra !== undefined ? maxExtra : null,
-        },
-        include: {
-          category: true,
-        },
-      });
-
-      console.log('[PackageCategory] Created setting:', setting.id);
-
-      res.status(201).json({
-        success: true,
-        data: setting,
-        message: 'Category setting created successfully',
-      });
-    } catch (error: any) {
-      console.error('[PackageCategory] Error in create:', error);
-      /* istanbul ignore next -- error always has message in practice */
-      res.status(500).json({ error: error.message || 'Internal server error' });
-    }
+    res.status(201).json({
+      success: true,
+      data: setting,
+      message: 'Category setting created successfully',
+    });
   }
 
   /**
@@ -226,61 +54,14 @@ class PackageCategoryController {
    * Update category setting (Admin only)
    */
   async update(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const { minSelect, maxSelect, isRequired, isEnabled, portionTarget, displayOrder, customLabel, extraItemPrice, maxExtra } = req.body;
+    const { id } = req.params;
+    const updated = await packageCategoryService.updateById(id, req.body);
 
-      // Validate min <= max
-      if (minSelect !== undefined && maxSelect !== undefined && minSelect > maxSelect) {
-        return res.status(400).json({ error: 'Minimalna warto\u015b\u0107 nie mo\u017ce by\u0107 wi\u0119ksza ni\u017c maksymalna' });
-      }
-
-      // Validate portionTarget if provided
-      if (portionTarget !== undefined && !['ALL', 'ADULTS_ONLY', 'CHILDREN_ONLY'].includes(portionTarget)) {
-        return res.status(400).json({ error: 'portionTarget musi by\u0107: ALL, ADULTS_ONLY lub CHILDREN_ONLY' });
-      }
-
-      // Check if setting exists
-      const existing = await prisma.packageCategorySettings.findUnique({
-        where: { id },
-      });
-
-      if (!existing) {
-        return res.status(404).json({ error: 'Category setting not found' });
-      }
-
-      // Update setting
-      const updated = await prisma.packageCategorySettings.update({
-        where: { id },
-        data: {
-          ...(minSelect !== undefined && { minSelect }),
-          ...(maxSelect !== undefined && { maxSelect }),
-          ...(isRequired !== undefined && { isRequired }),
-          ...(isEnabled !== undefined && { isEnabled }),
-          ...(portionTarget !== undefined && { portionTarget }),
-          ...(displayOrder !== undefined && { displayOrder }),
-          ...(customLabel !== undefined && { customLabel }),
-          ...(extraItemPrice !== undefined && { extraItemPrice }),
-          ...(maxExtra !== undefined && { maxExtra }),
-        },
-        include: {
-          category: true,
-          package: true,
-        },
-      });
-
-      console.log('[PackageCategory] Updated setting:', id);
-
-      res.json({
-        success: true,
-        data: updated,
-        message: 'Category setting updated successfully',
-      });
-    } catch (error: any) {
-      console.error('[PackageCategory] Error in update:', error);
-      /* istanbul ignore next -- error always has message in practice */
-      res.status(500).json({ error: error.message || 'Internal server error' });
-    }
+    res.json({
+      success: true,
+      data: updated,
+      message: 'Category setting updated successfully',
+    });
   }
 
   /**
@@ -288,34 +69,10 @@ class PackageCategoryController {
    * Delete category setting (Admin only)
    */
   async delete(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
+    const { id } = req.params;
+    await packageCategoryService.deleteById(id);
 
-      // Check if setting exists
-      const existing = await prisma.packageCategorySettings.findUnique({
-        where: { id },
-      });
-
-      if (!existing) {
-        return res.status(404).json({ error: 'Category setting not found' });
-      }
-
-      // Delete setting
-      await prisma.packageCategorySettings.delete({
-        where: { id },
-      });
-
-      console.log('[PackageCategory] Deleted setting:', id);
-
-      res.json({
-        success: true,
-        message: 'Category setting deleted successfully',
-      });
-    } catch (error: any) {
-      console.error('[PackageCategory] Error in delete:', error);
-      /* istanbul ignore next -- error always has message in practice */
-      res.status(500).json({ error: error.message || 'Internal server error' });
-    }
+    res.json({ success: true, message: 'Category setting deleted successfully' });
   }
 
   /**
@@ -323,91 +80,23 @@ class PackageCategoryController {
    * Bulk update category settings for a package (Admin only)
    */
   async bulkUpdate(req: Request, res: Response) {
-    try {
-      const { packageId } = req.params;
+    const { packageId } = req.params;
 
-      console.log('[PackageCategory] Bulk updating categories for package:', packageId);
-      console.log('[PackageCategory] Request body:', JSON.stringify(req.body, null, 2));
-
-      // Validate input using Zod schema
-      const validation = bulkUpdateCategorySettingsSchema.safeParse(req.body);
-      
-      if (!validation.success) {
-        console.error('[PackageCategory] Validation failed:', validation.error.errors);
-        return res.status(400).json({
-          error: 'B\u0142\u0105d walidacji',
-          details: validation.error.errors.map(err => ({
-            path: err.path.join('.'),
-            message: err.message
-          }))
-        });
-      }
-
-      const { settings } = validation.data;
-
-      console.log('[PackageCategory] Validated settings:', settings?.length || 0);
-
-      // Check if package exists
-      const packageExists = await prisma.menuPackage.findUnique({
-        where: { id: packageId },
-      });
-
-      if (!packageExists) {
-        return res.status(404).json({ error: 'Package not found' });
-      }
-
-      // Perform bulk update in transaction
-      const result = await prisma.$transaction(async (tx) => {
-        // 1. Delete all existing settings for this package
-        await tx.packageCategorySettings.deleteMany({
-          where: { packageId },
-        });
-
-        console.log('[PackageCategory] Deleted old settings');
-
-        // 2. Create new settings
-        if (settings.length > 0) {
-          const createdSettings = await Promise.all(
-            settings.map((setting) =>
-              tx.packageCategorySettings.create({
-                data: {
-                  packageId,
-                  categoryId: setting.categoryId,
-                  minSelect: setting.minSelect,
-                  maxSelect: setting.maxSelect,
-                  isRequired: setting.isRequired !== undefined ? setting.isRequired : true,
-                  isEnabled: setting.isEnabled !== undefined ? setting.isEnabled : true,
-                  portionTarget: setting.portionTarget || 'ALL',
-                  displayOrder: setting.displayOrder || 0,
-                  customLabel: setting.customLabel || null,
-                  extraItemPrice: setting.extraItemPrice !== undefined ? setting.extraItemPrice : null,
-                  maxExtra: setting.maxExtra !== undefined ? setting.maxExtra : null,
-                },
-                include: {
-                  category: true,
-                },
-              })
-            )
-          );
-
-          console.log('[PackageCategory] Created', createdSettings.length, 'new settings');
-
-          return createdSettings;
-        }
-
-        return [];
-      });
-
-      res.json({
-        success: true,
-        data: result,
-        message: `Updated ${result.length} category settings`,
-      });
-    } catch (error: any) {
-      console.error('[PackageCategory] Error in bulkUpdate:', error);
-      /* istanbul ignore next -- error always has message in practice */
-      res.status(500).json({ error: error.message || 'Internal server error' });
+    const validation = bulkUpdateCategorySettingsSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw AppError.badRequest(
+        `Błąd walidacji: ${validation.error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')}`
+      );
     }
+
+    const { settings } = validation.data;
+    const result = await packageCategoryService.bulkUpdateFromInput(packageId, settings);
+
+    res.json({
+      success: true,
+      data: result,
+      message: `Updated ${result.length} category settings`,
+    });
   }
 }
 

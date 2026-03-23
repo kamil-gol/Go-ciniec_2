@@ -2,14 +2,16 @@
 
 /**
  * Reports Controller
- * Endpoints for revenue, occupancy, preparations, menu-preparations, and other analytics
+ * Thin controller: validates input, delegates to services, sends response
  * Updated: menu preparations export endpoints (#160)
+ * Refactored: extracted repeated validation into helpers, removed boilerplate
  */
 
-import { Request, Response } from 'express';
-import { z } from 'zod';
+import { Request, Response, NextFunction } from 'express';
+import { z, ZodSchema } from 'zod';
 import reportsService from '../services/reports';
 import reportsExportService from '../services/reports-export.service';
+import { AppError } from '../utils/AppError';
 import type {
   RevenueReportFilters,
   OccupancyReportFilters,
@@ -49,47 +51,68 @@ const menuPreparationsQuerySchema = z.object({
   view: z.enum(['detailed', 'summary']).optional().default('detailed'),
 });
 
+// ============================================
+// HELPERS
+// ============================================
+
+/**
+ * Parse and validate query params with a Zod schema + dateFrom <= dateTo check.
+ * Throws AppError on failure so asyncHandler / error middleware catches it.
+ */
+function parseReportQuery<T extends { dateFrom: string; dateTo: string }>(
+  query: unknown,
+  schema: ZodSchema<T>,
+): T {
+  const validation = schema.safeParse(query);
+
+  if (!validation.success) {
+    throw AppError.badRequest(
+      `Invalid query parameters: ${validation.error.errors.map(e => e.message).join(', ')}`,
+    );
+  }
+
+  const filters = validation.data;
+
+  if (filters.dateFrom > filters.dateTo) {
+    throw AppError.badRequest('dateFrom must be before or equal to dateTo');
+  }
+
+  return filters;
+}
+
+/**
+ * Set headers and send a file download response (Excel or PDF).
+ */
+function sendFileResponse(
+  res: Response,
+  buffer: Buffer,
+  filename: string,
+  contentType: string,
+): void {
+  const encodedFilename = encodeURIComponent(filename);
+  res.setHeader('Content-Type', contentType);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`,
+  );
+  res.send(buffer);
+}
+
+const XLSX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const PDF_CONTENT_TYPE = 'application/pdf';
+
 export class ReportsController {
   // ============================================
   // REVENUE REPORTS
   // ============================================
 
-  async getRevenueReport(req: Request, res: Response): Promise<void> {
+  async getRevenueReport(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = revenueQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as RevenueReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, revenueQuerySchema) as RevenueReportFilters;
       const report = await reportsService.getRevenueReport(filters);
-
-      res.status(200).json({
-        success: true,
-        data: report,
-      });
-    } catch (error: any) {
-      console.error('Error in getRevenueReport:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to generate revenue report',
-        error: error.message,
-      });
+      res.status(200).json({ success: true, data: report });
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -97,42 +120,13 @@ export class ReportsController {
   // OCCUPANCY REPORTS
   // ============================================
 
-  async getOccupancyReport(req: Request, res: Response): Promise<void> {
+  async getOccupancyReport(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = occupancyQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as OccupancyReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, occupancyQuerySchema) as OccupancyReportFilters;
       const report = await reportsService.getOccupancyReport(filters);
-
-      res.status(200).json({
-        success: true,
-        data: report,
-      });
-    } catch (error: any) {
-      console.error('Error in getOccupancyReport:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to generate occupancy report',
-        error: error.message,
-      });
+      res.status(200).json({ success: true, data: report });
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -140,42 +134,13 @@ export class ReportsController {
   // PREPARATIONS REPORTS (Service Extras) #159
   // ============================================
 
-  async getPreparationsReport(req: Request, res: Response): Promise<void> {
+  async getPreparationsReport(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = preparationsQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as PreparationsReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, preparationsQuerySchema) as PreparationsReportFilters;
       const report = await reportsService.getPreparationsReport(filters);
-
-      res.status(200).json({
-        success: true,
-        data: report,
-      });
-    } catch (error: any) {
-      console.error('Error in getPreparationsReport:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to generate preparations report',
-        error: error.message,
-      });
+      res.status(200).json({ success: true, data: report });
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -183,42 +148,13 @@ export class ReportsController {
   // MENU PREPARATIONS REPORTS #160
   // ============================================
 
-  async getMenuPreparationsReport(req: Request, res: Response): Promise<void> {
+  async getMenuPreparationsReport(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = menuPreparationsQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as MenuPreparationsReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, menuPreparationsQuerySchema) as MenuPreparationsReportFilters;
       const report = await reportsService.getMenuPreparationsReport(filters);
-
-      res.status(200).json({
-        success: true,
-        data: report,
-      });
-    } catch (error: any) {
-      console.error('Error in getMenuPreparationsReport:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to generate menu preparations report',
-        error: error.message,
-      });
+      res.status(200).json({ success: true, data: report });
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -226,99 +162,25 @@ export class ReportsController {
   // MENU PREPARATIONS EXPORT ENDPOINTS (#160)
   // ============================================
 
-  /**
-   * GET /api/reports/export/menu-preparations/excel
-   * Export menu preparations report to Excel (XLSX)
-   */
-  async exportMenuPreparationsExcel(req: Request, res: Response): Promise<void> {
+  async exportMenuPreparationsExcel(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = menuPreparationsQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as MenuPreparationsReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, menuPreparationsQuerySchema) as MenuPreparationsReportFilters;
       const report = await reportsService.getMenuPreparationsReport(filters);
       const buffer = await reportsExportService.exportMenuPreparationsToExcel(report);
-
-      const filename = `raport_menu_${filters.dateFrom}_${filters.dateTo}.xlsx`;
-      const encodedFilename = encodeURIComponent(filename);
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`
-      );
-      res.send(buffer);
-    } catch (error: any) {
-      console.error('Error in exportMenuPreparationsExcel:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to export menu preparations report to Excel',
-        error: error.message,
-      });
+      sendFileResponse(res, buffer, `raport_menu_${filters.dateFrom}_${filters.dateTo}.xlsx`, XLSX_CONTENT_TYPE);
+    } catch (error) {
+      next(error);
     }
   }
 
-  /**
-   * GET /api/reports/export/menu-preparations/pdf
-   * Export menu preparations report to PDF
-   */
-  async exportMenuPreparationsPDF(req: Request, res: Response): Promise<void> {
+  async exportMenuPreparationsPDF(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = menuPreparationsQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as MenuPreparationsReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, menuPreparationsQuerySchema) as MenuPreparationsReportFilters;
       const report = await reportsService.getMenuPreparationsReport(filters);
       const buffer = await reportsExportService.exportMenuPreparationsToPDF(report);
-
-      const filename = `raport_menu_${filters.dateFrom}_${filters.dateTo}.pdf`;
-      const encodedFilename = encodeURIComponent(filename);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`
-      );
-      res.send(buffer);
-    } catch (error: any) {
-      console.error('Error in exportMenuPreparationsPDF:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to export menu preparations report to PDF',
-        error: error.message,
-      });
+      sendFileResponse(res, buffer, `raport_menu_${filters.dateFrom}_${filters.dateTo}.pdf`, PDF_CONTENT_TYPE);
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -326,99 +188,25 @@ export class ReportsController {
   // PREPARATIONS EXPORT ENDPOINTS (#159)
   // ============================================
 
-  /**
-   * GET /api/reports/export/preparations/excel
-   * Export preparations report to Excel (XLSX)
-   */
-  async exportPreparationsExcel(req: Request, res: Response): Promise<void> {
+  async exportPreparationsExcel(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = preparationsQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as PreparationsReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, preparationsQuerySchema) as PreparationsReportFilters;
       const report = await reportsService.getPreparationsReport(filters);
       const buffer = await reportsExportService.exportPreparationsToExcel(report);
-
-      const filename = `raport_przygotowania_${filters.dateFrom}_${filters.dateTo}.xlsx`;
-      const encodedFilename = encodeURIComponent(filename);
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`
-      );
-      res.send(buffer);
-    } catch (error: any) {
-      console.error('Error in exportPreparationsExcel:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to export preparations report to Excel',
-        error: error.message,
-      });
+      sendFileResponse(res, buffer, `raport_przygotowania_${filters.dateFrom}_${filters.dateTo}.xlsx`, XLSX_CONTENT_TYPE);
+    } catch (error) {
+      next(error);
     }
   }
 
-  /**
-   * GET /api/reports/export/preparations/pdf
-   * Export preparations report to PDF
-   */
-  async exportPreparationsPDF(req: Request, res: Response): Promise<void> {
+  async exportPreparationsPDF(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = preparationsQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as PreparationsReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, preparationsQuerySchema) as PreparationsReportFilters;
       const report = await reportsService.getPreparationsReport(filters);
       const buffer = await reportsExportService.exportPreparationsToPDF(report);
-
-      const filename = `raport_przygotowania_${filters.dateFrom}_${filters.dateTo}.pdf`;
-      const encodedFilename = encodeURIComponent(filename);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`
-      );
-      res.send(buffer);
-    } catch (error: any) {
-      console.error('Error in exportPreparationsPDF:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to export preparations report to PDF',
-        error: error.message,
-      });
+      sendFileResponse(res, buffer, `raport_przygotowania_${filters.dateFrom}_${filters.dateTo}.pdf`, PDF_CONTENT_TYPE);
+    } catch (error) {
+      next(error);
     }
   }
 
@@ -426,163 +214,47 @@ export class ReportsController {
   // REVENUE & OCCUPANCY EXPORT ENDPOINTS
   // ============================================
 
-  async exportRevenueExcel(req: Request, res: Response): Promise<void> {
+  async exportRevenueExcel(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = revenueQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as RevenueReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, revenueQuerySchema) as RevenueReportFilters;
       const report = await reportsService.getRevenueReport(filters);
       const buffer = await reportsExportService.exportRevenueToExcel(report);
-
-      const filename = `raport_przychody_${filters.dateFrom}_${filters.dateTo}.xlsx`;
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.send(buffer);
-    } catch (error: any) {
-      console.error('Error in exportRevenueExcel:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to export revenue report to Excel',
-        error: error.message,
-      });
+      sendFileResponse(res, buffer, `raport_przychody_${filters.dateFrom}_${filters.dateTo}.xlsx`, XLSX_CONTENT_TYPE);
+    } catch (error) {
+      next(error);
     }
   }
 
-  async exportRevenuePDF(req: Request, res: Response): Promise<void> {
+  async exportRevenuePDF(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = revenueQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as RevenueReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, revenueQuerySchema) as RevenueReportFilters;
       const report = await reportsService.getRevenueReport(filters);
       const buffer = await reportsExportService.exportRevenueToPDF(report);
-
-      const filename = `raport_przychody_${filters.dateFrom}_${filters.dateTo}.pdf`;
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.send(buffer);
-    } catch (error: any) {
-      console.error('Error in exportRevenuePDF:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to export revenue report to PDF',
-        error: error.message,
-      });
+      sendFileResponse(res, buffer, `raport_przychody_${filters.dateFrom}_${filters.dateTo}.pdf`, PDF_CONTENT_TYPE);
+    } catch (error) {
+      next(error);
     }
   }
 
-  async exportOccupancyExcel(req: Request, res: Response): Promise<void> {
+  async exportOccupancyExcel(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = occupancyQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as OccupancyReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, occupancyQuerySchema) as OccupancyReportFilters;
       const report = await reportsService.getOccupancyReport(filters);
       const buffer = await reportsExportService.exportOccupancyToExcel(report);
-
-      const filename = `raport_zajetosc_${filters.dateFrom}_${filters.dateTo}.xlsx`;
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.send(buffer);
-    } catch (error: any) {
-      console.error('Error in exportOccupancyExcel:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to export occupancy report to Excel',
-        error: error.message,
-      });
+      sendFileResponse(res, buffer, `raport_zajetosc_${filters.dateFrom}_${filters.dateTo}.xlsx`, XLSX_CONTENT_TYPE);
+    } catch (error) {
+      next(error);
     }
   }
 
-  async exportOccupancyPDF(req: Request, res: Response): Promise<void> {
+  async exportOccupancyPDF(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validation = occupancyQuerySchema.safeParse(req.query);
-
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid query parameters',
-          errors: validation.error.errors,
-        });
-        return;
-      }
-
-      const filters = validation.data as OccupancyReportFilters;
-
-      if (filters.dateFrom > filters.dateTo) {
-        res.status(400).json({
-          success: false,
-          message: 'dateFrom must be before or equal to dateTo',
-        });
-        return;
-      }
-
+      const filters = parseReportQuery(req.query, occupancyQuerySchema) as OccupancyReportFilters;
       const report = await reportsService.getOccupancyReport(filters);
       const buffer = await reportsExportService.exportOccupancyToPDF(report);
-
-      const filename = `raport_zajetosc_${filters.dateFrom}_${filters.dateTo}.pdf`;
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.send(buffer);
-    } catch (error: any) {
-      console.error('Error in exportOccupancyPDF:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to export occupancy report to PDF',
-        error: error.message,
-      });
+      sendFileResponse(res, buffer, `raport_zajetosc_${filters.dateFrom}_${filters.dateTo}.pdf`, PDF_CONTENT_TYPE);
+    } catch (error) {
+      next(error);
     }
   }
 }

@@ -949,6 +949,127 @@ ${changesSummary}`);
     return reservationStatusService.unarchiveReservation(id, userId, reason);
   }
 
+  /**
+   * Check hall availability for a given time range.
+   * Returns whether the slot is available and any conflicting reservations.
+   */
+  async checkAvailability(
+    hallId: string,
+    startDateTime: Date,
+    endDateTime: Date,
+    excludeReservationId?: string,
+  ): Promise<{ available: boolean; conflicts: Array<{
+    id: string;
+    clientName: string;
+    eventType: string;
+    startDateTime: string;
+    endDateTime: string;
+    status: string;
+  }> }> {
+    const conflicts = await prisma.reservation.findMany({
+      where: {
+        hallId,
+        status: { notIn: ['CANCELLED'] },
+        ...(excludeReservationId ? { id: { not: excludeReservationId } } : {}),
+        startDateTime: { lt: endDateTime },
+        endDateTime: { gt: startDateTime },
+      },
+      select: {
+        id: true,
+        startDateTime: true,
+        endDateTime: true,
+        status: true,
+        client: { select: { firstName: true, lastName: true } },
+        eventType: { select: { name: true } },
+      },
+      orderBy: { startDateTime: 'asc' },
+    });
+
+    const formattedConflicts = conflicts.map((c) => ({
+      id: c.id,
+      clientName: c.client ? `${c.client.firstName} ${c.client.lastName}` : 'Nieznany',
+      eventType: c.eventType?.name || 'Nieznany',
+      startDateTime: c.startDateTime?.toISOString() || '',
+      endDateTime: c.endDateTime?.toISOString() || '',
+      status: c.status,
+    }));
+
+    return {
+      available: formattedConflicts.length === 0,
+      conflicts: formattedConflicts,
+    };
+  }
+
+  /**
+   * Prepare reservation data for PDF generation.
+   * Maps extras → reservationExtras, categoryExtras for PDF format,
+   * strips cancelled deposits and internalNotes.
+   */
+  async prepareReservationForPDF(id: string): Promise<any> {
+    const reservation = await this.getReservationById(id) as any;
+    if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
+
+    // Map extras → reservationExtras for PDF compatibility
+    const extras = reservation.extras || [];
+    const reservationExtras = extras.map((e: any) => {
+      const unitPrice = e.customPrice !== null && e.customPrice !== undefined
+        ? Number(e.customPrice)
+        : Number(e.serviceItem.basePrice);
+      const quantity = e.quantity || 1;
+      let totalPrice: number;
+
+      if (e.serviceItem.priceType === 'PER_PERSON') {
+        totalPrice = unitPrice * quantity * (reservation.guests || 0);
+      } else if (e.serviceItem.priceType === 'FREE') {
+        totalPrice = 0;
+      } else {
+        // FLAT
+        totalPrice = unitPrice * quantity;
+      }
+      totalPrice = Math.round(totalPrice * 100) / 100;
+
+      return {
+        serviceItem: {
+          name: e.serviceItem.name,
+          priceType: e.serviceItem.priceType,
+          category: e.serviceItem.category || null,
+        },
+        quantity,
+        unitPrice,
+        totalPrice,
+        priceType: e.serviceItem.priceType,
+        note: e.note || null,
+        status: e.status || 'ACTIVE',
+      };
+    });
+
+    // #216: Map categoryExtras for PDF rendering
+    const categoryExtrasForPDF = (reservation.categoryExtras || []).map((ce: any) => ({
+      categoryName: ce.packageCategory?.category?.name || 'Kategoria',
+      quantity: Number(ce.quantity),
+      pricePerItem: Number(ce.pricePerItem),
+      guestCount: Number(ce.guestCount) || 1,
+      portionTarget: ce.portionTarget || 'ALL',
+      totalPrice: Number(ce.totalPrice),
+    }));
+
+    const pdfData = {
+      ...reservation,
+      reservationExtras,
+      categoryExtras: categoryExtrasForPDF,
+    };
+
+    // #deposits-fix: Strip CANCELLED deposits — they must NEVER appear in customer-facing PDF
+    if (Array.isArray(pdfData.deposits)) {
+      pdfData.deposits = pdfData.deposits.filter((d: any) => d.status !== 'CANCELLED');
+    }
+
+    // Etap 5: Notatka wewnętrzna NIGDY nie trafia do PDF
+    delete pdfData.internalNotes;
+
+    return pdfData;
+  }
+
   private async validateUserId(userId: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {

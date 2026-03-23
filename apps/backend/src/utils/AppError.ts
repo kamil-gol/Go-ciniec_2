@@ -3,12 +3,19 @@
  * Replaces fragile string-matching on error.message for HTTP status codes
  *
  * 🇵🇱 Polskie defaulty — importowane z i18n/pl.ts
+ *
+ * Supports optional ErrorCode for structured error responses.
+ * ErrorCode is additive — all existing signatures remain valid.
  */
 import { ERRORS, AUTH } from '../i18n/pl';
+import { ErrorCode, getStatusForErrorCode } from './error-codes';
+
+export { ErrorCode } from './error-codes';
 
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
+  public readonly errorCode?: ErrorCode;
 
   constructor(messageOrCode: string | number, codeOrMessage?: number | string, isOperational = true) {
     // Support both signatures:
@@ -33,6 +40,26 @@ export class AppError extends Error {
 
     Error.captureStackTrace(this, this.constructor);
     Object.setPrototypeOf(this, AppError.prototype);
+  }
+
+  /**
+   * Set ErrorCode on an existing AppError instance (builder pattern).
+   * Returns `this` for chaining: `AppError.notFound('X').withCode(ErrorCode.NOT_FOUND_RESERVATION)`
+   */
+  withCode(code: ErrorCode): this {
+    (this as { errorCode?: ErrorCode }).errorCode = code;
+    return this;
+  }
+
+  /**
+   * Create an AppError from an ErrorCode.
+   * The HTTP status is derived automatically from the ErrorCode mapping.
+   */
+  static fromCode(code: ErrorCode, message: string, isOperational = true): AppError {
+    const statusCode = getStatusForErrorCode(code);
+    const err = new AppError(message, statusCode, isOperational);
+    (err as { errorCode?: ErrorCode }).errorCode = code;
+    return err;
   }
 
   // ——— Factory methods for common errors ———

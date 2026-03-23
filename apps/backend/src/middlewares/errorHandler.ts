@@ -7,6 +7,7 @@
  */
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/AppError';
+import { ErrorCode } from '../utils/error-codes';
 import { asyncHandler } from './asyncHandler';
 import { Prisma } from '@/prisma-client';
 import { z } from 'zod';
@@ -25,20 +26,33 @@ export function errorHandler(
   // FIX: Also check for statusCode property as fallback when instanceof fails
   // (can happen with path aliases / different module instances)
   if (err instanceof AppError) {
-    console.warn(`[APP_ERROR ${err.statusCode}] ${_req.method} ${_req.path}: ${err.message}`);
+    const logPrefix = err.errorCode
+      ? `[APP_ERROR ${err.statusCode} ${err.errorCode}]`
+      : `[APP_ERROR ${err.statusCode}]`;
+    console.warn(`${logPrefix} ${_req.method} ${_req.path}: ${err.message}`);
+
     res.status(err.statusCode).json({
       success: false,
-      error: err.message,
+      error: err.errorCode
+        ? { code: err.errorCode, message: err.message, statusCode: err.statusCode }
+        : err.message,
     });
     return;
   }
 
   if ('statusCode' in err && typeof (err as any).statusCode === 'number') {
     const statusCode = (err as any).statusCode;
-    console.warn(`[APP_ERROR ${statusCode}] ${_req.method} ${_req.path}: ${err.message}`);
+    const errorCode = (err as any).errorCode;
+    const logPrefix = errorCode
+      ? `[APP_ERROR ${statusCode} ${errorCode}]`
+      : `[APP_ERROR ${statusCode}]`;
+    console.warn(`${logPrefix} ${_req.method} ${_req.path}: ${err.message}`);
+
     res.status(statusCode).json({
       success: false,
-      error: err.message,
+      error: errorCode
+        ? { code: errorCode, message: err.message, statusCode }
+        : err.message,
     });
     return;
   }
@@ -174,13 +188,19 @@ export function errorHandler(
   }
 
   // ——— Unknown errors (500) ———
-  console.error(`[ERROR 500] ${_req.method} ${_req.path}:`, err);
+  // Always log full stack trace for unexpected errors
+  console.error(`[ERROR 500] ${_req.method} ${_req.path}:`, err.stack || err);
+
+  const isProduction = process.env.NODE_ENV === 'production';
 
   res.status(500).json({
     success: false,
-    error:
-      process.env.NODE_ENV === 'production'
-        ? ERRORS.INTERNAL_ERROR
-        : err.message || ERRORS.INTERNAL_ERROR,
+    error: {
+      code: ErrorCode.INTERNAL_ERROR,
+      message: isProduction ? ERRORS.INTERNAL_ERROR : (err.message || ERRORS.INTERNAL_ERROR),
+      statusCode: 500,
+      // Include stack trace only in development
+      ...(isProduction ? {} : { stack: err.stack }),
+    },
   });
 }
