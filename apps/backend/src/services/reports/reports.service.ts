@@ -17,6 +17,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/prisma-client';
 import type {
   RevenueReportFilters,
   RevenueReport,
@@ -40,6 +41,7 @@ import type {
   MenuPreparationSummaryCourseGroup,
   MenuPreparationSummaryDayGroup,
 } from '@/types/reports.types';
+import type { MenuSnapshotData } from '@/dto/menu-selection.dto';
 
 import {
   formatDateLabelPL,
@@ -82,7 +84,7 @@ class ReportsService {
     // Query by both date AND startDateTime (some reservations use one or the other)
     const dateFromDT = new Date(`${dateFrom}T00:00:00`);
     const dateToDT = new Date(`${dateTo}T23:59:59`);
-    const whereClause: any = {
+    const whereClause: Prisma.ReservationWhereInput = {
       OR: [
         { date: { not: null, gte: dateFrom, lte: dateTo } },
         { startDateTime: { not: null, gte: dateFromDT, lte: dateToDT } },
@@ -149,7 +151,7 @@ class ReportsService {
     const serviceItemRevenueMap = new Map<string, { name: string; revenue: number; count: number }>();
 
     for (const r of reservations) {
-      const extras = (r as any).extras || [];
+      const extras = r.extras || [];
       if (extras.length === 0) continue;
       const extrasCalc = calculateExtrasRevenue(extras, r.guests || 0);
       totalExtrasRevenue += extrasCalc.total;
@@ -176,7 +178,7 @@ class ReportsService {
     const categoryExtraRevenueMap = new Map<string, { name: string; revenue: number; count: number; totalQuantity: number }>();
 
     for (const r of reservations) {
-      const catExtras = (r as any).categoryExtras || [];
+      const catExtras = r.categoryExtras || [];
       if (catExtras.length === 0) continue;
       for (const ce of catExtras) {
         const revenue = Number(ce.totalPrice || 0);
@@ -236,7 +238,7 @@ class ReportsService {
       byServiceItem,
       byCategoryExtra,
       filters,
-    } as any;
+    } as RevenueReport;
   }
 
   // ============================================
@@ -249,7 +251,7 @@ class ReportsService {
     // Query by both date AND startDateTime
     const dateFromDT = new Date(`${dateFrom}T00:00:00`);
     const dateToDT = new Date(`${dateTo}T23:59:59`);
-    const whereClause: any = {
+    const whereClause: Prisma.ReservationWhereInput = {
       OR: [
         { date: { not: null, gte: dateFrom, lte: dateTo } },
         { startDateTime: { not: null, gte: dateFromDT, lte: dateToDT } },
@@ -323,7 +325,7 @@ class ReportsService {
     const dateFromDT = new Date(dateFrom + 'T00:00:00');
     const dateToDT = new Date(dateTo + 'T23:59:59');
 
-    const extrasWhere: any = {
+    const extrasWhere: Prisma.ReservationExtraWhereInput = {
       status: { not: 'CANCELLED' },
     };
     if (categoryId) {
@@ -427,7 +429,7 @@ class ReportsService {
       }
     }
 
-    const dayMap = new Map<string, Map<string, { category: any; items: PreparationItem[] }>>();
+    const dayMap = new Map<string, Map<string, { category: { id: string; name: string; icon: string | null; color: string | null; displayOrder: number }; items: PreparationItem[] }>>();
 
     for (const item of allItems) {
       const date = item.reservation.date;
@@ -652,13 +654,13 @@ class ReportsService {
       const effectiveDate = getReservationDate(r);
       if (!effectiveDate) continue;
 
-      const menuData = snap.menuData as any;
+      const menuData = snap.menuData as unknown as MenuSnapshotData | null;
 
       const courses: MenuPreparationCourse[] = [];
       const dishSelections = menuData?.dishSelections || [];
 
       for (const catSel of dishSelections) {
-        const dishes: MenuPreparationDish[] = (catSel.dishes || []).map((d: any) => ({
+        const dishes: MenuPreparationDish[] = (catSel.dishes || []).map((d: { dishName?: string; name?: string; description?: string | null; quantity?: number }) => ({
           name: d.dishName || d.name || 'Nieznane danie',
           description: d.description || null,
           portionSize: d.quantity != null ? Number(d.quantity) : 1,
@@ -742,7 +744,7 @@ class ReportsService {
           if (!courseMap.has(course.courseName)) courseMap.set(course.courseName, new Map());
           const dishMap = courseMap.get(course.courseName)!;
 
-          const portionTarget = (course as any).portionTarget || 'ALL';
+          const portionTarget = course.portionTarget || 'ALL';
 
           for (const dish of course.dishes) {
             if (!dishMap.has(dish.name)) {

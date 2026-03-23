@@ -933,11 +933,11 @@ ${changesSummary}`);
       });
     }
 
-    return reservation as any;
+    return reservation;
   }
 
   // Status operations delegated to ReservationStatusService
-  async updateStatus(id: string, data: UpdateStatusDTO, userId: string): Promise<any> {
+  async updateStatus(id: string, data: UpdateStatusDTO, userId: string) {
     return reservationStatusService.updateStatus(id, data, userId);
   }
 
@@ -1009,13 +1009,24 @@ ${changesSummary}`);
    * Maps extras → reservationExtras, categoryExtras for PDF format,
    * strips cancelled deposits and internalNotes.
    */
-  async prepareReservationForPDF(id: string): Promise<any> {
-    const reservation = await this.getReservationById(id) as any;
+  async prepareReservationForPDF(id: string) {
+    // getReservationById returns ReservationResponse, but the Prisma query includes extras/deposits
+    // that aren't declared on that interface. Use a widened type for PDF data assembly.
+    const reservation = await this.getReservationById(id) as ReservationResponse & {
+      extras?: Array<{
+        customPrice: number | null;
+        quantity: number;
+        note: string | null;
+        status: string;
+        serviceItem: { name: string; basePrice: number; priceType: string; category: { name: string } | null };
+      }>;
+      deposits?: Array<{ status: string; [key: string]: unknown }>;
+    };
     if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
 
     // Map extras → reservationExtras for PDF compatibility
     const extras = reservation.extras || [];
-    const reservationExtras = extras.map((e: any) => {
+    const reservationExtras = extras.map((e) => {
       const unitPrice = e.customPrice !== null && e.customPrice !== undefined
         ? Number(e.customPrice)
         : Number(e.serviceItem.basePrice);
@@ -1048,7 +1059,7 @@ ${changesSummary}`);
     });
 
     // #216: Map categoryExtras for PDF rendering
-    const categoryExtrasForPDF = (reservation.categoryExtras || []).map((ce: any) => ({
+    const categoryExtrasForPDF = (reservation.categoryExtras || []).map((ce) => ({
       categoryName: ce.packageCategory?.category?.name || 'Kategoria',
       quantity: Number(ce.quantity),
       pricePerItem: Number(ce.pricePerItem),
@@ -1065,7 +1076,7 @@ ${changesSummary}`);
 
     // #deposits-fix: Strip CANCELLED deposits — they must NEVER appear in customer-facing PDF
     if (Array.isArray(pdfData.deposits)) {
-      pdfData.deposits = pdfData.deposits.filter((d: any) => d.status !== 'CANCELLED');
+      pdfData.deposits = pdfData.deposits.filter((d) => d.status !== 'CANCELLED');
     }
 
     // Etap 5: Notatka wewnętrzna NIGDY nie trafia do PDF

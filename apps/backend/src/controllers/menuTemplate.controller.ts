@@ -99,7 +99,7 @@ export class MenuTemplateController {
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const data = createMenuTemplateSchema.parse(req.body) as unknown as CreateMenuTemplateInput;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -126,7 +126,7 @@ export class MenuTemplateController {
     try {
       const { id } = req.params;
       const data = updateMenuTemplateSchema.parse(req.body) as unknown as UpdateMenuTemplateInput;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -158,7 +158,7 @@ export class MenuTemplateController {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -189,7 +189,7 @@ export class MenuTemplateController {
     try {
       const { id } = req.params;
       const data = duplicateMenuTemplateSchema.parse(req.body);
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -230,11 +230,25 @@ export class MenuTemplateController {
       console.log(`[MenuTemplate PDF] Starting PDF generation for template ${id}`);
 
       const template = await menuService.getMenuTemplateById(id);
-      const templateAny = template as any;
-      console.log(`[MenuTemplate PDF] Template found: ${template.name}, packages: ${templateAny.packages?.length || 0}`);
+      // Template includes packages with nested data from Prisma query
+      const templateData = template as typeof template & {
+        packages?: Array<{
+          id: string;
+          name: string;
+          description: string | null;
+          shortDescription: string | null;
+          pricePerAdult: number;
+          pricePerChild: number;
+          pricePerToddler: number;
+          badgeText: string | null;
+          includedItems: unknown;
+        }>;
+        eventType?: { name: string; color?: string | null } | null;
+      };
+      console.log(`[MenuTemplate PDF] Template found: ${template.name}, packages: ${templateData.packages?.length || 0}`);
 
       const packagesWithCourses = await Promise.all(
-        (templateAny.packages || []).map(async (pkg: any) => {
+        (templateData.packages || []).map(async (pkg) => {
           console.log(`[MenuTemplate PDF] Fetching categories for package: ${pkg.name} (${pkg.id})`);
 
           const categorySettings = await prisma.packageCategorySettings.findMany({
@@ -263,13 +277,13 @@ export class MenuTemplateController {
             pricePerToddler: Number(pkg.pricePerToddler),
             badgeText: pkg.badgeText,
             includedItems: Array.isArray(pkg.includedItems) ? pkg.includedItems as string[] : [],
-            courses: categorySettings.map((cs: any) => ({
+            courses: categorySettings.map((cs) => ({
               name: cs.customLabel || cs.category.name,
               description: null,
               icon: cs.category.icon,
               minSelect: Number(cs.minSelect),
               maxSelect: Number(cs.maxSelect),
-              dishes: (cs.category.dishes || []).map((dish: any) => ({
+              dishes: (cs.category.dishes || []).map((dish) => ({
                 name: dish.name,
                 description: dish.description,
                 allergens: Array.isArray(dish.allergens) ? dish.allergens : [],
@@ -285,8 +299,8 @@ export class MenuTemplateController {
         templateName: template.name,
         templateDescription: template.description,
         variant: template.variant,
-        eventTypeName: (template as any).eventType?.name || 'Ogolne',
-        eventTypeColor: (template as any).eventType?.color,
+        eventTypeName: templateData.eventType?.name || 'Ogolne',
+        eventTypeColor: templateData.eventType?.color,
         packages: packagesWithCourses,
       };
 

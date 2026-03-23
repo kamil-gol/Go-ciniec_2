@@ -11,6 +11,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/prisma-client';
 import { logChange, diffObjects } from '../utils/audit-logger';
 import { recalculateReservationTotalPrice } from '../utils/recalculate-price';
 import {
@@ -53,7 +54,7 @@ export class ServiceExtraService {
       orderBy: { displayOrder: 'asc' },
     });
 
-    return categories as any[];
+    return categories as unknown as ServiceCategoryResponse[];
   }
 
   async getCategoryById(id: string): Promise<ServiceCategoryResponse> {
@@ -66,7 +67,7 @@ export class ServiceExtraService {
     });
 
     if (!category) throw new Error('Nie znaleziono kategorii usług');
-    return category as any;
+    return category as unknown as ServiceCategoryResponse;
   }
 
   async createCategory(data: CreateServiceCategoryDTO, userId: string): Promise<ServiceCategoryResponse> {
@@ -121,7 +122,7 @@ export class ServiceExtraService {
       },
     });
 
-    return category as any;
+    return category as unknown as ServiceCategoryResponse;
   }
 
   async updateCategory(id: string, data: UpdateServiceCategoryDTO, userId: string): Promise<ServiceCategoryResponse> {
@@ -142,7 +143,7 @@ export class ServiceExtraService {
       if (slugTaken) throw new Error('Kategoria z tym slugiem już istnieje');
     }
 
-    const updateData: Record<string, any> = {};
+    const updateData: Prisma.ServiceCategoryUpdateInput = {};
     if (data.name !== undefined) updateData.name = data.name.trim();
     if (data.slug !== undefined) updateData.slug = data.slug;
     if (data.description !== undefined) updateData.description = data.description?.trim() || null;
@@ -175,7 +176,7 @@ export class ServiceExtraService {
       });
     }
 
-    return category as any;
+    return category as unknown as ServiceCategoryResponse;
   }
 
   async deleteCategory(id: string, userId: string): Promise<void> {
@@ -248,7 +249,7 @@ export class ServiceExtraService {
       orderBy: [{ category: { displayOrder: 'asc' } }, { displayOrder: 'asc' }],
     });
 
-    return items as any[];
+    return items as unknown as ServiceItemResponse[];
   }
 
   async getItemById(id: string): Promise<ServiceItemResponse> {
@@ -258,11 +259,11 @@ export class ServiceExtraService {
     });
 
     if (!item) throw new Error('Nie znaleziono pozycji usługi');
-    return item as any;
+    return item as unknown as ServiceItemResponse;
   }
 
   async getItemsByCategory(categoryId: string, activeOnly: boolean = false): Promise<ServiceItemResponse[]> {
-    const where: any = { categoryId };
+    const where: Prisma.ServiceItemWhereInput = { categoryId };
     if (activeOnly) where.isActive = true;
 
     const items = await prisma.serviceItem.findMany({
@@ -271,7 +272,7 @@ export class ServiceExtraService {
       orderBy: { displayOrder: 'asc' },
     });
 
-    return items as any[];
+    return items as unknown as ServiceItemResponse[];
   }
 
   async createItem(data: CreateServiceItemDTO, userId: string): Promise<ServiceItemResponse> {
@@ -326,7 +327,7 @@ export class ServiceExtraService {
       },
     });
 
-    return item as any;
+    return item as unknown as ServiceItemResponse;
   }
 
   async updateItem(id: string, data: UpdateServiceItemDTO, userId: string): Promise<ServiceItemResponse> {
@@ -344,7 +345,7 @@ export class ServiceExtraService {
       throw new Error(`Nieprawidłowy typ ceny. Użyj: ${VALID_PRICE_TYPES.join(', ')}`);
     }
 
-    const updateData: Record<string, any> = {};
+    const updateData: Prisma.ServiceItemUpdateInput = {};
     if (data.name !== undefined) updateData.name = data.name.trim();
     if (data.description !== undefined) updateData.description = data.description?.trim() || null;
     if (data.priceType !== undefined) updateData.priceType = data.priceType;
@@ -380,7 +381,7 @@ export class ServiceExtraService {
       });
     }
 
-    return item as any;
+    return item as unknown as ServiceItemResponse;
   }
 
   async deleteItem(id: string, userId: string): Promise<void> {
@@ -443,7 +444,7 @@ export class ServiceExtraService {
     );
 
     return {
-      extras: extras as any[],
+      extras: extras as unknown as ReservationExtraResponse[],
       totalExtrasPrice,
       count: extras.length,
     };
@@ -576,7 +577,7 @@ export class ServiceExtraService {
 
     // #217: duplicate RESERVATION-level logChange removed — RESERVATION_EXTRA entry above is sufficient
 
-    return extra as any;
+    return extra as unknown as ReservationExtraResponse;
   }
 
   async bulkAssignExtras(
@@ -639,7 +640,7 @@ export class ServiceExtraService {
       throw new Error('Dla pozycji "Za sztukę" ilość musi wynosić min. 1');
     }
 
-    const updateData: Record<string, any> = {};
+    const updateData: Record<string, unknown> = {};
     if (data.quantity !== undefined) updateData.quantity = data.quantity;
     if (data.note !== undefined) updateData.note = data.note?.trim() || null;
     if (data.customPrice !== undefined) {
@@ -650,7 +651,7 @@ export class ServiceExtraService {
     // Recalculate total price if quantity or price changed
     const newQuantity = data.quantity ?? existing.quantity;
     const newUnitPrice = updateData.unitPrice !== undefined
-      ? updateData.unitPrice
+      ? (updateData.unitPrice as number)
       : Number(existing.unitPrice);
 
     updateData.totalPrice = this.calculateTotalPrice(
@@ -689,7 +690,7 @@ export class ServiceExtraService {
       // #217: duplicate RESERVATION-level logChange removed — RESERVATION_EXTRA entry above is sufficient
     }
 
-    return extra as any;
+    return extra as unknown as ReservationExtraResponse;
   }
 
   async removeReservationExtra(

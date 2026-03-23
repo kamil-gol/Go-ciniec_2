@@ -8,6 +8,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/prisma-client';
 import { CreateHallDTO, UpdateHallDTO, HallResponse } from '../types/hall.types';
 import { logChange, diffObjects } from '../utils/audit-logger';
 import { AppError } from '../utils/AppError';
@@ -18,7 +19,7 @@ export class HallService {
    * Get all halls with optional filters
    */
   async getHalls(filters?: { isActive?: boolean; search?: string }): Promise<HallResponse[]> {
-    const where: any = {};
+    const where: Prisma.HallWhereInput = {};
 
     if (filters?.isActive !== undefined) {
       where.isActive = filters.isActive;
@@ -36,7 +37,7 @@ export class HallService {
       orderBy: { name: 'asc' },
     });
 
-    return halls as any[];
+    return halls as unknown as HallResponse[];
   }
 
   /**
@@ -45,7 +46,7 @@ export class HallService {
   async getHallById(id: string): Promise<HallResponse> {
     const hall = await prisma.hall.findUnique({ where: { id } });
     if (!hall) throw new AppError(HALL.NOT_FOUND, 404);
-    return hall as any;
+    return hall as unknown as HallResponse;
   }
 
   /**
@@ -53,7 +54,7 @@ export class HallService {
    */
   async getWholeVenueHall(): Promise<HallResponse | null> {
     const hall = await prisma.hall.findFirst({ where: { isWholeVenue: true } });
-    return hall as any;
+    return hall as unknown as HallResponse | null;
   }
 
   /**
@@ -85,7 +86,7 @@ export class HallService {
     const startDT = new Date(startDateTime);
     const endDT = new Date(endDateTime);
 
-    const where: any = {
+    const where: Prisma.ReservationWhereInput = {
       hallId,
       status: { in: ['PENDING', 'CONFIRMED'] },
       archivedAt: null,
@@ -174,7 +175,7 @@ export class HallService {
       },
     });
 
-    return hall as any;
+    return hall as unknown as HallResponse;
   }
 
   /**
@@ -195,7 +196,7 @@ export class HallService {
       }
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.HallUpdateInput = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.capacity !== undefined) updateData.capacity = data.capacity;
     if (data.description !== undefined) updateData.description = data.description;
@@ -225,7 +226,7 @@ export class HallService {
       });
     }
 
-    return hall as any;
+    return hall as unknown as HallResponse;
   }
 
   /**
@@ -257,7 +258,7 @@ export class HallService {
       },
     });
 
-    return hall as any;
+    return hall as unknown as HallResponse;
   }
 
   /**

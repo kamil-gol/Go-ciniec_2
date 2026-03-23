@@ -6,6 +6,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/prisma-client';
 import {
   CreateClientDTO,
   UpdateClientDTO,
@@ -162,11 +163,11 @@ export class ClientService {
       },
     });
 
-    return client as any;
+    return client as unknown as ClientResponse;
   }
 
   async getClients(filters?: ClientFilters): Promise<ClientResponse[]> {
-    const where: any = {
+    const where: Prisma.ClientWhereInput = {
       isDeleted: false,
     };
 
@@ -202,7 +203,7 @@ export class ClientService {
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
 
-    return clients as any[];
+    return clients as unknown as ClientResponse[];
   }
 
   async getClientById(id: string): Promise<ClientResponse> {
@@ -236,7 +237,7 @@ export class ClientService {
       throw new AppError(CLIENT.NOT_FOUND, 404);
     }
 
-    return client as any;
+    return client as unknown as ClientResponse;
   }
 
   async updateClient(id: string, data: UpdateClientDTO, userId: string): Promise<ClientResponse> {
@@ -300,7 +301,7 @@ export class ClientService {
     }
 
     // Build update payload
-    const updateData: any = {};
+    const updateData: Prisma.ClientUpdateInput = {};
 
     if (data.clientType !== undefined) updateData.clientType = data.clientType;
     if (data.firstName) updateData.firstName = data.firstName.trim();
@@ -342,7 +343,7 @@ export class ClientService {
       });
     }
 
-    return client as any;
+    return client as unknown as ClientResponse;
   }
 
   async deleteClient(id: string, userId: string): Promise<void> {
@@ -501,7 +502,7 @@ export class ClientService {
       },
     });
 
-    return contact as any;
+    return contact as unknown as ClientContactResponse;
   }
 
   async updateContact(clientId: string, contactId: string, data: UpdateClientContactDTO, userId: string): Promise<ClientContactResponse> {
@@ -519,7 +520,7 @@ export class ClientService {
       });
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.ClientContactUpdateInput = {};
     if (data.firstName !== undefined) updateData.firstName = data.firstName.trim();
     if (data.lastName !== undefined) updateData.lastName = data.lastName.trim();
     if (data.email !== undefined) updateData.email = data.email?.trim() || null;
@@ -546,7 +547,7 @@ export class ClientService {
       });
     }
 
-    return updated as any;
+    return updated as unknown as ClientContactResponse;
   }
 
   async removeContact(clientId: string, contactId: string, userId: string): Promise<void> {

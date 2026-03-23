@@ -90,7 +90,7 @@ export class QueueService {
       });
 
       return formatQueueItem(reservation);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new Error(`Pozycja ${nextPosition} jest już zajęta dla tej daty. Spróbuj ponownie.`);
       }
@@ -108,9 +108,9 @@ export class QueueService {
 
     const oldDate = existing.reservationQueueDate;
     const oldPosition = existing.reservationQueuePosition;
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     let dateChanged = false;
-    const changes: Record<string, { old: any; new: any }> = {};
+    const changes: Record<string, { old: unknown; new: unknown }> = {};
 
     if (data.clientId) {
       const client = await prisma.client.findUnique({ where: { id: data.clientId } });
@@ -246,11 +246,14 @@ export class QueueService {
       await withRetry(async () => {
         await prisma.$executeRawUnsafe('SELECT swap_queue_positions($1::UUID, $2::UUID)', id1, id2);
       });
-    } catch (error: any) {
-      if (error.message?.includes('lock') || error.code === 'P2034') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message?.includes('lock')) {
         throw new Error('Inny użytkownik modyfikuje kolejkę. Odśwież stronę i spróbuj ponownie.');
       }
-      if (error.code === 'P2002') throw new Error('Wykryto konflikt pozycji. Odśwież stronę i spróbuj ponownie.');
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2034') throw new Error('Inny użytkownik modyfikuje kolejkę. Odśwież stronę i spróbuj ponownie.');
+        if (error.code === 'P2002') throw new Error('Wykryto konflikt pozycji. Odśwież stronę i spróbuj ponownie.');
+      }
       throw error;
     }
 
@@ -300,12 +303,13 @@ export class QueueService {
       await withRetry(async () => {
         await prisma.$executeRawUnsafe('SELECT move_to_queue_position($1::UUID, $2::INTEGER)', reservationId, newPosition);
       });
-    } catch (error: any) {
-      if (error.message?.includes('lock') || error.code === 'P2034') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message?.includes('lock')) {
         throw new Error('Inny użytkownik modyfikuje kolejkę. Odśwież stronę i spróbuj ponownie.');
       }
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new Error(`Pozycja ${newPosition} jest już zajęta. Odśwież stronę i spróbuj ponownie.`);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2034') throw new Error('Inny użytkownik modyfikuje kolejkę. Odśwież stronę i spróbuj ponownie.');
+        if (error.code === 'P2002') throw new Error(`Pozycja ${newPosition} jest już zajęta. Odśwież stronę i spróbuj ponownie.`);
       }
       throw error;
     }
@@ -336,7 +340,7 @@ export class QueueService {
     return rebuildPositions(userId);
   }
 
-  async promoteReservation(reservationId: string, data: PromoteReservationDTO, userId: string): Promise<any> {
+  async promoteReservation(reservationId: string, data: PromoteReservationDTO, userId: string) {
     return promoteReservation(reservationId, data, userId);
   }
 

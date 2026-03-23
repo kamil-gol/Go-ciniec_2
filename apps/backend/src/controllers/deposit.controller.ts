@@ -43,7 +43,22 @@ export const downloadDepositPdf = async (req: Request, res: Response): Promise<v
     throw AppError.badRequest('PDF potwierdzenia dostepny tylko dla oplaconych zaliczek');
   }
 
-  const reservation = deposit.reservation as any;
+  const reservation = deposit.reservation as {
+    id: string;
+    date: string | null;
+    startTime: string | null;
+    endTime: string | null;
+    guests: number;
+    totalPrice: number;
+    hall?: { name: string } | null;
+    eventType?: { name: string } | null;
+    client?: {
+      firstName: string;
+      lastName: string;
+      email: string | null;
+      phone: string;
+    } | null;
+  } | null;
   const client = reservation?.client;
 
   if (!reservation || !client) {
@@ -96,7 +111,7 @@ export const getReservationDeposits = async (req: Request, res: Response): Promi
 export const createDeposit = async (req: Request, res: Response): Promise<void> => {
   const { reservationId } = req.params;
   const body = createDepositSchema.parse(req.body);
-  const userId = (req as any).user?.id;
+  const userId = req.user?.id;
 
   if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -113,7 +128,7 @@ export const createDeposit = async (req: Request, res: Response): Promise<void> 
 export const updateDeposit = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const body = updateDepositSchema.parse(req.body);
-  const userId = (req as any).user?.id;
+  const userId = req.user?.id;
 
   if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -123,7 +138,7 @@ export const updateDeposit = async (req: Request, res: Response): Promise<void> 
 
 export const deleteDeposit = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const userId = (req as any).user?.id;
+  const userId = req.user?.id;
 
   if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -134,7 +149,7 @@ export const deleteDeposit = async (req: Request, res: Response): Promise<void> 
 export const markDepositAsPaid = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const body = markPaidSchema.parse(req.body);
-  const userId = (req as any).user?.id;
+  const userId = req.user?.id;
 
   if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -144,7 +159,7 @@ export const markDepositAsPaid = async (req: Request, res: Response): Promise<vo
 
 export const markDepositAsUnpaid = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const userId = (req as any).user?.id;
+  const userId = req.user?.id;
 
   if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -154,7 +169,7 @@ export const markDepositAsUnpaid = async (req: Request, res: Response): Promise<
 
 export const cancelDeposit = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const userId = (req as any).user?.id;
+  const userId = req.user?.id;
 
   if (!userId) throw AppError.unauthorized('User not authenticated');
 

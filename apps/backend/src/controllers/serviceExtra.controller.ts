@@ -45,7 +45,7 @@ export class ServiceExtraController {
   }
 
   async createCategory(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const { name, slug, description, icon, color, displayOrder, isActive, isExclusive } = req.body;
@@ -67,7 +67,7 @@ export class ServiceExtraController {
   }
 
   async updateCategory(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const { id } = req.params;
@@ -93,7 +93,7 @@ export class ServiceExtraController {
   }
 
   async deleteCategory(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const { id } = req.params;
@@ -106,7 +106,7 @@ export class ServiceExtraController {
   }
 
   async reorderCategories(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const { orderedIds } = req.body;
@@ -157,7 +157,7 @@ export class ServiceExtraController {
   }
 
   async createItem(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const {
@@ -184,7 +184,7 @@ export class ServiceExtraController {
   }
 
   async updateItem(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const { id } = req.params;
@@ -214,7 +214,7 @@ export class ServiceExtraController {
   }
 
   async deleteItem(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const { id } = req.params;
@@ -243,7 +243,7 @@ export class ServiceExtraController {
   }
 
   async assignExtra(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const { reservationId } = req.params;
@@ -262,7 +262,7 @@ export class ServiceExtraController {
   }
 
   async bulkAssignExtras(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const { reservationId } = req.params;
@@ -285,7 +285,7 @@ export class ServiceExtraController {
   }
 
   async updateReservationExtra(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const { reservationId, extraId } = req.params;
@@ -309,7 +309,7 @@ export class ServiceExtraController {
   }
 
   async removeReservationExtra(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
     const { reservationId, extraId } = req.params;

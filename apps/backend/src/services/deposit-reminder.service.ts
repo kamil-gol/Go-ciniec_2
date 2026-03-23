@@ -38,8 +38,8 @@ const depositReminderService = {
       try {
         const count = await this.sendUpcomingReminders(daysLeft);
         upcomingSent += count;
-      } catch (error: any) {
-        logger.error(`[Reminder] Error sending ${daysLeft}-day reminders: ${error.message}`);
+      } catch (error: unknown) {
+        logger.error(`[Reminder] Error sending ${daysLeft}-day reminders: ${error instanceof Error ? error.message : String(error)}`);
         errors++;
       }
     }
@@ -48,8 +48,8 @@ const depositReminderService = {
     try {
       const count = await this.sendOverdueNotices();
       overdueSent += count;
-    } catch (error: any) {
-      logger.error(`[Reminder] Error sending overdue notices: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error(`[Reminder] Error sending overdue notices: ${error instanceof Error ? error.message : String(error)}`);
       errors++;
     }
 
@@ -79,7 +79,7 @@ const depositReminderService = {
     const deposits = await prisma.deposit.findMany({
       where: {
         status: { in: ['PENDING', 'PARTIALLY_PAID'] },
-        dueDate: { equals: targetDate as any },
+        dueDate: { equals: targetDate },
       },
       include: {
         reservation: {
@@ -104,10 +104,10 @@ const depositReminderService = {
       const data: DepositReminderData = {
         clientName: `${client.firstName} ${client.lastName}`,
         depositAmount: Number(deposit.amount).toLocaleString('pl-PL'),
-        dueDate: formatDatePL(deposit.dueDate as any),
+        dueDate: formatDatePL(deposit.dueDate),
         daysLeft,
         reservationDate: deposit.reservation?.date
-          ? formatDatePL(deposit.reservation.date as any)
+          ? formatDatePL(deposit.reservation.date || '')
           : '—',
         hallName: deposit.reservation?.hall?.name || '—',
         eventType: deposit.reservation?.eventType?.name || '—',
@@ -136,7 +136,7 @@ const depositReminderService = {
       where: {
         status: { in: ['OVERDUE', 'PENDING'] },
         paid: false,
-        dueDate: { lt: todayStr as any },
+        dueDate: { lt: todayStr },
       },
       include: {
         reservation: {
@@ -155,7 +155,7 @@ const depositReminderService = {
       const client = deposit.reservation?.client;
       if (!client?.email) continue;
 
-      const daysOverdue = daysBetween(deposit.dueDate as any, todayStr);
+      const daysOverdue = daysBetween(deposit.dueDate, todayStr);
 
       // Throttle: daily for first 3 days, then every 3 days
       if (daysOverdue > OVERDUE_DAILY_LIMIT && daysOverdue % OVERDUE_INTERVAL !== 0) {
@@ -165,10 +165,10 @@ const depositReminderService = {
       const data: DepositOverdueData = {
         clientName: `${client.firstName} ${client.lastName}`,
         depositAmount: Number(deposit.amount).toLocaleString('pl-PL'),
-        dueDate: formatDatePL(deposit.dueDate as any),
+        dueDate: formatDatePL(deposit.dueDate),
         daysOverdue,
         reservationDate: deposit.reservation?.date
-          ? formatDatePL(deposit.reservation.date as any)
+          ? formatDatePL(deposit.reservation.date || '')
           : '—',
         hallName: deposit.reservation?.hall?.name || '—',
         eventType: deposit.reservation?.eventType?.name || '—',

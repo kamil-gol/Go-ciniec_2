@@ -9,13 +9,32 @@
 
 import { prisma } from '../lib/prisma';
 import { AppError } from '../utils/AppError';
-import { Prisma } from '@/prisma-client';
+import { Prisma, Deposit } from '@/prisma-client';
 import { pdfService } from './pdf.service';
 import emailService from './email.service';
 import logger from '../utils/logger';
 import { logChange } from '../utils/audit-logger';
 import { DEPOSIT } from '../i18n/pl';
 import notificationService from './notification.service';
+
+/** Raw row shape returned by getStats $queryRawUnsafe */
+interface DepositStatsRow {
+  total: number;
+  pending: number;
+  paid: number;
+  overdue: number;
+  partiallyPaid: number;
+  cancelled: number;
+  upcomingIn7Days: number;
+  totalAmount: number | string;
+  paidAmountSum: number | string;
+  overdueAmount: number | string;
+}
+
+/** Raw row shape returned by autoMarkOverdue $queryRawUnsafe */
+interface CountRow {
+  count: number;
+}
 
 export type DepositStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'PARTIALLY_PAID';
 export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD' | 'BANK_TRANSFER';
@@ -69,7 +88,7 @@ const DEPOSIT_INCLUDE = {
  * Calculate full reservation price including extras.
  * Used as the deposit ceiling — sum of base totalPrice + extrasTotalPrice.
  */
-function getFullReservationPrice(reservation: any): number {
+function getFullReservationPrice(reservation: { totalPrice?: unknown; extrasTotalPrice?: unknown }): number {
   return Number(reservation.totalPrice || 0) + Number(reservation.extrasTotalPrice || 0);
 }
 
@@ -85,8 +104,8 @@ const depositService = {
     if (!reservation) throw AppError.notFound('Rezerwacja');
 
     const existingDepositsSum = reservation.deposits
-      .filter((d: any) => d.status !== 'CANCELLED')
-      .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+      .filter((d: Deposit) => d.status !== 'CANCELLED')
+      .reduce((sum: number, d: Deposit) => sum + Number(d.amount), 0);
 
     const fullPrice = getFullReservationPrice(reservation);
 
@@ -100,7 +119,7 @@ const depositService = {
 
     const dueDateStr = dueDate.substring(0, 10);
 
-    const result: any[] = await prisma.$queryRawUnsafe(
+    const result: Array<{ id: string }> = await prisma.$queryRawUnsafe(
       `INSERT INTO "Deposit" (
         id, "reservationId", amount, "remainingAmount", "paidAmount",
         "dueDate", status, paid, "createdAt", "updatedAt"
@@ -153,11 +172,11 @@ const depositService = {
     });
 
     const totalAmount = deposits
-      .filter((d: any) => d.status !== 'CANCELLED')
-      .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+      .filter((d) => d.status !== 'CANCELLED')
+      .reduce((sum: number, d) => sum + Number(d.amount), 0);
     const paidAmount = deposits
-      .filter((d: any) => d.paid)
-      .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+      .filter((d) => d.paid)
+      .reduce((sum: number, d) => sum + Number(d.amount), 0);
     const pendingAmount = totalAmount - paidAmount;
     const reservationTotal = getFullReservationPrice(reservation);
 
@@ -165,7 +184,7 @@ const depositService = {
       deposits,
       summary: {
         totalDeposits: deposits.length,
-        activeDeposits: deposits.filter((d: any) => d.status !== 'CANCELLED').length,
+        activeDeposits: deposits.filter((d) => d.status !== 'CANCELLED').length,
         totalAmount: Number(totalAmount.toFixed(2)),
         paidAmount: Number(paidAmount.toFixed(2)),
         pendingAmount: Number(pendingAmount.toFixed(2)),
@@ -191,11 +210,11 @@ const depositService = {
     if (overdue) {
       where.status = { equals: 'PENDING' };
       const todayStr = new Date().toISOString().substring(0, 10);
-      where.dueDate = { lt: todayStr as any };
+      where.dueDate = { lt: todayStr };
     }
 
     if (dateFrom || dateTo) {
-      const dueDateFilter: any = {};
+      const dueDateFilter: Prisma.StringFilter = {};
       if (dateFrom) dueDateFilter.gte = dateFrom.substring(0, 10);
       if (dateTo) dueDateFilter.lte = dateTo.substring(0, 10);
       where.dueDate = dueDateFilter;
@@ -252,8 +271,8 @@ const depositService = {
 
       if (reservation) {
         const otherDepositsSum = reservation.deposits
-          .filter((d: any) => d.id !== id && d.status !== 'CANCELLED')
-          .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+          .filter((d: Deposit) => d.id !== id && d.status !== 'CANCELLED')
+          .reduce((sum: number, d: Deposit) => sum + Number(d.amount), 0);
 
         const fullPrice = getFullReservationPrice(reservation);
 
@@ -297,7 +316,7 @@ const depositService = {
       entityId: id,
       details: {
         description: `Zaktualizowano zaliczk\u0119`,
-        changes: input as any
+        changes: input as Record<string, unknown>
       }
     });
 
@@ -391,13 +410,13 @@ const depositService = {
       if (reservation.status !== 'PENDING') return;
 
       const activeDeposits = reservation.deposits.filter(
-        (d: any) => d.status !== 'CANCELLED'
+        (d: Deposit) => d.status !== 'CANCELLED'
       );
 
       // Need at least one active deposit
       if (activeDeposits.length === 0) return;
 
-      const allPaid = activeDeposits.every((d: any) => d.status === 'PAID');
+      const allPaid = activeDeposits.every((d: Deposit) => d.status === 'PAID');
 
       if (allPaid) {
         await prisma.reservation.update({
@@ -438,7 +457,7 @@ const depositService = {
     });
 
     const paidCount = deposits.length;
-    const paidTotal = deposits.reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+    const paidTotal = deposits.reduce((sum: number, d: Deposit) => sum + Number(d.amount), 0);
 
     return { hasPaidDeposits: paidCount > 0, paidCount, paidTotal };
   },
@@ -452,7 +471,7 @@ const depositService = {
     if (!deposit) throw AppError.notFound('Zaliczka');
     if (!deposit.paid) throw AppError.badRequest(DEPOSIT.EMAIL_ONLY_PAID);
 
-    const reservation = deposit.reservation as any;
+    const reservation = deposit.reservation;
     const client = reservation?.client;
 
     if (!client?.email) throw AppError.badRequest(DEPOSIT.CLIENT_NO_EMAIL);
@@ -572,7 +591,7 @@ const depositService = {
   async getStats() {
     const todayStr = new Date().toISOString().substring(0, 10);
 
-    const stats: any[] = await prisma.$queryRawUnsafe(`
+    const stats: DepositStatsRow[] = await prisma.$queryRawUnsafe(`
       SELECT
         COUNT(*) FILTER (WHERE status IN ('PENDING','PAID','OVERDUE','PARTIALLY_PAID'))::int as total,
         COUNT(*) FILTER (WHERE status = 'PENDING')::int as pending,
@@ -616,7 +635,7 @@ const depositService = {
     const deposits = await prisma.deposit.findMany({
       where: {
         status: { equals: 'PENDING' },
-        dueDate: { lt: todayStr as any },
+        dueDate: { lt: todayStr },
       },
       orderBy: { dueDate: 'asc' },
       include: DEPOSIT_INCLUDE,
@@ -628,7 +647,7 @@ const depositService = {
   async autoMarkOverdue() {
     const todayStr = new Date().toISOString().substring(0, 10);
 
-    const result: any[] = await prisma.$queryRawUnsafe(
+    const result: CountRow[] = await prisma.$queryRawUnsafe(
       `WITH updated AS (
         UPDATE "Deposit" SET status = 'OVERDUE', "updatedAt" = NOW()
         WHERE status = 'PENDING' AND paid = false AND "dueDate" < $1

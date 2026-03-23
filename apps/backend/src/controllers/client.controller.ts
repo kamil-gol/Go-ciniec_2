@@ -12,7 +12,7 @@ import { CreateClientDTO, UpdateClientDTO, ClientFilters, CreateClientContactDTO
 export class ClientController {
   async createClient(req: Request, res: Response): Promise<void> {
     const data: CreateClientDTO = req.body;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) {
       throw AppError.unauthorized('User not authenticated');
@@ -43,7 +43,7 @@ export class ClientController {
   async getClients(req: Request, res: Response): Promise<void> {
     const filters: ClientFilters = {
       search: req.query.search as string,
-      clientType: req.query.clientType as any,
+      clientType: req.query.clientType as ClientFilters['clientType'],
       includeDeleted: req.query.includeDeleted === 'true',
     };
 
@@ -71,7 +71,7 @@ export class ClientController {
   async updateClient(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const data: UpdateClientDTO = req.body;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) {
       throw AppError.unauthorized('User not authenticated');
@@ -92,7 +92,7 @@ export class ClientController {
 
   async deleteClient(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) {
       throw AppError.unauthorized('User not authenticated');
@@ -124,7 +124,7 @@ export class ClientController {
   async addContact(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const data: CreateClientContactDTO = req.body;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) throw AppError.unauthorized('User not authenticated');
     if (!data.firstName || !data.lastName) {
@@ -143,7 +143,7 @@ export class ClientController {
   async updateContact(req: Request, res: Response): Promise<void> {
     const { id, contactId } = req.params;
     const data: UpdateClientContactDTO = req.body;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -158,7 +158,7 @@ export class ClientController {
 
   async removeContact(req: Request, res: Response): Promise<void> {
     const { id, contactId } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) throw AppError.unauthorized('User not authenticated');
 

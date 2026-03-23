@@ -12,6 +12,9 @@ import { RESERVATION } from '../i18n/pl';
 import notificationService from './notification.service';
 import { createHistoryEntry } from './reservation-history.helper';
 
+/** Prisma interactive transaction client (interactive $transaction callback param) */
+type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
 const RESERVATION_INCLUDE = {
   hall: { select: { id: true, name: true, capacity: true, isWholeVenue: true, allowMultipleBookings: true } },
   client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
@@ -20,7 +23,7 @@ const RESERVATION_INCLUDE = {
 } as const;
 
 class ReservationStatusService {
-  async updateStatus(id: string, data: UpdateStatusDTO, userId: string): Promise<any> {
+  async updateStatus(id: string, data: UpdateStatusDTO, userId: string) {
     await this.validateUserId(userId);
     const existingReservation = await prisma.reservation.findUnique({
       where: { id },
@@ -83,7 +86,7 @@ class ReservationStatusService {
       });
 
       // #128: Notification — status changed (cancellation)
-      const cancelClient = existingReservation.client as any;
+      const cancelClient = existingReservation.client;
       if (cancelClient) {
         notificationService.createForAll({
           type: 'STATUS_CHANGED',
@@ -95,7 +98,7 @@ class ReservationStatusService {
         });
       }
 
-      return reservation as any;
+      return reservation;
     }
 
     const reservation = await prisma.reservation.update({
@@ -107,7 +110,7 @@ class ReservationStatusService {
     await createHistoryEntry(id, userId, 'STATUS_CHANGED', 'status', existingReservation.status, data.status, data.reason || 'Zmiana statusu');
 
     // #128: Notification — status changed
-    const statusClient = existingReservation.client as any;
+    const statusClient = existingReservation.client;
     const statusLabels: Record<string, string> = {
       PENDING: 'Oczekująca', RESERVED: 'Zarezerwowana', CONFIRMED: 'Potwierdzona',
       CANCELLED: 'Anulowana', COMPLETED: 'Zakończona', ARCHIVED: 'Zarchiwizowana',
@@ -123,7 +126,7 @@ class ReservationStatusService {
       });
     }
 
-    return reservation as any;
+    return reservation;
   }
 
   // #172: Cancellation = instant archive
@@ -177,7 +180,7 @@ class ReservationStatusService {
     });
 
     // #128: Notification — reservation cancelled
-    const cancelClient = existingReservation.client as any;
+    const cancelClient = existingReservation.client;
     if (cancelClient) {
       notificationService.createForAll({
         type: 'STATUS_CHANGED',
@@ -209,7 +212,7 @@ class ReservationStatusService {
         const dateStr = dateOnly.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const names = queueEntries
           .slice(0, 3)
-          .map((q: any, i: number) => `${q.client?.firstName} ${q.client?.lastName} (poz. ${i + 1})`)
+          .map((q, i) => `${q.client?.firstName} ${q.client?.lastName} (poz. ${i + 1})`)
           .join(', ');
         const extra = queueEntries.length > 3 ? ` i ${queueEntries.length - 3} więcej` : '';
 
@@ -275,7 +278,7 @@ class ReservationStatusService {
     );
   }
 
-  private async cascadeCancelDeposits(tx: any, reservationId: string, userId: string, reason?: string): Promise<number> {
+  private async cascadeCancelDeposits(tx: TxClient, reservationId: string, userId: string, reason?: string): Promise<number> {
     const pendingDeposits = await tx.deposit.findMany({
       where: { reservationId, status: { in: ['PENDING', 'OVERDUE'] } },
     });
@@ -287,7 +290,7 @@ class ReservationStatusService {
       data: { status: 'CANCELLED', updatedAt: new Date() },
     });
 
-    const totalCancelledAmount = pendingDeposits.reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+    const totalCancelledAmount = pendingDeposits.reduce((sum: number, d: (typeof pendingDeposits)[number]) => sum + Number(d.amount), 0);
 
     for (const deposit of pendingDeposits) {
       await tx.reservationHistory.create({

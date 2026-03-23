@@ -11,7 +11,7 @@
  * Options are now passed via input data, no DB lookup for MenuOption.
  */
 
-import { Prisma } from '@/prisma-client';
+import { Prisma, ReservationMenuSnapshot } from '@/prisma-client';
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
 import { logChange } from '../utils/audit-logger';
@@ -19,11 +19,73 @@ import { RESERVATION, MENU, MENU_SELECTION } from '../i18n/pl';
 import {
   MenuSelectionInput,
   CategorySelectionDTO,
+  DishSelectionDTO,
+  SelectedOptionDTO,
   MenuSnapshotData,
 } from '../dto/menu-selection.dto';
 
+/** Shape of menuPackage with included relations as queried in selectMenu */
+interface MenuPackageWithRelations {
+  id: string;
+  menuTemplateId: string;
+  name: string;
+  description: string | null;
+  pricePerAdult: Prisma.Decimal;
+  pricePerChild: Prisma.Decimal;
+  pricePerToddler: Prisma.Decimal;
+  menuTemplate: { name: string; eventType: unknown };
+  categorySettings: CategorySettingWithRelations[];
+}
+
+interface CategorySettingWithRelations {
+  categoryId: string;
+  minSelect: Prisma.Decimal;
+  maxSelect: Prisma.Decimal;
+  isRequired: boolean;
+  isEnabled: boolean;
+  portionTarget: string;
+  category: {
+    name: string;
+    dishes: Array<{ id: string; name: string; description: string | null; allergens: string[]; isActive: boolean }>;
+  };
+}
+
+/** Response shape returned by formatMenuResponse */
+interface MenuResponse {
+  snapshot: {
+    id: string;
+    reservationId: string;
+    menuData: MenuSnapshotData;
+    menuTemplateId: string | null;
+    packageId: string | null;
+    adultsCount: number;
+    childrenCount: number;
+    toddlersCount: number;
+    snapshotDate: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  priceBreakdown: {
+    packageCost: {
+      adults: { count: number; priceEach: number; total: number };
+      children: { count: number; priceEach: number; total: number };
+      toddlers: { count: number; priceEach: number; total: number };
+      subtotal: number;
+    };
+    optionsCost: Array<{
+      option: string;
+      priceType: string;
+      priceEach: number;
+      quantity: number;
+      total: number;
+    }>;
+    optionsSubtotal: number;
+    totalMenuPrice: number;
+  };
+}
+
 class ReservationMenuService {
-  async selectMenu(reservationId: string, input: MenuSelectionInput, userId?: string): Promise<any> {
+  async selectMenu(reservationId: string, input: MenuSelectionInput, userId?: string): Promise<MenuResponse> {
     console.log('[ReservationMenu] Selecting menu for reservation:', reservationId);
 
     const reservation = await prisma.reservation.findUnique({
@@ -49,18 +111,20 @@ class ReservationMenuService {
     });
     if (!menuPackage) throw new AppError(MENU.PACKAGE_NOT_FOUND, 404);
 
+    const typedPackage = menuPackage as unknown as MenuPackageWithRelations;
+
     if (input.dishSelections && input.dishSelections.length > 0) {
-      await this.validateDishSelections(input.dishSelections, menuPackage.categorySettings);
+      await this.validateDishSelections(input.dishSelections, typedPackage.categorySettings);
     }
 
-    const selectedOptions = input.selectedOptions || [];
+    const selectedOptions: SelectedOptionDTO[] = input.selectedOptions || [];
 
     // Check if existing snapshot exists (for audit: new vs update)
     const existingSnapshot = await prisma.reservationMenuSnapshot.findUnique({ where: { reservationId } });
     const isNewSelection = !existingSnapshot;
 
-    const snapshot = await this.buildMenuSnapshot(menuPackage, input.dishSelections || [], selectedOptions, adults, children, toddlers);
-    const packagePrice = this.calculatePackagePrice(menuPackage, adults, children, toddlers);
+    const snapshot = await this.buildMenuSnapshot(typedPackage, input.dishSelections || [], selectedOptions, adults, children, toddlers);
+    const packagePrice = this.calculatePackagePrice(typedPackage, adults, children, toddlers);
     const optionsPrice = this.calculateOptionsPrice(selectedOptions, adults + children + toddlers);
     const totalMenuPrice = packagePrice + optionsPrice;
 
@@ -68,13 +132,13 @@ class ReservationMenuService {
       where: { reservationId },
       create: {
         reservationId, menuData: snapshot as unknown as Prisma.InputJsonValue,
-        menuTemplateId: menuPackage.menuTemplateId, packageId: menuPackage.id,
+        menuTemplateId: typedPackage.menuTemplateId, packageId: typedPackage.id,
         packagePrice, optionsPrice, totalMenuPrice,
         adultsCount: adults, childrenCount: children, toddlersCount: toddlers
       },
       update: {
         menuData: snapshot as unknown as Prisma.InputJsonValue,
-        menuTemplateId: menuPackage.menuTemplateId, packageId: menuPackage.id,
+        menuTemplateId: typedPackage.menuTemplateId, packageId: typedPackage.id,
         packagePrice, optionsPrice, totalMenuPrice,
         adultsCount: adults, childrenCount: children, toddlersCount: toddlers,
         updatedAt: new Date()
@@ -82,8 +146,8 @@ class ReservationMenuService {
     });
 
     // Audit log — MENU_SELECTED
-    const clientName = (reservation as any).client
-      ? `${(reservation as any).client.firstName} ${(reservation as any).client.lastName}`
+    const clientName = reservation.client
+      ? `${reservation.client.firstName} ${reservation.client.lastName}`
       : 'N/A';
     await logChange({
       userId: userId || null,
@@ -91,10 +155,10 @@ class ReservationMenuService {
       entityType: 'RESERVATION',
       entityId: reservationId,
       details: {
-        description: `Menu ${isNewSelection ? 'wybrane' : 'zmienione'}: ${menuPackage.name} (${totalMenuPrice} PLN) | ${clientName}`,
+        description: `Menu ${isNewSelection ? 'wybrane' : 'zmienione'}: ${typedPackage.name} (${totalMenuPrice} PLN) | ${clientName}`,
         isNewSelection,
-        packageName: menuPackage.name,
-        templateName: menuPackage.menuTemplate.name,
+        packageName: typedPackage.name,
+        templateName: typedPackage.menuTemplate.name,
         packagePrice,
         optionsPrice,
         totalMenuPrice,
@@ -128,7 +192,7 @@ class ReservationMenuService {
 
     if (!existingSnapshot) return null;
 
-    const menuData = existingSnapshot.menuData as any as MenuSnapshotData;
+    const menuData = existingSnapshot.menuData as unknown as MenuSnapshotData;
     if (!menuData) return null;
 
     // Save old values for audit
@@ -219,13 +283,13 @@ class ReservationMenuService {
     return { totalMenuPrice, packagePrice, optionsPrice };
   }
 
-  async getReservationMenu(reservationId: string): Promise<any> {
+  async getReservationMenu(reservationId: string): Promise<MenuResponse> {
     const snapshot = await prisma.reservationMenuSnapshot.findUnique({ where: { reservationId } });
     if (!snapshot) throw new AppError(MENU_SELECTION.NOT_SELECTED, 404);
     return this.formatMenuResponse(snapshot, snapshot.adultsCount, snapshot.childrenCount, snapshot.toddlersCount);
   }
 
-  async updateMenu(reservationId: string, input: MenuSelectionInput, userId?: string): Promise<any> {
+  async updateMenu(reservationId: string, input: MenuSelectionInput, userId?: string): Promise<MenuResponse> {
     return this.selectMenu(reservationId, input, userId);
   }
 
@@ -239,7 +303,7 @@ class ReservationMenuService {
 
     // Audit log — MENU_DIRECT_REMOVED
     if (snapshot) {
-      const menuData = snapshot.menuData as any;
+      const menuData = snapshot.menuData as unknown as MenuSnapshotData | null;
       await logChange({
         userId: userId || null,
         action: 'MENU_DIRECT_REMOVED',
@@ -260,11 +324,11 @@ class ReservationMenuService {
 
   // ═══════════════════════════ PRIVATE HELPERS ═══════════════════════════
 
-  private async validateDishSelections(dishSelections: CategorySelectionDTO[], categorySettings: any[]): Promise<void> {
+  private async validateDishSelections(dishSelections: CategorySelectionDTO[], categorySettings: CategorySettingWithRelations[]): Promise<void> {
     const errors: string[] = [];
     for (const categorySetting of categorySettings) {
       const selection = dishSelections.find(s => s.categoryId === categorySetting.categoryId);
-      const totalQuantity = selection ? selection.dishes.reduce((sum: number, d: any) => sum + d.quantity, 0) : 0;
+      const totalQuantity = selection ? selection.dishes.reduce((sum: number, d: DishSelectionDTO) => sum + d.quantity, 0) : 0;
       const minSelect = parseFloat(categorySetting.minSelect.toString());
       const maxSelect = parseFloat(categorySetting.maxSelect.toString());
       if (categorySetting.isRequired && totalQuantity < minSelect) {
@@ -282,20 +346,20 @@ class ReservationMenuService {
    * #166: Now includes portionTarget per category from PackageCategorySettings.
    */
   private async buildMenuSnapshot(
-    menuPackage: any, dishSelections: CategorySelectionDTO[],
-    selectedOptions: any[], adults: number, children: number, toddlers: number
+    menuPackage: MenuPackageWithRelations, dishSelections: CategorySelectionDTO[],
+    selectedOptions: SelectedOptionDTO[], adults: number, children: number, toddlers: number
   ): Promise<MenuSnapshotData> {
     const enrichedDishSelections = await Promise.all(
       dishSelections.map(async (catSelection) => {
-        const categorySetting = menuPackage.categorySettings.find((cs: any) => cs.categoryId === catSelection.categoryId);
+        const categorySetting = menuPackage.categorySettings.find((cs: CategorySettingWithRelations) => cs.categoryId === catSelection.categoryId);
         if (!categorySetting) return null;
-        const dishIds = catSelection.dishes.map((d: any) => d.dishId);
+        const dishIds = catSelection.dishes.map((d: DishSelectionDTO) => d.dishId);
         const dishes = await prisma.dish.findMany({ where: { id: { in: dishIds }, isActive: true } });
         return {
           categoryId: catSelection.categoryId,
           categoryName: categorySetting.category.name,
           portionTarget: categorySetting.portionTarget || 'ALL', // #166
-          dishes: catSelection.dishes.map((dishSel: any) => {
+          dishes: catSelection.dishes.map((dishSel: DishSelectionDTO) => {
             const dish = dishes.find(d => d.id === dishSel.dishId);
             return {
               /* istanbul ignore next -- dish always found from DB query */
@@ -316,14 +380,14 @@ class ReservationMenuService {
       pricePerChild: parseFloat(menuPackage.pricePerChild.toString()),
       pricePerToddler: parseFloat(menuPackage.pricePerToddler.toString()),
       adults, children, toddlers,
-      dishSelections: enrichedDishSelections.filter(Boolean) as any,
-      selectedOptions: selectedOptions.map((selOpt: any) => ({
+      dishSelections: enrichedDishSelections.filter((s): s is NonNullable<typeof s> => s !== null),
+      selectedOptions: selectedOptions.map((selOpt: SelectedOptionDTO) => ({
         optionId: selOpt.optionId,
-        optionName: selOpt.name || selOpt.optionName || MENU_SELECTION.UNKNOWN_OPTION,
+        optionName: selOpt.name || MENU_SELECTION.UNKNOWN_OPTION,
         category: selOpt.category || '',
         quantity: selOpt.quantity,
         priceAmount: selOpt.priceAmount || 0,
-        priceUnit: selOpt.priceType || selOpt.priceUnit || 'FLAT'
+        priceUnit: selOpt.priceType || 'FLAT'
       })),
       prices: {
         packageTotal: this.calculatePackagePrice(menuPackage, adults, children, toddlers),
@@ -334,23 +398,23 @@ class ReservationMenuService {
     };
   }
 
-  private calculatePackagePrice(menuPackage: any, adults: number, children: number, toddlers: number): number {
+  private calculatePackagePrice(menuPackage: MenuPackageWithRelations, adults: number, children: number, toddlers: number): number {
     return adults * parseFloat(menuPackage.pricePerAdult.toString()) +
       children * parseFloat(menuPackage.pricePerChild.toString()) +
       toddlers * parseFloat(menuPackage.pricePerToddler.toString());
   }
 
-  private calculateOptionsPrice(selectedOptions: any[], totalGuests: number): number {
-    return selectedOptions.reduce((total: number, selOpt: any) => {
+  private calculateOptionsPrice(selectedOptions: SelectedOptionDTO[], totalGuests: number): number {
+    return selectedOptions.reduce((total: number, selOpt: SelectedOptionDTO) => {
       const price = selOpt.priceAmount || 0;
-      const priceType = selOpt.priceType || selOpt.priceUnit || 'FLAT';
+      const priceType = selOpt.priceType || 'FLAT';
       if (priceType === 'PER_PERSON') return total + price * totalGuests * selOpt.quantity;
       if (priceType === 'FLAT') return total + price * selOpt.quantity;
       return total;
     }, 0);
   }
 
-  private formatMenuResponse(snapshot: any, adults: number, children: number, toddlers: number): any {
+  private formatMenuResponse(snapshot: ReservationMenuSnapshot, adults: number, children: number, toddlers: number): MenuResponse {
     const menuData = snapshot.menuData as MenuSnapshotData;
     return {
       snapshot: {
@@ -374,7 +438,7 @@ class ReservationMenuService {
           subtotal: parseFloat(snapshot.packagePrice.toString())
         },
         /* istanbul ignore next -- selectedOptions always present in snapshot menuData */
-        optionsCost: menuData.selectedOptions?.map((opt: any) => ({
+        optionsCost: menuData.selectedOptions?.map((opt) => ({
           option: opt.optionName, priceType: opt.priceUnit, priceEach: opt.priceAmount,
           quantity: opt.quantity, total: opt.priceAmount * opt.quantity
         })) || [],
