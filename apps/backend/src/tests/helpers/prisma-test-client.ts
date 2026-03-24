@@ -17,7 +17,11 @@
  */
 import { PrismaClient } from '@/prisma-client';
 
-const prismaTest = new PrismaClient();
+// NOTE: In Jest, @/prisma-client resolves to the integration mock
+// (prisma-client-integration.ts) which accepts no args. But tsc uses
+// tsconfig paths → real generated client which requires { adapter }.
+// The 'as any' satisfies both contexts.
+const prismaTest = new (PrismaClient as any)();
 
 /**
  * Clean ALL tables in the test database.
