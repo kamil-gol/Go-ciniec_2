@@ -72,6 +72,10 @@ module.exports = {
   // ========================================
   // Coverage
   // ========================================
+  // Use V8 native coverage instead of babel-plugin-istanbul.
+  // Fixes TypeError "The original argument must be of type function"
+  // caused by incompatibility between babel-plugin-istanbul and Node 22+.
+  coverageProvider: 'v8',
   collectCoverageFrom: [
     'src/services/**/*.ts',
     'src/controllers/**/*.ts',
