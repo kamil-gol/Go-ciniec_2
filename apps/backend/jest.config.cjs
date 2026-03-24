@@ -49,7 +49,9 @@ module.exports = {
         '<rootDir>/src/tests/helpers/integration-setup.ts',
       ],
       moduleNameMapper: {
-        '^@/prisma-client$': '<rootDir>/src/tests/mocks/prisma-client-jest',
+        // NOTE: No @/prisma-client mock here — integration tests use the REAL
+        // PrismaClient from generated code so services hit the actual test DB.
+        // ts-jest v29 handles import.meta.url transformation.
         '^@/(.*)$': '<rootDir>/src/$1',
         '^@utils/(.*)$': '<rootDir>/src/utils/$1',
         '^@lib/(.*)$': '<rootDir>/src/lib/$1',
