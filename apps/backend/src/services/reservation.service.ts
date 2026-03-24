@@ -603,7 +603,11 @@ export class ReservationService {
 
     // Enrich each reservation with computed extrasTotalPrice
     return reservations.map((r) => {
-      const extras = (r.extras || []).map((e) => ({ ...e, customPrice: null as number | null }));
+      const extras = (r.extras || []).map((e) => ({
+        quantity: e.quantity,
+        customPrice: null as number | null,
+        serviceItem: { basePrice: Number(e.serviceItem.basePrice), priceType: e.serviceItem.priceType },
+      }));
       const extrasTotalPrice = calculateExtrasTotalPrice(extras, r.guests || 0);
       const categoryExtras = r.categoryExtras || [];
       const categoryExtrasTotal = categoryExtras.reduce(
@@ -644,7 +648,11 @@ export class ReservationService {
     if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
 
     // Enrich with computed extrasTotalPrice
-    const extras = (reservation.extras || []).map((e) => ({ ...e, customPrice: null as number | null }));
+    const extras = (reservation.extras || []).map((e) => ({
+      quantity: e.quantity,
+      customPrice: null as number | null,
+      serviceItem: { basePrice: Number(e.serviceItem.basePrice), priceType: e.serviceItem.priceType },
+    }));
     const extrasTotalPrice = calculateExtrasTotalPrice(extras, reservation.guests || 0);
 
     // #216: Compute category extras total
@@ -837,7 +845,7 @@ export class ReservationService {
       updateData.venueSurchargeLabel = surcharge.label;
 
       if (oldSurcharge !== newSurcharge) {
-        const baseTotal = updateData.totalPrice ?? Number(existingReservation.totalPrice);
+        const baseTotal = Number(updateData.totalPrice ?? existingReservation.totalPrice);
         updateData.totalPrice = Math.round((baseTotal - oldSurcharge + newSurcharge) * 100) / 100;
 
         if (!oldIsWholeVenue && newIsWholeVenue) {

@@ -153,7 +153,7 @@ export class ReservationController {
     const { id } = req.params;
 
     const pdfData = await reservationService.prepareReservationForPDF(id);
-    const pdfBuffer = await pdfService.generateReservationPDF(pdfData as import('../services/pdf/pdf.types').ReservationPDFData);
+    const pdfBuffer = await pdfService.generateReservationPDF(pdfData as unknown as import('../services/pdf/pdf.types').ReservationPDFData);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(

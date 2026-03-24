@@ -364,7 +364,7 @@ class ReservationMenuService {
             return {
               /* istanbul ignore next -- dish always found from DB query */
               dishId: dishSel.dishId, dishName: dish?.name || MENU_SELECTION.UNKNOWN_DISH,
-              description: dish?.description, quantity: dishSel.quantity,
+              description: dish?.description ?? undefined, quantity: dishSel.quantity,
               /* istanbul ignore next */
               allergens: dish?.allergens || []
             };
