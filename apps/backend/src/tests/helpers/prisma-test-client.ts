@@ -8,21 +8,16 @@
  * serial execution). There is NO concurrency between suites, so
  * TRUNCATE ALL is safe — no other worker can interfere.
  *
- * The integration project in jest.config.cjs does NOT mock @/prisma-client.
- * Instead, a custom transformer (ts-jest-import-meta.cjs) patches
- * import.meta.url → CJS equivalent, allowing the real generated Prisma
- * client to load in Jest's CJS environment.
+ * This file imports PrismaClient from @/prisma-client which, in the
+ * integration project, resolves to prisma-client-integration.ts — a
+ * mock that provides real pg Pool connections via Proxy-based model access.
  *
  * Flow per test:
  *   beforeEach → cleanDatabase() → seedTestData() → test runs
  */
 import { PrismaClient } from '@/prisma-client';
-import { PrismaPg } from '@prisma/adapter-pg';
 
-const testDbUrl = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5433/rezerwacje_test';
-const adapter = new PrismaPg({ connectionString: testDbUrl });
-
-const prismaTest = new PrismaClient({ adapter });
+const prismaTest = new PrismaClient();
 
 /**
  * Clean ALL tables in the test database.

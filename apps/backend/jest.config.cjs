@@ -49,8 +49,10 @@ module.exports = {
         '<rootDir>/src/tests/helpers/integration-setup.ts',
       ],
       moduleNameMapper: {
-        // NOTE: No @/prisma-client mock here — integration tests use the REAL
-        // PrismaClient from generated code so services hit the actual test DB.
+        // Integration mock: same enums as unit mock, but PrismaClient creates
+        // real pg Pool connections with Proxy-based model access for CRUD.
+        // This lets service code query the actual test database.
+        '^@/prisma-client$': '<rootDir>/src/tests/mocks/prisma-client-integration',
         '^@/(.*)$': '<rootDir>/src/$1',
         '^@utils/(.*)$': '<rootDir>/src/utils/$1',
         '^@lib/(.*)$': '<rootDir>/src/lib/$1',
@@ -63,11 +65,7 @@ module.exports = {
         '^@types/(.*)$': '<rootDir>/src/types/$1',
       },
       transform: {
-        // Custom transformer wraps ts-jest and patches import.meta.url → CJS equivalent.
-        // Prisma 7 generated client uses import.meta.url (ESM-only) which is a
-        // SyntaxError in Jest CJS mode. The transformer replaces it post-compilation
-        // with require("url").pathToFileURL(__filename).href
-        '^.+\\.tsx?$': ['<rootDir>/src/tests/helpers/ts-jest-import-meta.cjs', {
+        '^.+\\.tsx?$': ['ts-jest', {
           tsconfig: 'tsconfig.json',
           diagnostics: false,
         }],
