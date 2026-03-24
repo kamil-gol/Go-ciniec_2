@@ -363,7 +363,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
           open={addDialogOpen}
           onClose={() => setAddDialogOpen(false)}
           categories={categories}
-          onAdd={(data) => assignExtra.mutateAsync(data)}
+          onAdd={(data) => { assignExtra.mutateAsync(data) }}
           isPending={assignExtra.isPending}
         />
       )}
