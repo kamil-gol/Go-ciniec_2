@@ -48,7 +48,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd apps/frontend && npm ci
+          cd apps/frontend && npm ci --legacy-peer-deps
           cd apps/backend && npm ci
           npx playwright install --with-deps ${{ matrix.browser }}
 
@@ -143,7 +143,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd apps/frontend && npm ci
+          cd apps/frontend && npm ci --legacy-peer-deps
           cd apps/backend && npm ci
           npx playwright install --with-deps chromium
 
