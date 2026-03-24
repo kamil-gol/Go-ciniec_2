@@ -170,7 +170,7 @@ export function ReservationCard({
 
           <div className="flex gap-1 self-end sm:self-auto">
             <Link href={`/dashboard/reservations/${reservation.id}`}>
-              <Button size="sm" variant="ghost" title="Zobacz szczegoly i edytuj" className="rounded-lg">
+              <Button size="sm" variant="ghost" title="Zobacz szczegóły i edytuj" className="rounded-lg">
                 <Eye className="w-4 h-4" />
               </Button>
             </Link>
@@ -204,7 +204,7 @@ export function ReservationCard({
                 size="sm"
                 variant="ghost"
                 onClick={() => handlers.onUnarchive(reservation.id)}
-                title="Przywroc z archiwum"
+                title="Przywróć z archiwum"
                 className="rounded-lg text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
               >
                 <ArchiveRestore className="w-4 h-4" />
@@ -214,7 +214,7 @@ export function ReservationCard({
               size="sm"
               variant="ghost"
               onClick={() => handlers.onDelete(reservation.id, reservation.status)}
-              title="Anuluj rezerwacje"
+              title="Anuluj rezerwację"
               disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
               className="rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
             >
