@@ -300,7 +300,7 @@ export class ReservationService {
             pricePerChild: Number(menuPackage.pricePerChild),
             pricePerToddler: Number(menuPackage.pricePerToddler),
             selectedOptions,
-          },
+          } as unknown as Prisma.InputJsonValue,
           packagePrice,
           optionsPrice,
           totalMenuPrice: totalPrice,
@@ -406,7 +406,7 @@ export class ReservationService {
       excludeUserId: userId,
     });
 
-    return reservation as ReservationResponse;
+    return reservation as unknown as ReservationResponse;
   }
 
   async updateReservationMenu(reservationId: string, data: UpdateReservationMenuDTO, userId: string): Promise<{ message: string; totalPrice?: number }> {
@@ -499,7 +499,7 @@ export class ReservationService {
           pricePerChild,
           pricePerToddler,
           selectedOptions,
-        },
+        } as unknown as Prisma.InputJsonValue,
         packagePrice,
         optionsPrice,
         totalMenuPrice,
@@ -603,7 +603,7 @@ export class ReservationService {
 
     // Enrich each reservation with computed extrasTotalPrice
     return reservations.map((r) => {
-      const extras = r.extras || [];
+      const extras = (r.extras || []).map((e) => ({ ...e, customPrice: null as number | null }));
       const extrasTotalPrice = calculateExtrasTotalPrice(extras, r.guests || 0);
       const categoryExtras = r.categoryExtras || [];
       const categoryExtrasTotal = categoryExtras.reduce(
@@ -616,7 +616,7 @@ export class ReservationService {
         categoryExtras,
         categoryExtrasTotal,
       };
-    }) as ReservationResponse[];
+    }) as unknown as ReservationResponse[];
   }
 
   async getReservationById(id: string): Promise<ReservationResponse> {
@@ -644,7 +644,7 @@ export class ReservationService {
     if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
 
     // Enrich with computed extrasTotalPrice
-    const extras = reservation.extras || [];
+    const extras = (reservation.extras || []).map((e) => ({ ...e, customPrice: null as number | null }));
     const extrasTotalPrice = calculateExtrasTotalPrice(extras, reservation.guests || 0);
 
     // #216: Compute category extras total
@@ -659,7 +659,7 @@ export class ReservationService {
       extrasCount: extras.length,
       categoryExtras,
       categoryExtrasTotal,
-    } as ReservationResponse;
+    } as unknown as ReservationResponse;
   }
 
   async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {
@@ -738,7 +738,7 @@ export class ReservationService {
       if (!customValidation.valid) throw new AppError(customValidation.error!, 400);
     }
 
-    const updateData: Prisma.ReservationUpdateInput = {};
+    const updateData: Prisma.ReservationUncheckedUpdateInput = {};
 
     // ══ #137: Hall change — validate new hall + recalculate surcharge ══
     let effectiveHall = existingReservation.hall;
@@ -776,7 +776,9 @@ export class ReservationService {
     if (guestsChanged) {
       updateData.guests = calculateTotalGuests(newAdults, newChildren, newToddlers);
     }
-    const finalGuests = updateData.guests ?? existingReservation.guests;
+    const finalGuests = guestsChanged
+      ? calculateTotalGuests(newAdults, newChildren, newToddlers)
+      : existingReservation.guests;
 
     // #165: Capacity-based overlap + capacity check on hall/time/guests change
     if ((hallChanged || data.startDateTime || data.endDateTime || guestsChanged) && finalStart && finalEnd && effectiveHall) {
@@ -933,7 +935,7 @@ ${changesSummary}`);
       });
     }
 
-    return reservation;
+    return reservation as unknown as ReservationResponse;
   }
 
   // Status operations delegated to ReservationStatusService

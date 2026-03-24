@@ -257,7 +257,7 @@ export interface MenuPreparationCourse {
   courseName: string;
   icon: string | null;
   dishes: MenuPreparationDish[];
-  portionTarget?: number;  // fix: used in reports.service (total portions target for this course)
+  portionTarget?: string;  // 'ALL' | 'ADULTS_ONLY' | 'CHILDREN_ONLY'
 }
 
 /** Reservation context for the menu report (detailed view) */
@@ -299,7 +299,7 @@ export interface MenuPreparationSummaryDish {
   totalPortions: number;        // (adults + children) * portionSize - toddlers excluded
   adultPortions: number;
   childrenPortions: number;
-  portionTarget?: number;       // fix: used in reports.service (target portion count for planning)
+  portionTarget?: string;       // 'ALL' | 'ADULTS_ONLY' | 'CHILDREN_ONLY'
   reservations: Array<{
     id: string;
     clientName: string;

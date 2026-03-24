@@ -49,7 +49,7 @@ export const downloadDepositPdf = async (req: Request, res: Response): Promise<v
     startTime: string | null;
     endTime: string | null;
     guests: number;
-    totalPrice: number;
+    totalPrice: number | { toNumber(): number };
     hall?: { name: string } | null;
     eventType?: { name: string } | null;
     client?: {

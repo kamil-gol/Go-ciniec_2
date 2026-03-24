@@ -307,8 +307,8 @@ export class ClientService {
     if (data.firstName) updateData.firstName = data.firstName.trim();
     if (data.lastName) updateData.lastName = data.lastName.trim();
     if (data.email !== undefined) updateData.email = data.email?.trim() || null;
-    if (data.phone !== undefined) updateData.phone = data.phone?.trim() || null;
-    if (data.notes !== undefined) updateData.notes = data.notes?.trim() || null;
+    if (data.phone !== undefined) updateData.phone = data.phone?.trim() || undefined;
+    if (data.notes !== undefined) updateData.notes = data.notes?.trim() || undefined;
 
     // Company fields
     if (data.companyName !== undefined) updateData.companyName = data.companyName?.trim() || null;

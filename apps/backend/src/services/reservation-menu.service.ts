@@ -358,7 +358,7 @@ class ReservationMenuService {
         return {
           categoryId: catSelection.categoryId,
           categoryName: categorySetting.category.name,
-          portionTarget: categorySetting.portionTarget || 'ALL', // #166
+          portionTarget: (categorySetting.portionTarget || 'ALL') as 'ALL' | 'ADULTS_ONLY' | 'CHILDREN_ONLY', // #166
           dishes: catSelection.dishes.map((dishSel: DishSelectionDTO) => {
             const dish = dishes.find(d => d.id === dishSel.dishId);
             return {
@@ -415,7 +415,7 @@ class ReservationMenuService {
   }
 
   private formatMenuResponse(snapshot: ReservationMenuSnapshot, adults: number, children: number, toddlers: number): MenuResponse {
-    const menuData = snapshot.menuData as MenuSnapshotData;
+    const menuData = snapshot.menuData as unknown as MenuSnapshotData;
     return {
       snapshot: {
         id: snapshot.id,

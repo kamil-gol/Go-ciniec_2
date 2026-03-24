@@ -153,7 +153,13 @@ class ReportsService {
     for (const r of reservations) {
       const extras = r.extras || [];
       if (extras.length === 0) continue;
-      const extrasCalc = calculateExtrasRevenue(extras, r.guests || 0);
+      const mappedExtras = extras.map(e => ({
+        quantity: Number(e.quantity),
+        unitPrice: e.unitPrice != null ? Number(e.unitPrice) : null,
+        totalPrice: e.totalPrice != null ? Number(e.totalPrice) : null,
+        serviceItem: { ...e.serviceItem, basePrice: Number(e.serviceItem.basePrice) },
+      }));
+      const extrasCalc = calculateExtrasRevenue(mappedExtras, r.guests || 0);
       totalExtrasRevenue += extrasCalc.total;
       for (const item of extrasCalc.items) {
         const existing = serviceItemRevenueMap.get(item.serviceItemId) || { name: item.name, revenue: 0, count: 0 };
@@ -669,7 +675,7 @@ class ReportsService {
         if (dishes.length > 0) {
           courses.push({
             courseName: catSel.categoryName || 'Nieznana kategoria',
-            icon: catSel.categoryIcon || null,
+            icon: (catSel as Record<string, unknown>).categoryIcon as string || null,
             portionTarget: catSel.portionTarget || 'ALL',
             dishes,
           });
