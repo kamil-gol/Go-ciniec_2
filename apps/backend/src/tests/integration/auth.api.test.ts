@@ -88,7 +88,7 @@ describe('Auth API — /api/auth', () => {
     });
 
     it('should return 401 or 403 for inactive/blocked account', async () => {
-      const { admin } = await seedUsersOnly() as { admin: any };
+      const { admin } = await seedUsersOnly();
       const prismaTest = (await import('../helpers/prisma-test-client')).default;
       await prismaTest.user.update({
         where: { id: admin.id },

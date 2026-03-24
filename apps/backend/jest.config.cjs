@@ -51,7 +51,6 @@ module.exports = {
       moduleNameMapper: {
         // NOTE: No @/prisma-client mock here — integration tests use the REAL
         // PrismaClient from generated code so services hit the actual test DB.
-        // ts-jest v29 handles import.meta.url transformation.
         '^@/(.*)$': '<rootDir>/src/$1',
         '^@utils/(.*)$': '<rootDir>/src/utils/$1',
         '^@lib/(.*)$': '<rootDir>/src/lib/$1',
@@ -64,7 +63,11 @@ module.exports = {
         '^@types/(.*)$': '<rootDir>/src/types/$1',
       },
       transform: {
-        '^.+\\.tsx?$': ['ts-jest', {
+        // Custom transformer wraps ts-jest and patches import.meta.url → CJS equivalent.
+        // Prisma 7 generated client uses import.meta.url (ESM-only) which is a
+        // SyntaxError in Jest CJS mode. The transformer replaces it post-compilation
+        // with require("url").pathToFileURL(__filename).href
+        '^.+\\.tsx?$': ['<rootDir>/src/tests/helpers/ts-jest-import-meta.cjs', {
           tsconfig: 'tsconfig.json',
           diagnostics: false,
         }],

@@ -219,7 +219,7 @@ export async function seedTestData(): Promise<TestSeedData> {
 /**
  * Quick seed: only users (for auth tests).
  */
-export async function seedUsersOnly(): Promise<{ admin: any }> {
+export async function seedUsersOnly() {
   const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
 
   const admin = await findOrCreate(

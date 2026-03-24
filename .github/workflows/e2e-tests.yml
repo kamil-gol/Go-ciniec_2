@@ -54,8 +54,8 @@ jobs:
 
       - name: Setup environment variables
         run: |
-          cp apps/frontend/e2e/.env.test.example apps/frontend/e2e/.env.test
-          cp apps/backend/.env.test.example apps/backend/.env.test
+          touch apps/frontend/e2e/.env.test
+          touch apps/backend/.env.test
 
       - name: Run database migrations
         working-directory: apps/backend
@@ -149,8 +149,8 @@ jobs:
 
       - name: Setup environment
         run: |
-          cp apps/frontend/e2e/.env.test.example apps/frontend/e2e/.env.test
-          cp apps/backend/.env.test.example apps/backend/.env.test
+          touch apps/frontend/e2e/.env.test
+          touch apps/backend/.env.test
 
       - name: Setup database
         working-directory: apps/backend
