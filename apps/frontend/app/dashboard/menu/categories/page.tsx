@@ -85,8 +85,10 @@ export default function DishCategoriesPage() {
     try {
       if (editingCategory) {
         await updateMutation.mutateAsync({ id: editingCategory.id, data: formData })
+        toast.success('Kategoria zaktualizowana')
       } else {
         await createMutation.mutateAsync(formData)
+        toast.success('Kategoria utworzona')
       }
       handleClose()
     } catch (error: any) {
@@ -99,6 +101,7 @@ export default function DishCategoriesPage() {
     if (!confirmed) return
     try {
       await deleteMutation.mutateAsync(id)
+      toast.success('Kategoria usunięta')
     } catch (error: any) {
       toast.error(error?.message || 'Nie udało się usunąć kategorii')
     }
@@ -177,6 +180,8 @@ export default function DishCategoriesPage() {
                     type="button"
                     onClick={() => setFormData({ ...formData, color: color.value })}
                     className={`px-3 py-2 rounded-lg border-2 ${formData.color === color.value ? 'border-purple-500' : 'border-transparent'} ${color.value} font-semibold`}
+                    aria-label={`Kolor: ${color.label}`}
+                    title={color.label}
                   >
                     {color.label.charAt(0)}
                   </button>

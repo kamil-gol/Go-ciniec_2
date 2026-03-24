@@ -31,7 +31,7 @@ function getDaysInfo(dateStr: string): { text: string; className: string } | nul
   today.setHours(0, 0, 0, 0)
   const due = new Date(dateStr)
   due.setHours(0, 0, 0, 0)
-  const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
   if (diffDays === 0) return { text: 'dzisiaj', className: 'text-amber-600 dark:text-amber-400' }
   if (diffDays === 1) return { text: 'jutro', className: 'text-amber-600 dark:text-amber-400' }
@@ -68,8 +68,8 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
             ? getDaysInfo(deposit.dueDate)
             : null
           const initials = client
-            ? `${client.firstName[0]}${client.lastName[0]}`.toUpperCase()
-            : '?'
+            ? `${client.firstName?.[0] ?? '?'}${client.lastName?.[0] ?? '?'}`.toUpperCase()
+            : '??'
           const reservationLink = `/dashboard/reservations/${deposit.reservationId}`
 
           return (
@@ -171,7 +171,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                 : null
 
               const initials = client
-                ? `${client.firstName[0]}${client.lastName[0]}`.toUpperCase()
+                ? `${client.firstName?.[0] ?? '?'}${client.lastName?.[0] ?? '?'}`.toUpperCase()
                 : '?'
 
               const reservationLink = `/dashboard/reservations/${deposit.reservationId}`

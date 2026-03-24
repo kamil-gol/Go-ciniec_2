@@ -52,6 +52,7 @@ export function CourseBuilderDialog({ open, onOpenChange, packageId, course }: C
   }, [course, open])
 
   const handleSubmit = async () => {
+    if (isPending) return
     if (!packageId && !course) {
       toast.error('Brak wybranego pakietu!')
       return

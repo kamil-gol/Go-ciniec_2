@@ -83,7 +83,7 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
         <Table>
           <TableHeader>
             <TableRow className="bg-neutral-50 dark:bg-neutral-900/50 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300 w-36">Numer</TableHead>
+              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300 w-auto min-w-[6rem]">Numer</TableHead>
               <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Klient</TableHead>
               <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Wydarzenie</TableHead>
               <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Data</TableHead>

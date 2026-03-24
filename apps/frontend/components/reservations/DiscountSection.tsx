@@ -86,9 +86,9 @@ export function DiscountSection({ reservation, readOnly }: DiscountSectionProps)
 
   // Calculate preview
   const previewAmount = discountType === 'PERCENTAGE'
-    ? (reservation.totalPrice * Number(discountValue || 0)) / 100
+    ? Math.round((reservation.totalPrice * Number(discountValue || 0)) / 100 * 100) / 100
     : Number(discountValue || 0)
-  const previewFinal = Math.max(0, reservation.totalPrice - previewAmount)
+  const previewFinal = Math.max(0, Math.round((reservation.totalPrice - previewAmount) * 100) / 100)
 
   // STATE 1: No discount \u2014 show \"Add\" button (hidden when readOnly)
   if (!hasDiscount && !isEditing) {

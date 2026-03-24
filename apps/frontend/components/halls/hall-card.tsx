@@ -132,6 +132,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
                 size="icon"
                 disabled={deleting}
                 className="rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                aria-label="Opcje sali"
               >
                 <MoreVertical className="h-5 w-5 text-neutral-500" />
               </Button>
