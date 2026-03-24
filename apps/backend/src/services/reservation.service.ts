@@ -32,6 +32,7 @@ import {
 import {
   calculateTotalGuests,
   calculateTotalPrice,
+  enrichWithExtrasTotals,
   validateConfirmationDeadline,
   validateCustomEventFields,
   detectReservationChanges,
@@ -48,42 +49,12 @@ import notificationService from './notification.service';
 import { validateCapacityForTimeRange, checkWholeVenueConflict } from './reservation-validation.service';
 import { reservationStatusService } from './reservation-status.service';
 import { createHistoryEntry } from './reservation-history.helper';
+import { RESERVATION_INCLUDE, RESERVATION_LIST_INCLUDE, RESERVATION_DETAIL_INCLUDE } from './reservation.includes';
+import { buildPdfData } from './reservation-pdf-data.helper';
 
 function sanitizeString(value: unknown): string | null {
   if (value === null || value === undefined || value === '') return null;
   return String(value).replace(/\x00/g, '').trim() || null;
-}
-
-const RESERVATION_INCLUDE = {
-  hall: { select: { id: true, name: true, capacity: true, isWholeVenue: true, allowMultipleBookings: true } },
-  client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
-  eventType: { select: { id: true, name: true, standardHours: true, extraHourRate: true } },
-  createdBy: { select: { id: true, email: true } },
-} as const;
-
-/**
- * Calculate extrasTotalPrice from reservation extras array.
- * Supports FLAT (basePrice × quantity), PER_PERSON (basePrice × quantity × guests), FREE (0).
- */
-function calculateExtrasTotalPrice(
-  extras: Array<{ quantity: number; customPrice: number | null; serviceItem: { basePrice: number; priceType: string } }>,
-  guests: number
-): number {
-  let total = 0;
-  for (const extra of extras) {
-    const price = extra.customPrice !== null ? Number(extra.customPrice) : Number(extra.serviceItem.basePrice);
-    const qty = extra.quantity || 1;
-
-    if (extra.serviceItem.priceType === 'PER_PERSON') {
-      total += price * qty * guests;
-    } else if (extra.serviceItem.priceType === 'FREE') {
-      // free — no cost
-    } else {
-      // FLAT
-      total += price * qty;
-    }
-  }
-  return Math.round(total * 100) / 100;
 }
 
 export class ReservationService {
@@ -581,93 +552,24 @@ export class ReservationService {
 
     const reservations = await prisma.reservation.findMany({
       where,
-      include: {
-        ...RESERVATION_INCLUDE,
-        extras: {
-          include: {
-            serviceItem: { select: { id: true, name: true, basePrice: true, priceType: true } },
-          },
-        },
-        categoryExtras: {
-          include: {
-            packageCategory: {
-              include: { category: { select: { id: true, name: true, icon: true } } },
-            },
-          },
-        },
-      },
+      include: RESERVATION_LIST_INCLUDE,
       orderBy: [{ startDateTime: 'asc' }, { date: 'asc' }, { startTime: 'asc' }],
       take: pageSize,
       skip: (page - 1) * pageSize,
     });
 
-    // Enrich each reservation with computed extrasTotalPrice
-    return reservations.map((r) => {
-      const extras = (r.extras || []).map((e) => ({
-        quantity: e.quantity,
-        customPrice: null as number | null,
-        serviceItem: { basePrice: Number(e.serviceItem.basePrice), priceType: e.serviceItem.priceType },
-      }));
-      const extrasTotalPrice = calculateExtrasTotalPrice(extras, r.guests || 0);
-      const categoryExtras = r.categoryExtras || [];
-      const categoryExtrasTotal = categoryExtras.reduce(
-        (sum: number, e) => sum + Number(e.totalPrice), 0
-      );
-      return {
-        ...r,
-        extrasTotalPrice,
-        extrasCount: extras.length,
-        categoryExtras,
-        categoryExtrasTotal,
-      };
-    }) as unknown as ReservationResponse[];
+    return reservations.map(enrichWithExtrasTotals) as unknown as ReservationResponse[];
   }
 
   async getReservationById(id: string): Promise<ReservationResponse> {
     const reservation = await prisma.reservation.findUnique({
       where: { id },
-      include: {
-        ...RESERVATION_INCLUDE,
-        menuSnapshot: true,
-        deposits: true,
-        extras: {
-          include: { serviceItem: { include: { category: true } } },
-          orderBy: { createdAt: 'asc' },
-        },
-        categoryExtras: {
-          include: {
-            packageCategory: {
-              include: { category: { select: { id: true, name: true, icon: true, slug: true } } },
-            },
-          },
-          orderBy: { createdAt: 'asc' },
-        },
-      },
+      include: RESERVATION_DETAIL_INCLUDE,
     });
 
     if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
 
-    // Enrich with computed extrasTotalPrice
-    const extras = (reservation.extras || []).map((e) => ({
-      quantity: e.quantity,
-      customPrice: null as number | null,
-      serviceItem: { basePrice: Number(e.serviceItem.basePrice), priceType: e.serviceItem.priceType },
-    }));
-    const extrasTotalPrice = calculateExtrasTotalPrice(extras, reservation.guests || 0);
-
-    // #216: Compute category extras total
-    const categoryExtras = reservation.categoryExtras || [];
-    const categoryExtrasTotal = categoryExtras.reduce(
-      (sum: number, e) => sum + Number(e.totalPrice), 0
-    );
-
-    return {
-      ...reservation,
-      extrasTotalPrice,
-      extrasCount: extras.length,
-      categoryExtras,
-      categoryExtrasTotal,
-    } as unknown as ReservationResponse;
+    return enrichWithExtrasTotals(reservation) as unknown as ReservationResponse;
   }
 
   async updateReservation(id: string, data: UpdateReservationDTO, userId: string): Promise<ReservationResponse> {
@@ -1020,79 +922,8 @@ ${changesSummary}`);
    * strips cancelled deposits and internalNotes.
    */
   async prepareReservationForPDF(id: string) {
-    // getReservationById returns ReservationResponse, but the Prisma query includes extras/deposits
-    // that aren't declared on that interface. Use a widened type for PDF data assembly.
-    const reservation = await this.getReservationById(id) as ReservationResponse & {
-      extras?: Array<{
-        customPrice: number | null;
-        quantity: number;
-        note: string | null;
-        status: string;
-        serviceItem: { name: string; basePrice: number; priceType: string; category: { name: string } | null };
-      }>;
-      deposits?: Array<{ status: string; [key: string]: unknown }>;
-    };
-    if (!reservation) throw new AppError(RESERVATION.NOT_FOUND, 404);
-
-    // Map extras → reservationExtras for PDF compatibility
-    const extras = reservation.extras || [];
-    const reservationExtras = extras.map((e) => {
-      const unitPrice = e.customPrice !== null && e.customPrice !== undefined
-        ? Number(e.customPrice)
-        : Number(e.serviceItem.basePrice);
-      const quantity = e.quantity || 1;
-      let totalPrice: number;
-
-      if (e.serviceItem.priceType === 'PER_PERSON') {
-        totalPrice = unitPrice * quantity * (reservation.guests || 0);
-      } else if (e.serviceItem.priceType === 'FREE') {
-        totalPrice = 0;
-      } else {
-        // FLAT
-        totalPrice = unitPrice * quantity;
-      }
-      totalPrice = Math.round(totalPrice * 100) / 100;
-
-      return {
-        serviceItem: {
-          name: e.serviceItem.name,
-          priceType: e.serviceItem.priceType,
-          category: e.serviceItem.category || null,
-        },
-        quantity,
-        unitPrice,
-        totalPrice,
-        priceType: e.serviceItem.priceType,
-        note: e.note || null,
-        status: e.status || 'ACTIVE',
-      };
-    });
-
-    // #216: Map categoryExtras for PDF rendering
-    const categoryExtrasForPDF = (reservation.categoryExtras || []).map((ce) => ({
-      categoryName: ce.packageCategory?.category?.name || 'Kategoria',
-      quantity: Number(ce.quantity),
-      pricePerItem: Number(ce.pricePerItem),
-      guestCount: Number(ce.guestCount) || 1,
-      portionTarget: ce.portionTarget || 'ALL',
-      totalPrice: Number(ce.totalPrice),
-    }));
-
-    const pdfData = {
-      ...reservation,
-      reservationExtras,
-      categoryExtras: categoryExtrasForPDF,
-    };
-
-    // #deposits-fix: Strip CANCELLED deposits — they must NEVER appear in customer-facing PDF
-    if (Array.isArray(pdfData.deposits)) {
-      pdfData.deposits = pdfData.deposits.filter((d) => d.status !== 'CANCELLED');
-    }
-
-    // Etap 5: Notatka wewnętrzna NIGDY nie trafia do PDF
-    delete pdfData.internalNotes;
-
-    return pdfData;
+    const reservation = await this.getReservationById(id) as any;
+    return buildPdfData(reservation);
   }
 
   private async validateUserId(userId: string): Promise<void> {
