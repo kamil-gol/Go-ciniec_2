@@ -94,9 +94,9 @@ export function MenuPackageDialog({
         name: pkg.name,
         description: pkg.description || '',
         shortDescription: pkg.shortDescription || '',
-        pricePerAdult: parseFloat(pkg.pricePerAdult),
-        pricePerChild: parseFloat(pkg.pricePerChild),
-        pricePerToddler: parseFloat(pkg.pricePerToddler),
+        pricePerAdult: Number(pkg.pricePerAdult) || 0,
+        pricePerChild: Number(pkg.pricePerChild) || 0,
+        pricePerToddler: Number(pkg.pricePerToddler) || 0,
         color: pkg.color || '',
         icon: pkg.icon || '',
         badgeText: pkg.badgeText || '',
@@ -281,7 +281,8 @@ export function MenuPackageDialog({
                 <Input
                   id="color"
                   type="color"
-                  {...register('color')}
+                  value={watch('color') || '#3B82F6'}
+                  onChange={(e) => setValue('color', e.target.value)}
                   className="h-10 w-20"
                 />
                 <Input {...register('color')} placeholder="#3B82F6" />

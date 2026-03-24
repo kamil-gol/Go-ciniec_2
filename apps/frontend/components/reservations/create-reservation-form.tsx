@@ -306,9 +306,9 @@ export function CreateReservationForm({
   // Set prices from selected package
   useEffect(() => {
     if (useMenuPackage && selectedPackage) {
-      setValue('pricePerAdult', parseFloat(selectedPackage.pricePerAdult))
-      setValue('pricePerChild', parseFloat(selectedPackage.pricePerChild))
-      setValue('pricePerToddler', parseFloat(selectedPackage.pricePerToddler))
+      setValue('pricePerAdult', Number(selectedPackage.pricePerAdult) || 0)
+      setValue('pricePerChild', Number(selectedPackage.pricePerChild) || 0)
+      setValue('pricePerToddler', Number(selectedPackage.pricePerToddler) || 0)
     }
   }, [useMenuPackage, selectedPackage, setValue])
 

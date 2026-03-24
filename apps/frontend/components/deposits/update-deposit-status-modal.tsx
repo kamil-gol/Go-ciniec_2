@@ -31,17 +31,14 @@ export function UpdateDepositStatusModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<string>(deposit.paymentMethod || 'CASH')
   const [paidAt, setPaidAt] = useState<string>(() => {
-    if (deposit.paidAt) {
-      const date = new Date(deposit.paidAt)
-      return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 16)
-    }
-    // Default to now
-    const now = new Date()
-    return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16)
+    const date = deposit.paidAt ? new Date(deposit.paidAt) : new Date()
+    // Format as local datetime-local value (YYYY-MM-DDTHH:MM)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
   })
 
   const paymentMethodOptions = [

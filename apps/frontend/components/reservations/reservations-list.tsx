@@ -189,6 +189,11 @@ export function ReservationsList() {
   const archiveMutation = useArchiveReservation()
   const unarchiveMutation = useUnarchiveReservation()
 
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1)
+  }, [statusFilter, showArchived])
+
   const { data, isLoading, error, refetch } = useReservations({
     page,
     pageSize: 20,
