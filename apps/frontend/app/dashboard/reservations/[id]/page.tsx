@@ -3,25 +3,19 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import {
-  ArrowLeft, Trash2, Archive, ArchiveRestore,
-  Calendar, User, Mail, Phone,
-  Download, XCircle, History,
-  Lock,
+  ArrowLeft, Calendar, User, Mail, Phone,
+  XCircle, History, Lock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { useReservation, useCancelReservation, useArchiveReservation, useUnarchiveReservation, downloadReservationPDF } from '@/lib/api/reservations'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import Link from 'next/link'
-import { format } from 'date-fns'
-import { pl } from 'date-fns/locale'
 import { ReservationMenuSection } from '@/components/reservations/ReservationMenuSection'
 import { ReservationFinancialSummary } from '@/components/reservations/ReservationFinancialSummary'
 import CategoryExtrasList from '@/components/reservations/CategoryExtrasList'
 import { ReservationExtrasPanel } from '@/components/service-extras/ReservationExtrasPanel'
 import {
-  StatusChanger,
   EditableHallCard,
   EditableEventCard,
   EditableGuestsCard,
@@ -31,6 +25,8 @@ import {
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
 import { toast } from 'sonner'
+import { ReservationHero } from './components/ReservationHero'
+import { QuickActionsCard } from './components/QuickActionsCard'
 
 type TabType = 'details' | 'history'
 
@@ -189,67 +185,15 @@ export default function ReservationDetailsPage() {
         )}
 
         {/* Premium Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 p-5 sm:p-8 text-white shadow-2xl">
-          <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
-
-          <div className="relative z-10 space-y-4 sm:space-y-6">
-            <Link href="/dashboard/reservations">
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Powrót do listy
-              </Button>
-            </Link>
-
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 sm:p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                    <Calendar className="h-6 w-6 sm:h-8 sm:w-8" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl sm:text-4xl font-bold">Rezerwacja #{reservation.id.slice(0, 8)}</h1>
-                    <p className="text-white/90 text-base sm:text-lg mt-1">Szczegóły rezerwacji</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {isArchived && reservation.status !== 'ARCHIVED' && (
-                    <Badge className="bg-neutral-200 text-neutral-800 border-neutral-300">
-                      <Archive className="h-3 w-3 mr-1" />
-                      Zarchiwizowane
-                    </Badge>
-                  )}
-                  <StatusChanger
-                    reservationId={reservation.id}
-                    currentStatus={reservation.status}
-                    onStatusChanged={handleRefetch}
-                    disabled={isReadOnly}
-                  />
-                  {eventDate && (
-                    <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {format(eventDate, 'dd MMMM yyyy', { locale: pl })}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-2 sm:gap-3">
-                <Button
-                  size="lg"
-                  onClick={handleDownloadPDF}
-                  disabled={downloading}
-                  className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
-                >
-                  <Download className="h-5 w-5 sm:mr-2" />
-                  <span className="hidden sm:inline">{downloading ? 'Pobieranie...' : 'Pobierz PDF'}</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
-        </div>
+        <ReservationHero
+          reservation={reservation}
+          eventDate={eventDate}
+          isArchived={isArchived}
+          isReadOnly={isReadOnly}
+          downloading={downloading}
+          onDownloadPDF={handleDownloadPDF}
+          onRefetch={handleRefetch}
+        />
 
         {/* US-9.8: Tab bar */}
         <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
@@ -458,58 +402,19 @@ export default function ReservationDetailsPage() {
               />
 
               {/* Quick Actions */}
-              <Card className="border-0 shadow-xl">
-                <div className="p-5 sm:p-6">
-                  <h3 className="text-lg font-bold mb-4">Szybkie akcje</h3>
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start"
-                      size="lg"
-                      onClick={handleDownloadPDF}
-                      disabled={downloading}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
-                    </Button>
-
-                    {!isArchived ? (
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-neutral-600 hover:text-neutral-700"
-                        size="lg"
-                        disabled={archiveMutation.isPending || isReadOnly}
-                        onClick={handleArchive}
-                      >
-                        <Archive className="mr-2 h-4 w-4" />
-                        {archiveMutation.isPending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwację'}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-green-600 hover:text-green-700"
-                        size="lg"
-                        disabled={unarchiveMutation.isPending}
-                        onClick={handleUnarchive}
-                      >
-                        <ArchiveRestore className="mr-2 h-4 w-4" />
-                        {unarchiveMutation.isPending ? 'Przywracanie...' : 'Przywróć z archiwum'}
-                      </Button>
-                    )}
-
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-red-600 hover:text-red-700"
-                      size="lg"
-                      disabled={!isCancellable || cancelMutation.isPending || isReadOnly}
-                      onClick={handleCancel}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {cancelMutation.isPending ? 'Anulowanie...' : 'Anuluj rezerwację'}
-                    </Button>
-                  </div>
-                </div>
-              </Card>
+              <QuickActionsCard
+                isArchived={isArchived}
+                isCancellable={isCancellable}
+                isReadOnly={isReadOnly}
+                downloading={downloading}
+                archivePending={archiveMutation.isPending}
+                unarchivePending={unarchiveMutation.isPending}
+                cancelPending={cancelMutation.isPending}
+                onDownloadPDF={handleDownloadPDF}
+                onArchive={handleArchive}
+                onUnarchive={handleUnarchive}
+                onCancel={handleCancel}
+              />
             </div>
           </div>
         )}

@@ -1,0 +1,88 @@
+'use client'
+
+import { Trash2, Archive, ArchiveRestore, Download } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+
+interface QuickActionsCardProps {
+  isArchived: boolean
+  isCancellable: boolean
+  isReadOnly: boolean
+  downloading: boolean
+  archivePending: boolean
+  unarchivePending: boolean
+  cancelPending: boolean
+  onDownloadPDF: () => void
+  onArchive: () => void
+  onUnarchive: () => void
+  onCancel: () => void
+}
+
+export function QuickActionsCard({
+  isArchived,
+  isCancellable,
+  isReadOnly,
+  downloading,
+  archivePending,
+  unarchivePending,
+  cancelPending,
+  onDownloadPDF,
+  onArchive,
+  onUnarchive,
+  onCancel,
+}: QuickActionsCardProps) {
+  return (
+    <Card className="border-0 shadow-xl">
+      <div className="p-5 sm:p-6">
+        <h3 className="text-lg font-bold mb-4">Szybkie akcje</h3>
+        <div className="space-y-2">
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            size="lg"
+            onClick={onDownloadPDF}
+            disabled={downloading}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
+          </Button>
+
+          {!isArchived ? (
+            <Button
+              variant="outline"
+              className="w-full justify-start text-neutral-600 hover:text-neutral-700"
+              size="lg"
+              disabled={archivePending || isReadOnly}
+              onClick={onArchive}
+            >
+              <Archive className="mr-2 h-4 w-4" />
+              {archivePending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwacje'}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full justify-start text-green-600 hover:text-green-700"
+              size="lg"
+              disabled={unarchivePending}
+              onClick={onUnarchive}
+            >
+              <ArchiveRestore className="mr-2 h-4 w-4" />
+              {unarchivePending ? 'Przywracanie...' : 'Przywroc z archiwum'}
+            </Button>
+          )}
+
+          <Button
+            variant="outline"
+            className="w-full justify-start text-red-600 hover:text-red-700"
+            size="lg"
+            disabled={!isCancellable || cancelPending || isReadOnly}
+            onClick={onCancel}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            {cancelPending ? 'Anulowanie...' : 'Anuluj rezerwacje'}
+          </Button>
+        </div>
+      </div>
+    </Card>
+  )
+}
