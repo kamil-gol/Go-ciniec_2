@@ -32,7 +32,7 @@ interface AddExtraDialogProps {
     quantity: number;
     note?: string;
     customPrice?: number;
-  }) => Promise<void>;
+  }) => void | Promise<void>;
   isPending: boolean;
 }
 
