@@ -13,33 +13,32 @@
  * Used ONLY in the integration project (unit tests use a mock that
  * never imports the generated client).
  */
-const tsJest = require('ts-jest');
+const { TsJestTransformer } = require('ts-jest');
+
+class ImportMetaTransformer extends TsJestTransformer {
+  process(sourceText, sourcePath, transformOptions) {
+    const result = super.process(sourceText, sourcePath, transformOptions);
+    const code = typeof result === 'string' ? result : result.code;
+
+    if (code && code.includes('import.meta')) {
+      const fixed = code.replace(
+        /import\.meta\.url/g,
+        'require("url").pathToFileURL(__filename).href',
+      );
+      if (typeof result === 'string') return fixed;
+      return { ...result, code: fixed };
+    }
+
+    return result;
+  }
+
+  getCacheKey(sourceText, sourcePath, transformOptions) {
+    return super.getCacheKey(sourceText, sourcePath, transformOptions) + '-import-meta-v1';
+  }
+}
 
 module.exports = {
-  createTransformer(tsJestOptions) {
-    const inner = tsJest.createTransformer(tsJestOptions);
-
-    return {
-      process(sourceText, sourcePath, transformOptions) {
-        const result = inner.process(sourceText, sourcePath, transformOptions);
-        const code = typeof result === 'string' ? result : result.code;
-
-        if (code && code.includes('import.meta')) {
-          const fixed = code.replace(
-            /import\.meta\.url/g,
-            'require("url").pathToFileURL(__filename).href',
-          );
-          if (typeof result === 'string') return fixed;
-          return { ...result, code: fixed };
-        }
-
-        return result;
-      },
-
-      getCacheKey(sourceText, sourcePath, transformOptions) {
-        // Append suffix to bust cache when this transformer changes
-        return inner.getCacheKey(sourceText, sourcePath, transformOptions) + '-import-meta-v1';
-      },
-    };
+  createTransformer(options) {
+    return new ImportMetaTransformer(options);
   },
 };
