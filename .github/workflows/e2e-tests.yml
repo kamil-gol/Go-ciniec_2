@@ -74,7 +74,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
           JWT_SECRET: test_jwt_secret_key_for_ci
-          NODE_ENV: test
+          NODE_ENV: development
         run: |
           npx tsx src/index.ts &
           npx wait-on http://localhost:3001/api/health --timeout 60000
@@ -171,7 +171,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
           JWT_SECRET: test_jwt_secret_key_for_ci
-          NODE_ENV: test
+          NODE_ENV: development
           NEXT_PUBLIC_API_URL: http://localhost:3001
         run: |
           cd apps/backend && npx tsx src/index.ts &
