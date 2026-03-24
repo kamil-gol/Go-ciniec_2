@@ -12,8 +12,8 @@ import { ReservationStatus } from '@/types'
 import {
   Eye, Trash2, Archive, ArchiveRestore, FileText, ChevronLeft, ChevronRight,
   Users, Baby, Smile, Calendar, Clock, DollarSign, Building2, User,
-  Phone, Mail, CheckCircle2, AlertTriangle, FileCheck, FileX, ShieldCheck, ShieldAlert,
-  Loader2, Sparkles
+  Phone, Mail,
+  Loader2
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
@@ -27,154 +27,10 @@ import { LoadingState } from '@/components/shared'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit } from '@/lib/api/deposits'
 import { batchCheckContract, batchCheckRodo } from '@/lib/api/attachments'
+import { getFormattedDate, getFormattedTimeRange, getGuestBreakdown } from './reservation-list/reservation-list.helpers'
+import { DepositBadge, ExtrasBadge, ContractBadge, RodoBadge } from './reservation-list/ReservationBadges'
 
 const accent = moduleAccents.reservations
-
-// Helper functions
-
-/**
- * Extract a Date (midnight) in LOCAL timezone for grouping by calendar day.
- * Uses local year/month/date so that the reservation appears on the correct
- * Warsaw calendar day (not shifted by UTC offset).
- */
-function getFormattedDate(reservation: any): Date | null {
-  if (reservation.startDateTime) {
-    const d = new Date(reservation.startDateTime)
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  }
-  if (reservation.date) {
-    return new Date(reservation.date + 'T00:00:00')
-  }
-  return null
-}
-
-/**
- * Format the time range in LOCAL (Warsaw) timezone.
- * Data is stored as UTC with correct offset (e.g. 2026-03-07T13:00:00Z = 14:00 Warsaw),
- * so we use local accessors (getHours/getMinutes) — NOT getUTCHours.
- */
-function getFormattedTimeRange(reservation: any): string {
-  if (reservation.startDateTime && reservation.endDateTime) {
-    const start = new Date(reservation.startDateTime)
-    const end = new Date(reservation.endDateTime)
-    const sh = String(start.getHours()).padStart(2, '0')
-    const sm = String(start.getMinutes()).padStart(2, '0')
-    const eh = String(end.getHours()).padStart(2, '0')
-    const em = String(end.getMinutes()).padStart(2, '0')
-    return `${sh}:${sm} - ${eh}:${em}`
-  }
-  if (reservation.startTime && reservation.endTime) {
-    return `${reservation.startTime} - ${reservation.endTime}`
-  }
-  return 'Brak czasu'
-}
-
-function getGuestBreakdown(reservation: any): {
-  adults: number;
-  childrenCount: number;
-  toddlers: number;
-  total: number
-} {
-  const adults = reservation.adults || 0
-  const childrenCount = reservation.children || 0
-  const toddlers = reservation.toddlers || 0
-  const total = reservation.guests || (adults + childrenCount + toddlers)
-  return { adults, childrenCount, toddlers, total }
-}
-
-// Deposit Badge Helper
-function DepositBadge({ deposits }: { deposits: Deposit[] }) {
-  const active = deposits.filter(d => d.status !== 'CANCELLED')
-  if (active.length === 0) return null
-
-  const allPaid = active.every(d => d.status === 'PAID')
-  const hasOverdue = active.some(d => d.status === 'OVERDUE')
-  const totalAmount = active.reduce((s, d) => s + Number(d.amount), 0)
-  const paidAmount = active.reduce((s, d) => s + Number(d.paidAmount || 0), 0)
-
-  if (allPaid) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800">
-        <CheckCircle2 className="h-3 w-3" />
-        Zaliczka opłacona
-      </span>
-    )
-  }
-
-  if (hasOverdue) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800 animate-pulse">
-        <AlertTriangle className="h-3 w-3" />
-        Zaległa: {totalAmount.toLocaleString('pl-PL')} zł
-      </span>
-    )
-  }
-
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800">
-      <Clock className="h-3 w-3" />
-      Zaliczka: {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} / ` : ''}{totalAmount.toLocaleString('pl-PL')} zł
-    </span>
-  )
-}
-
-// Extras Badge Helper
-function ExtrasBadge({ extrasCount, extrasTotalPrice }: { extrasCount?: number; extrasTotalPrice?: number }) {
-  if (!extrasCount || extrasCount === 0) return null
-
-  const priceLabel = extrasTotalPrice && extrasTotalPrice > 0
-    ? ` · ${extrasTotalPrice.toLocaleString('pl-PL')} zł`
-    : ''
-
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800">
-      <Sparkles className="h-3 w-3" />
-      {extrasCount} {extrasCount === 1 ? 'extra' : 'extras'}{priceLabel}
-    </span>
-  )
-}
-
-// Contract Badge Helper
-function ContractBadge({ hasContract }: { hasContract: boolean | undefined }) {
-  if (hasContract === undefined) return null
-
-  if (hasContract) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
-        <FileCheck className="h-3 w-3" />
-        Umowa
-      </span>
-    )
-  }
-
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700">
-      <FileX className="h-3 w-3" />
-      Brak umowy
-    </span>
-  )
-}
-
-// RODO Badge Helper
-function RodoBadge({ hasRodo }: { hasRodo: boolean | undefined }) {
-  if (hasRodo === undefined) return null
-
-  if (hasRodo) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800">
-        <ShieldCheck className="h-3 w-3" />
-        RODO
-      </span>
-    )
-  }
-
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800">
-      <ShieldAlert className="h-3 w-3" />
-      Brak RODO
-    </span>
-  )
-}
 
 export function ReservationsList() {
   const [page, setPage] = useState(1)
@@ -322,7 +178,7 @@ export function ReservationsList() {
       toast.error('Nie można usunąć potwierdzonej rezerwacji. Anuluj ją najpierw.')
       return
     }
-    
+
     const confirmed = await confirm({ title: 'Anulowanie rezerwacji', description: 'Czy na pewno chcesz anulować tę rezerwację? Ta operacja jest nieodwracalna.', variant: 'destructive', confirmLabel: 'Anuluj rezerwację' })
     if (!confirmed) return
 
@@ -376,7 +232,7 @@ export function ReservationsList() {
             </SelectContent>
           </Select>
         </div>
-        
+
         {/* Archive Toggle */}
         <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
           <Switch
@@ -389,7 +245,7 @@ export function ReservationsList() {
             <span className="sm:hidden">Archiwum</span>
           </Label>
         </div>
-        
+
         <div className="flex-1" />
         <div className="text-sm text-neutral-500 dark:text-neutral-400 w-full sm:w-auto">
           Znaleziono <strong className="text-neutral-900 dark:text-neutral-100">{reservations.length}</strong> rezerwacji

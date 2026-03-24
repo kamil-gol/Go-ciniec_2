@@ -7,26 +7,15 @@ import type { MenuPackage, CreatePackageInput, DishCategory } from '@/types/menu
 import { createPackage, updatePackage, getDishCategories, updatePackageCategories } from '@/lib/api/menu-packages-api';
 import CategorySettingsSection from './CategorySettingsSection';
 import type { CategorySettingInput } from '@/types/menu';
-import { Save, Loader2, AlertCircle, CheckCircle2, X, Palette } from 'lucide-react';
+import { Save, Loader2, AlertCircle, X } from 'lucide-react';
+import { validateForm } from './package-form/package-form.validation';
+import PackageDisplaySection from './package-form/PackageDisplaySection';
 
 interface PackageFormProps {
   menuTemplateId: string;
   initialData?: MenuPackage;
   onSuccess?: () => void;
 }
-
-const PRESET_COLORS = [
-  { name: 'Niebieski', value: '3b82f6' },
-  { name: 'Zielony', value: '22c55e' },
-  { name: 'Fioletowy', value: 'a855f7' },
-  { name: 'Różowy', value: 'ec4899' },
-  { name: 'Pomarańczowy', value: 'f97316' },
-  { name: 'Czerwony', value: 'ef4444' },
-  { name: 'Żółty', value: 'eab308' },
-  { name: 'Turkusowy', value: '06b6d4' },
-  { name: 'Indygo', value: '6366f1' },
-  { name: 'Szary', value: '6b7280' },
-];
 
 export default function PackageForm({
   menuTemplateId,
@@ -107,57 +96,6 @@ export default function PackageForm({
     setCategorySettings(settings);
   }
 
-  function validateForm(): boolean {
-    // Name validation
-    if (!formData.name || formData.name.trim().length < 3) {
-      toast.error('⚠️ Błąd walidacji', {
-        description: 'Nazwa pakietu musi mieć co najmniej 3 znaki',
-        duration: 4000,
-      });
-      return false;
-    }
-
-    // Price validation
-    const adultPrice = parseFloat(formData.pricePerAdult);
-    if (isNaN(adultPrice) || adultPrice <= 0) {
-      toast.error('⚠️ Błąd walidacji', {
-        description: 'Cena dla dorosłych musi być większa od 0',
-        duration: 4000,
-      });
-      return false;
-    }
-
-    const childPrice = parseFloat(formData.pricePerChild);
-    if (isNaN(childPrice) || childPrice < 0) {
-      toast.error('⚠️ Błąd walidacji', {
-        description: 'Cena dla dzieci nie może być ujemna',
-        duration: 4000,
-      });
-      return false;
-    }
-
-    // Color validation
-    if (formData.color && !/^[0-9A-Fa-f]{6}$/.test(formData.color.replace('#', ''))) {
-      toast.warning('⚠️ Nieprawidłowy kolor', {
-        description: 'Kolor musi być w formacie HEX (np. 3b82f6)',
-        duration: 4000,
-      });
-      return false;
-    }
-
-    // Category settings validation
-    const enabledCategories = categorySettings.filter((cs) => cs.isEnabled);
-    if (enabledCategories.length === 0) {
-      toast.warning('📂 Brak kategorii', {
-        description: 'Dodaj i włącz co najmniej jedną kategorię do pakietu',
-        duration: 4000,
-      });
-      return false;
-    }
-
-    return true;
-  }
-
   async function saveCategorySettings(packageId: string) {
     const enabledSettings = categorySettings.filter((cs) => cs.isEnabled);
     
@@ -191,7 +129,7 @@ export default function PackageForm({
     e.preventDefault();
 
     // Validate form
-    if (!validateForm()) {
+    if (!validateForm(formData, categorySettings)) {
       return;
     }
 
@@ -428,144 +366,11 @@ export default function PackageForm({
       />
 
       {/* DISPLAY OPTIONS */}
-      <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm rounded-2xl shadow-lg border border-neutral-200/60 dark:border-neutral-700/60 p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-            <Palette className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Wygląd i opcje</h2>
-        </div>
-
-        <div className="space-y-6">
-          {/* Checkboxes */}
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  name="isPopular"
-                  checked={formData.isPopular}
-                  onChange={handleChange}
-                  className="w-5 h-5 rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                />
-              </div>
-              <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                🔥 Popularny
-              </span>
-            </label>
-
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  name="isRecommended"
-                  checked={formData.isRecommended}
-                  onChange={handleChange}
-                  className="w-5 h-5 rounded border-neutral-300 dark:border-neutral-600 text-green-600 focus:ring-2 focus:ring-green-500 cursor-pointer"
-                />
-              </div>
-              <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-                ⭐ Polecany
-              </span>
-            </label>
-          </div>
-
-          {/* Color Picker */}
-          <div>
-            <label className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
-              Kolor pakietu
-            </label>
-            <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
-              {PRESET_COLORS.map((preset) => (
-                <button
-                  key={preset.value}
-                  type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, color: preset.value }))}
-                  className={`group relative w-full aspect-square rounded-xl transition-all ${
-                    formData.color === preset.value
-                      ? 'ring-4 ring-blue-500 ring-offset-2 dark:ring-offset-neutral-900 scale-110'
-                      : 'hover:scale-105 hover:ring-2 hover:ring-neutral-300 dark:hover:ring-neutral-600'
-                  }`}
-                  style={{ backgroundColor: `#${preset.value}` }}
-                  title={preset.name}
-                >
-                  {formData.color === preset.value && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <CheckCircle2 className="w-6 h-6 text-white drop-shadow-lg" />
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-            <div className="mt-3 flex items-center gap-3">
-              <input
-                type="text"
-                name="color"
-                value={formData.color}
-                onChange={handleChange}
-                placeholder="3b82f6"
-                maxLength={7}
-                className="flex-1 px-4 py-2.5 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono text-sm"
-              />
-              <div 
-                className="w-12 h-12 rounded-xl border-2 border-neutral-300 dark:border-neutral-600 shadow-sm"
-                style={{ backgroundColor: `#${formData.color.replace('#', '')}` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Display inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div>
-              <label htmlFor="displayOrder" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-                Kolejność
-              </label>
-              <input
-                type="number"
-                id="displayOrder"
-                name="displayOrder"
-                value={formData.displayOrder}
-                onChange={handleChange}
-                min="0"
-                placeholder="0"
-                className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="icon" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-                Emoji
-              </label>
-              <input
-                type="text"
-                id="icon"
-                name="icon"
-                value={formData.icon}
-                onChange={handleChange}
-                placeholder="🎂"
-                maxLength={4}
-                className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-2xl text-center"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="badgeText" className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-                Tekst odznaki
-              </label>
-              <input
-                type="text"
-                id="badgeText"
-                name="badgeText"
-                value={formData.badgeText}
-                onChange={handleChange}
-                placeholder="BESTSELLER"
-                maxLength={20}
-                className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all uppercase"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <PackageDisplaySection
+        formData={formData}
+        onFormDataChange={setFormData}
+        handleChange={handleChange}
+      />
 
       {/* ACTIONS */}
       <div className="flex justify-end gap-4 sticky bottom-6 z-10">
