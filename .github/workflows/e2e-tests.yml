@@ -46,10 +46,14 @@ jobs:
             apps/frontend/package-lock.json
             apps/backend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install backend dependencies
+        working-directory: apps/backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: apps/frontend
         run: |
-          cd apps/frontend && npm ci --legacy-peer-deps
-          cd apps/backend && npm ci
+          npm ci --legacy-peer-deps
           npx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Setup environment variables
@@ -141,10 +145,14 @@ jobs:
             apps/frontend/package-lock.json
             apps/backend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install backend dependencies
+        working-directory: apps/backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: apps/frontend
         run: |
-          cd apps/frontend && npm ci --legacy-peer-deps
-          cd apps/backend && npm ci
+          npm ci --legacy-peer-deps
           npx playwright install --with-deps chromium
 
       - name: Setup environment
