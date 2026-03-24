@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   DollarSign,
   Plus,
@@ -36,6 +36,7 @@ import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, DepositStatus, PaymentMethod } from '@/lib/api/deposits'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { useQueryClient } from '@tanstack/react-query'
 
 // ═════════════════════════════════════════════
 // Types
@@ -208,8 +209,10 @@ function DeletePaidDepositDialog({ deposit, open, onClose, onConfirm, loading }:
 // ═════════════════════════════════════════════
 
 export function ReservationDepositsSection({ reservationId, totalPrice }: ReservationDepositsSectionProps) {
+  const queryClient = useQueryClient()
   const [deposits, setDeposits] = useState<Deposit[]>([])
   const [loading, setLoading] = useState(true)
+  const currentRequestId = useRef(0)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showPayModal, setShowPayModal] = useState(false)
   const [selectedDeposit, setSelectedDeposit] = useState<Deposit | null>(null)
@@ -234,20 +237,32 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   const loadDeposits = useCallback(async () => {
+    const requestId = ++currentRequestId.current
     try {
       setLoading(true)
       const data = await depositsApi.getByReservation(reservationId)
-      setDeposits(data)
+      // Only update state if this is still the latest request (prevents race condition)
+      if (requestId === currentRequestId.current) {
+        setDeposits(data)
+      }
     } catch (err) {
       console.error('Error loading deposits:', err)
     } finally {
-      setLoading(false)
+      if (requestId === currentRequestId.current) {
+        setLoading(false)
+      }
     }
   }, [reservationId])
 
   useEffect(() => {
     loadDeposits()
   }, [loadDeposits])
+
+  /** Reload deposits + invalidate reservations cache so list badges update */
+  const reloadAndInvalidate = useCallback(() => {
+    loadDeposits()
+    queryClient.invalidateQueries({ queryKey: ['reservations'] })
+  }, [loadDeposits, queryClient])
 
   // ── Summary calculations ──
   const activeDeposits = deposits.filter(d => d.status !== 'CANCELLED')
@@ -283,7 +298,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       })
       toast.success('Zaliczka utworzona')
       setShowCreateModal(false)
-      loadDeposits()
+      reloadAndInvalidate()
     } catch (err) {
       console.error('Error creating deposit:', err)
       toast.error('Nie udało się utworzyć zaliczki')
@@ -306,7 +321,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       await depositsApi.markAsPaid(selectedDeposit.id, { paymentMethod: payMethod, paidAt: payDate })
       toast.success('Zaliczka oznaczona jako opłacona')
       setShowPayModal(false)
-      loadDeposits()
+      reloadAndInvalidate()
     } catch (err) {
       console.error('Error marking deposit as paid:', err)
       toast.error('Nie udało się oznaczyć jako opłaconej')
@@ -320,7 +335,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       setActionLoading(deposit.id)
       await depositsApi.markAsUnpaid(deposit.id)
       toast.success('Cofnięto płatność')
-      loadDeposits()
+      reloadAndInvalidate()
     } catch {
       toast.error('Nie udało się cofnąć płatności')
     } finally {
@@ -357,7 +372,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       setActionLoading(deposit.id)
       await depositsApi.cancel(deposit.id)
       toast.success('Zaliczka anulowana')
-      loadDeposits()
+      reloadAndInvalidate()
     } catch {
       toast.error('Nie udało się anulować zaliczki')
     } finally {
@@ -372,7 +387,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
       await depositsApi.delete(deleteTarget.id)
       toast.success('Zaliczka została usunięta')
       setDeleteTarget(null)
-      loadDeposits()
+      reloadAndInvalidate()
     } catch {
       toast.error('Nie udało się usunąć zaliczki')
     } finally {
@@ -628,9 +643,9 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
                 onChange={(e) => setCreateAmount(e.target.value)}
                 className="h-10"
               />
-              {createAmount && totalPrice > 0 && (
+              {createAmount && Number(createAmount) > 0 && totalPrice > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {((Number(createAmount) / totalPrice) * 100).toFixed(1)}% ceny rezerwacji
+                  {Math.min((Number(createAmount) / totalPrice) * 100, 999).toFixed(1)}% ceny rezerwacji
                 </p>
               )}
             </div>

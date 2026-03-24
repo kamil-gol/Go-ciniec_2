@@ -123,7 +123,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
   const previewPrice = selectedItem
     ? selectedItem.priceType === 'FREE'
       ? 0
-      : (customPrice ? parseFloat(customPrice) : selectedItem.basePrice) * quantity
+      : (customPrice !== '' && customPrice != null ? parseFloat(customPrice) : selectedItem.basePrice) * quantity
     : 0;
 
   const handleAddExtra = async () => {

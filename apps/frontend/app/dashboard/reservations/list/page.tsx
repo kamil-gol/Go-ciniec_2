@@ -45,13 +45,13 @@ export default function ReservationsListPage() {
       setLoading(true)
       const data = await getReservations()
       setReservations(data)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading reservations:', error)
       toast.error('Nie udało się załadować rezerwacji')
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [])
 
   useEffect(() => {
     loadReservations()
