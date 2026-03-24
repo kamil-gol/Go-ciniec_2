@@ -76,8 +76,7 @@ jobs:
           JWT_SECRET: test_jwt_secret_key_for_ci
           NODE_ENV: test
         run: |
-          npm run build
-          npm start &
+          npx tsx src/index.ts &
           npx wait-on http://localhost:3001/health --timeout 60000
 
       - name: Start frontend server
@@ -175,7 +174,7 @@ jobs:
           NODE_ENV: test
           NEXT_PUBLIC_API_URL: http://localhost:3001
         run: |
-          cd apps/backend && npm run build && npm start &
+          cd apps/backend && npx tsx src/index.ts &
           npx wait-on http://localhost:3001/health --timeout 60000
           cd apps/frontend && npm run build && npm start &
           npx wait-on http://localhost:3000 --timeout 60000
