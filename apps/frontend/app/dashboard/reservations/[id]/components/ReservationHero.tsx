@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Archive, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusChanger } from '@/components/reservations/editable'
+import type { ReservationStatus } from '@/types'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
@@ -11,7 +12,7 @@ import { pl } from 'date-fns/locale'
 interface ReservationHeroProps {
   reservation: {
     id: string
-    status: string
+    status: ReservationStatus
     archivedAt?: string | null
   }
   eventDate: Date | null
