@@ -120,7 +120,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
           <button
             type="button"
             onClick={onMenuClick}
-            className="lg:hidden relative z-50 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-2.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 active:scale-[0.95]"
+            className="lg:hidden rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-2.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 active:scale-[0.95]"
             aria-label="Otwórz menu nawigacji"
           >
             <Menu className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />

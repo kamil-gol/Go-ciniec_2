@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode, useEffect, useState, useCallback } from 'react'
+import { type ReactNode, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import Sidebar from './Sidebar'
@@ -18,6 +18,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const handleMobileClose = useCallback(() => setSidebarOpen(false), [])
 
   const fetchUser = useCallback(async () => {
     const token = localStorage.getItem('auth_token')
@@ -72,7 +73,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         user={user}
         onLogout={handleLogout}
         mobileOpen={sidebarOpen}
-        onMobileClose={() => setSidebarOpen(false)}
+        onMobileClose={handleMobileClose}
       />
 
       {/* Main Content Area — no left padding on mobile */}
