@@ -193,12 +193,58 @@ function mapDataKeys(tableName: string, data: Record<string, any>): Record<strin
   return mapped;
 }
 
+/* ═══ Auto-timestamp & data cleanup helpers ═══ */
+
+/**
+ * Strip relation objects from data (Prisma handles relations via nested writes,
+ * but our raw SQL proxy only handles flat column values).
+ * Also auto-set createdAt/updatedAt timestamps like Prisma does.
+ */
+function prepareInsertData(tableName: string, data: Record<string, any>): Record<string, any> {
+  const now = new Date();
+  const cleaned: Record<string, any> = {};
+  for (const [key, val] of Object.entries(data)) {
+    // Skip relation objects (nested creates/connects) — they're objects but not Date/null/array
+    if (val !== null && val !== undefined && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
+      // Allow plain JSON-like objects that might be JSONB columns
+      // But skip Prisma relation syntax: { create: ... }, { connect: ... }, { connectOrCreate: ... }
+      if ('create' in val || 'connect' in val || 'connectOrCreate' in val || 'createMany' in val) {
+        continue;
+      }
+    }
+    cleaned[key] = val;
+  }
+  // Auto-set timestamps if not provided
+  if (!('createdAt' in cleaned)) cleaned['createdAt'] = now;
+  if (!('updatedAt' in cleaned)) cleaned['updatedAt'] = now;
+  return mapDataKeys(tableName, cleaned);
+}
+
+function prepareUpdateData(tableName: string, data: Record<string, any>): Record<string, any> {
+  const cleaned: Record<string, any> = {};
+  for (const [key, val] of Object.entries(data)) {
+    if (val !== null && val !== undefined && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
+      if ('create' in val || 'connect' in val || 'connectOrCreate' in val || 'createMany' in val ||
+          'set' in val || 'disconnect' in val || 'delete' in val || 'update' in val || 'updateMany' in val || 'deleteMany' in val) {
+        continue;
+      }
+      // Handle Prisma atomic operations: { increment, decrement, multiply, divide }
+      if ('increment' in val || 'decrement' in val || 'multiply' in val || 'divide' in val) {
+        continue; // Skip — these need special SQL handling we don't support yet
+      }
+    }
+    cleaned[key] = val;
+  }
+  if (!('updatedAt' in cleaned)) cleaned['updatedAt'] = new Date();
+  return mapDataKeys(tableName, cleaned);
+}
+
 /* ═══ Model proxy factory ═══ */
 
 function createModelProxy(pool: Pool, tableName: string) {
   return {
     create: async ({ data }: any) => {
-      const mapped = mapDataKeys(tableName, data);
+      const mapped = prepareInsertData(tableName, data);
       const columns = Object.keys(mapped);
       const values = Object.values(mapped);
       const ph = values.map((_, i) => `$${i + 1}`);
@@ -213,7 +259,7 @@ function createModelProxy(pool: Pool, tableName: string) {
       const rows = Array.isArray(data) ? data : [data];
       let count = 0;
       for (const row of rows) {
-        const mapped = mapDataKeys(tableName, row);
+        const mapped = prepareInsertData(tableName, row);
         const columns = Object.keys(mapped);
         const values = Object.values(mapped);
         const ph = values.map((_, i) => `$${i + 1}`);
@@ -269,7 +315,7 @@ function createModelProxy(pool: Pool, tableName: string) {
     },
 
     update: async ({ where, data }: any) => {
-      const mapped = mapDataKeys(tableName, data);
+      const mapped = prepareUpdateData(tableName, data);
       const dataEntries = Object.entries(mapped);
       let idx = 1;
       const setClauses = dataEntries.map(([k]) => `"${k}" = $${idx++}`);
@@ -283,7 +329,7 @@ function createModelProxy(pool: Pool, tableName: string) {
     },
 
     updateMany: async ({ where, data }: any) => {
-      const mapped = mapDataKeys(tableName, data);
+      const mapped = prepareUpdateData(tableName, data);
       const dataEntries = Object.entries(mapped);
       let idx = 1;
       const setClauses = dataEntries.map(([k]) => `"${k}" = $${idx++}`);
@@ -335,7 +381,7 @@ function createModelProxy(pool: Pool, tableName: string) {
       const existing = await pool.query(`SELECT * FROM "${tableName}" WHERE ${sql} LIMIT 1`, values);
       if (existing.rows[0]) {
         // Update
-        const mapped = mapDataKeys(tableName, updateData);
+        const mapped = prepareUpdateData(tableName, updateData);
         const dataEntries = Object.entries(mapped);
         let idx = 1;
         const setClauses = dataEntries.map(([k]) => `"${k}" = $${idx++}`);
@@ -348,7 +394,7 @@ function createModelProxy(pool: Pool, tableName: string) {
         return result.rows[0];
       } else {
         // Create
-        const mapped = mapDataKeys(tableName, create);
+        const mapped = prepareInsertData(tableName, create);
         const columns = Object.keys(mapped);
         const vals = Object.values(mapped);
         const ph = vals.map((_, i) => `$${i + 1}`);

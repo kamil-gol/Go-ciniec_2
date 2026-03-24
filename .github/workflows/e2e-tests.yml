@@ -77,7 +77,7 @@ jobs:
           NODE_ENV: test
         run: |
           npx tsx src/index.ts &
-          npx wait-on http://localhost:3001/health --timeout 60000
+          npx wait-on http://localhost:3001/api/health --timeout 60000
 
       - name: Start frontend server
         working-directory: apps/frontend
@@ -175,7 +175,7 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:3001
         run: |
           cd apps/backend && npx tsx src/index.ts &
-          npx wait-on http://localhost:3001/health --timeout 60000
+          npx wait-on http://localhost:3001/api/health --timeout 60000
           cd apps/frontend && npm run build && npm start &
           npx wait-on http://localhost:3000 --timeout 60000
 
