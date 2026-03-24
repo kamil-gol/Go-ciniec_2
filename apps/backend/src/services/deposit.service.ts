@@ -15,26 +15,8 @@ import emailService from './email.service';
 import logger from '../utils/logger';
 import { logChange } from '../utils/audit-logger';
 import { DEPOSIT } from '../i18n/pl';
-import notificationService from './notification.service';
-
-/** Raw row shape returned by getStats $queryRawUnsafe */
-interface DepositStatsRow {
-  total: number;
-  pending: number;
-  paid: number;
-  overdue: number;
-  partiallyPaid: number;
-  cancelled: number;
-  upcomingIn7Days: number;
-  totalAmount: number | string;
-  paidAmountSum: number | string;
-  overdueAmount: number | string;
-}
-
-/** Raw row shape returned by autoMarkOverdue $queryRawUnsafe */
-interface CountRow {
-  count: number;
-}
+import { depositStatsService } from './deposits/deposit-stats.service';
+import { DEPOSIT_INCLUDE, getFullReservationPrice } from './deposits/deposit.helpers';
 
 export type DepositStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'PARTIALLY_PAID';
 export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD' | 'BANK_TRANSFER';
@@ -72,24 +54,6 @@ export interface DepositFilters {
   limit?: number;
   sortBy?: 'dueDate' | 'amount' | 'createdAt' | 'status';
   sortOrder?: 'asc' | 'desc';
-}
-
-const DEPOSIT_INCLUDE = {
-  reservation: {
-    include: {
-      client: true,
-      hall: true,
-      eventType: true,
-    },
-  },
-} as const;
-
-/**
- * Calculate full reservation price including extras.
- * Used as the deposit ceiling — sum of base totalPrice + extrasTotalPrice.
- */
-function getFullReservationPrice(reservation: { totalPrice?: unknown; extrasTotalPrice?: unknown }): number {
-  return Number(reservation.totalPrice || 0) + Number(reservation.extrasTotalPrice || 0);
 }
 
 const depositService = {
@@ -589,93 +553,16 @@ const depositService = {
   },
 
   async getStats() {
-    const todayStr = new Date().toISOString().substring(0, 10);
-
-    const stats: DepositStatsRow[] = await prisma.$queryRawUnsafe(`
-      SELECT
-        COUNT(*) FILTER (WHERE status IN ('PENDING','PAID','OVERDUE','PARTIALLY_PAID'))::int as total,
-        COUNT(*) FILTER (WHERE status = 'PENDING')::int as pending,
-        COUNT(*) FILTER (WHERE status = 'PAID')::int as paid,
-        COUNT(*) FILTER (WHERE status = 'PENDING' AND "dueDate" < $1)::int as overdue,
-        COUNT(*) FILTER (WHERE status = 'PARTIALLY_PAID')::int as "partiallyPaid",
-        COUNT(*) FILTER (WHERE status = 'CANCELLED')::int as cancelled,
-        COUNT(*) FILTER (WHERE status = 'PENDING' AND "dueDate" >= $1 AND "dueDate" <= $2)::int as "upcomingIn7Days",
-        COALESCE(SUM(amount) FILTER (WHERE status IN ('PENDING','PAID','OVERDUE','PARTIALLY_PAID')), 0)::numeric as "totalAmount",
-        COALESCE(SUM(amount) FILTER (WHERE paid = true), 0)::numeric as "paidAmountSum",
-        COALESCE(SUM(amount) FILTER (WHERE status = 'PENDING' AND "dueDate" < $1), 0)::numeric as "overdueAmount"
-      FROM "Deposit"
-    `, todayStr, getDatePlusDays(7));
-
-    const row = stats[0] || {};
-    const totalAmt = Number(row.totalAmount || 0);
-    const paidAmt = Number(row.paidAmountSum || 0);
-
-    return {
-      counts: {
-        total: Number(row.total || 0),
-        pending: Number(row.pending || 0),
-        paid: Number(row.paid || 0),
-        overdue: Number(row.overdue || 0),
-        partiallyPaid: Number(row.partiallyPaid || 0),
-        cancelled: Number(row.cancelled || 0),
-        upcomingIn7Days: Number(row.upcomingIn7Days || 0),
-      },
-      amounts: {
-        total: Number(totalAmt.toFixed(2)),
-        paid: Number(paidAmt.toFixed(2)),
-        pending: Number((totalAmt - paidAmt).toFixed(2)),
-        overdue: Number(Number(row.overdueAmount || 0).toFixed(2)),
-      },
-    };
+    return depositStatsService.getStats();
   },
 
   async getOverdue() {
-    const todayStr = new Date().toISOString().substring(0, 10);
-
-    const deposits = await prisma.deposit.findMany({
-      where: {
-        status: { equals: 'PENDING' },
-        dueDate: { lt: todayStr },
-      },
-      orderBy: { dueDate: 'asc' },
-      include: DEPOSIT_INCLUDE,
-    });
-
-    return deposits;
+    return depositStatsService.getOverdue();
   },
 
   async autoMarkOverdue() {
-    const todayStr = new Date().toISOString().substring(0, 10);
-
-    const result: CountRow[] = await prisma.$queryRawUnsafe(
-      `WITH updated AS (
-        UPDATE "Deposit" SET status = 'OVERDUE', "updatedAt" = NOW()
-        WHERE status = 'PENDING' AND paid = false AND "dueDate" < $1
-        RETURNING id
-      ) SELECT count(*)::int as count FROM updated`,
-      todayStr
-    );
-
-    const count = Number(result[0]?.count || 0);
-
-    // #128: Notification — overdue deposits
-    if (count > 0) {
-      notificationService.createForAll({
-        type: 'DEPOSIT_OVERDUE',
-        title: 'Przeterminowane zaliczki',
-        message: `${count} ${count === 1 ? 'zaliczka przekroczyła' : 'zaliczek przekroczyło'} termin płatności`,
-        entityType: 'DEPOSIT',
-      });
-    }
-
-    return { markedOverdueCount: count };
+    return depositStatsService.autoMarkOverdue();
   },
 };
-
-function getDatePlusDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().substring(0, 10);
-}
 
 export default depositService;

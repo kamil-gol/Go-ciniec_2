@@ -19,10 +19,10 @@
  */
 
 import nodemailer from 'nodemailer';
-import { marked } from 'marked';
 import logger from '@utils/logger';
 import companySettingsService from './company-settings.service';
-import documentTemplateService from './document-template.service';
+import { getCompanyInfo, renderEmailTemplate } from './emails/email.helpers';
+import { buildHtmlFromLayout, buildReservationConfirmationFallback } from './emails/email-templates';
 
 // ═══════════════════════════════════════════
 // Types
@@ -98,58 +98,6 @@ export interface PasswordResetEmailData {
   expiresInMinutes: number;
 }
 
-// ═══════════════════════════════════════════
-// Company Info Helper
-// ═══════════════════════════════════════════
-
-interface CompanyInfo {
-  name: string;
-  footerText: string;
-}
-
-/**
- * Fetch company name from DB for email templates.
- * Falls back to 'Gościniec' if DB is unavailable.
- */
-async function getCompanyInfo(): Promise<CompanyInfo> {
-  try {
-    const settings = await companySettingsService.getSettings();
-    const name = settings.companyName || 'Gościniec';
-    return {
-      name,
-      footerText: `Ta wiadomość została wysłana automatycznie z systemu rezerwacji ${name}.`,
-    };
-  } catch {
-    return {
-      name: 'Gościniec',
-      footerText: 'Ta wiadomość została wysłana automatycznie z systemu rezerwacji Gościniec.',
-    };
-  }
-}
-
-// ═══════════════════════════════════════════
-// Template Rendering
-// ═══════════════════════════════════════════
-
-/**
- * Try to render email body from DocumentTemplate (DB-editable).
- * Falls back to hardcoded HTML if template not found.
- */
-async function renderEmailTemplate(
-  slug: string,
-  variables: Record<string, string>,
-  fallbackHtml: string
-): Promise<string> {
-  try {
-    const result = await documentTemplateService.preview(slug, variables);
-    // Remove unfilled optional variables (e.g. empty sections)
-    const cleaned = result.content.replace(/\{\{\w+\}\}/g, '');
-    return await marked.parse(cleaned);
-  } catch {
-    logger.debug(`[Email] Template "${slug}" not found in DB, using fallback`);
-    return fallbackHtml;
-  }
-}
 
 // ═══════════════════════════════════════════
 // Transporter Setup
@@ -184,34 +132,6 @@ const getTransporter = () => {
   }
   return transporter;
 };
-
-// ═══════════════════════════════════════════
-// Helpers
-// ═══════════════════════════════════════════
-
-/**
- * #139: Format extras price cell per price type
- * - PER_UNIT:   "80 szt. × 15 zł = 1 200 zł"
- * - PER_PERSON: "30 zł/os."
- * - FLAT:       "2 000 zł" or "2 × 1 000 zł = 2 000 zł"
- * - FREE:       "Gratis"
- */
-function formatExtraPriceCell(e: { quantity: number; price: string; totalPrice: string; priceType: string }): string {
-  switch (e.priceType) {
-    case 'FREE':
-      return 'Gratis';
-    case 'PER_UNIT':
-      return `${e.quantity} szt. × ${e.price} zł = <strong>${e.totalPrice} zł</strong>`;
-    case 'PER_PERSON':
-      return `${e.price} zł/os. = <strong>${e.totalPrice} zł</strong>`;
-    case 'FLAT':
-    default:
-      if (e.quantity > 1) {
-        return `${e.quantity} × ${e.price} zł = <strong>${e.totalPrice} zł</strong>`;
-      }
-      return `<strong>${e.totalPrice} zł</strong>`;
-  }
-}
 
 // ═══════════════════════════════════════════
 // Email Service
@@ -317,7 +237,7 @@ const emailService = {
       vars.companyEmail = settings.email || '';
     } catch { /* fallback to empty */ }
 
-    const fallbackBody = this.buildReservationConfirmationFallback(data, company.name);
+    const fallbackBody = buildReservationConfirmationFallback(data, company.name);
     const body = await renderEmailTemplate('email-reservation-confirmation', vars, fallbackBody);
 
     const html = await buildHtmlFromLayout({
@@ -335,55 +255,6 @@ const emailService = {
     }] : undefined;
 
     return this.send({ to, subject, html, attachments });
-  },
-
-  /** Fallback HTML for reservation confirmation (original hardcoded version) */
-  buildReservationConfirmationFallback(data: ReservationConfirmationData, companyName: string): string {
-    const priceTypeLabels: Record<string, string> = { FLAT: 'ryczałt', PER_PERSON: 'za osobę', PER_UNIT: 'za sztukę', FREE: 'gratis' };
-
-    let extrasHtml = '';
-    if (data.extras && data.extras.length > 0) {
-      const extrasRows = data.extras.map(e => `
-        <tr>
-          <td style="padding:8px 12px;border:1px solid #e9ecef;">${e.name}</td>
-          <td style="padding:8px 12px;border:1px solid #e9ecef;color:#6b7280;font-size:13px;">${e.categoryName}</td>
-          <td style="padding:8px 12px;border:1px solid #e9ecef;text-align:right;">${formatExtraPriceCell(e)}</td>
-          <td style="padding:8px 12px;border:1px solid #e9ecef;font-size:13px;color:#6b7280;">${priceTypeLabels[e.priceType] || e.priceType}${e.note ? ` · ${e.note}` : ''}</td>
-        </tr>
-      `).join('');
-      extrasHtml = `<h3 style="margin:28px 0 12px;color:#7c3aed;font-size:16px;">🎁 Usługi dodatkowe</h3>
-        <table style="width:100%;border-collapse:collapse;margin:0 0 12px;"><thead><tr style="background:#f5f3ff;">
-          <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Usługa</th>
-          <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Kategoria</th>
-          <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:right;font-weight:600;color:#7c3aed;">Cena</th>
-          <th style="padding:8px 12px;border:1px solid #e9ecef;text-align:left;font-weight:600;color:#7c3aed;">Info</th>
-        </tr></thead><tbody>${extrasRows}</tbody></table>
-        ${data.extrasTotalPrice ? `<p style="text-align:right;font-weight:600;color:#7c3aed;">Razem usługi dodatkowe: ${data.extrasTotalPrice} zł</p>` : ''}`;
-    }
-
-    let depositHtml = '';
-    if (data.depositAmount && data.depositDueDate) {
-      depositHtml = `<tr><td style="padding:10px 16px;background:#fef3c7;border:1px solid #fde68a;font-weight:600;color:#d97706;">Zaliczka</td>
-        <td style="padding:10px 16px;border:1px solid #fde68a;"><strong>${data.depositAmount} zł</strong> do ${data.depositDueDate}</td></tr>`;
-    }
-
-    return `
-      <p>Dzień dobry, <strong>${data.clientName}</strong>,</p>
-      <p>Potwierdzamy przyjęcie rezerwacji:</p>
-      <table style="width:100%;border-collapse:collapse;margin:20px 0;">
-        <tr><td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Wydarzenie</td><td style="padding:10px 16px;border:1px solid #bbf7d0;"><strong>${data.eventType}</strong></td></tr>
-        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Data</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.reservationDate}</td></tr>
-        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Godziny</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.startTime} — ${data.endTime}</td></tr>
-        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Sala</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.hallName}</td></tr>
-        <tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Goście</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.guestCount} (dorośli: ${data.adults}, dzieci: ${data.children}, maluchy: ${data.toddlers})</td></tr>
-        ${data.menuPackageName ? `<tr><td style="padding:10px 16px;background:#f8f9fa;border:1px solid #e9ecef;font-weight:600;">Menu</td><td style="padding:10px 16px;border:1px solid #e9ecef;">${data.menuPackageName}</td></tr>` : ''}
-        ${data.venueSurcharge ? `<tr><td style="padding:10px 16px;background:#fff7ed;border:1px solid #fed7aa;font-weight:600;color:#ea580c;">Dopłata za obiekt</td><td style="padding:10px 16px;border:1px solid #fed7aa;"><strong style="color:#ea580c;">${data.venueSurcharge} zł</strong></td></tr>` : ''}
-        <tr><td style="padding:10px 16px;background:#f0fdf4;border:1px solid #bbf7d0;font-weight:600;color:#16a34a;">Kwota</td><td style="padding:10px 16px;border:1px solid #bbf7d0;"><strong style="color:#16a34a;font-size:18px;">${data.totalPrice} zł</strong></td></tr>
-        ${depositHtml}
-      </table>
-      ${extrasHtml}
-      ${data.notes ? `<p style="margin-top:16px;padding:12px 16px;background:#f9fafb;border-left:4px solid #e5e7eb;color:#6b7280;font-size:14px;"><strong>Uwagi:</strong> ${data.notes}</p>` : ''}
-      <p>W razie pytań lub zmian prosimy o kontakt.</p>`;
   },
 
   /**
@@ -598,78 +469,5 @@ const emailService = {
     }
   },
 };
-
-// ═══════════════════════════════════════════
-// HTML Layout from DB (with fallback)
-// ═══════════════════════════════════════════
-
-async function buildHtmlFromLayout(opts: {
-  title: string;
-  preheader: string;
-  body: string;
-  footer: string;
-  companyName?: string;
-}): Promise<string> {
-  try {
-    const layout = await documentTemplateService.getBySlug('email-layout-default');
-    let html = layout.content;
-    html = html.replace(/\{\{content\}\}/g, opts.body);
-    html = html.replace(/\{\{title\}\}/g, opts.title);
-    html = html.replace(/\{\{preheader\}\}/g, opts.preheader);
-    html = html.replace(/\{\{companyName\}\}/g, opts.companyName || 'Gościniec');
-    html = html.replace(/\{\{footer\}\}/g, opts.footer);
-    return html;
-  } catch {
-    logger.debug('[Email] Layout template not found in DB, using fallback');
-    return buildHtmlTemplate(opts);
-  }
-}
-
-// ═══════════════════════════════════════════
-// HTML Template Builder (hardcoded fallback)
-// ═══════════════════════════════════════════
-
-function buildHtmlTemplate(opts: {
-  title: string;
-  preheader: string;
-  body: string;
-  footer: string;
-  companyName?: string;
-}): string {
-  const displayName = opts.companyName || 'Gościniec';
-
-  return `
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${opts.title}</title>
-  <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
-  <style>
-    body { margin:0; padding:0; background:#f3f4f6; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
-    .wrapper { max-width:600px; margin:0 auto; background:#ffffff; border-radius:12px; overflow:hidden; margin-top:32px; margin-bottom:32px; box-shadow:0 4px 6px rgba(0,0,0,0.07); }
-    .header { background:linear-gradient(135deg,#e11d48,#f43f5e); padding:32px 40px; }
-    .header h1 { color:#fff; margin:0; font-size:22px; font-weight:700; }
-    .content { padding:32px 40px; color:#374151; font-size:15px; line-height:1.7; }
-    .footer { padding:24px 40px; background:#f9fafb; border-top:1px solid #e5e7eb; text-align:center; color:#9ca3af; font-size:12px; }
-  </style>
-</head>
-<body>
-  <span style="display:none;max-height:0;overflow:hidden;">${opts.preheader}</span>
-  <div class="wrapper">
-    <div class="header">
-      <h1>🏛️ ${displayName}</h1>
-    </div>
-    <div class="content">
-      ${opts.body}
-    </div>
-    <div class="footer">
-      <p>${opts.footer}</p>
-    </div>
-  </div>
-</body>
-</html>`;
-}
 
 export default emailService;
