@@ -43,17 +43,18 @@ interface WhereClause { [key: string]: any; }
  * Handles: flat values, { in: [...] }, { contains: str }, { gte/lte/gt/lt },
  * { not: val }, and nested AND/OR/NOT.
  */
-function buildWhere(where: WhereClause, startIdx = 1): [string, any[], number] {
+function buildWhere(where: WhereClause, startIdx = 1, tableName = ''): [string, any[], number] {
   const conditions: string[] = [];
   const values: any[] = [];
   let idx = startIdx;
+  const col = (field: string) => tableName ? mapFieldName(tableName, field) : field;
 
   for (const [key, val] of Object.entries(where)) {
     // Logical operators
     if (key === 'AND' && Array.isArray(val)) {
       const parts: string[] = [];
       for (const sub of val) {
-        const [sql, vals, nextIdx] = buildWhere(sub, idx);
+        const [sql, vals, nextIdx] = buildWhere(sub, idx, tableName);
         if (sql) { parts.push(`(${sql})`); values.push(...vals); idx = nextIdx; }
       }
       if (parts.length) conditions.push(parts.join(' AND '));
@@ -62,7 +63,7 @@ function buildWhere(where: WhereClause, startIdx = 1): [string, any[], number] {
     if (key === 'OR' && Array.isArray(val)) {
       const parts: string[] = [];
       for (const sub of val) {
-        const [sql, vals, nextIdx] = buildWhere(sub, idx);
+        const [sql, vals, nextIdx] = buildWhere(sub, idx, tableName);
         if (sql) { parts.push(`(${sql})`); values.push(...vals); idx = nextIdx; }
       }
       if (parts.length) conditions.push(`(${parts.join(' OR ')})`);
@@ -72,12 +73,14 @@ function buildWhere(where: WhereClause, startIdx = 1): [string, any[], number] {
       const sub = Array.isArray(val) ? val : [val];
       const parts: string[] = [];
       for (const s of sub) {
-        const [sql, vals, nextIdx] = buildWhere(s, idx);
+        const [sql, vals, nextIdx] = buildWhere(s, idx, tableName);
         if (sql) { parts.push(`NOT (${sql})`); values.push(...vals); idx = nextIdx; }
       }
       if (parts.length) conditions.push(parts.join(' AND '));
       continue;
     }
+
+    const dbCol = col(key);
 
     // Operator objects
     if (val !== null && val !== undefined && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
@@ -86,48 +89,48 @@ function buildWhere(where: WhereClause, startIdx = 1): [string, any[], number] {
         if (arr.length === 0) { conditions.push('FALSE'); }
         else {
           const ph = arr.map(() => `$${idx++}`);
-          conditions.push(`"${key}" IN (${ph.join(', ')})`);
+          conditions.push(`"${dbCol}" IN (${ph.join(', ')})`);
           values.push(...arr);
         }
       } else if ('contains' in val) {
         const mode = val.mode === 'insensitive' ? 'ILIKE' : 'LIKE';
-        conditions.push(`"${key}" ${mode} $${idx++}`);
+        conditions.push(`"${dbCol}" ${mode} $${idx++}`);
         values.push(`%${val.contains}%`);
       } else if ('startsWith' in val) {
-        conditions.push(`"${key}" LIKE $${idx++}`);
+        conditions.push(`"${dbCol}" LIKE $${idx++}`);
         values.push(`${val.startsWith}%`);
       } else if ('endsWith' in val) {
-        conditions.push(`"${key}" LIKE $${idx++}`);
+        conditions.push(`"${dbCol}" LIKE $${idx++}`);
         values.push(`%${val.endsWith}`);
       } else if ('gte' in val) {
-        conditions.push(`"${key}" >= $${idx++}`);
+        conditions.push(`"${dbCol}" >= $${idx++}`);
         values.push(val.gte);
       } else if ('lte' in val) {
-        conditions.push(`"${key}" <= $${idx++}`);
+        conditions.push(`"${dbCol}" <= $${idx++}`);
         values.push(val.lte);
       } else if ('gt' in val) {
-        conditions.push(`"${key}" > $${idx++}`);
+        conditions.push(`"${dbCol}" > $${idx++}`);
         values.push(val.gt);
       } else if ('lt' in val) {
-        conditions.push(`"${key}" < $${idx++}`);
+        conditions.push(`"${dbCol}" < $${idx++}`);
         values.push(val.lt);
       } else if ('not' in val) {
         if (val.not === null) {
-          conditions.push(`"${key}" IS NOT NULL`);
+          conditions.push(`"${dbCol}" IS NOT NULL`);
         } else {
-          conditions.push(`"${key}" != $${idx++}`);
+          conditions.push(`"${dbCol}" != $${idx++}`);
           values.push(val.not);
         }
       } else if ('equals' in val) {
         if (val.equals === null) {
-          conditions.push(`"${key}" IS NULL`);
+          conditions.push(`"${dbCol}" IS NULL`);
         } else {
-          conditions.push(`"${key}" = $${idx++}`);
+          conditions.push(`"${dbCol}" = $${idx++}`);
           values.push(val.equals);
         }
       } else {
         // Unknown operator object — treat as exact match (JSON column?)
-        conditions.push(`"${key}" = $${idx++}`);
+        conditions.push(`"${dbCol}" = $${idx++}`);
         values.push(val);
       }
       continue;
@@ -135,31 +138,59 @@ function buildWhere(where: WhereClause, startIdx = 1): [string, any[], number] {
 
     // Null check
     if (val === null) {
-      conditions.push(`"${key}" IS NULL`);
+      conditions.push(`"${dbCol}" IS NULL`);
       continue;
     }
 
     // Simple equality
-    conditions.push(`"${key}" = $${idx++}`);
+    conditions.push(`"${dbCol}" = $${idx++}`);
     values.push(val);
   }
 
   return [conditions.join(' AND '), values, idx];
 }
 
-function buildOrderBy(orderBy: any): string {
+function extractDirection(dir: any): string {
+  if (typeof dir === 'string') return dir.toUpperCase();
+  if (dir && typeof dir === 'object' && 'sort' in dir) return (dir.sort as string).toUpperCase();
+  return 'ASC';
+}
+
+function buildOrderBy(orderBy: any, tableName = ''): string {
   if (!orderBy) return '';
+  const col = (field: string) => tableName ? mapFieldName(tableName, field) : field;
   if (Array.isArray(orderBy)) {
     const parts = orderBy.map((o: any) => {
       const [key, dir] = Object.entries(o)[0];
-      return `"${key}" ${(dir as string).toUpperCase()}`;
+      return `"${col(key)}" ${extractDirection(dir)}`;
     });
     return parts.length ? ` ORDER BY ${parts.join(', ')}` : '';
   }
   const entries = Object.entries(orderBy);
   if (entries.length === 0) return '';
-  const parts = entries.map(([key, dir]) => `"${key}" ${(dir as string).toUpperCase()}`);
+  const parts = entries.map(([key, dir]) => `"${col(key)}" ${extractDirection(dir)}`);
   return ` ORDER BY ${parts.join(', ')}`;
+}
+
+/* ═══ Prisma @map field → DB column mapping ═══ */
+
+// Maps Prisma field names to actual DB column names (from @map directives in schema.prisma).
+// Key: "TableName.prismaField", Value: "dbColumn"
+const FIELD_MAP: Record<string, Record<string, string>> = {
+  User: { legacyRole: 'role' },
+};
+
+function mapFieldName(tableName: string, field: string): string {
+  return FIELD_MAP[tableName]?.[field] ?? field;
+}
+
+/** Map all keys in an object from Prisma field names to DB column names */
+function mapDataKeys(tableName: string, data: Record<string, any>): Record<string, any> {
+  const mapped: Record<string, any> = {};
+  for (const [key, val] of Object.entries(data)) {
+    mapped[mapFieldName(tableName, key)] = val;
+  }
+  return mapped;
 }
 
 /* ═══ Model proxy factory ═══ */
@@ -167,8 +198,9 @@ function buildOrderBy(orderBy: any): string {
 function createModelProxy(pool: Pool, tableName: string) {
   return {
     create: async ({ data }: any) => {
-      const columns = Object.keys(data);
-      const values = Object.values(data);
+      const mapped = mapDataKeys(tableName, data);
+      const columns = Object.keys(mapped);
+      const values = Object.values(mapped);
       const ph = values.map((_, i) => `$${i + 1}`);
       const result = await pool.query(
         `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${ph.join(', ')}) RETURNING *`,
@@ -181,8 +213,9 @@ function createModelProxy(pool: Pool, tableName: string) {
       const rows = Array.isArray(data) ? data : [data];
       let count = 0;
       for (const row of rows) {
-        const columns = Object.keys(row);
-        const values = Object.values(row);
+        const mapped = mapDataKeys(tableName, row);
+        const columns = Object.keys(mapped);
+        const values = Object.values(mapped);
         const ph = values.map((_, i) => `$${i + 1}`);
         await pool.query(
           `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${ph.join(', ')})`,
@@ -195,19 +228,19 @@ function createModelProxy(pool: Pool, tableName: string) {
 
     findUnique: async ({ where }: any = {}) => {
       if (!where) return null;
-      const [sql, values] = buildWhere(where);
+      const [sql, values] = buildWhere(where, 1, tableName);
       const result = await pool.query(`SELECT * FROM "${tableName}" WHERE ${sql} LIMIT 1`, values);
       return result.rows[0] || null;
     },
 
     findFirst: async ({ where, orderBy }: any = {}) => {
       if (!where || Object.keys(where).length === 0) {
-        const ob = buildOrderBy(orderBy);
+        const ob = buildOrderBy(orderBy, tableName);
         const result = await pool.query(`SELECT * FROM "${tableName}"${ob} LIMIT 1`);
         return result.rows[0] || null;
       }
-      const [sql, values] = buildWhere(where);
-      const ob = buildOrderBy(orderBy);
+      const [sql, values] = buildWhere(where, 1, tableName);
+      const ob = buildOrderBy(orderBy, tableName);
       const result = await pool.query(`SELECT * FROM "${tableName}" WHERE ${sql}${ob} LIMIT 1`, values);
       return result.rows[0] || null;
     },
@@ -217,12 +250,12 @@ function createModelProxy(pool: Pool, tableName: string) {
       let values: any[] = [];
 
       if (where && Object.keys(where).length > 0) {
-        const [sql, vals] = buildWhere(where);
+        const [sql, vals] = buildWhere(where, 1, tableName);
         query += ` WHERE ${sql}`;
         values = vals;
       }
 
-      query += buildOrderBy(orderBy);
+      query += buildOrderBy(orderBy, tableName);
 
       if (take !== undefined) {
         query += ` LIMIT ${Number(take)}`;
@@ -236,11 +269,12 @@ function createModelProxy(pool: Pool, tableName: string) {
     },
 
     update: async ({ where, data }: any) => {
-      const dataEntries = Object.entries(data);
+      const mapped = mapDataKeys(tableName, data);
+      const dataEntries = Object.entries(mapped);
       let idx = 1;
       const setClauses = dataEntries.map(([k]) => `"${k}" = $${idx++}`);
       const dataValues = dataEntries.map(([, v]) => v);
-      const [whereSql, whereValues] = buildWhere(where, idx);
+      const [whereSql, whereValues] = buildWhere(where, idx, tableName);
       const result = await pool.query(
         `UPDATE "${tableName}" SET ${setClauses.join(', ')} WHERE ${whereSql} RETURNING *`,
         [...dataValues, ...whereValues],
@@ -249,14 +283,15 @@ function createModelProxy(pool: Pool, tableName: string) {
     },
 
     updateMany: async ({ where, data }: any) => {
-      const dataEntries = Object.entries(data);
+      const mapped = mapDataKeys(tableName, data);
+      const dataEntries = Object.entries(mapped);
       let idx = 1;
       const setClauses = dataEntries.map(([k]) => `"${k}" = $${idx++}`);
       const dataValues = dataEntries.map(([, v]) => v);
       let query = `UPDATE "${tableName}" SET ${setClauses.join(', ')}`;
       let values = [...dataValues];
       if (where && Object.keys(where).length > 0) {
-        const [whereSql, whereValues] = buildWhere(where, idx);
+        const [whereSql, whereValues] = buildWhere(where, idx, tableName);
         query += ` WHERE ${whereSql}`;
         values.push(...whereValues);
       }
@@ -265,7 +300,7 @@ function createModelProxy(pool: Pool, tableName: string) {
     },
 
     delete: async ({ where }: any) => {
-      const [sql, values] = buildWhere(where);
+      const [sql, values] = buildWhere(where, 1, tableName);
       const result = await pool.query(
         `DELETE FROM "${tableName}" WHERE ${sql} RETURNING *`,
         values,
@@ -278,7 +313,7 @@ function createModelProxy(pool: Pool, tableName: string) {
         const result = await pool.query(`DELETE FROM "${tableName}"`);
         return { count: result.rowCount ?? 0 };
       }
-      const [sql, values] = buildWhere(where);
+      const [sql, values] = buildWhere(where, 1, tableName);
       const result = await pool.query(`DELETE FROM "${tableName}" WHERE ${sql}`, values);
       return { count: result.rowCount ?? 0 };
     },
@@ -287,7 +322,7 @@ function createModelProxy(pool: Pool, tableName: string) {
       let query = `SELECT COUNT(*)::int as count FROM "${tableName}"`;
       let values: any[] = [];
       if (where && Object.keys(where).length > 0) {
-        const [sql, vals] = buildWhere(where);
+        const [sql, vals] = buildWhere(where, 1, tableName);
         query += ` WHERE ${sql}`;
         values = vals;
       }
@@ -296,15 +331,16 @@ function createModelProxy(pool: Pool, tableName: string) {
     },
 
     upsert: async ({ where, create, update: updateData }: any) => {
-      const [sql, values] = buildWhere(where);
+      const [sql, values] = buildWhere(where, 1, tableName);
       const existing = await pool.query(`SELECT * FROM "${tableName}" WHERE ${sql} LIMIT 1`, values);
       if (existing.rows[0]) {
         // Update
-        const dataEntries = Object.entries(updateData);
+        const mapped = mapDataKeys(tableName, updateData);
+        const dataEntries = Object.entries(mapped);
         let idx = 1;
         const setClauses = dataEntries.map(([k]) => `"${k}" = $${idx++}`);
         const dataValues = dataEntries.map(([, v]) => v);
-        const [wSql, wValues] = buildWhere(where, idx);
+        const [wSql, wValues] = buildWhere(where, idx, tableName);
         const result = await pool.query(
           `UPDATE "${tableName}" SET ${setClauses.join(', ')} WHERE ${wSql} RETURNING *`,
           [...dataValues, ...wValues],
@@ -312,8 +348,9 @@ function createModelProxy(pool: Pool, tableName: string) {
         return result.rows[0];
       } else {
         // Create
-        const columns = Object.keys(create);
-        const vals = Object.values(create);
+        const mapped = mapDataKeys(tableName, create);
+        const columns = Object.keys(mapped);
+        const vals = Object.values(mapped);
         const ph = vals.map((_, i) => `$${i + 1}`);
         const result = await pool.query(
           `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${ph.join(', ')}) RETURNING *`,
@@ -328,7 +365,8 @@ function createModelProxy(pool: Pool, tableName: string) {
       if (_count === true || _count?._all) parts.push('COUNT(*)::int as "_count"');
       if (_sum) {
         for (const [k] of Object.entries(_sum).filter(([, v]) => v)) {
-          parts.push(`SUM("${k}") as "_sum_${k}"`);
+          const dbCol = mapFieldName(tableName, k);
+          parts.push(`SUM("${dbCol}") as "_sum_${k}"`);
         }
       }
       if (!parts.length) parts.push('COUNT(*)::int as "_count"');
@@ -336,7 +374,7 @@ function createModelProxy(pool: Pool, tableName: string) {
       let query = `SELECT ${parts.join(', ')} FROM "${tableName}"`;
       let values: any[] = [];
       if (where && Object.keys(where).length > 0) {
-        const [sql, vals] = buildWhere(where);
+        const [sql, vals] = buildWhere(where, 1, tableName);
         query += ` WHERE ${sql}`;
         values = vals;
       }
