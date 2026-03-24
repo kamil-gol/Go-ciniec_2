@@ -36,14 +36,12 @@ const prismaTest = new (PrismaClient as any)();
 export async function cleanDatabase(retries = 3): Promise<void> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const tablenames = await prismaTest.$queryRaw<
-        Array<{ tablename: string }>
-      >`SELECT tablename FROM pg_tables WHERE schemaname='public'`;
+      const tablenames: Array<{ tablename: string }> = await prismaTest.$queryRaw`SELECT tablename FROM pg_tables WHERE schemaname='public'`;
 
       const tables = tablenames
-        .map(({ tablename }) => tablename)
-        .filter((name) => name !== '_prisma_migrations')
-        .map((name) => `"public"."${name}"`);
+        .map(({ tablename }: { tablename: string }) => tablename)
+        .filter((name: string) => name !== '_prisma_migrations')
+        .map((name: string) => `"public"."${name}"`);
 
       if (tables.length > 0) {
         await prismaTest.$executeRawUnsafe(
