@@ -195,6 +195,16 @@ function mapDataKeys(tableName: string, data: Record<string, any>): Record<strin
 
 /* ═══ Auto-timestamp & data cleanup helpers ═══ */
 
+// Tables that do NOT have updatedAt (only createdAt or neither)
+const NO_UPDATED_AT = new Set([
+  'Permission', 'RolePermission', 'PasswordResetToken', 'RefreshToken',
+  'ReservationHistory', 'ActivityLog', 'MenuPriceHistory',
+  'DocumentTemplateHistory', 'CateringOrderHistory', 'Notification',
+]);
+
+// Tables that do NOT have createdAt
+const NO_CREATED_AT = new Set(['ReservationMenuSnapshot']);
+
 /**
  * Strip relation objects from data (Prisma handles relations via nested writes,
  * but our raw SQL proxy only handles flat column values).
@@ -214,9 +224,9 @@ function prepareInsertData(tableName: string, data: Record<string, any>): Record
     }
     cleaned[key] = val;
   }
-  // Auto-set timestamps if not provided
-  if (!('createdAt' in cleaned)) cleaned['createdAt'] = now;
-  if (!('updatedAt' in cleaned)) cleaned['updatedAt'] = now;
+  // Auto-set timestamps if not provided (only for tables that have them)
+  if (!NO_CREATED_AT.has(tableName) && !('createdAt' in cleaned)) cleaned['createdAt'] = now;
+  if (!NO_UPDATED_AT.has(tableName) && !('updatedAt' in cleaned)) cleaned['updatedAt'] = now;
   return mapDataKeys(tableName, cleaned);
 }
 
@@ -235,7 +245,7 @@ function prepareUpdateData(tableName: string, data: Record<string, any>): Record
     }
     cleaned[key] = val;
   }
-  if (!('updatedAt' in cleaned)) cleaned['updatedAt'] = new Date();
+  if (!NO_UPDATED_AT.has(tableName) && !('updatedAt' in cleaned)) cleaned['updatedAt'] = new Date();
   return mapDataKeys(tableName, cleaned);
 }
 
