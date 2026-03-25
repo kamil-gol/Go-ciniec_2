@@ -75,7 +75,7 @@ describe('BUG5: Double-booking prevention', () => {
     // 80 + 30 = 110 > 100 → should throw CAPACITY_EXCEEDED
     await expect(
       validateCapacityForTimeRange(hall, start, end, 30)
-    ).rejects.toThrow(/capacity|pojemność|przekroczona/i);
+    ).rejects.toThrow(/capacity|pojemności|pojemność|przekroczona/i);
   });
 
   it('should reject any booking when hall disallows multiple bookings', async () => {
