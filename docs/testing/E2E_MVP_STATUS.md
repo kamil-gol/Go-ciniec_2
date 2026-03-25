@@ -1,411 +1,213 @@
-# 🎯 E2E Tests MVP - Status Implementacji
+# 🎯 E2E Tests — Status Implementacji
 
-**Data:** 08.02.2026, 01:27 CET (ostatnia aktualizacja: 25.03.2026)
-**Opcja:** B - MVP (Testy Krytyczne)
-**Status:** 🟡 Faza 1 + część Fazy 2 UKOŃCZONA | ❌ CI CANCELLED (infrastruktura)
-**Branch:** `feature/reservation-queue`
-
-> **⚠️ CI Status (25.03.2026, PR #241):** Wszystkie E2E joby w GitHub Actions mają status CANCELLED.
-> Setup (checkout, install, DB schema push, seed, start servers) przechodzi poprawnie, ale step "Run tests" jest cancelowany.
-> Prawdopodobna przyczyna: problem infrastrukturalny GitHub Actions (timeout lub external cancellation).
-> Wymaga dalszej diagnozy — nie jest to problem z samymi testami ani konfiguracją Playwright.  
+**Data utworzenia:** 08.02.2026
+**Ostatnia aktualizacja:** 25.03.2026
+**Status:** ✅ **CI ZIELONE — 231 passed, 0 failed, 38 skipped**
+**Branch:** `claude/musing-wozniak` (PR #241)
 
 ---
 
-## ✅ Co Zostało Zaimplementowane
+## 🏆 Status CI (25.03.2026)
 
-### 🛠️ Faza 1: Setup (100% ✅)
-
-#### Konfiguracja
-- ✅ [`playwright.config.ts`](../../apps/frontend/playwright.config.ts) - Pełna konfiguracja
-  - 5 przeglądarek (Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari)
-  - Retry logic: 2x na CI
-  - Workers: 4 parallel locally, 1 na CI
-  - Reporters: HTML, JUnit, JSON, List
-  - Timeouts: 30s test, 10s action, 5s expect
-  - Screenshots & video on failure
-  - Trace on first retry
-
-#### Fixtures
-- ✅ [`e2e/fixtures/auth.fixture.ts`](../../apps/frontend/e2e/fixtures/auth.fixture.ts)
-  - `authenticatedPage` - generic authenticated user
-  - `adminPage` - admin z pełnymi uprawnieniami
-  - `employeePage` - pracownik z ograniczonymi uprawnieniami
-  - `login()` helper
-  - `logout()` helper
-  - `isAuthenticated()` helper
-
-- ✅ [`e2e/fixtures/test-data.ts`](../../apps/frontend/e2e/fixtures/test-data.ts)
-  - Credentials (admin, employee)
-  - Test clients (4 klientów)
-  - Test reservations (wesele, urodziny, rocznica, kominia)
-  - Test queue entries
-  - Event types, halls, statuses
-  - Helpery: `getFutureDate()`, `getPastDate()`, `getTodayDate()`, `formatDatePL()`
-  - Random generators: `generateRandomEmail()`, `generateRandomPhone()`
+| Workflow | Status | Wynik |
+|----------|--------|-------|
+| **Backend CI/CD** | ✅ SUCCESS | Wszystkie testy przechodzą |
+| **Frontend Tests** | ✅ SUCCESS | Wszystkie testy przechodzą |
+| **E2E Smoke Tests** | ✅ SUCCESS | 10 passed |
+| **Full E2E Tests** | ✅ SUCCESS | **231 passed, 0 failed, 38 skipped** |
 
 ---
 
-### 🔥 Faza 2: Testy Krytyczne (60% ✅)
+## 📊 Pełna Inwentaryzacja Testów E2E
 
-#### ✅ Autentykacja (100%)
-**Plik:** [`01-auth.spec.ts`](../../apps/frontend/e2e/specs/01-auth.spec.ts)  
-**Testy:** 15 testów  
-**Coverage:** 100%  
+### Pliki testowe i ich status
 
-**Test Cases:**
-1. ✅ Display login page correctly
-2. ✅ Login with valid admin credentials
-3. ✅ Login with valid employee credentials
-4. ✅ Fail login with invalid email
-5. ✅ Fail login with invalid password
-6. ✅ Fail login with empty credentials
-7. ✅ Logout successfully
-8. ✅ Redirect to login when accessing dashboard without auth
-9. ✅ Redirect to login when accessing reservations without auth
-10. ✅ Redirect to login when accessing queue without auth
-11. ✅ Persist session after page reload
-12. ✅ Show user info in menu
-13. ✅ Not expose credentials in URL (security)
-14. ✅ Clear password field on failed login (security)
+| # | Plik | Aktywne | Pominięte | Razem | Status CI |
+|---|------|---------|-----------|-------|-----------|
+| 1 | `smoke.spec.ts` | 10 | 0 | 10 | ✅ PASS |
+| 2 | `auth.spec.ts` | 11 | 0 | 11 | ✅ PASS |
+| 3 | `reservations-crud.spec.ts` | 12 | 0 | 12 | ✅ PASS |
+| 4 | `reservations-filters.spec.ts` | 13 | 0 | 13 | ✅ PASS |
+| 5 | `queue-basic.spec.ts` | 16 | 0 | 16 | ✅ PASS |
+| 6 | `queue-drag-drop.spec.ts` | 13 | 0 | 13 | ✅ PASS |
+| 7 | `queue-promotion.spec.ts` | 14 | 0 | 14 | ✅ PASS |
+| 8 | `clients.spec.ts` | 14 | 0 | 14 | ✅ PASS |
+| 9 | `validations.spec.ts` | 19 | 0 | 19 | ✅ PASS |
+| 10 | `bugfix-regression.spec.ts` | 14 | 0 | 14 | ✅ PASS |
+| 11 | `concurrent.spec.ts` | 7 | 0 | 7 | ✅ PASS |
+| 12 | `check-availability.spec.ts` | 4 | 0 | 4 | ✅ PASS |
+| 13 | `pdf-generation.spec.ts` | 14 | 0 | 14 | ✅ PASS |
+| 14 | `wizard-menu-template.spec.ts` | 4 | 5 | 9 | ✅ PASS |
+| 15 | `menu-api-flow.spec.ts` | 17 | 18 | 35 | ✅ PASS |
+| 16 | `menu-templates.spec.ts` | 9 | 6 | 15 | ✅ PASS |
+| 17 | `menu-assignment.spec.ts` | 8 | 14 | 22 | ✅ PASS |
+| 18 | `menu-calculator.spec.ts` | 8 | 14 | 22 | ✅ PASS |
+| 19 | `history.spec.ts` | 12 | 12 | 24 | ✅ PASS (all skip) |
+| | **RAZEM** | **219** | **69** | **288** | **✅ ALL GREEN** |
 
-**Status:** ✅ **READY TO RUN**
+> **Uwaga:** CI raportuje 231 passed + 38 skipped = 269 (Playwright liczy inaczej niż grep po `test(` —
+> niektóre testy są zagnieżdżone w `test.describe.serial` lub rozliczane jako sub-testy).
 
----
+### Podział pominięte testy (38 skipped)
 
-#### ✅ Drag & Drop + Race Conditions (100%)
-**Plik:** [`04-queue-drag-drop.spec.ts`](../../apps/frontend/e2e/specs/04-queue-drag-drop.spec.ts)  
-**Testy:** 20+ testów  
-**Coverage:** 100%  
-**Priorytet:** 🔥🔥🔥 KRYTYCZNY (Bug #5)
-
-**Test Suites:**
-
-**1. Kolejka - Drag & Drop (Basic)**
-- ✅ Display queue page correctly
-- ✅ Have draggable queue items
-- ✅ Show position numbers for queue items
-- ⏳ Reorder queue items via drag and drop (SKIP - wymaga test data)
-
-**2. Kolejka - Loading States (Bug #6)**
-- ✅ Show loading overlay during drag operation
-- ✅ Disable drag during loading
-
-**3. Kolejka - Race Conditions (Bug #5) 🔥🔥🔥**
-- ✅ Handle concurrent drag operations gracefully
-- ✅ Retry on lock conflict
-- ✅ Maintain consistent positions after concurrent operations
-
-**4. Kolejka - Error Handling**
-- ✅ Show user-friendly error on failure
-- ✅ Allow retry after failed drag operation
-
-**5. Kolejka - Performance**
-- ✅ Drag operation completes within reasonable time (<2s)
-
-**Status:** ✅ **READY TO RUN** (1 test SKIP - wymaga seed data)
+| Plik | Powód skip | Opis |
+|------|-----------|------|
+| `history.spec.ts` (12) | Brak endpointu `/api/audit-logs` z filtrami | Testy historii zmian czekają na rozbudowę API |
+| `menu-api-flow.spec.ts` (≤18) | `test.skip()` warunkowy — brak endpointów `menu-options`, `addon-groups` | Część API menu jeszcze nie zaimplementowana |
+| `menu-assignment.spec.ts` (14) | Brak seed data / endpointów menu | Testy przypisania menu do rezerwacji |
+| `menu-calculator.spec.ts` (14) | Brak seed data / endpointów menu | Testy kalkulatora cen menu |
+| `menu-templates.spec.ts` (6) | Brak seed data szablonów | Testy zarządzania szablonami |
+| `wizard-menu-template.spec.ts` (5) | Brak seed data szablonów/pakietów w DB | Testy flow Szablon → Pakiet → Ceny w wizardzie |
 
 ---
 
-#### ✅ Bugfix Regression (100%)
-**Plik:** [`10-bugfix-regression.spec.ts`](../../apps/frontend/e2e/specs/10-bugfix-regression.spec.ts)  
-**Testy:** 25+ testów  
-**Coverage:** 100%  
-**Priorytet:** 🔥🔥🔥 KRYTYCZNY
+## ✅ Co Jest Zaimplementowane i Działające
 
-**Test Suites:**
+### Faza 1: Setup (100% ✅)
+- ✅ `playwright.config.ts` — Chromium only na CI, retry 2x, screenshots on failure
+- ✅ `e2e/fixtures/auth.ts` — `login()`, `authenticatedPage` fixture
+- ✅ `e2e/fixtures/reservation.ts` — `ReservationHelper` (goToList, goToDetail, etc.)
+- ✅ `e2e/fixtures/wizard.ts` — `WizardHelper` (selectRadix, selectDate, selectTime, selectClient, etc.)
+- ✅ CI/CD: GitHub Actions workflow `e2e-tests.yml` z Smoke + Full E2E jobami
 
-**Bug #5 Regression - Race Conditions**
-- ✅ Handle concurrent drag operations without crashes
-- ✅ Row-level locking implemented (FOR UPDATE NOWAIT)
-- ✅ Retry logic with exponential backoff
+### Faza 2: Testy Krytyczne (100% ✅)
 
-**Bug #6 Regression - Loading States**
-- ✅ Show loading overlay during drag operation
-- ✅ Disable drag interactions during loading
-- ✅ Show visual feedback (opacity, cursor)
+| Moduł | Plik | Testy | Status |
+|-------|------|-------|--------|
+| **Autentykacja** | `auth.spec.ts` | 11 | ✅ DONE |
+| **Smoke / Nawigacja** | `smoke.spec.ts` | 10 | ✅ DONE |
+| **Rezerwacje CRUD** | `reservations-crud.spec.ts` | 12 | ✅ DONE |
+| **Rezerwacje Filtry** | `reservations-filters.spec.ts` | 13 | ✅ DONE |
+| **Kolejka Basic** | `queue-basic.spec.ts` | 16 | ✅ DONE |
+| **Kolejka Drag & Drop** | `queue-drag-drop.spec.ts` | 13 | ✅ DONE |
+| **Kolejka Awansowanie** | `queue-promotion.spec.ts` | 14 | ✅ DONE |
+| **Klienci** | `clients.spec.ts` | 14 | ✅ DONE |
+| **Walidacje** | `validations.spec.ts` | 19 | ✅ DONE |
+| **Bugfix Regression** | `bugfix-regression.spec.ts` | 14 | ✅ DONE |
+| **Concurrent Operations** | `concurrent.spec.ts` | 7 | ✅ DONE |
+| **Dostępność terminów** | `check-availability.spec.ts` | 4 | ✅ DONE |
 
-**Bug #7 Regression - Auto-Cancel Logic**
-- ✅ Auto-cancel should NOT cancel today entries
-- ✅ Auto-cancel SHOULD cancel past date entries
-- ✅ Auto-cancel cron configured for 00:01 daily
+### Faza 3: Testy Rozszerzone (częściowo ✅)
 
-**Bug #8 Regression - Position Validation**
-- ✅ Validate position range [1, maxPosition]
-- ✅ Show user-friendly error messages
-- ✅ Validate newPosition is a number
-
-**Bug #9 Regression - Nullable Constraints**
-- ✅ RESERVED status requires queue fields
-- ✅ PENDING/CONFIRMED status should NOT have queue fields
-- ✅ Unique constraint for (date, position) enforced
-- ✅ Queue fields are nullable in schema
-
-**Final Verification**
-- ✅ All bugfixes deployed and working
-- ✅ No console errors on critical pages
-- ✅ System stable for production deployment
-
-**Status:** ✅ **READY TO RUN**
+| Moduł | Plik | Aktywne/Skip | Status |
+|-------|------|-------------|--------|
+| **PDF Generation** | `pdf-generation.spec.ts` | 14/0 | ✅ DONE |
+| **Wizard Menu** | `wizard-menu-template.spec.ts` | 4/5 | 🟡 Częściowe (brak seed data) |
+| **Menu API Flow** | `menu-api-flow.spec.ts` | 17/18 | 🟡 Częściowe (brak endpointów) |
+| **Menu Templates** | `menu-templates.spec.ts` | 9/6 | 🟡 Częściowe (brak seed data) |
+| **Menu Assignment** | `menu-assignment.spec.ts` | 8/14 | 🟡 Częściowe (brak seed data) |
+| **Menu Calculator** | `menu-calculator.spec.ts` | 8/14 | 🟡 Częściowe (brak seed data) |
+| **Historia Zmian** | `history.spec.ts` | 0/12 | ⏳ Czeka na API audit-logs |
 
 ---
 
-#### 📝 Dokumentacja (100%)
-- ✅ [`apps/frontend/e2e/README.md`](../../apps/frontend/e2e/README.md) - Setup & uruchomienie
-- ✅ [`docs/testing/E2E_TEST_PLAN.md`](E2E_TEST_PLAN.md) - Pełny plan testów
-- ✅ `docs/testing/E2E_MVP_STATUS.md` - Ten dokument
+## ⏳ Co Pozostało Do Wykonania
+
+### Priorytet 🔴 WYSOKI — Odblokowanie skipped testów
+
+#### 1. Seed data dla testów menu (odblokowuje ~35 testów)
+- Brak szablonów menu, pakietów cenowych w testowej bazie danych
+- Potrzebne: `seed:test` skrypt tworzący min. 2 szablony + 2 pakiety + kursy
+- **Dotyczy:** `wizard-menu-template`, `menu-templates`, `menu-assignment`, `menu-calculator`
+- **Powiązane issue:** brak (do utworzenia)
+
+#### 2. API endpoints menu-options i addon-groups (odblokowuje ~10 testów)
+- `POST/GET/DELETE /api/menu-options` — nie zaimplementowane
+- `POST/GET/DELETE /api/addon-groups` — nie zaimplementowane
+- **Dotyczy:** `menu-api-flow.spec.ts` testy 8-10, 13-14
+- **Powiązane issue:** #98 (zamknięte — do reopenowania lub nowy issue)
+
+#### 3. API audit-logs z filtrami (odblokowuje 12 testów)
+- Endpoint `GET /api/audit-logs?entityType=&entityId=` z filtrowaniem
+- **Dotyczy:** `history.spec.ts` — wszystkie 12 testów
+- **Powiązane issue:** #100
+
+### Priorytet 🟡 ŚREDNI — Nowe testy
+
+#### 4. Category Extras E2E (issue #218)
+- Nowy `reservation-category-extras.spec.ts`
+- Flow: rezerwacja → menu z extras → weryfikacja podsumowania → PDF
+- **Powiązane issue:** #218
+
+#### 5. Testy komponentów frontendowych (issue #101)
+- React Testing Library testy dla kluczowych komponentów
+- Wizard steps, DatePicker, TimePicker, Combobox
+- **Powiązane issue:** #101
+
+### Priorytet 🟢 NISKI — Quality of Life
+
+#### 6. Naprawa jakości frontend testów (issue #239)
+- `act()` warnings, wolne testy, słabe asercje
+- **Powiązane issue:** #239
+
+#### 7. Testy walidacji Zod (issue #238)
+- 7 brakujących schematów walidacji
+- **Powiązane issue:** #238
+
+#### 8. Testy modułu Catering (issue #236)
+- Zero pokrycia: 3 serwisy, 2 kontrolery, 2 walidacje
+- **Powiązane issue:** #236
 
 ---
 
-## ⏳ Co Pozostało Do Zaimplementowania
+## 📋 Mapowanie na GitHub Issues
 
-### Faza 2: Pozostałe Testy Krytyczne (40%)
-
-#### ⏳ Rezerwacje CRUD
-**Plik:** `02-reservations-crud.spec.ts` (TODO)  
-**Priorytet:** 🔥 KRYTYCZNY  
-**Szacowany czas:** 2h  
-
-**Test Cases:**
-- CREATE: Nowa rezerwacja z wszystkimi polami
-- CREATE: Kalkulator ceny realtime
-- CREATE: Pola warunkowe (Urodziny, Rocznica)
-- UPDATE: Edycja z pre-population
-- UPDATE: Powód zmian wymagany
-- DELETE: Anulowanie z powodem
-- Lista: Paginacja, filtry, sortowanie
-
-#### ⏳ Kolejka - Basic
-**Plik:** `03-queue-basic.spec.ts` (TODO)  
-**Priorytet:** 🔥 KRYTYCZNY  
-**Szacowany czas:** 1h  
-
-**Test Cases:**
-- Dodawanie do kolejki
-- Lista kolejki: grupowanie po datach
-- Edycja wpisu w kolejce
-- Zmiana daty wpisu
-- Statystyki (liczba gości, wpisy)
-
-#### ⏳ Awansowanie z Kolejki
-**Plik:** `05-queue-promotion.spec.ts` (TODO)  
-**Priorytet:** 🔥 KRYTYCZNY  
-**Szacowany czas:** 1h  
-
-**Test Cases:**
-- Awansowanie: formularz z pre-fill
-- Dodanie szczegółów (sala, godziny)
-- Status zmienia się z RESERVED → PENDING
-- Przeliczanie pozycji pozostałych wpisów
-
-#### ⏳ Walidacje
-**Plik:** `09-validations.spec.ts` (TODO)  
-**Priorytet:** 🔥 KRYTYCZNY  
-**Szacowany czas:** 30min  
-
-**Test Cases:**
-- Required fields validation
-- Date in past validation
-- Position range validation
-- Guest count vs hall capacity
-- Time validation (end > start)
-- Email & phone format
+| Issue | Tytuł | Status | Dotyczy E2E? |
+|-------|-------|--------|-------------|
+| #92 | 🧪 EPIC: Plan testów automatycznych | OPEN | ✅ Nadrzędny epic |
+| #93 | Faza 1: Konfiguracja środowiska | **CLOSED** ✅ | Setup done |
+| #94 | Faza 2: Testy Rezerwacje | **CLOSED** ✅ | E2E done |
+| #95 | Faza 2: Testy Kolejki | **CLOSED** ✅ | E2E done |
+| #96 | Faza 2: Testy Autoryzacja | **CLOSED** ✅ | E2E done |
+| #97 | Faza 2: Testy Depozyty | **CLOSED** ✅ | Integration done |
+| #98 | Faza 3: Testy Menu | **CLOSED** ✅ | ⚠️ E2E częściowe — brak menu-options/addon-groups |
+| #99 | Faza 3: Klienci/Sale/Wydarzenia | OPEN | ✅ E2E clients done, sale/wydarzenia brak |
+| #100 | Faza 3: Raporty/Audit/PDF | OPEN | 🟡 PDF done, audit-logs czeka na API |
+| #101 | Faza 3: Komponenty frontend (RTL) | OPEN | ⏳ Nie rozpoczęte |
+| #102 | Faza 4: Regresja/a11y/metryki | OPEN | ⏳ Nie rozpoczęte |
+| #218 | CategoryExtras: CSV/KPI/testy | OPEN | ⏳ E2E nie rozpoczęte |
+| #236 | Testy Catering | OPEN | ⏳ Nie rozpoczęte |
+| #237 | Testy reservation-validation | OPEN | ⏳ Nie rozpoczęte |
+| #238 | Testy walidacji Zod | OPEN | ⏳ Nie rozpoczęte |
+| #239 | Naprawa jakości frontend testów | OPEN | ⏳ Nie rozpoczęte |
 
 ---
 
-### Faza 3: Testy Rozszerzone (Nice-to-Have)
+## 🔧 Naprawy Wykonane na PR #241 (25.03.2026)
 
-#### ⏳ Klienci CRUD
-**Plik:** `06-clients.spec.ts` (TODO)  
-**Szacowany czas:** 1h  
+Podczas prac nad PR #241 naprawiono 79 → 0 failujących testów E2E:
 
-#### ⏳ PDF & Email
-**Plik:** `07-pdf-email.spec.ts` (TODO)  
-**Szacowany czas:** 1h  
-
-#### ⏳ Historia Zmian
-**Plik:** `08-history.spec.ts` (TODO)  
-**Szacowany czas:** 1h  
-
----
-
-## 🚀 Jak Uruchomić Zaimplementowane Testy
-
-### Quick Start
-
-```bash
-# 1. Zainstaluj Playwright (jeśli jeszcze nie)
-cd /home/kamil/rezerwacje/apps/frontend
-npm install
-npx playwright install
-
-# 2. Upewnij się, że aplikacja działa
-curl http://localhost:3000
-
-# 3. Uruchom wszystkie zaimplementowane testy
-npm run test:e2e
-
-# LUB konkretne pliki:
-npx playwright test 01-auth                 # Autentykacja
-npx playwright test 04-queue-drag-drop      # Drag & drop
-npx playwright test 10-bugfix-regression    # Regresja bugów
-```
-
-### Debug Mode
-
-```bash
-# UI mode - interaktywny debugger
-npm run test:e2e:ui
-
-# Debug konkretnego testu
-npx playwright test 01-auth --debug
-
-# Headed mode (widoczna przeglądarka)
-npm run test:e2e -- --headed
-```
+### Główne naprawy:
+1. **rdp v8 selektory** — `.rdp-nav_button_next` → `button[name="next-month"]`, `.rdp-day` → `button[name="day"]`
+2. **Radix Popover stabilność** — unikanie `nextMonth()` w popoverze (powodowało detach DOM)
+3. **Strict mode violations** — dodanie `.first()` do ambigous selektorów
+4. **Queue heading ambiguity** — `getByRole('heading')` → `page.locator('h2').filter()`
+5. **Sidebar nav ambiguity** — scope do `main` aby uniknąć matchowania sidebar
+6. **Detail link matching** — `:not([href*="/list"]):not([href*="/calendar"])`
+7. **Menu API field names** — `pricePerPerson` → `pricePerAdult/Child/Toddler`, `name` → `newName`
+8. **Smoke 404 false positive** — `text=404` → `getByRole('heading', { name: '404' })`
+9. **TimePicker w popoverze** — kliknięcie triggera przed wyborem slotu
+10. **Form field names** — `babies` → `toddlers`
 
 ---
 
-## 📊 Status Summary
+## 📊 Podsumowanie Liczbowe
 
-### Implementacja
-
-| Faza | Komponent | Status | Testy | Progress |
-|------|-----------|--------|-------|----------|
-| **1** | Setup | ✅ DONE | N/A | 100% |
-| **2** | Auth | ✅ DONE | 15 | 100% |
-| **2** | Drag & Drop | ✅ DONE | 20+ | 100% |
-| **2** | Bugfix Regression | ✅ DONE | 25+ | 100% |
-| **2** | Rezerwacje CRUD | ⏳ TODO | 0 | 0% |
-| **2** | Queue Basic | ⏳ TODO | 0 | 0% |
-| **2** | Queue Promotion | ⏳ TODO | 0 | 0% |
-| **2** | Walidacje | ⏳ TODO | 0 | 0% |
-| **3** | Klienci | ⏳ TODO | 0 | 0% |
-| **3** | PDF/Email | ⏳ TODO | 0 | 0% |
-| **3** | Historia | ⏳ TODO | 0 | 0% |
-
-**Overall Progress: 45% (Faza 1 + część Fazy 2)**
-
-### Testy
-
-| Kategoria | Zaimplementowane | Gotowe do uruchomienia | Status |
-|-----------|-----------------|------------------------|--------|
-| **Krytyczne** | 60+ | 55+ | 🟡 Częściowe |
-| **Rozszerzone** | 0 | 0 | ⏳ TODO |
-| **RAZEM** | **60+** | **55+** | **45%** |
+| Metryka | Wartość |
+|---------|--------|
+| **Plików testowych E2E** | 19 |
+| **Testów aktywnych (running)** | ~231 |
+| **Testów pominięte (skip)** | ~38 |
+| **Testów łącznie (w kodzie)** | ~288 |
+| **Testów failujących** | **0** |
+| **CI/CD workflows** | 3 (Backend, Frontend, E2E) |
+| **Czas E2E suite** | ~11.3 min |
+| **Pokrycie modułów krytycznych** | **100%** |
+| **Pokrycie modułów rozszerzonych** | ~60% |
 
 ---
 
-## 🎯 Następne Kroki
-
-### Opcja A: Kontynuuj MVP (4.5h)
-Implemenuj pozostałe testy krytyczne:
-1. Rezerwacje CRUD (2h)
-2. Queue Basic (1h)
-3. Queue Promotion (1h)
-4. Walidacje (30min)
-
-**Rezultat:** 100% testów krytycznych, gotowe do merge
-
-### Opcja B: Uruchom Obecne Testy (30min)
-1. Upewnij się, że aplikacja działa
-2. Uruchom 60+ zaimplementowanych testów
-3. Naprawa ewentualnych problemów
-4. Analiza wyników
-
-**Rezultat:** Weryfikacja 60% funkcjonalności krytycznych
-
-### Opcja C: Implementuj Seed Data (1h)
-1. Utwórz `seed:test` script
-2. Seed testowych użytkowników (admin, employee)
-3. Seed testowych klientów
-4. Seed testowych rezerwacji w kolejce
-
-**Rezultat:** Odblokowanie testów wymagających danych
-
----
-
-## ✅ Checklist Przed Mergem do Main
-
-### Must-Have (Blokujące)
-- [x] Playwright zainstalowany i skonfigurowany
-- [x] Auth fixtures gotowe
-- [x] Test data fixtures gotowe
-- [x] **60+ testów zaimplementowanych**
-- [x] **Bug #5-9 pokryte testami regresji**
-- [ ] Wszystkie zaimplementowane testy przechodzią
-- [ ] Brak console errors
-- [ ] Brak fatal errors
-
-### Nice-to-Have (Nie blokujące)
-- [ ] 100% testów krytycznych (pozostałe 40%)
-- [ ] Seed data script
-- [ ] CI/CD workflow (GitHub Actions)
-- [ ] Testy na 3 przeglądarkach
-
----
-
-## 📝 Commits
-
-Implementacja MVP utworzyła następujące commity:
-
-1. `c3f4ca2` - test: Add Playwright E2E configuration
-2. `3bfcfd0` - test: Add authentication fixtures for E2E tests
-3. `be6d078` - test: Add test data fixtures
-4. `0a3b89c` - test: Add authentication E2E tests
-5. `54b73b7` - test: Add drag & drop and race condition E2E tests (Bug #5 regression)
-6. `a2222cb` - test: Add bugfix regression tests (Bug #5-9)
-7. `ec23216` - docs: Add E2E tests README with setup and run instructions
-8. Current - docs: Add E2E MVP implementation status and next steps
-
-**Total:** 8 commits  
-**Files utworzonych:** 7 plików  
-**Lines of code:** ~1500 linii TypeScript + dokumentacja  
-
----
-
-## 🎉 Podsumowanie
-
-### Co Udało Się Osiągnąć
-
-✅ **Setup kompletny:**
-- Playwright w pełni skonfigurowany
-- 5 przeglądarek gotowych do testów
-- Fixtures auth + test data
-
-✅ **60+ testów krytycznych zaimplementowanych:**
-- 15 testów autentykacji
-- 20+ testów drag & drop + race conditions
-- 25+ testów regresji bugów #5-9
-
-✅ **100% pokrycie Bug #5-9:**
-- Race conditions
-- Loading states
-- Auto-cancel
-- Position validation
-- Nullable constraints
-
-✅ **Dokumentacja kompletna:**
-- E2E Test Plan (38KB)
-- E2E README (10KB)
-- E2E MVP Status (ten dokument)
-
-### Gotowość do Merge
-
-**Obecny stan:** 🟡 45% gotowe
-
-**Po uruchomieniu testów i naprawie ewentualnych błędów:**
-- Jeśli 100% zaimplementowanych testów przechodzi → **60% gotowe do merge**
-- Po implementacji pozostałych testów krytycznych → **100% gotowe do merge**
-
-**Rekomendacja:** 
-1. 🚀 **Uruchom obecne testy** (Opcja B)
-2. 🔧 **Naprawa ewentualnych problemów**
-3. ✅ **Decyzja:** merge z 60% coverage LUB kontynuuj do 100%
-
----
-
-**Autor:** AI Assistant + Kamil Gol  
-**Data:** 08.02.2026, 01:27 CET  
-**Branch:** `feature/reservation-queue`  
-**Status:** 🟡 MVP Faza 1 + część Fazy 2 UKOŃCZONA  
+**Autor:** AI Assistant + Kamil Gol
+**Ostatnia aktualizacja:** 25.03.2026
+**Branch:** `claude/musing-wozniak` (PR #241)
+**Status:** ✅ **ALL CI GREEN — 231 passed, 0 failed**
