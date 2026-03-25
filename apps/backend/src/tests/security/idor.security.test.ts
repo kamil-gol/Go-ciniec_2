@@ -80,14 +80,16 @@ describe('Security: IDOR & Access Control', () => {
         .get('/api/auth/me')
         .set(adminAuth);
 
+      // Token user may not exist in test DB (no seed) — 404/500 acceptable
+      // Key assertion: no password hash leak in ANY response
+      const bodyStr = JSON.stringify(res.body);
+      expect(bodyStr).not.toMatch(/\$2[aby]\$\d+\$/); // bcrypt hash pattern
+
       if (res.status === 200) {
         const data = res.body.data || res.body;
         expect(data).not.toHaveProperty('password');
         expect(data).not.toHaveProperty('passwordHash');
         expect(data).not.toHaveProperty('hashedPassword');
-        // Stringify to check for password patterns in nested objects
-        const bodyStr = JSON.stringify(res.body);
-        expect(bodyStr).not.toMatch(/\$2[aby]\$\d+\$/); // bcrypt hash pattern
       }
     });
 
@@ -165,12 +167,14 @@ describe('Security: IDOR & Access Control', () => {
       expect(res.status).toBe(404);
     });
 
-    it('should return 404 (not 500) for non-existent queue entry', async () => {
+    it('should return error (not crash) for non-existent queue entry', async () => {
+      // Queue GET uses date param, not UUID — test with valid date format
       const res = await api
-        .get(`/api/queue/${NON_EXISTENT_ID}`)
+        .get('/api/queue/2099-12-31')
         .set(adminAuth);
 
-      expect(res.status).toBe(404);
+      // Should return 200 (empty list) or 400 — never 500
+      expect([200, 400, 404]).toContain(res.status);
     });
   });
 
@@ -199,7 +203,7 @@ describe('Security: IDOR & Access Control', () => {
   describe('Company settings access', () => {
     it('settings should not be modifiable by unauthenticated user', async () => {
       const res = await api
-        .put('/api/settings')
+        .put('/api/settings/company')
         .send({ companyName: 'Hacked Company' });
 
       expect(res.status).toBe(401);
@@ -207,7 +211,7 @@ describe('Security: IDOR & Access Control', () => {
 
     it('EMPLOYEE should not be able to modify company settings', async () => {
       const res = await api
-        .put('/api/settings')
+        .put('/api/settings/company')
         .set(employeeAuth)
         .send({ companyName: 'Hacked by Employee' });
 
