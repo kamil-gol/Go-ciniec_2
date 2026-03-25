@@ -1,0 +1,54 @@
+# Codecov Configuration
+# Enforces quality gates for coverage on PRs
+# Docs: https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    # Project-level coverage (overall repository)
+    project:
+      default:
+        target: 70%
+        threshold: 2%  # Allow 2% drop without failing
+        flags:
+          - backend-unit
+          - backend-integration
+
+    # Patch coverage (only new/changed code in PR)
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+
+# Flag management
+flags:
+  backend-unit:
+    paths:
+      - apps/backend/src/
+    carryforward: true
+  backend-integration:
+    paths:
+      - apps/backend/src/
+    carryforward: true
+
+# Ignore paths
+ignore:
+  - "apps/backend/src/tests/**"
+  - "apps/backend/coverage/**"
+  - "apps/backend/prisma/**"
+  - "apps/frontend/**"
+  - "docs/**"
+  - "**/*.d.ts"
+  - "**/*.config.*"
+  - "**/*.spec.ts"
+
+# Comment configuration for PRs
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true
+  require_base: false
+  require_head: true
+
+# PR annotations
+github_checks:
+  annotations: true

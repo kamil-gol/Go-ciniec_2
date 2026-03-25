@@ -10,6 +10,8 @@ on:
     branches: [main, develop]
     paths:
       - 'apps/backend/**'
+      - '.github/workflows/backend-ci.yml'
+      - 'codecov.yml'
 
 jobs:
   # ========================================
@@ -139,10 +141,62 @@ jobs:
           fail_ci_if_error: false
 
   # ========================================
-  # Job 4: Docker Build (only on main push)
+  # Job 4: Security Tests (with PostgreSQL)
+  # ========================================
+  security-tests:
+    runs-on: ubuntu-latest
+    needs: lint
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: rezerwacje_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        working-directory: ./apps/backend
+        run: npm install
+
+      - name: Generate Prisma Client
+        working-directory: ./apps/backend
+        run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5433/rezerwacje_test
+
+      - name: Push Schema to Test DB
+        working-directory: ./apps/backend
+        run: npx prisma db push --force-reset --accept-data-loss
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5433/rezerwacje_test
+
+      - name: Run Security Tests
+        working-directory: ./apps/backend
+        run: npm run test:security -- --ci --forceExit --detectOpenHandles
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test:test@localhost:5433/rezerwacje_test
+          JWT_SECRET: test-secret-key-do-not-use-in-production
+
+  # ========================================
+  # Job 5: Docker Build (only on main push)
   # ========================================
   docker-build:
-    needs: [unit-tests, integration-tests]
+    needs: [unit-tests, integration-tests, security-tests]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
