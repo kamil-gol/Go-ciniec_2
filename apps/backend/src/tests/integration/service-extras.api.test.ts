@@ -49,6 +49,13 @@ jest.mock('../../middlewares/auth', () => ({
   },
   requireRole: () => (_req: any, _res: any, next: any) => next(),
 }));
+jest.mock('../../middlewares/roles', () => ({
+  requireAdmin: (_req: any, _res: any, next: any) => next(),
+  requireRole: () => (_req: any, _res: any, next: any) => next(),
+}));
+jest.mock('../../middlewares/asyncHandler', () => ({
+  asyncHandler: (fn: any) => (req: any, res: any, next: any) => Promise.resolve(fn(req, res, next)).catch(next),
+}));
 
 import express from 'express';
 import request from 'supertest';

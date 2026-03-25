@@ -97,6 +97,12 @@ export class Decimal {
   toNumber() { return Number(this._value); }
   toString() { return this._value; }
   toFixed(dp: number) { return Number(this._value).toFixed(dp); }
+  valueOf() { return Number(this._value); }
+  toJSON() { return this._value; }
+  [Symbol.toPrimitive](hint: string) {
+    if (hint === 'number') return Number(this._value);
+    return this._value;
+  }
   static add(a: Decimal, b: Decimal) { return new Decimal(a.toNumber() + b.toNumber()); }
 }
 

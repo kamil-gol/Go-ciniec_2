@@ -400,13 +400,6 @@ function buildWhere(where: WhereClause, startIdx = 1, tableName = ''): [string, 
           conditions.push(`"${dbCol}" != $${idx++}`);
           values.push(val.not);
         }
-      } else if ('equals' in val) {
-        if (val.equals === null) {
-          conditions.push(`"${dbCol}" IS NULL`);
-        } else {
-          conditions.push(`"${dbCol}" = $${idx++}`);
-          values.push(val.equals);
-        }
       } else if ('path' in val && ('equals' in val || 'not' in val)) {
         // JSON path filter: { path: ['field1', 'field2'], equals: value }
         const pathArr = val.path as string[];
@@ -422,6 +415,13 @@ function buildWhere(where: WhereClause, startIdx = 1, tableName = ''): [string, 
             conditions.push(`${jsonAccess} = $${idx++}`);
             values.push(String(val.equals));
           }
+        }
+      } else if ('equals' in val) {
+        if (val.equals === null) {
+          conditions.push(`"${dbCol}" IS NULL`);
+        } else {
+          conditions.push(`"${dbCol}" = $${idx++}`);
+          values.push(val.equals);
         }
       } else if ('some' in val || 'every' in val || 'none' in val || 'is' in val || 'isNot' in val) {
         // Skip relation aggregate filters — these need sub-queries
