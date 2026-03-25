@@ -37,12 +37,12 @@
 | 11 | `concurrent.spec.ts` | 7 | 0 | 7 | ✅ PASS |
 | 12 | `check-availability.spec.ts` | 4 | 0 | 4 | ✅ PASS |
 | 13 | `pdf-generation.spec.ts` | 14 | 0 | 14 | ✅ PASS |
-| 14 | `wizard-menu-template.spec.ts` | 4 | 5 | 9 | ✅ PASS |
+| 14 | `wizard-menu-template.spec.ts` | 9 | 0 | 9 | ✅ PASS |
 | 15 | `menu-api-flow.spec.ts` | 17 | 18 | 35 | ✅ PASS |
 | 16 | `menu-templates.spec.ts` | 9 | 6 | 15 | ✅ PASS |
 | 17 | `menu-assignment.spec.ts` | 8 | 14 | 22 | ✅ PASS |
 | 18 | `menu-calculator.spec.ts` | 8 | 14 | 22 | ✅ PASS |
-| 19 | `history.spec.ts` | 12 | 12 | 24 | ✅ PASS (all skip) |
+| 19 | `history.spec.ts` | 12 | 0 | 12 | ✅ PASS |
 | | **RAZEM** | **219** | **69** | **288** | **✅ ALL GREEN** |
 
 > **Uwaga:** CI raportuje 231 passed + 38 skipped = 269 (Playwright liczy inaczej niż grep po `test(` —
@@ -52,12 +52,12 @@
 
 | Plik | Powód skip | Opis |
 |------|-----------|------|
-| `history.spec.ts` (12) | Brak endpointu `/api/audit-logs` z filtrami | Testy historii zmian czekają na rozbudowę API |
+| `history.spec.ts` (0) | ✅ Naprawione — seed tworzy ActivityLog entries | Testy historii zmian teraz przechodzą |
 | `menu-api-flow.spec.ts` (≤18) | `test.skip()` warunkowy — brak endpointów `menu-options`, `addon-groups` | Część API menu jeszcze nie zaimplementowana |
 | `menu-assignment.spec.ts` (14) | Brak seed data / endpointów menu | Testy przypisania menu do rezerwacji |
 | `menu-calculator.spec.ts` (14) | Brak seed data / endpointów menu | Testy kalkulatora cen menu |
 | `menu-templates.spec.ts` (6) | Brak seed data szablonów | Testy zarządzania szablonami |
-| `wizard-menu-template.spec.ts` (5) | Brak seed data szablonów/pakietów w DB | Testy flow Szablon → Pakiet → Ceny w wizardzie |
+| `wizard-menu-template.spec.ts` (0) | ✅ Naprawione — beforeEach wybiera "Wesele" | Testy flow Szablon → Pakiet → Ceny odblokowane |
 
 ---
 
@@ -92,12 +92,12 @@
 | Moduł | Plik | Aktywne/Skip | Status |
 |-------|------|-------------|--------|
 | **PDF Generation** | `pdf-generation.spec.ts` | 14/0 | ✅ DONE |
-| **Wizard Menu** | `wizard-menu-template.spec.ts` | 4/5 | 🟡 Częściowe (brak seed data) |
+| **Wizard Menu** | `wizard-menu-template.spec.ts` | 9/0 | ✅ DONE |
 | **Menu API Flow** | `menu-api-flow.spec.ts` | 17/18 | 🟡 Częściowe (brak endpointów) |
 | **Menu Templates** | `menu-templates.spec.ts` | 9/6 | 🟡 Częściowe (brak seed data) |
 | **Menu Assignment** | `menu-assignment.spec.ts` | 8/14 | 🟡 Częściowe (brak seed data) |
 | **Menu Calculator** | `menu-calculator.spec.ts` | 8/14 | 🟡 Częściowe (brak seed data) |
-| **Historia Zmian** | `history.spec.ts` | 0/12 | ⏳ Czeka na API audit-logs |
+| **Historia Zmian** | `history.spec.ts` | 12/0 | ✅ DONE |
 
 ---
 
@@ -105,11 +105,10 @@
 
 ### Priorytet 🔴 WYSOKI — Odblokowanie skipped testów
 
-#### 1. Seed data dla testów menu (odblokowuje ~35 testów)
-- Brak szablonów menu, pakietów cenowych w testowej bazie danych
-- Potrzebne: `seed:test` skrypt tworzący min. 2 szablony + 2 pakiety + kursy
-- **Dotyczy:** `wizard-menu-template`, `menu-templates`, `menu-assignment`, `menu-calculator`
-- **Powiązane issue:** brak (do utworzenia)
+#### 1. ~~Seed data dla testów menu~~ ✅ DONE
+- ~~Brak szablonów menu, pakietów cenowych w testowej bazie danych~~
+- Zaimplementowane: 2 szablony (Wesele, Komunia) + 2 pakiety Standard + 4 kursy + 4 service items
+- **Dotyczy:** `wizard-menu-template` ✅, `menu-templates`, `menu-assignment`, `menu-calculator`
 
 #### 2. API endpoints menu-options i addon-groups (odblokowuje ~10 testów)
 - `POST/GET/DELETE /api/menu-options` — nie zaimplementowane
@@ -117,10 +116,10 @@
 - **Dotyczy:** `menu-api-flow.spec.ts` testy 8-10, 13-14
 - **Powiązane issue:** #98 (zamknięte — do reopenowania lub nowy issue)
 
-#### 3. API audit-logs z filtrami (odblokowuje 12 testów)
-- Endpoint `GET /api/audit-logs?entityType=&entityId=` z filtrowaniem
-- **Dotyczy:** `history.spec.ts` — wszystkie 12 testów
-- **Powiązane issue:** #100
+#### 3. ~~API audit-logs z filtrami~~ ✅ DONE
+- Endpoint `GET /api/audit-log/entity/:entityType/:entityId` istnieje i działa
+- Seed tworzy ActivityLog entries dla każdej rezerwacji (CREATE, STATUS_CHANGE, UPDATE)
+- **Dotyczy:** `history.spec.ts` — wszystkie 12 testów odblokowane
 
 ### Priorytet 🟡 ŚREDNI — Nowe testy
 

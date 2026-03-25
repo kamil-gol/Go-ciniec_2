@@ -22,6 +22,7 @@ export async function seedE2ETestData() {
 
   // Clean up in correct order (respecting foreign keys)
   console.log('\ud83d\uddd1\ufe0f  Cleaning existing data (respecting FK constraints)...');
+  await prisma.activityLog.deleteMany({});
   await prisma.reservationMenuSnapshot.deleteMany({});
   await prisma.reservationHistory.deleteMany({});
   await prisma.depositPayment.deleteMany({});
@@ -385,8 +386,71 @@ export async function seedE2ETestData() {
   );
   console.log(`   \u2705 Created ${createdDeposits.length} deposits`);
 
-  // 6. MENU TEMPLATES, PACKAGES & COURSES
-  console.log('\n\ud83c\udf7d\ufe0f  Seeding Menu Templates, Packages & Courses...');
+  // 6. ACTIVITY LOGS (for history.spec.ts)
+  console.log('\n📝 Seeding Activity Logs...');
+
+  const activityLogs = [];
+  for (const reservation of createdReservations) {
+    // CREATE entry for every reservation
+    activityLogs.push({
+      userId: adminUser.id,
+      action: 'CREATE',
+      entityType: 'RESERVATION',
+      entityId: reservation.id,
+      details: {
+        description: `Utworzono rezerwację #${reservation.id.slice(0, 8)}`,
+        changes: {
+          status: { from: null, to: reservation.status },
+          guests: reservation.guests,
+        },
+      },
+      ipAddress: '127.0.0.1',
+      userAgent: 'E2E-Seed/1.0',
+      createdAt: new Date(new Date(reservation.createdAt).getTime() - 60000),
+    });
+
+    // UPDATE/STATUS_CHANGE entries for non-RESERVED reservations
+    if (reservation.status !== 'RESERVED') {
+      activityLogs.push({
+        userId: adminUser.id,
+        action: 'STATUS_CHANGE',
+        entityType: 'RESERVATION',
+        entityId: reservation.id,
+        details: {
+          description: `Zmiana statusu z RESERVED na ${reservation.status}`,
+          changes: {
+            status: { from: 'RESERVED', to: reservation.status },
+          },
+        },
+        ipAddress: '127.0.0.1',
+        userAgent: 'E2E-Seed/1.0',
+        createdAt: reservation.createdAt,
+      });
+    }
+
+    // UPDATE entry with notes
+    activityLogs.push({
+      userId: adminUser.id,
+      action: 'UPDATE',
+      entityType: 'RESERVATION',
+      entityId: reservation.id,
+      details: {
+        description: 'Aktualizacja danych rezerwacji',
+        changes: {
+          notes: { from: null, to: reservation.notes },
+        },
+      },
+      ipAddress: '127.0.0.1',
+      userAgent: 'E2E-Seed/1.0',
+      createdAt: new Date(new Date(reservation.createdAt).getTime() + 60000),
+    });
+  }
+
+  await prisma.activityLog.createMany({ data: activityLogs });
+  console.log(`   ✅ Created ${activityLogs.length} activity log entries`);
+
+  // 7. MENU TEMPLATES, PACKAGES & COURSES
+  console.log('\n🍽️  Seeding Menu Templates, Packages & Courses...');
 
   // Fixed UUIDs for test stability
   const WESELE_TEMPLATE_ID = 'e2e00000-0000-4000-a000-000000000001';
@@ -520,7 +584,7 @@ export async function seedE2ETestData() {
     console.warn('   \u26a0\ufe0f  Event type "Komunia" not found — skipping menu template');
   }
 
-  // 7. SERVICE EXTRAS (for menu-calculator and menu-assignment tests)
+  // 8. SERVICE EXTRAS (for menu-calculator and menu-assignment tests)
   console.log('\n🎁 Seeding Service Extras...');
 
   const drinksCategory = await prisma.serviceCategory.create({
