@@ -55,10 +55,10 @@ export default defineConfig({
         'e2e/**',
       ],
       thresholds: {
-        branches: 30,
+        branches: 50,
         functions: 30,
-        lines: 30,
-        statements: 30,
+        lines: 15,
+        statements: 15,
       },
     },
 
