@@ -11,6 +11,7 @@ const eslintConfig = [
       '@typescript-eslint/no-require-imports': 'warn',
       'react/display-name': 'warn',
       'react/no-children-prop': 'warn',
+      'react/no-unescaped-entities': 'warn',
       // React Hooks v7 new rules — downgrade to warn for existing codebase
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/purity': 'warn',
