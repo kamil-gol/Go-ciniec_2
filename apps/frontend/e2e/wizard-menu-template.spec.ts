@@ -65,8 +65,14 @@ test.describe('Wizard Step 3: Szablon → Pakiet → Ceny', () => {
     await wizard.nextMonth();
     await wizard.selectDate(15);
 
-    // Select the first available time slot
-    const timeButton = authenticatedPage.locator('button').filter({ hasText: /^\d{2}:\d{2}$/ }).first();
+    // Open START time picker popover (time slots are inside a Popover)
+    const startTimeTrigger = authenticatedPage.locator('button:has-text("Wybierz godzinę")').first();
+    await expect(startTimeTrigger).toBeVisible({ timeout: 3000 });
+    await startTimeTrigger.click();
+    await authenticatedPage.waitForTimeout(300);
+
+    // Select the first available time slot from the popover
+    const timeButton = authenticatedPage.locator('[data-radix-popper-content-wrapper] button, [role="dialog"] button').filter({ hasText: /^\d{2}:\d{2}$/ }).first();
     await expect(timeButton).toBeVisible({ timeout: 3000 });
     await timeButton.click();
 
