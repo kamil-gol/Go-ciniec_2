@@ -54,6 +54,12 @@ test.describe('Wizard Step 3: Szablon → Pakiet → Ceny', () => {
     await authenticatedPage.locator('[role="option"]').first().click();
     await authenticatedPage.waitForTimeout(300);
 
+    // Open date picker popover (calendar is inside a Popover component)
+    const datePickerTrigger = authenticatedPage.locator('button:has-text("Wybierz datę")');
+    await expect(datePickerTrigger).toBeVisible({ timeout: 3000 });
+    await datePickerTrigger.click();
+    await authenticatedPage.waitForTimeout(300);
+
     // Navigate to next month to avoid "past date" issues, then select day 15
     await wizard.nextMonth();
     await wizard.selectDate(15);

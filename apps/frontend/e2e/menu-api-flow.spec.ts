@@ -190,7 +190,7 @@ test.describe.serial('Menu API E2E Flow', () => {
     test.skip(!templateId, 'No template');
     const res = await request.post(`${API_URL}/api/menu-templates/${templateId}/duplicate`, {
       headers: { Authorization: `Bearer ${authToken}` },
-      data: { name: `E2E Kopia ${Date.now()}` },
+      data: { newName: `E2E Kopia ${Date.now()}` },
     });
     expect(res.ok()).toBeTruthy();
     const body = await res.json();

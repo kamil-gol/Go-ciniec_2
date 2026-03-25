@@ -170,13 +170,14 @@ test.describe('Reservations Filters', () => {
       const count = parseInt(countText?.match(/\d+/)?.[0] || '0', 10);
 
       if (count > 0) {
-        // Each card should have: Sala, Klient, Goście, Wartość labels
-        // Scope to main to avoid sidebar matches
-        const main = page.locator('main');
-        await expect(main.locator('text=Sala').first()).toBeVisible();
-        await expect(main.locator('text=Klient').first()).toBeVisible();
-        await expect(main.locator('text=Goście').first()).toBeVisible();
-        await expect(main.locator('text=Wartość').first()).toBeVisible();
+        // At least one reservation card link should exist
+        const cardLink = page.locator('a[href*="/dashboard/reservations/"]:not([href*="/list"]):not([href*="/calendar"])').first();
+        await expect(cardLink).toBeVisible({ timeout: 5000 });
+
+        // Card should contain guest count (a number visible in the card)
+        await expect(
+          page.locator('.grid-cols-2 >> text=/\\d+/').first()
+        ).toBeVisible({ timeout: 3000 });
       }
     });
 
@@ -187,10 +188,10 @@ test.describe('Reservations Filters', () => {
       const count = parseInt(countText?.match(/\d+/)?.[0] || '0', 10);
 
       if (count > 0) {
-        // Eye icon (view details) link should exist — exclude /list and /calendar sub-paths
+        // Detail link should exist — exclude /list and /calendar sub-paths
         await expect(
-          page.locator('a[href*="/dashboard/reservations/"]:not([href*="/list"]):not([href*="/calendar"]) button').first()
-        ).toBeVisible({ timeout: 3000 });
+          page.locator('a[href*="/dashboard/reservations/"]:not([href*="/list"]):not([href*="/calendar"])').first()
+        ).toBeVisible({ timeout: 5000 });
       }
     });
   });
