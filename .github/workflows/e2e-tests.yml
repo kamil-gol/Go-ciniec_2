@@ -61,13 +61,13 @@ jobs:
           touch apps/frontend/e2e/.env.test
           touch apps/backend/.env.test
 
-      - name: Run database migrations
+      - name: Setup database schema
         working-directory: apps/backend
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
         run: |
           npx prisma generate
-          npx prisma migrate deploy
+          npx prisma db push --accept-data-loss --force-reset
 
       - name: Seed test data
         working-directory: apps/backend
@@ -166,13 +166,13 @@ jobs:
           touch apps/frontend/e2e/.env.test
           touch apps/backend/.env.test
 
-      - name: Setup database
+      - name: Setup database schema
         working-directory: apps/backend
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
         run: |
           npx prisma generate
-          npx prisma migrate deploy
+          npx prisma db push --accept-data-loss --force-reset
 
       - name: Seed test data
         working-directory: apps/backend
