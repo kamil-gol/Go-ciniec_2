@@ -214,6 +214,13 @@ describe('Whole venue conflict prevention', () => {
       name: 'Sala A',
       capacity: 100,
       isWholeVenue: false,
+      allowWithWholeVenue: false,
+    });
+    // Return the whole-venue hall when searching for it
+    mockPrisma.hall.findFirst.mockResolvedValue({
+      id: 'hall-wv',
+      isWholeVenue: true,
+      name: 'Cały Obiekt',
     });
     // Simulate existing whole-venue reservation
     mockPrisma.reservation.findFirst.mockResolvedValue({
