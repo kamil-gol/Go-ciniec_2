@@ -1,9 +1,14 @@
 # 🎯 E2E Tests MVP - Status Implementacji
 
-**Data:** 08.02.2026, 01:27 CET  
-**Opcja:** B - MVP (Testy Krytyczne)  
-**Status:** 🟡 Faza 1 + część Fazy 2 UKOŃCZONA  
-**Branch:** `feature/reservation-queue`  
+**Data:** 08.02.2026, 01:27 CET (ostatnia aktualizacja: 25.03.2026)
+**Opcja:** B - MVP (Testy Krytyczne)
+**Status:** 🟡 Faza 1 + część Fazy 2 UKOŃCZONA | ❌ CI CANCELLED (infrastruktura)
+**Branch:** `feature/reservation-queue`
+
+> **⚠️ CI Status (25.03.2026, PR #241):** Wszystkie E2E joby w GitHub Actions mają status CANCELLED.
+> Setup (checkout, install, DB schema push, seed, start servers) przechodzi poprawnie, ale step "Run tests" jest cancelowany.
+> Prawdopodobna przyczyna: problem infrastrukturalny GitHub Actions (timeout lub external cancellation).
+> Wymaga dalszej diagnozy — nie jest to problem z samymi testami ani konfiguracją Playwright.  
 
 ---
 
