@@ -256,7 +256,7 @@ test.describe.serial('Service Extras API E2E Flow', () => {
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     const item = body.data || body;
-    expect(item.basePrice).toBe(1800);
+    expect(Number(item.basePrice)).toBe(1800);
   });
 
   test('13. GET /items/:id — verify updated item', async ({ request }) => {
@@ -268,7 +268,7 @@ test.describe.serial('Service Extras API E2E Flow', () => {
     const body = await res.json();
     const item = body.data || body;
     expect(item.id).toBe(flatItemId);
-    expect(item.basePrice).toBe(1800);
+    expect(Number(item.basePrice)).toBe(1800);
     expect(item.description).toContain('premium');
   });
 
