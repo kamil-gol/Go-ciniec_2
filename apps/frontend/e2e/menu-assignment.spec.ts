@@ -65,7 +65,7 @@ test.describe('Menu Assignment to Reservation', () => {
 
       const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
       const templatesResp = await page.request.get(
-        `${baseURL}/api/menu/templates?eventTypeId=${eventTypes[0].id}&isActive=true`
+        `${baseURL}/api/menu-templates/active/${eventTypes[0].id}`
       );
 
       expect(templatesResp.ok()).toBe(true);
@@ -106,7 +106,7 @@ test.describe('Menu Assignment to Reservation', () => {
 
       const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
       const categoriesResp = await page.request.get(
-        `${baseURL}/api/menu/packages/${packages[0].id}/categories`
+        `${baseURL}/api/menu-packages/${packages[0].id}/categories`
       );
 
       if (categoriesResp.ok()) {

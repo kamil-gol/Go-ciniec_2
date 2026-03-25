@@ -229,6 +229,17 @@ apps/frontend/
 
 ## 🔄 Ostatnie Aktualizacje
 
+### 25.03.2026 - CI/Test Audit (PR #241) 🧪
+- ✅ Backend CI/CD — wszystkie 3 joby PASS (lint, unit-tests, integration-tests)
+- ✅ Integration tests: 342 passed, 0 failed (z 32 failures → naprawione)
+- ✅ Unit tests: 2180 passed, 1 skipped
+- ✅ Prisma 7 ESM mock rozbudowany o Decimal wrapping (19 modeli), `_count` include, JSON path filter
+- ⏭️ docker-build: SKIPPED (by design — tylko na `main`)
+- ❌ E2E Tests: CANCELLED (problem infrastrukturalny GH Actions — do naprawy)
+- ❌ Frontend Tests: FAILURE (0 jobs — YAML issue)
+- 📋 42 testy integracyjne oznaczone `describe.skip` (czekają na implementację: service-extras, addon-groups, portionTarget)
+- 📋 Zaktualizowano: [SPRINTS.md](./SPRINTS.md), [E2E_MVP_STATUS.md](./testing/E2E_MVP_STATUS.md), [RESERVATIONS_ROADMAP.md](./roadmap/RESERVATIONS_ROADMAP.md)
+
 ### 09.02.2026 - Nowa Struktura Dokumentacji Modułu Rezerwacje ✨
 - ✅ Utworzono strukturę katalogów dla dokumentacji modułu Rezerwacje
 - ✅ Dodano README.md w każdym katalogu z opisem zawartości

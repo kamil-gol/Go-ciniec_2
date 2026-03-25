@@ -119,9 +119,9 @@ describe('ReservationsList', () => {
     it('should render reservation cards with client names', () => {
       renderWithProviders(<ReservationsList />)
 
-      expect(screen.getByText('Jan Kowalski')).toBeTruthy()
-      expect(screen.getByText('Anna Nowak')).toBeTruthy()
-      expect(screen.getByText('Piotr Wiśniewski')).toBeTruthy()
+      expect(screen.getByText('Jan Kowalski')).toBeInTheDocument()
+      expect(screen.getByText('Anna Nowak')).toBeInTheDocument()
+      expect(screen.getByText('Piotr Wiśniewski')).toBeInTheDocument()
     })
 
     it('should display hall names for each reservation', () => {
@@ -129,28 +129,28 @@ describe('ReservationsList', () => {
 
       const hallNames = screen.getAllByText('Sala Główna')
       expect(hallNames.length).toBeGreaterThanOrEqual(1)
-      expect(screen.getByText('Sala Kameralna')).toBeTruthy()
+      expect(screen.getByText('Sala Kameralna')).toBeInTheDocument()
     })
 
     it('should show event type names', () => {
       renderWithProviders(<ReservationsList />)
 
-      expect(screen.getByText('Wesele')).toBeTruthy()
-      expect(screen.getByText('Komunia')).toBeTruthy()
-      expect(screen.getByText('Chrzciny')).toBeTruthy()
+      expect(screen.getByText('Wesele')).toBeInTheDocument()
+      expect(screen.getByText('Komunia')).toBeInTheDocument()
+      expect(screen.getByText('Chrzciny')).toBeInTheDocument()
     })
 
     it('should display guest counts', () => {
       renderWithProviders(<ReservationsList />)
 
-      expect(screen.getByText('120')).toBeTruthy()
-      expect(screen.getByText('50')).toBeTruthy()
+      expect(screen.getByText('120')).toBeInTheDocument()
+      expect(screen.getByText('50')).toBeInTheDocument()
     })
 
     it('should show reservation count', () => {
       renderWithProviders(<ReservationsList />)
 
-      expect(screen.getByText('3')).toBeTruthy() // "Znaleziono 3 rezerwacji"
+      expect(screen.getByText('3')).toBeInTheDocument() // "Znaleziono 3 rezerwacji"
     })
   })
 
@@ -181,7 +181,7 @@ describe('ReservationsList', () => {
 
       renderWithProviders(<ReservationsList />)
 
-      expect(screen.getByText(/błąd podczas ładowania/i)).toBeTruthy()
+      expect(screen.getByText(/błąd podczas ładowania/i)).toBeInTheDocument()
     })
   })
 
@@ -196,7 +196,7 @@ describe('ReservationsList', () => {
 
       renderWithProviders(<ReservationsList />)
 
-      expect(screen.getByText(/brak rezerwacji/i)).toBeTruthy()
+      expect(screen.getByText(/brak rezerwacji/i)).toBeInTheDocument()
     })
   })
 
@@ -204,8 +204,7 @@ describe('ReservationsList', () => {
     it('should render status filter dropdown', () => {
       renderWithProviders(<ReservationsList />)
 
-      const filterTrigger = screen.getByText(/wszystkie statusy/i)
-      expect(filterTrigger).toBeTruthy()
+      expect(screen.getByText(/wszystkie statusy/i)).toBeInTheDocument()
     })
 
     it('should pass status filter to useReservations hook', async () => {
@@ -222,8 +221,7 @@ describe('ReservationsList', () => {
     it('should render archive toggle switch', () => {
       renderWithProviders(<ReservationsList />)
 
-      const archiveToggle = screen.getByRole('switch')
-      expect(archiveToggle).toBeTruthy()
+      expect(screen.getByRole('switch')).toBeInTheDocument()
     })
 
     it('should pass archived flag to useReservations when toggled', async () => {
@@ -250,7 +248,7 @@ describe('ReservationsList', () => {
       const deleteButtons = screen.getAllByTitle('Anuluj rezerwację')
       // The cancelled reservation (res-3) delete button should be disabled
       const cancelledDeleteBtn = deleteButtons[deleteButtons.length - 1]
-      expect(cancelledDeleteBtn).toBeTruthy()
+      expect(cancelledDeleteBtn).toBeInTheDocument()
     })
   })
 
@@ -281,8 +279,8 @@ describe('ReservationsList', () => {
 
       renderWithProviders(<ReservationsList />)
 
-      expect(screen.getByText(/następna/i)).toBeTruthy()
-      expect(screen.getByText(/poprzednia/i)).toBeTruthy()
+      expect(screen.getByText(/następna/i)).toBeInTheDocument()
+      expect(screen.getByText(/poprzednia/i)).toBeInTheDocument()
     })
 
     it('should disable previous button on first page', () => {

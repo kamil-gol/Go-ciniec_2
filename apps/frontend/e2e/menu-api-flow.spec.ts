@@ -10,15 +10,15 @@
  */
 import { test, expect } from '@playwright/test';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 let authToken: string;
 let eventTypeId: string;
 let templateId: string;
 let packageId: string;
 let courseId: string;
-let optionId: string;
-let addonGroupId: string;
+let categoryId: string;
+let itemId: string;
 
 test.describe.serial('Menu API E2E Flow', () => {
 
@@ -87,7 +87,9 @@ test.describe.serial('Menu API E2E Flow', () => {
       data: {
         name: 'E2E Standard Package',
         menuTemplateId: templateId,
-        pricePerPerson: 250,
+        pricePerAdult: 250,
+        pricePerChild: 125,
+        pricePerToddler: 62,
         description: 'Standard wedding package',
       },
     });
@@ -124,47 +126,51 @@ test.describe.serial('Menu API E2E Flow', () => {
     expect(courses.length).toBeGreaterThanOrEqual(1);
   });
 
-  test('8. Create menu option', async ({ request }) => {
+  test('8. Create service extra category', async ({ request }) => {
     test.skip(!authToken, 'Not logged in');
-    const res = await request.post(`${API_URL}/api/menu-options`, {
+    const res = await request.post(`${API_URL}/api/service-extras/categories`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+      data: {
+        name: `E2E Dodatki mięsne ${Date.now()}`,
+        slug: `e2e-dodatki-miesne-${Date.now()}`,
+        description: 'Created by E2E test',
+        displayOrder: 0,
+      },
+    });
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    categoryId = body.data.id;
+    expect(categoryId).toBeTruthy();
+  });
+
+  test('9. Create service extra item', async ({ request }) => {
+    test.skip(!categoryId, 'No category');
+    const res = await request.post(`${API_URL}/api/service-extras/items`, {
       headers: { Authorization: `Bearer ${authToken}` },
       data: {
         name: 'E2E Open Bar',
-        category: 'ALCOHOL',
-        pricePerPerson: 50,
+        categoryId: categoryId,
+        priceType: 'PER_PERSON',
+        basePrice: 50,
         description: 'Premium open bar',
       },
     });
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
-    optionId = body.data.id;
+    itemId = body.data.id;
+    expect(itemId).toBeTruthy();
   });
 
-  test('9. Assign option to package', async ({ request }) => {
-    test.skip(!packageId || !optionId, 'Missing package or option');
-    const res = await request.post(`${API_URL}/api/menu-packages/${packageId}/options`, {
+  test('10. List service extra items by category', async ({ request }) => {
+    test.skip(!categoryId, 'No category');
+    const res = await request.get(`${API_URL}/api/service-extras/items?categoryId=${categoryId}`, {
       headers: { Authorization: `Bearer ${authToken}` },
-      data: { optionIds: [optionId] },
-    });
-    // May succeed or fail based on implementation details
-    expect(res.status()).toBeLessThan(500);
-  });
-
-  test('10. Create addon group', async ({ request }) => {
-    test.skip(!authToken, 'Not logged in');
-    const res = await request.post(`${API_URL}/api/addon-groups`, {
-      headers: { Authorization: `Bearer ${authToken}` },
-      data: {
-        name: 'E2E Dodatki mięsne',
-        priceType: 'PER_ITEM',
-        basePrice: 25,
-        minSelect: 0,
-        maxSelect: 3,
-      },
     });
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
-    addonGroupId = body.data.id;
+    const items = body.data || body;
+    expect(Array.isArray(items)).toBe(true);
+    expect(items.some((i: any) => i.id === itemId)).toBe(true);
   });
 
   test('11. Update template', async ({ request }) => {
@@ -180,7 +186,7 @@ test.describe.serial('Menu API E2E Flow', () => {
     test.skip(!templateId, 'No template');
     const res = await request.post(`${API_URL}/api/menu-templates/${templateId}/duplicate`, {
       headers: { Authorization: `Bearer ${authToken}` },
-      data: { name: `E2E Kopia ${Date.now()}` },
+      data: { newName: `E2E Kopia ${Date.now()}` },
     });
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
@@ -189,17 +195,17 @@ test.describe.serial('Menu API E2E Flow', () => {
 
   // ── Cleanup ──
 
-  test('13. Delete addon group', async ({ request }) => {
-    test.skip(!addonGroupId, 'No addon group');
-    const res = await request.delete(`${API_URL}/api/addon-groups/${addonGroupId}`, {
+  test('13. Delete service extra item', async ({ request }) => {
+    test.skip(!itemId, 'No item to delete');
+    const res = await request.delete(`${API_URL}/api/service-extras/items/${itemId}`, {
       headers: { Authorization: `Bearer ${authToken}` },
     });
     expect(res.ok()).toBeTruthy();
   });
 
-  test('14. Delete option', async ({ request }) => {
-    test.skip(!optionId, 'No option');
-    const res = await request.delete(`${API_URL}/api/menu-options/${optionId}`, {
+  test('14. Delete service extra category', async ({ request }) => {
+    test.skip(!categoryId, 'No category to delete');
+    const res = await request.delete(`${API_URL}/api/service-extras/categories/${categoryId}`, {
       headers: { Authorization: `Bearer ${authToken}` },
     });
     expect(res.ok()).toBeTruthy();

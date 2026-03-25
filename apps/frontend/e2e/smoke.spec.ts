@@ -42,8 +42,8 @@ test.describe('Smoke Tests - Critical Paths', () => {
       await page.goto(path);
       await page.waitForLoadState('networkidle');
       
-      // No 404 or error page
-      await expect(page.locator('text=404')).toHaveCount(0);
+      // No 404 error page (check for exact "404" heading, not any text containing "404")
+      await expect(page.getByRole('heading', { name: '404' })).toHaveCount(0);
     }
   });
 

@@ -66,7 +66,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByText(/potwierdzon/i)).toBeTruthy()
+      expect(screen.getByText(/potwierdzon/i)).toBeInTheDocument()
     })
 
     it('should display correct label for PENDING status', () => {
@@ -79,7 +79,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByText(/oczekując/i)).toBeTruthy()
+      expect(screen.getByText(/oczekując/i)).toBeInTheDocument()
     })
 
     it('should display correct label for COMPLETED status', () => {
@@ -92,7 +92,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByText(/zakończon/i)).toBeTruthy()
+      expect(screen.getByText(/zakończon/i)).toBeInTheDocument()
     })
 
     it('should display correct label for CANCELLED status', () => {
@@ -105,7 +105,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByText(/anulowan/i)).toBeTruthy()
+      expect(screen.getByText(/anulowan/i)).toBeInTheDocument()
     })
   })
 
@@ -201,7 +201,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByTitle('Przywróć z archiwum')).toBeTruthy()
+      expect(screen.getByTitle('Przywróć z archiwum')).toBeInTheDocument()
       expect(screen.queryByTitle('Zarchiwizuj')).toBeNull()
     })
   })

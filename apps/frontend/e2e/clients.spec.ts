@@ -6,11 +6,11 @@ import { generateRandomEmail, generateRandomPhone } from './fixtures/test-data';
  * Client Management Tests
  *
  * Page: /dashboard/clients
- * Create form: inline, toggled via "Dodaj Klienta" button
+ * Create form: inline, toggled via "Dodaj klienta" button
  * Form fields: firstName, lastName, email, phone, notes
  * Required: firstName, lastName, phone (HTML required + JS validation)
- * Search: input with placeholder "Szukaj klientów..."
- * Stats: Wszyscy, Z emailem, Z telefonem, Ten miesiąc
+ * Search: input with placeholder "Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."
+ * Stats: Wszyscy, Osoby prywatne, Firmy, Rezerwacje
  */
 
 test.describe('Client Management', () => {
@@ -30,25 +30,26 @@ test.describe('Client Management', () => {
     test('should display stats cards', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
-      await expect(page.getByText('Wszyscy', { exact: true })).toBeVisible({ timeout: 5000 });
-      await expect(page.getByText('Z emailem', { exact: true })).toBeVisible();
-      await expect(page.getByText('Z telefonem', { exact: true })).toBeVisible();
-      await expect(page.getByText('Ten miesiąc', { exact: true })).toBeVisible();
+      await expect(page.getByText('Wszyscy', { exact: true }).first()).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText('Osoby prywatne', { exact: true }).first()).toBeVisible();
+      await expect(page.getByText('Firmy', { exact: true }).first()).toBeVisible();
+      // Scope to main content to avoid matching sidebar "Rezerwacje" nav link
+      await expect(page.locator('main').getByText('Rezerwacje', { exact: true })).toBeVisible();
     });
 
-    test('should have Dodaj Klienta button', async ({ page }) => {
+    test('should have Dodaj klienta button', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
       await expect(
-        page.locator('button:has-text("Dodaj Klienta")')
+        page.locator('button:has-text("Dodaj klienta")')
       ).toBeVisible({ timeout: 5000 });
     });
 
-    test('should display Lista Klientów section', async ({ page }) => {
+    test('should display search and filter tabs', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
       await expect(
-        page.getByText('Lista Klientów', { exact: true })
+        page.locator('input[placeholder="Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."]')
       ).toBeVisible({ timeout: 5000 });
     });
 
@@ -56,7 +57,7 @@ test.describe('Client Management', () => {
       await page.goto('/dashboard/clients');
 
       await expect(
-        page.locator('input[placeholder="Szukaj klientów..."]')
+        page.locator('input[placeholder="Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."]')
       ).toBeVisible({ timeout: 5000 });
     });
   });
@@ -65,7 +66,7 @@ test.describe('Client Management', () => {
     test('should filter clients by search term', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
-      const searchInput = page.locator('input[placeholder="Szukaj klientów..."]');
+      const searchInput = page.locator('input[placeholder="Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."]');
       await expect(searchInput).toBeVisible({ timeout: 5000 });
 
       // Type a search term
@@ -83,7 +84,7 @@ test.describe('Client Management', () => {
     test('should clear search and show all clients again', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
-      const searchInput = page.locator('input[placeholder="Szukaj klientów..."]');
+      const searchInput = page.locator('input[placeholder="Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."]');
       await expect(searchInput).toBeVisible({ timeout: 5000 });
 
       // Apply search
@@ -102,14 +103,15 @@ test.describe('Client Management', () => {
   });
 
   test.describe('Create Client Form', () => {
-    test('should open create form when clicking Dodaj Klienta', async ({ page }) => {
+    test('should open create form when clicking Dodaj klienta', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
-      await page.click('button:has-text("Dodaj Klienta")');
+      await page.click('button:has-text("Dodaj klienta")');
 
-      // Form header should appear
+      // Form section header should appear (the inline form has "Dane osobowe" section)
+      const form = page.locator('form');
       await expect(
-        page.locator('text=Dodaj Nowego Klienta')
+        form.locator('text=Dane osobowe')
       ).toBeVisible({ timeout: 3000 });
 
       // Form fields should be visible
@@ -124,20 +126,23 @@ test.describe('Client Management', () => {
       await page.goto('/dashboard/clients');
 
       // Open form
-      await page.click('button:has-text("Dodaj Klienta")');
-      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeVisible({ timeout: 3000 });
+      await page.click('button:has-text("Dodaj klienta")');
+      const form = page.locator('form');
+      await expect(form.locator('text=Dane osobowe')).toBeVisible({ timeout: 3000 });
 
       // Cancel
-      await page.locator('form').locator('button:has-text("Anuluj")').click();
+      await form.locator('button:has-text("Anuluj")').click();
 
-      // Form should close
-      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeHidden({ timeout: 3000 });
+      // Form should close - search input reappears when form is hidden
+      await expect(
+        page.locator('input[placeholder="Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."]')
+      ).toBeVisible({ timeout: 3000 });
     });
 
     test('should show form field labels with required markers', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
-      await page.click('button:has-text("Dodaj Klienta")');
+      await page.click('button:has-text("Dodaj klienta")');
 
       // Section headers (scoped to form to avoid stat card duplicates)
       const form = page.locator('form');
@@ -158,8 +163,9 @@ test.describe('Client Management', () => {
     test('should have required attribute on mandatory fields', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
-      await page.click('button:has-text("Dodaj Klienta")');
-      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeVisible({ timeout: 3000 });
+      await page.click('button:has-text("Dodaj klienta")');
+      const form = page.locator('form');
+      await expect(form.locator('text=Dane osobowe')).toBeVisible({ timeout: 3000 });
 
       // firstName, lastName, phone should have required attribute
       await expect(page.locator('#firstName')).toHaveAttribute('required', '');
@@ -174,8 +180,9 @@ test.describe('Client Management', () => {
     test('should create client successfully', async ({ page }) => {
       await page.goto('/dashboard/clients');
 
-      await page.click('button:has-text("Dodaj Klienta")');
-      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeVisible({ timeout: 3000 });
+      await page.click('button:has-text("Dodaj klienta")');
+      const form = page.locator('form');
+      await expect(form.locator('text=Dane osobowe')).toBeVisible({ timeout: 3000 });
 
       // Fill form
       const randomEmail = generateRandomEmail();
@@ -190,10 +197,10 @@ test.describe('Client Management', () => {
       // Submit via form button (scoped to form to avoid hero button match)
       await page.locator('form button[type="submit"]').click();
 
-      // Success: form should close (onSuccess closes form)
+      // Success: form should close (onSuccess closes form) - search input reappears
       await expect(
-        page.locator('text=Dodaj Nowego Klienta')
-      ).toBeHidden({ timeout: 10000 });
+        page.locator('input[placeholder="Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."]')
+      ).toBeVisible({ timeout: 10000 });
     });
 
     test('should find newly created client in search', async ({ page }) => {
@@ -202,8 +209,9 @@ test.describe('Client Management', () => {
       // Create a client with a unique name
       const uniqueName = `E2EFind${Date.now()}`;
 
-      await page.click('button:has-text("Dodaj Klienta")');
-      await expect(page.locator('text=Dodaj Nowego Klienta')).toBeVisible({ timeout: 3000 });
+      await page.click('button:has-text("Dodaj klienta")');
+      const form = page.locator('form');
+      await expect(form.locator('text=Dane osobowe')).toBeVisible({ timeout: 3000 });
 
       await page.locator('#firstName').fill(uniqueName);
       await page.locator('#lastName').fill('Testowy');
@@ -212,13 +220,13 @@ test.describe('Client Management', () => {
       // Submit via form button
       await page.locator('form button[type="submit"]').click();
 
-      // Wait for form to close (success)
+      // Wait for form to close (success) - search input reappears
       await expect(
-        page.locator('text=Dodaj Nowego Klienta')
-      ).toBeHidden({ timeout: 10000 });
+        page.locator('input[placeholder="Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."]')
+      ).toBeVisible({ timeout: 10000 });
 
       // Search for the client
-      const searchInput = page.locator('input[placeholder="Szukaj klientów..."]');
+      const searchInput = page.locator('input[placeholder="Szukaj po imieniu, nazwisku, firmie, telefonie, NIP..."]');
       await searchInput.fill(uniqueName);
       await page.waitForTimeout(500);
 

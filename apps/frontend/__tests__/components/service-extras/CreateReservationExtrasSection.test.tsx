@@ -182,7 +182,7 @@ describe('CreateReservationExtrasSection', () => {
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
       const title = screen.queryByText(/usługi dodatkowe/i)
-      expect(title).toBeTruthy()
+      expect(title).toBeInTheDocument()
     })
 
     it('should show empty state when no service items are available', () => {
@@ -193,7 +193,7 @@ describe('CreateReservationExtrasSection', () => {
 
       expandSection()
       const emptyMessage = screen.queryByText(/brak dostępnych/i)
-      expect(emptyMessage).toBeTruthy()
+      expect(emptyMessage).toBeInTheDocument()
     })
 
     it('should show loading state', () => {
@@ -204,7 +204,7 @@ describe('CreateReservationExtrasSection', () => {
 
       expandSection()
       const loadingIndicator = screen.queryByText(/ładowanie/i)
-      expect(loadingIndicator).toBeTruthy()
+      expect(loadingIndicator).toBeInTheDocument()
     })
 
     it('should render category names when expanded', () => {
@@ -212,9 +212,9 @@ describe('CreateReservationExtrasSection', () => {
       renderWithProviders(<CreateReservationExtrasSection {...defaultProps} />)
 
       expandSection()
-      expect(screen.queryByText('Dekoracja')).toBeTruthy()
-      expect(screen.queryByText('Napoje')).toBeTruthy()
-      expect(screen.queryByText('Logistyka')).toBeTruthy()
+      expect(screen.queryByText('Dekoracja')).toBeInTheDocument()
+      expect(screen.queryByText('Napoje')).toBeInTheDocument()
+      expect(screen.queryByText('Logistyka')).toBeInTheDocument()
     })
 
     it('should render service items when category is expanded', () => {
@@ -223,13 +223,13 @@ describe('CreateReservationExtrasSection', () => {
 
       expandSection()
       expandCategory('Dekoracja')
-      expect(screen.queryByText('Dekoracja sali')).toBeTruthy()
+      expect(screen.queryByText('Dekoracja sali')).toBeInTheDocument()
 
       expandCategory('Napoje')
-      expect(screen.queryByText('Bar koktajlowy')).toBeTruthy()
+      expect(screen.queryByText('Bar koktajlowy')).toBeInTheDocument()
 
       expandCategory('Logistyka')
-      expect(screen.queryByText('Parking')).toBeTruthy()
+      expect(screen.queryByText('Parking')).toBeInTheDocument()
     })
 
     it('should display correct price label for FLAT items', () => {
@@ -239,7 +239,7 @@ describe('CreateReservationExtrasSection', () => {
       expandSection()
       expandCategory('Dekoracja')
       const flatPriceEl = screen.queryByText(/1[\s.,]?500/)
-      expect(flatPriceEl).toBeTruthy()
+      expect(flatPriceEl).toBeInTheDocument()
     })
 
     it('should display "Gratis" or "0" for FREE items', () => {
@@ -259,7 +259,7 @@ describe('CreateReservationExtrasSection', () => {
       expandSection()
       expandCategory('Napoje')
       const perPersonLabel = screen.queryByText(/os/i)
-      expect(perPersonLabel).toBeTruthy()
+      expect(perPersonLabel).toBeInTheDocument()
     })
   })
 
@@ -350,7 +350,7 @@ describe('CreateReservationExtrasSection', () => {
       expandSection()
       expandCategory('Dekoracja')
       const qtyDisplay = screen.queryByText('2') || screen.queryByDisplayValue('2')
-      expect(qtyDisplay).toBeTruthy()
+      expect(qtyDisplay).not.toBeNull()
     })
 
     it('should allow increasing quantity', async () => {
@@ -401,8 +401,8 @@ describe('CreateReservationExtrasSection', () => {
       expandSection()
       expandCategory('Dekoracja')
       expandCategory('Logistyka')
-      expect(screen.queryByText('Dekoracja sali')).toBeTruthy()
-      expect(screen.queryByText('Parking')).toBeTruthy()
+      expect(screen.queryByText('Dekoracja sali')).toBeInTheDocument()
+      expect(screen.queryByText('Parking')).toBeInTheDocument()
     })
 
     it('should show total for selected extras section', () => {
@@ -418,7 +418,7 @@ describe('CreateReservationExtrasSection', () => {
       renderWithProviders(<CreateReservationExtrasSection {...propsWithExtras} />)
 
       const totalElement = screen.queryByText(/1[\s.,]?500/)
-      expect(totalElement).toBeTruthy()
+      expect(totalElement).toBeInTheDocument()
     })
   })
 })

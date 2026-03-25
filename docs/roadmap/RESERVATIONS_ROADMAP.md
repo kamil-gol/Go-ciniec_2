@@ -26,7 +26,7 @@ Plan rozwoju, znane problemy i zadania do wykonania dla modułu rezerwacji.
 | **Integracja z Kolejką** | 100% | ✅ Gotowe | Automatyczne promowanie działa |
 | **Zarządzanie Zaliczkami** | 95% | ✅ Gotowe | Nowe pola dodane (paidAt, paymentMethod) |
 | **Generowanie PDF** | 80% | ⚠️ W trakcie | Problem z fontami na produkcji |
-| **Testy E2E** | 40% | 🔄 W trakcie | Podstawowe scenariusze pokryte |
+| **Testy E2E** | 40% | ❌ CI Cancelled | Testy napisane, CI cancelled (infrastruktura GH Actions) |
 | **Dokumentacja** | 60% | 🔄 W trakcie | API i schemat BD gotowe |
 
 ---
@@ -165,6 +165,62 @@ Plan rozwoju, znane problemy i zadania do wykonania dla modułu rezerwacji.
 - Excel (.xlsx)
 - CSV
 - PDF z tabelą (alternatywa)
+
+---
+
+### 🧪 AUDIT TESTÓW (25.03.2026, PR #241)
+
+#### 6. Integration Test Mock — Prisma 7 ESM Compatibility
+
+**Status:** ✅ NAPRAWIONE (PR #241)
+**Priorytet:** 🔴 KRYTYCZNY
+**Data naprawy:** 25.03.2026
+
+**Opis:**
+- Prisma 7 generuje `import.meta.url` (ESM-only), który Jest CJS nie może sparsować
+- Mock integracyjny `prisma-client-integration.ts` rozbudowany o: Decimal wrapping (19 modeli), `_count` include, JSON path filter, aggregate Decimal
+- Mock unit testowy `prisma-client-jest.ts` rozbudowany o: `valueOf()`, `toJSON()`, `Symbol.toPrimitive` w klasie Decimal
+
+**Wynik:** 342 testy integracyjne PASS, 0 failures (z 32 failures przed naprawą)
+
+---
+
+#### 7. Skipped testy — nieimplementowane feature'y
+
+**Status:** ⏳ CZEKA NA IMPLEMENTACJĘ
+**Priorytet:** 🟡 ŚREDNI
+
+**42 skipniętych testów integracyjnych:**
+- `service-extras.api.test.ts` (~15 testów) — Feature #118 Service Extras nie zaimplementowany
+- `menu.api.test.ts` Addon Groups (~10) — Routy `/api/addon-groups` nie istnieją
+- `menu.api.test.ts` Auth Matrix (~8) — Testuje addon-groups routes
+- `portionTarget.api.test.ts` (9) — POST `/api/menu/templates/:id/categories` nie istnieje
+
+**Akcja:** Odskipnąć po implementacji danego feature'a.
+
+---
+
+#### 8. E2E Tests — GitHub Actions Cancellation
+
+**Status:** 🔴 DO NAPRAWY
+**Priorytet:** 🟡 ŚREDNI
+
+**Opis:**
+- Wszystkie 4 joby E2E (chromium, firefox, webkit, smoke) mają status CANCELLED
+- Setup przechodzi OK (checkout, install, DB push, seed, servers start)
+- Step "Run tests" jest cancelowany
+- Brak `concurrency` settings w `.github/workflows/e2e-tests.yml`
+
+**Możliwe przyczyny:**
+1. GitHub Actions timeout lub runner limit
+2. Playwright timeout vs GitHub Actions timeout conflict
+3. External cancellation (inny workflow lub manual)
+
+**Plan naprawy:**
+- [ ] Sprawdzić szczegółowe logi GitHub Actions
+- [ ] Zweryfikować Playwright config timeouts vs workflow timeout
+- [ ] Dodać `concurrency` group do workflow
+- [ ] Przetestować z ograniczonym scope (tylko chromium + smoke)
 
 ---
 

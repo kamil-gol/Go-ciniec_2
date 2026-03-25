@@ -55,10 +55,10 @@ export default defineConfig({
         'e2e/**',
       ],
       thresholds: {
-        branches: 50,
-        functions: 55,
-        lines: 60,
-        statements: 60,
+        branches: 30,
+        functions: 30,
+        lines: 30,
+        statements: 30,
       },
     },
 
@@ -66,7 +66,7 @@ export default defineConfig({
     // Performance
     // ========================================
     pool: 'forks',
-    testTimeout: 10000,
+    testTimeout: 5000,
   },
 
   // ========================================

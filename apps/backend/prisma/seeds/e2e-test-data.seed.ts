@@ -12,6 +12,9 @@ export async function seedE2ETestData() {
       clients: [],
       reservations: [],
       deposits: [],
+      menuTemplates: [],
+      menuPackages: [],
+      menuCourses: [],
     };
   }
 
@@ -19,6 +22,7 @@ export async function seedE2ETestData() {
 
   // Clean up in correct order (respecting foreign keys)
   console.log('\ud83d\uddd1\ufe0f  Cleaning existing data (respecting FK constraints)...');
+  await prisma.activityLog.deleteMany({});
   await prisma.reservationMenuSnapshot.deleteMany({});
   await prisma.reservationHistory.deleteMany({});
   await prisma.depositPayment.deleteMany({});
@@ -29,6 +33,17 @@ export async function seedE2ETestData() {
   // Delete attachments BEFORE users (Attachment.uploadedById → User.id)
   await prisma.attachment.deleteMany({});
   await prisma.user.deleteMany({});
+  // Clean service extras (child → parent order)
+  await prisma.reservationExtra.deleteMany({});
+  await prisma.serviceItem.deleteMany({});
+  await prisma.serviceCategory.deleteMany({});
+  // Clean menu hierarchy (child → parent order)
+  await prisma.menuCourseOption.deleteMany({});
+  await prisma.menuCourse.deleteMany({});
+  await prisma.packageCategorySettings.deleteMany({});
+  await prisma.menuPriceHistory.deleteMany({});
+  await prisma.menuPackage.deleteMany({});
+  await prisma.menuTemplate.deleteMany({});
   console.log('   \u2705 Cleanup complete');
 
   // Look up RBAC roles (created by rbac.seed.ts which runs before this)
@@ -109,6 +124,13 @@ export async function seedE2ETestData() {
 
   const clients = [
     {
+      firstName: 'Jan',
+      lastName: 'Kowalski',
+      email: 'jan.kowalski@example.com',
+      phone: '+48500123456',
+      notes: 'Klient testowy E2E',
+    },
+    {
       firstName: 'Marek',
       lastName: 'Kowalski',
       email: 'marek.kowalski@example.com',
@@ -161,7 +183,7 @@ export async function seedE2ETestData() {
 
   const reservations = [
     {
-      clientId: createdClients[0].id,
+      clientId: createdClients[1].id,
       createdById: adminUser.id,
       hallId: createdHalls[0].id,
       eventTypeId: weselleEvent?.id,
@@ -182,7 +204,7 @@ export async function seedE2ETestData() {
       notes: 'Wesele Marek i Agnieszka - preferencje: muzyka na żywo',
     },
     {
-      clientId: createdClients[1].id,
+      clientId: createdClients[2].id,
       createdById: adminUser.id,
       hallId: createdHalls[1].id,
       eventTypeId: weselleEvent?.id,
@@ -201,7 +223,7 @@ export async function seedE2ETestData() {
       notes: 'Wesele Anna i Tomasz',
     },
     {
-      clientId: createdClients[2].id,
+      clientId: createdClients[3].id,
       createdById: adminUser.id,
       hallId: createdHalls[2].id,
       eventTypeId: komuniaEvent?.id,
@@ -222,7 +244,7 @@ export async function seedE2ETestData() {
       notes: 'Komunia Święta Kacpra',
     },
     {
-      clientId: createdClients[3].id,
+      clientId: createdClients[4].id,
       createdById: adminUser.id,
       hallId: createdHalls[4].id,
       eventTypeId: urodzinyEvent?.id,
@@ -243,7 +265,7 @@ export async function seedE2ETestData() {
       notes: '50-te urodziny',
     },
     {
-      clientId: createdClients[4].id,
+      clientId: createdClients[5].id,
       createdById: adminUser.id,
       hallId: createdHalls[3].id,
       eventTypeId: inneEvent?.id,
@@ -262,7 +284,7 @@ export async function seedE2ETestData() {
       notes: 'Event firmowy - szkolenie + bankiet',
     },
     {
-      clientId: createdClients[0].id,
+      clientId: createdClients[1].id,
       createdById: adminUser.id,
       hallId: createdHalls[1].id,
       eventTypeId: weselleEvent?.id,
@@ -364,7 +386,271 @@ export async function seedE2ETestData() {
   );
   console.log(`   \u2705 Created ${createdDeposits.length} deposits`);
 
-  console.log('\n\u2705 E2E test data seeding completed!\n');
+  // 6. ACTIVITY LOGS (for history.spec.ts)
+  console.log('\n📝 Seeding Activity Logs...');
+
+  const activityLogs = [];
+  for (const reservation of createdReservations) {
+    // CREATE entry for every reservation
+    activityLogs.push({
+      userId: adminUser.id,
+      action: 'CREATE',
+      entityType: 'RESERVATION',
+      entityId: reservation.id,
+      details: {
+        description: `Utworzono rezerwację #${reservation.id.slice(0, 8)}`,
+        changes: {
+          status: { from: null, to: reservation.status },
+          guests: reservation.guests,
+        },
+      },
+      ipAddress: '127.0.0.1',
+      userAgent: 'E2E-Seed/1.0',
+      createdAt: new Date(new Date(reservation.createdAt).getTime() - 60000),
+    });
+
+    // UPDATE/STATUS_CHANGE entries for non-RESERVED reservations
+    if (reservation.status !== 'RESERVED') {
+      activityLogs.push({
+        userId: adminUser.id,
+        action: 'STATUS_CHANGE',
+        entityType: 'RESERVATION',
+        entityId: reservation.id,
+        details: {
+          description: `Zmiana statusu z RESERVED na ${reservation.status}`,
+          changes: {
+            status: { from: 'RESERVED', to: reservation.status },
+          },
+        },
+        ipAddress: '127.0.0.1',
+        userAgent: 'E2E-Seed/1.0',
+        createdAt: reservation.createdAt,
+      });
+    }
+
+    // UPDATE entry with notes
+    activityLogs.push({
+      userId: adminUser.id,
+      action: 'UPDATE',
+      entityType: 'RESERVATION',
+      entityId: reservation.id,
+      details: {
+        description: 'Aktualizacja danych rezerwacji',
+        changes: {
+          notes: { from: null, to: reservation.notes },
+        },
+      },
+      ipAddress: '127.0.0.1',
+      userAgent: 'E2E-Seed/1.0',
+      createdAt: new Date(new Date(reservation.createdAt).getTime() + 60000),
+    });
+  }
+
+  await prisma.activityLog.createMany({ data: activityLogs });
+  console.log(`   ✅ Created ${activityLogs.length} activity log entries`);
+
+  // 7. MENU TEMPLATES, PACKAGES & COURSES
+  console.log('\n🍽️  Seeding Menu Templates, Packages & Courses...');
+
+  // Fixed UUIDs for test stability
+  const WESELE_TEMPLATE_ID = 'e2e00000-0000-4000-a000-000000000001';
+  const KOMUNIA_TEMPLATE_ID = 'e2e00000-0000-4000-a000-000000000002';
+  const WESELE_PKG_ID = 'e2e00000-0000-4000-b000-000000000001';
+  const KOMUNIA_PKG_ID = 'e2e00000-0000-4000-b000-000000000002';
+  const WESELE_COURSE1_ID = 'e2e00000-0000-4000-c000-000000000001';
+  const WESELE_COURSE2_ID = 'e2e00000-0000-4000-c000-000000000002';
+  const KOMUNIA_COURSE1_ID = 'e2e00000-0000-4000-c000-000000000003';
+  const KOMUNIA_COURSE2_ID = 'e2e00000-0000-4000-c000-000000000004';
+
+  const createdMenuTemplates = [];
+  const createdMenuPackages = [];
+  const createdMenuCourses = [];
+
+  if (weselleEvent) {
+    const weseleTemplate = await prisma.menuTemplate.create({
+      data: {
+        id: WESELE_TEMPLATE_ID,
+        name: 'Wesele',
+        description: 'Menu weselne — szablon podstawowy',
+        eventTypeId: weselleEvent.id,
+        isActive: true,
+        displayOrder: 1,
+      },
+    });
+    createdMenuTemplates.push(weseleTemplate);
+
+    const weselePkg = await prisma.menuPackage.create({
+      data: {
+        id: WESELE_PKG_ID,
+        menuTemplateId: weseleTemplate.id,
+        name: 'Standard',
+        description: 'Pakiet standardowy weselny',
+        pricePerAdult: 200,
+        pricePerChild: 130,
+        pricePerToddler: 60,
+        displayOrder: 1,
+        includedItems: [],
+      },
+    });
+    createdMenuPackages.push(weselePkg);
+
+    const weseleCourse1 = await prisma.menuCourse.create({
+      data: {
+        id: WESELE_COURSE1_ID,
+        packageId: weselePkg.id,
+        name: 'Zupa',
+        description: 'Wybór zupy',
+        displayOrder: 1,
+        minSelect: 1,
+        maxSelect: 2,
+        isRequired: true,
+      },
+    });
+    const weseleCourse2 = await prisma.menuCourse.create({
+      data: {
+        id: WESELE_COURSE2_ID,
+        packageId: weselePkg.id,
+        name: 'Danie główne',
+        description: 'Wybór dania głównego',
+        displayOrder: 2,
+        minSelect: 1,
+        maxSelect: 2,
+        isRequired: true,
+      },
+    });
+    createdMenuCourses.push(weseleCourse1, weseleCourse2);
+
+    console.log('   \u2705 Template "Wesele" + package "Standard" + 2 courses');
+  } else {
+    console.warn('   \u26a0\ufe0f  Event type "Wesele" not found — skipping menu template');
+  }
+
+  if (komuniaEvent) {
+    const komuniaTemplate = await prisma.menuTemplate.create({
+      data: {
+        id: KOMUNIA_TEMPLATE_ID,
+        name: 'Komunia',
+        description: 'Menu komunijne — szablon podstawowy',
+        eventTypeId: komuniaEvent.id,
+        isActive: true,
+        displayOrder: 2,
+      },
+    });
+    createdMenuTemplates.push(komuniaTemplate);
+
+    const komuniaPkg = await prisma.menuPackage.create({
+      data: {
+        id: KOMUNIA_PKG_ID,
+        menuTemplateId: komuniaTemplate.id,
+        name: 'Standard',
+        description: 'Pakiet standardowy komunijny',
+        pricePerAdult: 120,
+        pricePerChild: 80,
+        pricePerToddler: 40,
+        displayOrder: 1,
+        includedItems: [],
+      },
+    });
+    createdMenuPackages.push(komuniaPkg);
+
+    const komuniaCourse1 = await prisma.menuCourse.create({
+      data: {
+        id: KOMUNIA_COURSE1_ID,
+        packageId: komuniaPkg.id,
+        name: 'Zupa',
+        description: 'Wybór zupy',
+        displayOrder: 1,
+        minSelect: 1,
+        maxSelect: 1,
+        isRequired: true,
+      },
+    });
+    const komuniaCourse2 = await prisma.menuCourse.create({
+      data: {
+        id: KOMUNIA_COURSE2_ID,
+        packageId: komuniaPkg.id,
+        name: 'Danie główne',
+        description: 'Wybór dania głównego',
+        displayOrder: 2,
+        minSelect: 1,
+        maxSelect: 2,
+        isRequired: true,
+      },
+    });
+    createdMenuCourses.push(komuniaCourse1, komuniaCourse2);
+
+    console.log('   \u2705 Template "Komunia" + package "Standard" + 2 courses');
+  } else {
+    console.warn('   \u26a0\ufe0f  Event type "Komunia" not found — skipping menu template');
+  }
+
+  // 8. SERVICE EXTRAS (for menu-calculator and menu-assignment tests)
+  console.log('\n🎁 Seeding Service Extras...');
+
+  const drinksCategory = await prisma.serviceCategory.create({
+    data: {
+      name: 'Napoje',
+      slug: 'napoje',
+      description: 'Napoje i alkohole',
+      displayOrder: 1,
+      isActive: true,
+    },
+  });
+
+  const decorCategory = await prisma.serviceCategory.create({
+    data: {
+      name: 'Dekoracje',
+      slug: 'dekoracje',
+      description: 'Dekoracje i aranżacje sali',
+      displayOrder: 2,
+      isActive: true,
+    },
+  });
+
+  await prisma.serviceItem.createMany({
+    data: [
+      {
+        name: 'Open Bar Premium',
+        categoryId: drinksCategory.id,
+        priceType: 'PER_PERSON',
+        basePrice: 50,
+        description: 'Premium open bar',
+        displayOrder: 1,
+        isActive: true,
+      },
+      {
+        name: 'Pakiet napojów bezalkoholowych',
+        categoryId: drinksCategory.id,
+        priceType: 'PER_PERSON',
+        basePrice: 25,
+        description: 'Woda, soki, napoje',
+        displayOrder: 2,
+        isActive: true,
+      },
+      {
+        name: 'Dekoracja sali',
+        categoryId: decorCategory.id,
+        priceType: 'FLAT',
+        basePrice: 2000,
+        description: 'Pełna dekoracja sali',
+        displayOrder: 1,
+        isActive: true,
+      },
+      {
+        name: 'Dodatkowy tort',
+        categoryId: decorCategory.id,
+        priceType: 'PER_ITEM',
+        basePrice: 300,
+        description: 'Tort piętrowy',
+        displayOrder: 2,
+        isActive: true,
+      },
+    ],
+  });
+
+  console.log('   ✅ Created 2 categories, 4 service items');
+
+  console.log('\n✅ E2E test data seeding completed!\n');
 
   console.log('\ud83d\udcca Summary:');
   console.log(`   \ud83c\udfdb\ufe0f  Halls: ${createdHalls.length}`);
@@ -372,6 +658,9 @@ export async function seedE2ETestData() {
   console.log(`   \ud83d\udc64 Clients: ${createdClients.length}`);
   console.log(`   \ud83d\udcc5 Reservations: ${createdReservations.length}`);
   console.log(`   \ud83d\udcb0 Deposits: ${createdDeposits.length}`);
+  console.log(`   \ud83c\udf7d\ufe0f  Menu Templates: ${createdMenuTemplates.length}`);
+  console.log(`   \ud83d\udce6 Menu Packages: ${createdMenuPackages.length}`);
+  console.log(`   \ud83c\udf72 Menu Courses: ${createdMenuCourses.length}`);
   console.log('');
 
   return {
@@ -380,6 +669,9 @@ export async function seedE2ETestData() {
     clients: createdClients,
     reservations: createdReservations,
     deposits: createdDeposits,
+    menuTemplates: createdMenuTemplates,
+    menuPackages: createdMenuPackages,
+    menuCourses: createdMenuCourses,
   };
 }
 

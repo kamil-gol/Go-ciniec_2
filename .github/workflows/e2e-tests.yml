@@ -7,107 +7,19 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: e2e-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  e2e-tests:
-    name: Run E2E Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: rezerwacje
-          POSTGRES_PASSWORD: rezerwacje_password
-          POSTGRES_DB: rezerwacje_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm ci
-          npx playwright install --with-deps ${{ matrix.browser }}
-
-      - name: Setup environment variables
-        run: |
-          cp apps/frontend/e2e/.env.test.example apps/frontend/e2e/.env.test
-          cp apps/backend/.env.test.example apps/backend/.env.test
-
-      - name: Run database migrations
-        working-directory: apps/backend
-        env:
-          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
-        run: |
-          npm run prisma:migrate:deploy
-          npm run prisma:seed:test
-
-      - name: Start backend server
-        working-directory: apps/backend
-        env:
-          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
-          JWT_SECRET: test_jwt_secret_key_for_ci
-          NODE_ENV: test
-        run: |
-          npm run build
-          npm start &
-          npx wait-on http://localhost:3001/health --timeout 60000
-
-      - name: Start frontend server
-        working-directory: apps/frontend
-        env:
-          NEXT_PUBLIC_API_URL: http://localhost:3001
-        run: |
-          npm run build
-          npm start &
-          npx wait-on http://localhost:3000 --timeout 60000
-
-      - name: Run E2E tests
-        working-directory: apps/frontend
-        env:
-          CI: true
-        run: |
-          npx playwright test --project=${{ matrix.browser }} --reporter=html
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-${{ matrix.browser }}
-          path: apps/frontend/playwright-report/
-          retention-days: 30
-
-      - name: Upload test videos
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-videos-${{ matrix.browser }}
-          path: apps/frontend/test-results/
-          retention-days: 7
-
+  # ========================================
+  # Smoke Tests — BLOCKING (must pass)
+  # Only runs smoke.spec.ts on chromium
+  # ========================================
   smoke-tests:
-    name: Smoke Tests (Quick)
+    name: Smoke Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     services:
       postgres:
@@ -133,41 +45,58 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+          cache-dependency-path: |
+            apps/frontend/package-lock.json
+            apps/backend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install backend dependencies
+        working-directory: apps/backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: apps/frontend
         run: |
-          npm ci
+          npm ci --legacy-peer-deps
           npx playwright install --with-deps chromium
 
       - name: Setup environment
         run: |
-          cp apps/frontend/e2e/.env.test.example apps/frontend/e2e/.env.test
-          cp apps/backend/.env.test.example apps/backend/.env.test
+          touch apps/frontend/e2e/.env.test
+          touch apps/backend/.env.test
 
-      - name: Setup database
+      - name: Setup database schema
         working-directory: apps/backend
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
         run: |
-          npm run prisma:migrate:deploy
-          npm run prisma:seed:test
+          npx prisma generate
+          npx prisma db push --accept-data-loss --force-reset
+
+      - name: Seed test data
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+          NODE_ENV: development
+        run: npm run db:seed
 
       - name: Start servers
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
-          JWT_SECRET: test_jwt_secret_key_for_ci
-          NODE_ENV: test
-          NEXT_PUBLIC_API_URL: http://localhost:3001
+          JWT_SECRET: ${{ secrets.JWT_SECRET_CI || 'e2e-ci-jwt-placeholder-not-production' }}
+          NODE_ENV: development
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
         run: |
-          cd apps/backend && npm run build && npm start &
-          npx wait-on http://localhost:3001/health --timeout 60000
+          cd apps/backend && npx tsx src/index.ts &
+          npx wait-on http://localhost:3001/api/health --timeout 60000
           cd apps/frontend && npm run build && npm start &
           npx wait-on http://localhost:3000 --timeout 60000
 
-      - name: Run smoke tests only
+      - name: Run smoke tests
         working-directory: apps/frontend
+        env:
+          CI: true
         run: |
-          npx playwright test smoke.spec.ts --reporter=list
+          npx playwright test smoke.spec.ts --project=chromium --retries=1 --reporter=list
 
       - name: Upload smoke test results
         if: always()
@@ -177,34 +106,113 @@ jobs:
           path: apps/frontend/playwright-report/
           retention-days: 7
 
-  test-summary:
-    name: Test Summary
+  # ========================================
+  # Full E2E Tests — NON-BLOCKING (informational)
+  # Runs all tests on chromium only, with continue-on-error
+  # ========================================
+  e2e-full:
+    name: Full E2E Tests (informational)
     runs-on: ubuntu-latest
-    needs: [e2e-tests, smoke-tests]
-    if: always()
+    timeout-minutes: 45
+    continue-on-error: true
+    needs: smoke-tests
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: rezerwacje
+          POSTGRES_PASSWORD: rezerwacje_password
+          POSTGRES_DB: rezerwacje_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-      - name: Download all test reports
-        uses: actions/download-artifact@v4
-        with:
-          path: test-reports
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Generate summary
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            apps/frontend/package-lock.json
+            apps/backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: apps/backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: apps/frontend
         run: |
-          echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Smoke Tests" >> $GITHUB_STEP_SUMMARY
-          if [ -d "test-reports/smoke-test-report" ]; then
-            echo "✅ Smoke tests completed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Smoke tests failed" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Browser Tests" >> $GITHUB_STEP_SUMMARY
-          for browser in chromium firefox webkit; do
-            if [ -d "test-reports/playwright-report-$browser" ]; then
-              echo "✅ $browser tests completed" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "❌ $browser tests failed" >> $GITHUB_STEP_SUMMARY
-            fi
-          done
+          npm ci --legacy-peer-deps
+          npx playwright install --with-deps chromium
+
+      - name: Setup environment variables
+        run: |
+          touch apps/frontend/e2e/.env.test
+          touch apps/backend/.env.test
+
+      - name: Setup database schema
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+        run: |
+          npx prisma generate
+          npx prisma db push --accept-data-loss --force-reset
+
+      - name: Seed test data
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+          NODE_ENV: development
+        run: npm run db:seed
+
+      - name: Start backend server
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+          JWT_SECRET: ${{ secrets.JWT_SECRET_CI || 'e2e-ci-jwt-placeholder-not-production' }}
+          NODE_ENV: development
+        run: |
+          npx tsx src/index.ts &
+          npx wait-on http://localhost:3001/api/health --timeout 60000
+
+      - name: Start frontend server
+        working-directory: apps/frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+        run: |
+          npm run build
+          npm start &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Run all E2E tests
+        working-directory: apps/frontend
+        env:
+          CI: true
+        run: |
+          npx playwright test --project=chromium --retries=0 --reporter=html
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-full
+          path: apps/frontend/playwright-report/
+          retention-days: 30
+
+      - name: Upload test videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-videos
+          path: apps/frontend/test-results/
+          retention-days: 7

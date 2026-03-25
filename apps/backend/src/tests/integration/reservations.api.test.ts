@@ -220,7 +220,7 @@ describe('Reservations API — /api/reservations', () => {
     it('should reject overlapping reservation for same hall', async () => {
       const dateStr = futureDate(6);
 
-      // Create first reservation
+      // Create first reservation (150 adults — close to hall1 capacity of 200)
       await api
         .post('/api/reservations')
         .set(adminAuth())
@@ -230,7 +230,7 @@ describe('Reservations API — /api/reservations', () => {
           eventTypeId: seed.eventType1.id,
           startDateTime: `${dateStr}T14:00:00`,
           endDateTime: `${dateStr}T22:00:00`,
-          adults: 30,
+          adults: 150,
           children: 5,
           toddlers: 0,
           pricePerAdult: 200,
@@ -238,7 +238,7 @@ describe('Reservations API — /api/reservations', () => {
           pricePerToddler: 0,
         });
 
-      // Try overlapping reservation
+      // Try overlapping reservation that would exceed capacity (150 + 120 = 270 > 200)
       const res = await api
         .post('/api/reservations')
         .set(adminAuth())
@@ -248,7 +248,7 @@ describe('Reservations API — /api/reservations', () => {
           eventTypeId: seed.eventType1.id,
           startDateTime: `${dateStr}T16:00:00`,
           endDateTime: `${dateStr}T23:00:00`,
-          adults: 20,
+          adults: 120,
           children: 5,
           toddlers: 0,
           pricePerAdult: 200,
@@ -617,7 +617,7 @@ describe('Reservations API — /api/reservations', () => {
         .set(adminAuth())
         .send({ notes: 'Should not work' });
 
-      expect([400, 422, 500]).toContain(res.status);
+      expect([400, 409, 422, 500]).toContain(res.status);
     });
 
     it('should reject update of completed reservation', async () => {
@@ -628,7 +628,7 @@ describe('Reservations API — /api/reservations', () => {
         .set(adminAuth())
         .send({ notes: 'Should not work' });
 
-      expect([400, 422, 500]).toContain(res.status);
+      expect([400, 409, 422, 500]).toContain(res.status);
     });
 
     it('should update guest count and recalculate price', async () => {

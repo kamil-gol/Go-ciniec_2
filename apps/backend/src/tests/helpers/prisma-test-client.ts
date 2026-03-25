@@ -8,16 +8,20 @@
  * serial execution). There is NO concurrency between suites, so
  * TRUNCATE ALL is safe — no other worker can interfere.
  *
+ * This file imports PrismaClient from @/prisma-client which, in the
+ * integration project, resolves to prisma-client-integration.ts — a
+ * mock that provides real pg Pool connections via Proxy-based model access.
+ *
  * Flow per test:
  *   beforeEach → cleanDatabase() → seedTestData() → test runs
  */
 import { PrismaClient } from '@/prisma-client';
-import { PrismaPg } from '@prisma/adapter-pg';
 
-const testDbUrl = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5433/rezerwacje_test';
-const adapter = new PrismaPg({ connectionString: testDbUrl });
-
-const prismaTest = new PrismaClient({ adapter });
+// NOTE: In Jest, @/prisma-client resolves to the integration mock
+// (prisma-client-integration.ts) which accepts no args. But tsc uses
+// tsconfig paths → real generated client which requires { adapter }.
+// The 'as any' satisfies both contexts.
+const prismaTest = new (PrismaClient as any)();
 
 /**
  * Clean ALL tables in the test database.
@@ -32,14 +36,12 @@ const prismaTest = new PrismaClient({ adapter });
 export async function cleanDatabase(retries = 3): Promise<void> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const tablenames = await prismaTest.$queryRaw<
-        Array<{ tablename: string }>
-      >`SELECT tablename FROM pg_tables WHERE schemaname='public'`;
+      const tablenames: Array<{ tablename: string }> = await prismaTest.$queryRaw`SELECT tablename FROM pg_tables WHERE schemaname='public'`;
 
       const tables = tablenames
-        .map(({ tablename }) => tablename)
-        .filter((name) => name !== '_prisma_migrations')
-        .map((name) => `"public"."${name}"`);
+        .map(({ tablename }: { tablename: string }) => tablename)
+        .filter((name: string) => name !== '_prisma_migrations')
+        .map((name: string) => `"public"."${name}"`);
 
       if (tables.length > 0) {
         await prismaTest.$executeRawUnsafe(

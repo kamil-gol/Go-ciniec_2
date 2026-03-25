@@ -7,11 +7,11 @@ import { Page, expect } from '@playwright/test';
  * Menu selection: Step 4 of reservation create wizard ("Menu i ceny")
  *
  * API endpoints:
- * - GET  /api/menu/templates
- * - POST /api/menu/templates
- * - GET  /api/menu/packages/:templateId
- * - GET  /api/menu/options
- * - POST /api/reservations/:id/menu
+ * - GET  /api/menu-templates
+ * - POST /api/menu-templates
+ * - GET  /api/menu-packages/template/:templateId
+ * - GET  /api/service-extras/items
+ * - POST /api/reservations/:id/select-menu
  */
 
 /**
@@ -120,7 +120,7 @@ export class MenuHelper {
   /** Returns true if the menu API is available (not returning HTML). */
   async isMenuApiAvailable(): Promise<boolean> {
     try {
-      const resp = await this.page.request.get(`${this.baseURL}/api/menu/templates`);
+      const resp = await this.page.request.get(`${this.baseURL}/api/menu-templates`);
       const json = await safeJson(resp);
       return json !== null;
     } catch {
@@ -134,7 +134,7 @@ export class MenuHelper {
     variant?: string;
     validFrom?: string;
   }): Promise<string | null> {
-    const response = await this.page.request.post(`${this.baseURL}/api/menu/templates`, {
+    const response = await this.page.request.post(`${this.baseURL}/api/menu-templates`, {
       data: {
         name: data.name,
         eventTypeId: data.eventTypeId,
@@ -151,11 +151,11 @@ export class MenuHelper {
   }
 
   async deleteTemplateViaAPI(templateId: string) {
-    await this.page.request.delete(`${this.baseURL}/api/menu/templates/${templateId}`);
+    await this.page.request.delete(`${this.baseURL}/api/menu-templates/${templateId}`);
   }
 
   async getTemplatesViaAPI(): Promise<any[] | null> {
-    const response = await this.page.request.get(`${this.baseURL}/api/menu/templates`);
+    const response = await this.page.request.get(`${this.baseURL}/api/menu-templates`);
     const json = await safeJson(response);
     if (!json) return null;
     return json.data || json || [];
@@ -169,16 +169,26 @@ export class MenuHelper {
   }
 
   async getPackagesViaAPI(templateId: string): Promise<any[] | null> {
-    const response = await this.page.request.get(`${this.baseURL}/api/menu/packages?templateId=${templateId}`);
+    const response = await this.page.request.get(`${this.baseURL}/api/menu-packages/template/${templateId}`);
     const json = await safeJson(response);
     if (!json) return null;
     return json.data || json || [];
   }
 
+  /**
+   * Fetches service-extras items (replacement for old menu options).
+   * Maps fields to the shape expected by calculator tests:
+   *   name, priceType (PER_PERSON | FLAT | PER_UNIT), priceAmount (= unitPrice)
+   */
   async getOptionsViaAPI(): Promise<any[] | null> {
-    const response = await this.page.request.get(`${this.baseURL}/api/menu/options`);
+    const response = await this.page.request.get(`${this.baseURL}/api/service-extras/items`);
     const json = await safeJson(response);
     if (!json) return null;
-    return json.data || json || [];
+    const items = json.data || json || [];
+    // Normalize: backend uses basePrice, tests expect priceAmount
+    return items.map((item: any) => ({
+      ...item,
+      priceAmount: item.priceAmount ?? item.unitPrice ?? item.basePrice,
+    }));
   }
 }

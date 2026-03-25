@@ -123,19 +123,24 @@ export class WizardHelper {
     const dateTrigger = this.page.locator('button').filter({ hasText: /Wybierz datę|\d+ (stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|października|listopada|grudnia)/i }).first();
     await dateTrigger.click();
 
-    // Wait for calendar to appear
-    await this.page.waitForSelector('[role="grid"], .rdp-month', { state: 'visible', timeout: 3000 });
+    // Wait for calendar grid to appear and stabilize
+    await this.page.waitForSelector('[role="grid"]', { state: 'visible', timeout: 5000 });
+    await this.page.waitForTimeout(300);
 
-    // Click the specific day number (only enabled days)
-    const dayButton = this.page.locator('.rdp-day:not(.rdp-day_disabled):not(.rdp-day_outside)').filter({ hasText: new RegExp(`^${day}$`) }).first();
+    // Click the specific day number (only enabled, non-outside days)
+    // rdp v8: day buttons have name="day", disabled days have [disabled] attribute
+    const dayButton = this.page.locator('button[name="day"]:not([disabled])').filter({ hasText: new RegExp(`^${day}$`) }).first();
+    await expect(dayButton).toBeVisible({ timeout: 5000 });
     await dayButton.click();
-    await this.page.waitForTimeout(200);
+    // Wait for popover to close (DatePicker calls setOpen(false) after selection)
+    await this.page.waitForTimeout(500);
   }
 
   /** Navigate to next month in the calendar */
   async nextMonth() {
-    await this.page.locator('.rdp-nav_button_next, button[aria-label="Go to next month"]').click();
-    await this.page.waitForTimeout(200);
+    await this.page.locator('button[name="next-month"]').click();
+    // Wait for calendar to re-render after month navigation
+    await this.page.waitForTimeout(500);
   }
 
   // ─── TimePicker Helper ─────────────────────────────────────────────
