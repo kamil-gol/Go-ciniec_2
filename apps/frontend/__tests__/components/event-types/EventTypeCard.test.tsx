@@ -200,7 +200,9 @@ describe('EventTypeCard', () => {
           onDelete={mockOnDelete}
         />
       )
-      expect(screen.getByText('Nieaktywny')).toBeInTheDocument()
+      // Badge + toggle label both show "Nieaktywny"
+      const elements = screen.getAllByText('Nieaktywny')
+      expect(elements.length).toBeGreaterThanOrEqual(1)
     })
 
     it('should show Aktywny label in toggle row for active event type', () => {

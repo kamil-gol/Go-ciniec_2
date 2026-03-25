@@ -39,6 +39,31 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
+// Mock Radix Dialog to render inline (no portal) so content is visible in tests
+vi.mock('@radix-ui/react-dialog', () => {
+  const React = require('react')
+  return {
+    Root: ({ children, open }: any) => open ? <div>{children}</div> : null,
+    Portal: ({ children }: any) => <>{children}</>,
+    Overlay: ({ children }: any) => <div>{children}</div>,
+    Content: React.forwardRef(({ children, ...props }: any, ref: any) => (
+      <div ref={ref} role="dialog" {...props}>{children}</div>
+    )),
+    Title: React.forwardRef(({ children, ...props }: any, ref: any) => (
+      <h2 ref={ref} {...props}>{children}</h2>
+    )),
+    Description: React.forwardRef(({ children, ...props }: any, ref: any) => (
+      <p ref={ref} {...props}>{children}</p>
+    )),
+    Close: React.forwardRef(({ children, ...props }: any, ref: any) => (
+      <button ref={ref} {...props}>{children}</button>
+    )),
+    Trigger: React.forwardRef(({ children, ...props }: any, ref: any) => (
+      <button ref={ref} {...props}>{children}</button>
+    )),
+  }
+})
+
 // ── Test Data ────────────────────────────────────────────────────────────────
 
 const mockExistingEventType = {
