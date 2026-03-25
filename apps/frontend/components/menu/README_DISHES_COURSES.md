@@ -213,7 +213,7 @@ import {
   useDeleteCourse,
   useAssignDishes,
   useRemoveDish
-} from '@/hooks/use-menu-courses'
+} from '@/hooks/use-menu-config'
 
 // Kursy dla pakietu
 const { data: courses } = useCoursesByPackage(packageId)

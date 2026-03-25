@@ -243,6 +243,55 @@ export function formatChangesSummary(
 }
 
 /**
+ * Calculate extrasTotalPrice from reservation extras array.
+ * Supports FLAT (basePrice x quantity), PER_PERSON (basePrice x quantity x guests), FREE (0).
+ */
+export function calculateExtrasTotalPrice(
+  extras: Array<{ quantity: number; customPrice: number | null; serviceItem: { basePrice: number; priceType: string } }>,
+  guests: number
+): number {
+  let total = 0;
+  for (const extra of extras) {
+    const price = extra.customPrice !== null ? Number(extra.customPrice) : Number(extra.serviceItem.basePrice);
+    const qty = extra.quantity || 1;
+
+    if (extra.serviceItem.priceType === 'PER_PERSON') {
+      total += price * qty * guests;
+    } else if (extra.serviceItem.priceType === 'FREE') {
+      // free — no cost
+    } else {
+      // FLAT
+      total += price * qty;
+    }
+  }
+  return Math.round(total * 100) / 100;
+}
+
+/**
+ * Enrich a reservation record with computed extras totals.
+ * Used by getReservations (list) and getReservationById (detail).
+ */
+export function enrichWithExtrasTotals(reservation: any): any {
+  const rawExtras = (reservation.extras || []).map((e: any) => ({
+    quantity: e.quantity,
+    customPrice: null as number | null,
+    serviceItem: { basePrice: Number(e.serviceItem.basePrice), priceType: e.serviceItem.priceType },
+  }));
+  const extrasTotalPrice = calculateExtrasTotalPrice(rawExtras, reservation.guests || 0);
+  const categoryExtras = reservation.categoryExtras || [];
+  const categoryExtrasTotal = categoryExtras.reduce(
+    (sum: number, e: any) => sum + Number(e.totalPrice), 0
+  );
+  return {
+    ...reservation,
+    extrasTotalPrice,
+    extrasCount: rawExtras.length,
+    categoryExtras,
+    categoryExtrasTotal,
+  };
+}
+
+/**
  * Format value for display
  */
 function formatValue(value: any): string {

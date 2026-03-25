@@ -1,17 +1,19 @@
 /**
  * Attachment Service
  * CRUD operations for polymorphic file attachments
- * 
+ *
  * RODO redirect: When RODO is uploaded via RESERVATION or DEPOSIT,
  * the attachment is automatically stored under the CLIENT entity.
  * This ensures all RODO documents are in one place per client.
- * 
+ *
  * Updated: Phase 3 Audit — logChange() for all CRUD operations
  * Updated: #146 — storageService abstraction (local/MinIO)
  * Updated: #146 — presigned download URLs with TTL
  * Updated: #146 — image compression (sharp) on upload
  * Updated: #146 — SHA-256 file deduplication
  * 🇵🇱 Spolonizowany — komunikaty błędów z i18n/pl.ts
+ *
+ * Refactored: helpers extracted to attachments/ subdirectory
  */
 
 import { prisma } from '../lib/prisma';
@@ -23,128 +25,22 @@ import { ENTITY_TYPES, EntityType, isValidCategory, STORAGE_DIRS } from '../cons
 import { storageService } from './storage';
 import { storageConfig } from '../config/storage.config';
 import { compressIfImage } from '../utils/image-compression';
-import { computeFileHash } from '../utils/file-hash';
 import logger from '../utils/logger';
 import fs from 'fs';
 
-export interface DownloadUrlResult {
-  url: string;
-  expiresIn: number;
-  direct: boolean;
-  filename: string;
-  mimeType: string;
-  sizeBytes: number;
-}
+// Extracted helpers
+import { findDuplicate, resolveClientId, validateEntityExists } from './attachments/upload.helpers';
+import { getFileStream as getFileStreamHelper, getDownloadUrl as getDownloadUrlHelper, DownloadUrlResult } from './attachments/download.helpers';
+import {
+  countByCategory as countByCategoryFn,
+  hasAttachment as hasAttachmentFn,
+  batchCheckRodo as batchCheckRodoFn,
+  batchCheckContract as batchCheckContractFn,
+} from './attachments/batch-queries';
+
+export type { DownloadUrlResult };
 
 class AttachmentService {
-  /**
-   * Upload file from staging to storage backend.
-   * Compresses images before upload (sharp: max 2000px, quality 80%).
-   */
-  private async uploadToStorage(
-    file: Express.Multer.File,
-    entityType: EntityType,
-  ): Promise<{ storageKey: string; finalSize: number; fileHash: string }> {
-    const subDir = STORAGE_DIRS[entityType] || 'other';
-    const storageKey = `${subDir}/${file.filename}`;
-    const bucket = storageConfig.buckets.attachments;
-
-    const rawBuffer = fs.readFileSync(file.path);
-
-    const compression = await compressIfImage(rawBuffer, file.mimetype, file.originalname);
-    const fileBuffer = compression.buffer;
-    const finalSize = compression.compressedSize;
-
-    const fileHash = computeFileHash(fileBuffer);
-
-    await storageService.upload(bucket, storageKey, fileBuffer, {
-      'Content-Type': file.mimetype,
-      'X-Original-Name': encodeURIComponent(file.originalname),
-      ...(compression.wasCompressed ? {
-        'X-Original-Size': String(compression.originalSize),
-        'X-Compressed': 'true',
-      } : {}),
-    });
-
-    if (fs.existsSync(file.path)) {
-      fs.unlinkSync(file.path);
-      logger.debug(`Staging file removed: ${file.path}`);
-    }
-
-    logger.info(`File uploaded to storage: ${bucket}/${storageKey} (${finalSize} bytes, hash: ${fileHash.substring(0, 12)}...)`);
-    return { storageKey, finalSize, fileHash };
-  }
-
-  /**
-   * Check if an identical file (by SHA-256) already exists for the same entity.
-   * Returns the existing attachment if found (deduplication).
-   */
-  private async findDuplicate(
-    fileBuffer: Buffer,
-    entityType: EntityType,
-    entityId: string,
-    category: string,
-  ): Promise<{ hash: string; existing: any | null }> {
-    const fileHash = computeFileHash(fileBuffer);
-
-    const existing = await prisma.attachment.findFirst({
-      where: {
-        entityType,
-        entityId,
-        category,
-        fileHash,
-        isArchived: false,
-      },
-      include: {
-        uploadedBy: {
-          select: { id: true, firstName: true, lastName: true },
-        },
-      },
-    });
-
-    return { hash: fileHash, existing };
-  }
-
-  /**
-   * Resolve the clientId from a RESERVATION or DEPOSIT entity.
-   */
-  private async resolveClientId(entityType: EntityType, entityId: string): Promise<string | null> {
-    try {
-      if (entityType === 'RESERVATION') {
-        const reservation = await prisma.reservation.findUnique({
-          where: { id: entityId },
-          select: { clientId: true },
-        });
-        return reservation?.clientId || null;
-      }
-
-      if (entityType === 'DEPOSIT') {
-        const deposit = await prisma.deposit.findUnique({
-          where: { id: entityId },
-          include: {
-            reservation: {
-              select: { clientId: true },
-            },
-          },
-        });
-        return deposit?.reservation?.clientId || null;
-      }
-
-      if (entityType === 'CATERING_ORDER') {
-        const order = await prisma.cateringOrder.findUnique({
-          where: { id: entityId },
-          select: { clientId: true },
-        });
-        return order?.clientId || null;
-      }
-
-      return null;
-    } catch (error) {
-      logger.error(`Failed to resolve clientId for ${entityType}/${entityId}:`, error);
-      return null;
-    }
-  }
-
   /**
    * Create attachment record after file upload.
    *
@@ -165,14 +61,14 @@ class AttachmentService {
       throw AppError.badRequest(`Nieprawidłowa kategoria "${dto.category}" dla typu "${dto.entityType}"`);
     }
 
-    await this.validateEntityExists(dto.entityType, dto.entityId);
+    await validateEntityExists(dto.entityType, dto.entityId);
 
     // RODO redirect
     let finalEntityType: EntityType = dto.entityType;
     let finalEntityId: string = dto.entityId;
 
     if (dto.category === 'RODO' && dto.entityType !== 'CLIENT') {
-      const clientId = await this.resolveClientId(dto.entityType, dto.entityId);
+      const clientId = await resolveClientId(dto.entityType, dto.entityId);
 
       if (!clientId) {
         throw AppError.badRequest(
@@ -191,7 +87,7 @@ class AttachmentService {
     const compression = await compressIfImage(rawBuffer, file.mimetype, file.originalname);
     const processedBuffer = compression.buffer;
 
-    const { hash: fileHash, existing: duplicate } = await this.findDuplicate(
+    const { hash: fileHash, existing: duplicate } = await findDuplicate(
       processedBuffer,
       finalEntityType,
       finalEntityId,
@@ -350,7 +246,7 @@ class AttachmentService {
       return ownAttachments;
     }
 
-    const clientId = await this.resolveClientId(entityType, entityId);
+    const clientId = await resolveClientId(entityType, entityId);
     if (!clientId) return ownAttachments;
 
     const clientRodoAttachments = await prisma.attachment.findMany({
@@ -401,15 +297,7 @@ class AttachmentService {
    */
   async getFileStream(id: string): Promise<{ stream: NodeJS.ReadableStream; attachment: any }> {
     const attachment = await this.getAttachmentById(id);
-    const bucket = storageConfig.buckets.attachments;
-
-    const fileExists = await storageService.exists(bucket, attachment.storagePath);
-    if (!fileExists) {
-      logger.error(`File not found in storage: ${bucket}/${attachment.storagePath} (attachment: ${id})`);
-      throw AppError.notFound('Plik nie istnieje w storage');
-    }
-
-    const stream = await storageService.getStream(bucket, attachment.storagePath);
+    const stream = await getFileStreamHelper(attachment);
     return { stream, attachment };
   }
 
@@ -418,55 +306,7 @@ class AttachmentService {
    */
   async getDownloadUrl(id: string, baseApiUrl?: string): Promise<DownloadUrlResult> {
     const attachment = await this.getAttachmentById(id);
-    const bucket = storageConfig.buckets.attachments;
-
-    const fileExists = await storageService.exists(bucket, attachment.storagePath);
-    if (!fileExists) {
-      logger.error(`File not found in storage: ${bucket}/${attachment.storagePath} (attachment: ${id})`);
-      throw AppError.notFound('Plik nie istnieje w storage');
-    }
-
-    const isMinio = storageConfig.driver === 'minio';
-    const hasPublicEndpoint = !!storageConfig.minio.publicEndpoint;
-    const canDirect = isMinio && hasPublicEndpoint;
-
-    if (canDirect) {
-      const presignedUrl = await storageService.getPresignedUrl(bucket, attachment.storagePath);
-      const ttl = this.getPresignedTtl(bucket);
-
-      logger.debug(`Presigned URL generated for attachment ${id} (TTL: ${ttl}s, direct: true)`);
-
-      return {
-        url: presignedUrl,
-        expiresIn: ttl,
-        direct: true,
-        filename: attachment.originalName,
-        mimeType: attachment.mimeType,
-        sizeBytes: attachment.sizeBytes,
-      };
-    }
-
-    const apiBase = baseApiUrl || '/api';
-    const fallbackUrl = `${apiBase}/attachments/${id}/download`;
-
-    logger.debug(`Download URL for attachment ${id} (fallback to stream, direct: false)`);
-
-    return {
-      url: fallbackUrl,
-      expiresIn: 0,
-      direct: false,
-      filename: attachment.originalName,
-      mimeType: attachment.mimeType,
-      sizeBytes: attachment.sizeBytes,
-    };
-  }
-
-  private getPresignedTtl(bucket: string): number {
-    const sensitiveBuckets = [storageConfig.buckets.attachments];
-    if (sensitiveBuckets.includes(bucket)) {
-      return storageConfig.presignedTtl.sensitive;
-    }
-    return storageConfig.presignedTtl.standard;
+    return getDownloadUrlHelper(attachment, baseApiUrl);
   }
 
   /**
@@ -596,114 +436,11 @@ class AttachmentService {
     });
   }
 
-  /**
-   * Count attachments by category for an entity
-   */
-  async countByCategory(entityType: EntityType, entityId: string) {
-    const counts = await prisma.attachment.groupBy({
-      by: ['category'],
-      where: {
-        entityType,
-        entityId,
-        isArchived: false,
-      },
-      _count: { id: true },
-    });
-
-    return counts.reduce((acc, item) => {
-      acc[item.category] = item._count.id;
-      return acc;
-    }, {} as Record<string, number>);
-  }
-
-  /**
-   * Check if entity has specific category attachment
-   */
-  async hasAttachment(entityType: EntityType, entityId: string, category: string): Promise<boolean> {
-    const count = await prisma.attachment.count({
-      where: {
-        entityType,
-        entityId,
-        category,
-        isArchived: false,
-      },
-    });
-    return count > 0;
-  }
-
-  /**
-   * Batch check RODO status for multiple clients
-   */
-  async batchCheckRodo(clientIds: string[]): Promise<Record<string, boolean>> {
-    const rodoAttachments = await prisma.attachment.findMany({
-      where: {
-        entityType: 'CLIENT',
-        entityId: { in: clientIds },
-        category: 'RODO',
-        isArchived: false,
-      },
-      select: { entityId: true },
-      distinct: ['entityId'],
-    });
-
-    const rodoSet = new Set(rodoAttachments.map(a => a.entityId));
-
-    return clientIds.reduce((acc, id) => {
-      acc[id] = rodoSet.has(id);
-      return acc;
-    }, {} as Record<string, boolean>);
-  }
-
-  /**
-   * Batch check contract status for multiple reservations
-   */
-  async batchCheckContract(reservationIds: string[]): Promise<Record<string, boolean>> {
-    const contractAttachments = await prisma.attachment.findMany({
-      where: {
-        entityType: 'RESERVATION',
-        entityId: { in: reservationIds },
-        category: 'CONTRACT',
-        isArchived: false,
-      },
-      select: { entityId: true },
-      distinct: ['entityId'],
-    });
-
-    const contractSet = new Set(contractAttachments.map(a => a.entityId));
-
-    return reservationIds.reduce((acc, id) => {
-      acc[id] = contractSet.has(id);
-      return acc;
-    }, {} as Record<string, boolean>);
-  }
-
-  /**
-   * Validate that the referenced entity exists
-   */
-  private async validateEntityExists(entityType: EntityType, entityId: string): Promise<void> {
-    let exists = false;
-
-    switch (entityType) {
-      case 'CLIENT':
-        exists = !!(await prisma.client.findUnique({ where: { id: entityId }, select: { id: true } }));
-        break;
-      case 'RESERVATION':
-        exists = !!(await prisma.reservation.findUnique({ where: { id: entityId }, select: { id: true } }));
-        break;
-      case 'DEPOSIT':
-        exists = !!(await prisma.deposit.findUnique({ where: { id: entityId }, select: { id: true } }));
-        break;
-      case 'CATERING_ORDER':
-        exists = !!(await prisma.cateringOrder.findUnique({ where: { id: entityId }, select: { id: true } }));
-        break;
-      default:
-        throw AppError.badRequest(`Nieobsługiwany entityType: ${entityType}`);
-    }
-
-    if (!exists) {
-      throw AppError.notFound(`${entityType} o id ${entityId}`);
-    }
-  }
+  // Delegated batch queries
+  countByCategory = countByCategoryFn;
+  hasAttachment = hasAttachmentFn;
+  batchCheckRodo = batchCheckRodoFn;
+  batchCheckContract = batchCheckContractFn;
 }
 
 export default new AttachmentService();

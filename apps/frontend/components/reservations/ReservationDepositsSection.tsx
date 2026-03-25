@@ -7,12 +7,7 @@ import {
   FileDown,
   CheckCircle2,
   Clock,
-  AlertTriangle,
   XCircle,
-  ArrowDownUp,
-  Banknote,
-  Smartphone,
-  CreditCard,
   Loader2,
   ExternalLink,
   CalendarDays,
@@ -22,191 +17,22 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog'
 import { depositsApi } from '@/lib/api/deposits'
-import type { Deposit, DepositStatus, PaymentMethod } from '@/lib/api/deposits'
+import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { useQueryClient } from '@tanstack/react-query'
-
-// ═════════════════════════════════════════════
-// Types
-// ═════════════════════════════════════════════
-
-interface ReservationDepositsSectionProps {
-  reservationId: string
-  totalPrice: number
-}
-
-// ═════════════════════════════════════════════
-// Config
-// ═════════════════════════════════════════════
-
-const statusConfig: Record<DepositStatus, {
-  label: string
-  icon: React.ElementType
-  className: string
-  dotColor: string
-}> = {
-  PENDING: {
-    label: 'Oczekująca',
-    icon: Clock,
-    className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-    dotColor: 'bg-amber-400',
-  },
-  PAID: {
-    label: 'Opłacona',
-    icon: CheckCircle2,
-    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-    dotColor: 'bg-emerald-400',
-  },
-  OVERDUE: {
-    label: 'Przetermin.',
-    icon: AlertTriangle,
-    className: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
-    dotColor: 'bg-red-400',
-  },
-  PARTIALLY_PAID: {
-    label: 'Częściowa',
-    icon: Clock,
-    className: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
-    dotColor: 'bg-blue-400',
-  },
-  CANCELLED: {
-    label: 'Anulowana',
-    icon: XCircle,
-    className: 'bg-neutral-50 text-neutral-500 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700',
-    dotColor: 'bg-neutral-400',
-  },
-}
-
-const paymentMethodIcons: Record<PaymentMethod, { label: string; icon: React.ElementType }> = {
-  TRANSFER: { label: 'Przelew', icon: ArrowDownUp },
-  CASH: { label: 'Gotówka', icon: Banknote },
-  BLIK: { label: 'BLIK', icon: Smartphone },
-  CARD: { label: 'Karta', icon: CreditCard },
-}
-
-const paymentMethodOptions: { value: PaymentMethod; label: string; icon: React.ElementType; color: string }[] = [
-  { value: 'TRANSFER', label: 'Przelew', icon: ArrowDownUp, color: 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-  { value: 'CASH', label: 'Gotówka', icon: Banknote, color: 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
-  { value: 'BLIK', label: 'BLIK', icon: Smartphone, color: 'border-pink-300 bg-pink-50 text-pink-700 dark:border-pink-700 dark:bg-pink-900/30 dark:text-pink-300' },
-  { value: 'CARD', label: 'Karta', icon: CreditCard, color: 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-900/30 dark:text-violet-300' },
-]
-
-// ═════════════════════════════════════════════
-// Helpers
-// ═════════════════════════════════════════════
-
-function getDaysLabel(dateStr: string): { text: string; className: string } | null {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const due = new Date(dateStr)
-  due.setHours(0, 0, 0, 0)
-  const diff = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-  if (diff === 0) return { text: 'dziś', className: 'text-amber-600 dark:text-amber-400' }
-  if (diff === 1) return { text: 'jutro', className: 'text-amber-600 dark:text-amber-400' }
-  if (diff > 1 && diff <= 7) return { text: `za ${diff} dni`, className: 'text-blue-600 dark:text-blue-400' }
-  if (diff < 0) return { text: `${Math.abs(diff)} dni temu`, className: 'text-red-600 dark:text-red-400 font-medium' }
-  return null
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('pl-PL', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
-function suggestDueDate(daysFromNow: number = 14): string {
-  const d = new Date()
-  d.setDate(d.getDate() + daysFromNow)
-  return d.toISOString().split('T')[0]
-}
-
-// ═════════════════════════════════════════════
-// Delete Paid Deposit Confirm Dialog
-// ═════════════════════════════════════════════
-
-interface DeletePaidDepositDialogProps {
-  deposit: Deposit | null
-  open: boolean
-  onClose: () => void
-  onConfirm: () => Promise<void>
-  loading: boolean
-}
-
-function DeletePaidDepositDialog({ deposit, open, onClose, onConfirm, loading }: DeletePaidDepositDialogProps) {
-  return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
-            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-              <Trash2 className="h-5 w-5" />
-            </div>
-            Usuń opłaconą zaliczkę
-          </DialogTitle>
-          <DialogDescription className="text-left pt-1">
-            Ta zaliczka jest oznaczona jako <span className="font-semibold text-emerald-600 dark:text-emerald-400">opłacona</span>.
-            Usunięcie jej spowoduje obniżenie sumy wpłat dla tej rezerwacji.
-          </DialogDescription>
-        </DialogHeader>
-
-        {deposit && (
-          <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 space-y-1.5">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-neutral-500">Kwota</span>
-              <span className="font-bold text-red-700 dark:text-red-300">{Number(deposit.amount).toLocaleString('pl-PL')} zł</span>
-            </div>
-            {deposit.paymentMethod && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-neutral-500">Metoda płatności</span>
-                <span className="font-medium">{deposit.paymentMethod}</span>
-              </div>
-            )}
-            {deposit.paidAt && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-neutral-500">Data wpłaty</span>
-                <span className="font-medium">{formatDate(deposit.paidAt as string)}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        <p className="text-xs text-muted-foreground">
-          Operacja jest rejestrowana w logu audytowym. Używaj tylko w przypadku błędu lub rezygnacji klienta.
-        </p>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} disabled={loading}>Anuluj</Button>
-          <Button
-            variant="destructive"
-            onClick={onConfirm}
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-            Usuń zaliczkę
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// ═════════════════════════════════════════════
-// Component
-// ═════════════════════════════════════════════
+import {
+  statusConfig,
+  paymentMethodIcons,
+  getDaysLabel,
+  formatDate,
+  suggestDueDate,
+  type ReservationDepositsSectionProps,
+} from './deposits-section/deposits-config'
+import { DeletePaidDepositDialog } from './deposits-section/DeletePaidDepositDialog'
+import { CreateDepositDialog } from './deposits-section/CreateDepositDialog'
+import { MarkAsPaidDialog } from './deposits-section/MarkAsPaidDialog'
 
 export function ReservationDepositsSection({ reservationId, totalPrice }: ReservationDepositsSectionProps) {
   const queryClient = useQueryClient()
@@ -429,12 +255,10 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
               </div>
               {/* Progress bar */}
               <div className="relative h-3 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-                {/* Deposits committed (lighter) */}
                 <div
                   className="absolute inset-y-0 left-0 bg-rose-200 dark:bg-rose-800 rounded-full transition-all duration-500"
                   style={{ width: `${percentDeposits}%` }}
                 />
-                {/* Actually paid (solid) */}
                 <div
                   className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
                   style={{ width: `${percentPaid}%` }}
@@ -461,7 +285,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
             <div className="text-center py-6">
               <DollarSign className="h-10 w-10 text-rose-300 dark:text-rose-700 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">Brak zaliczek dla tej rezerwacji</p>
-              <p className="text-xs text-muted-foreground mt-1">Kliknij „Dodaj” aby utworzyć pierwszą</p>
+              <p className="text-xs text-muted-foreground mt-1">Kliknij „Dodaj" aby utworzyć pierwszą</p>
             </div>
           )}
 
@@ -603,9 +427,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
         </div>
       </Card>
 
-      {/* ═══════════════════════════════════ */}
-      {/* Delete Paid Deposit Dialog */}
-      {/* ═══════════════════════════════════ */}
+      {/* Dialogs */}
       <DeletePaidDepositDialog
         deposit={deleteTarget}
         open={!!deleteTarget}
@@ -614,153 +436,31 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
         loading={deleteLoading}
       />
 
-      {/* ═══════════════════════════════════ */}
-      {/* Create Deposit Modal */}
-      {/* ═══════════════════════════════════ */}
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
-                <DollarSign className="h-5 w-5 text-rose-600 dark:text-rose-400" />
-              </div>
-              Nowa zaliczka
-            </DialogTitle>
-            <DialogDescription>
-              Dodaj zaliczkę do tej rezerwacji. Sugerowana kwota to 30% ceny ({Math.round(totalPrice * 0.3).toLocaleString('pl-PL')} zł).
-            </DialogDescription>
-          </DialogHeader>
+      <CreateDepositDialog
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        totalPrice={totalPrice}
+        createAmount={createAmount}
+        setCreateAmount={setCreateAmount}
+        createDueDate={createDueDate}
+        setCreateDueDate={setCreateDueDate}
+        createTitle={createTitle}
+        setCreateTitle={setCreateTitle}
+        creating={creating}
+        onCreate={handleCreate}
+      />
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Kwota (zł) *</Label>
-              <Input
-                type="number"
-                min="1"
-                step="0.01"
-                placeholder={`np. ${Math.round(totalPrice * 0.3)}`}
-                value={createAmount}
-                onChange={(e) => setCreateAmount(e.target.value)}
-                className="h-10"
-              />
-              {createAmount && Number(createAmount) > 0 && totalPrice > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {Math.min((Number(createAmount) / totalPrice) * 100, 999).toFixed(1)}% ceny rezerwacji
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Termin płatności *</Label>
-              <Input
-                type="date"
-                value={createDueDate}
-                onChange={(e) => setCreateDueDate(e.target.value)}
-                className="h-10"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Tytuł (opcjonalnie)</Label>
-              <Input
-                placeholder="np. Zaliczka na wesele"
-                value={createTitle}
-                onChange={(e) => setCreateTitle(e.target.value)}
-                className="h-10"
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowCreateModal(false)}>Anuluj</Button>
-            <Button
-              onClick={handleCreate}
-              disabled={creating}
-              className="bg-rose-600 hover:bg-rose-700 text-white"
-            >
-              {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              Utwórz zaliczkę
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══════════════════════════════════ */}
-      {/* Mark as Paid Modal */}
-      {/* ═══════════════════════════════════ */}
-      <Dialog open={showPayModal} onOpenChange={setShowPayModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              Potwierdź płatność
-            </DialogTitle>
-            <DialogDescription>
-              Oznacz zaliczkę jako opłaconą.
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedDeposit && (
-            <div className="space-y-5 py-4">
-              <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 p-4 border border-emerald-200 dark:border-emerald-800">
-                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Kwota</p>
-                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                  {Number(selectedDeposit.amount).toLocaleString('pl-PL')} zł
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Metoda płatności</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {paymentMethodOptions.map((m) => {
-                    const Icon = m.icon
-                    const selected = payMethod === m.value
-                    return (
-                      <button
-                        key={m.value}
-                        type="button"
-                        onClick={() => setPayMethod(m.value)}
-                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
-                          selected
-                            ? `${m.color} border-current ring-2 ring-current/20`
-                            : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                        {m.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Data płatności</Label>
-                <Input
-                  type="date"
-                  value={payDate}
-                  onChange={(e) => setPayDate(e.target.value)}
-                  className="h-10"
-                />
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowPayModal(false)}>Anuluj</Button>
-            <Button
-              onClick={handlePay}
-              disabled={paying}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-              Potwierdź płatność
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MarkAsPaidDialog
+        open={showPayModal}
+        onOpenChange={setShowPayModal}
+        selectedDeposit={selectedDeposit}
+        payMethod={payMethod}
+        setPayMethod={setPayMethod}
+        payDate={payDate}
+        setPayDate={setPayDate}
+        paying={paying}
+        onPay={handlePay}
+      />
     </>
   )
 }

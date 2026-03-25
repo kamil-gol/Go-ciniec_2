@@ -50,6 +50,8 @@ jest.mock('../../../utils/recalculate-price', () => ({
 jest.mock('../../../utils/reservation.utils', () => ({
   calculateTotalGuests: jest.fn((a: number, c: number, t: number) => a + c + t),
   calculateTotalPrice: jest.fn((a: number, c: number, t: number, pa: number, pc: number, pt: number) => a * pa + c * pc + t * (pt || 0)),
+  calculateExtrasTotalPrice: jest.fn().mockReturnValue(0),
+  enrichWithExtrasTotals: jest.fn((r: any) => r),
   validateConfirmationDeadline: jest.fn().mockReturnValue(true),
   validateCustomEventFields: jest.fn().mockReturnValue({ valid: true }),
   detectReservationChanges: jest.fn().mockReturnValue([]),

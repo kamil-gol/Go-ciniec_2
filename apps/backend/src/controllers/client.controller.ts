@@ -6,6 +6,7 @@
 
 import { Request, Response } from 'express';
 import clientService from '../services/client.service';
+import clientContactsService from '../services/client-contacts.service';
 import { AppError } from '../utils/AppError';
 import { CreateClientDTO, UpdateClientDTO, ClientFilters, CreateClientContactDTO, UpdateClientContactDTO } from '../types/client.types';
 
@@ -131,7 +132,7 @@ export class ClientController {
       throw AppError.badRequest('Imię i nazwisko osoby kontaktowej są wymagane');
     }
 
-    const contact = await clientService.addContact(id, data, userId);
+    const contact = await clientContactsService.addContact(id, data, userId);
 
     res.status(201).json({
       success: true,
@@ -147,7 +148,7 @@ export class ClientController {
 
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
-    const contact = await clientService.updateContact(id, contactId, data, userId);
+    const contact = await clientContactsService.updateContact(id, contactId, data, userId);
 
     res.status(200).json({
       success: true,
@@ -162,7 +163,7 @@ export class ClientController {
 
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
-    await clientService.removeContact(id, contactId, userId);
+    await clientContactsService.removeContact(id, contactId, userId);
 
     res.status(200).json({
       success: true,

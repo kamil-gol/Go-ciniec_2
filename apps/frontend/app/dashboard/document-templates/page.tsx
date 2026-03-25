@@ -5,20 +5,11 @@ import {
   ScrollText,
   FileText,
   Mail,
-  ShieldCheck,
-  ShieldAlert,
-  Pencil,
-  History,
   Loader2,
-  Tag,
   Search,
-  UtensilsCrossed,
   Layers,
   BookOpen,
   Plus,
-  Trash2,
-  LayoutTemplate,
-  SlidersHorizontal,
 } from 'lucide-react';
 import {
   useDocumentTemplates,
@@ -30,24 +21,12 @@ import { TemplateHistory } from '@/components/document-templates/TemplateHistory
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import {
   PageLayout,
   PageHero,
@@ -63,79 +42,12 @@ import {
   type DocumentTemplate,
   type TemplateCategory,
 } from '@/types/document-template.types';
-
-// ── Category config ──────────────────────────────────
-
-const CATEGORY_CONFIG: Record<TemplateCategory, {
-  icon: typeof FileText;
-  emoji: string;
-  gradient: string;
-  badgeBg: string;
-  badgeText: string;
-}> = {
-  RESERVATION_PDF: {
-    icon: FileText,
-    emoji: '📄',
-    gradient: 'from-blue-500 to-cyan-500',
-    badgeBg: 'bg-blue-100 dark:bg-blue-900/30',
-    badgeText: 'text-blue-700 dark:text-blue-300',
-  },
-  CATERING_PDF: {
-    icon: UtensilsCrossed,
-    emoji: '🍽️',
-    gradient: 'from-emerald-500 to-teal-500',
-    badgeBg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    badgeText: 'text-emerald-700 dark:text-emerald-300',
-  },
-  EMAIL: {
-    icon: Mail,
-    emoji: '✉️',
-    gradient: 'from-violet-500 to-purple-500',
-    badgeBg: 'bg-violet-100 dark:bg-violet-900/30',
-    badgeText: 'text-violet-700 dark:text-violet-300',
-  },
-  EMAIL_LAYOUT: {
-    icon: LayoutTemplate,
-    emoji: '🎨',
-    gradient: 'from-rose-500 to-pink-500',
-    badgeBg: 'bg-rose-100 dark:bg-rose-900/30',
-    badgeText: 'text-rose-700 dark:text-rose-300',
-  },
-  PDF_LAYOUT_CONFIG: {
-    icon: SlidersHorizontal,
-    emoji: '⚙️',
-    gradient: 'from-slate-500 to-gray-500',
-    badgeBg: 'bg-slate-100 dark:bg-slate-900/30',
-    badgeText: 'text-slate-700 dark:text-slate-300',
-  },
-  POLICY: {
-    icon: BookOpen,
-    emoji: '📋',
-    gradient: 'from-amber-500 to-orange-500',
-    badgeBg: 'bg-amber-100 dark:bg-amber-900/30',
-    badgeText: 'text-amber-700 dark:text-amber-300',
-  },
-};
+import { CATEGORY_CONFIG, toSlug } from './components/template-config';
+import { TemplateCard } from './components/TemplateCard';
+import { CreateTemplateDialog } from './components/CreateTemplateDialog';
+import { DeleteTemplateDialog } from './components/DeleteTemplateDialog';
 
 type FilterValue = 'all' | TemplateCategory;
-
-// ── Slug helper ──────────────────────────────────────
-
-function toSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[ąĄ]/g, 'a')
-    .replace(/[ćĆ]/g, 'c')
-    .replace(/[ęĘ]/g, 'e')
-    .replace(/[łŁ]/g, 'l')
-    .replace(/[ńŃ]/g, 'n')
-    .replace(/[óÓ]/g, 'o')
-    .replace(/[śŚ]/g, 's')
-    .replace(/[źŹżŻ]/g, 'z')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-');
-}
 
 // ── Page Component ──────────────────────────────────
 
@@ -438,239 +350,29 @@ export default function DocumentTemplatesPage() {
         />
       )}
 
-      {/* ── Create Template Dialog ── */}
-      <AlertDialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <AlertDialogContent className="max-w-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-cyan-600" />
-              Nowy blok tekstu
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Utwórz nowy szablon dokumentu. Będzie dostępny do edycji po utworzeniu.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+      {/* Dialogs */}
+      <CreateTemplateDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        newName={newName}
+        onNameChange={handleNameChange}
+        newSlug={newSlug}
+        onSlugChange={handleSlugChange}
+        newDescription={newDescription}
+        setNewDescription={setNewDescription}
+        newCategory={newCategory}
+        setNewCategory={setNewCategory}
+        onCreate={handleCreate}
+        isPending={createMutation.isPending}
+      />
 
-          <div className="space-y-4 py-2">
-            <div>
-              <Label htmlFor="new-name">Nazwa szablonu *</Label>
-              <Input
-                id="new-name"
-                value={newName}
-                onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="np. Informacje o parkingu"
-                className="mt-1.5"
-                autoFocus
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="new-slug">
-                Slug <span className="text-muted-foreground font-normal">(identyfikator)</span>
-              </Label>
-              <Input
-                id="new-slug"
-                value={newSlug}
-                onChange={(e) => handleSlugChange(e.target.value)}
-                placeholder="np. informacje-o-parkingu"
-                className="mt-1.5 font-mono text-sm"
-              />
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Używany w kodzie. Tylko małe litery, cyfry i myślniki.
-              </p>
-            </div>
-
-            <div>
-              <Label htmlFor="new-desc">
-                Opis <span className="text-muted-foreground font-normal">(opcjonalny)</span>
-              </Label>
-              <Input
-                id="new-desc"
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="np. Wyświetlany w PDF rezerwacji pod warunkami"
-                className="mt-1.5"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="new-category">Kategoria *</Label>
-              <select
-                id="new-category"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value as TemplateCategory)}
-                className="mt-1.5 w-full h-9 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {TEMPLATE_CATEGORY_ORDER.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {TEMPLATE_CATEGORY_LABELS[cat]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleCreate}
-              disabled={!newName.trim() || !newSlug.trim() || createMutation.isPending}
-              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white"
-            >
-              {createMutation.isPending ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Utwórz szablon
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* ── Delete Confirmation Dialog ── */}
-      <AlertDialog open={!!deleteSlug} onOpenChange={() => setDeleteSlug(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-red-600" />
-              Usuń szablon
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Czy na pewno chcesz usunąć szablon <strong>„{deleteTemplateName}”</strong>?
-              Ta operacja jest nieodwracalna — zostaną usunięte także wszystkie wersje historyczne.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              {deleteMutation.isPending ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Usuń szablon
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteTemplateDialog
+        open={!!deleteSlug}
+        onOpenChange={() => setDeleteSlug(null)}
+        templateName={deleteTemplateName}
+        onDelete={handleDelete}
+        isPending={deleteMutation.isPending}
+      />
     </PageLayout>
-  );
-}
-
-// ── Template Card ───────────────────────────────────
-
-interface TemplateCardProps {
-  template: DocumentTemplate;
-  catConfig: (typeof CATEGORY_CONFIG)[TemplateCategory];
-  onEdit: () => void;
-  onHistory: () => void;
-  onDelete: () => void;
-}
-
-function TemplateCard({ template, catConfig, onEdit, onHistory, onDelete }: TemplateCardProps) {
-  const varCount = template.availableVars?.length || 0;
-
-  return (
-    <Card className="group overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-1 border border-neutral-100 dark:border-neutral-700/50">
-      {/* Colored top accent bar */}
-      <div className={`h-1 bg-gradient-to-r ${catConfig.gradient}`} />
-
-      <CardHeader className="pb-3 pt-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="space-y-1 min-w-0">
-            <CardTitle className="text-base leading-tight">{template.name}</CardTitle>
-            {template.description && (
-              <CardDescription className="text-sm line-clamp-2">
-                {template.description}
-              </CardDescription>
-            )}
-          </div>
-          {template.isRequired ? (
-            <Badge variant="destructive" className="text-[10px] gap-1 flex-shrink-0">
-              <ShieldAlert className="h-3 w-3" />
-              Wymagany
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-[10px] gap-1 flex-shrink-0">
-              <ShieldCheck className="h-3 w-3" />
-              Opcjonalny
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-3">
-        {/* Meta row */}
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Badge className={`${catConfig.badgeBg} ${catConfig.badgeText} text-[10px] border-0`}>
-            v{template.version}
-          </Badge>
-          {varCount > 0 && (
-            <span className="flex items-center gap-1">
-              <Tag className="h-3 w-3" />
-              {varCount} {varCount === 1 ? 'zmienna' : varCount < 5 ? 'zmienne' : 'zmiennych'}
-            </span>
-          )}
-          <span className="font-mono text-[10px] text-muted-foreground/60 truncate">
-            {template.slug}
-          </span>
-        </div>
-
-        {/* Variables preview */}
-        {varCount > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {template.availableVars.slice(0, 4).map((v) => (
-              <code
-                key={v}
-                className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-mono"
-              >
-                {`{{${v}}}`}
-              </code>
-            ))}
-            {varCount > 4 && (
-              <span className="text-[10px] text-muted-foreground self-center">
-                +{varCount - 4} więcej
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex gap-2 pt-1">
-          <Button
-            size="sm"
-            onClick={onEdit}
-            className="flex-1 h-9"
-          >
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            Edytuj
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onHistory}
-            className="h-9"
-          >
-            <History className="mr-1.5 h-3.5 w-3.5" />
-            Historia
-          </Button>
-          {!template.isRequired && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onDelete}
-              className="h-9 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200 dark:border-red-800"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   );
 }

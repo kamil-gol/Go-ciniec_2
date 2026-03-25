@@ -45,6 +45,8 @@ jest.mock('../../../utils/reservation.utils', () => ({
   validateCustomEventFields: jest.fn().mockReturnValue({ valid: true }),
   detectReservationChanges: jest.fn().mockReturnValue([]),
   formatChangesSummary: jest.fn().mockReturnValue(''),
+  calculateExtrasTotalPrice: jest.fn().mockReturnValue(0),
+  enrichWithExtrasTotals: jest.fn((r: any) => r),
 }));
 
 jest.mock('../../../services/reservation-menu.service', () => ({
