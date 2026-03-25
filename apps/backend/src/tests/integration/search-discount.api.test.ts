@@ -11,6 +11,7 @@ import { api, authHeader } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
 import prismaTest from '../helpers/prisma-test-client';
 import { seedTestData, TestSeedData } from '../helpers/db-seed';
+import { invalidateAllPermissionCaches } from '../../middlewares/permissions';
 
 describe('Search & Discount API', () => {
   let seed: TestSeedData;
@@ -21,6 +22,7 @@ describe('Search & Discount API', () => {
 
   beforeEach(async () => {
     await cleanDatabase();
+    invalidateAllPermissionCaches();
     seed = await seedTestData();
     // Ensure the default test token user exists in DB for permission checks
     const bcrypt = await import('bcryptjs');
