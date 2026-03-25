@@ -163,17 +163,14 @@ test.describe.serial('Reports API E2E', () => {
     const stats = body.data ?? body;
     expect(stats).toBeDefined();
 
-    // Verify key metric fields exist (numbers or nested objects)
-    // The overview endpoint returns 11 metrics; check a representative set
+    // Verify key metric fields exist — the endpoint returns DashboardOverview
     const hasReservationMetric =
-      'reservationCount' in stats ||
-      'totalReservations' in stats ||
-      'reservations' in stats ||
-      'counts' in stats;
+      'reservationsToday' in stats ||
+      'reservationsThisMonth' in stats ||
+      'reservationsThisWeek' in stats;
     const hasRevenueMetric =
-      'revenue' in stats ||
-      'totalRevenue' in stats ||
-      'income' in stats;
+      'revenueThisMonth' in stats ||
+      'revenuePrevMonth' in stats;
 
     expect(hasReservationMetric || hasRevenueMetric).toBeTruthy();
   });
