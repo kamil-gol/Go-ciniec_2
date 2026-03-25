@@ -123,11 +123,13 @@ export class WizardHelper {
     const dateTrigger = this.page.locator('button').filter({ hasText: /Wybierz datę|\d+ (stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|października|listopada|grudnia)/i }).first();
     await dateTrigger.click();
 
-    // Wait for calendar to appear
-    await this.page.waitForSelector('[role="grid"], .rdp-month', { state: 'visible', timeout: 3000 });
+    // Wait for calendar grid to appear
+    await this.page.waitForSelector('[role="grid"]', { state: 'visible', timeout: 3000 });
 
-    // Click the specific day number (only enabled days)
-    const dayButton = this.page.locator('.rdp-day:not(.rdp-day_disabled):not(.rdp-day_outside)').filter({ hasText: new RegExp(`^${day}$`) }).first();
+    // Click the specific day number (only enabled, non-outside days)
+    // rdp v8: day buttons have name="day", disabled days have [disabled] attribute,
+    // outside days get custom "day-outside" class from calendar.tsx classNames
+    const dayButton = this.page.locator('button[name="day"]:not([disabled])').filter({ hasText: new RegExp(`^${day}$`) }).first();
     await dayButton.click();
     await this.page.waitForTimeout(200);
   }
