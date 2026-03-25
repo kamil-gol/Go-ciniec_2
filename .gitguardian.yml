@@ -1,9 +1,12 @@
 version: 2
 
 secret:
-  # CI workflow JWT placeholders — not production secrets
+  # CI workflow test credentials — not production secrets
   ignored-paths:
     - ".github/workflows/e2e-tests.yml"
+    - ".github/workflows/backend-ci.yml"
   ignored-matches:
     - match: "e2e-ci-jwt-placeholder-not-production"
     - match: "test_jwt_secret_key_for_ci"
+    - match: "test-secret-key-do-not-use-in-production"
+    - match: "rezerwacje_password"
