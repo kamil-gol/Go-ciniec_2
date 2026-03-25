@@ -171,7 +171,7 @@ test.describe('Reservations Filters', () => {
         // Each card should have: Sala, Klient, Goście, Wartość labels
         await expect(page.locator('text=Sala').first()).toBeVisible();
         await expect(page.locator('text=Klient').first()).toBeVisible();
-        await expect(page.getByText('Goście', { exact: true }).first()).toBeVisible();
+        await expect(page.locator('text=Goście').first()).toBeVisible();
         await expect(page.locator('text=Wartość').first()).toBeVisible();
       }
     });
