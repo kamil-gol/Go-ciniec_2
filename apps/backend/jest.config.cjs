@@ -88,6 +88,7 @@ module.exports = {
   ],
   // Coverage thresholds enforced via CI (codecov) rather than jest config.
   // Jest 29 _checkThreshold uses glob.sync() which is removed in glob v13+.
-  // Actual coverage (2026-03): statements 70.69%, branches 86.41%, functions 81.33%, lines 70.69%.
+  // Actual coverage (2026-03-25): statements ~71%, branches ~86%, functions ~81%, lines ~71%.
+  // Target: >80% (issue #102).
   coverageReporters: ['text', 'text-summary', 'lcov', 'json-summary'],
 };

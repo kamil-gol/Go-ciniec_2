@@ -54,12 +54,11 @@ export default defineConfig({
         '__tests__/**',
         'e2e/**',
       ],
-      // TODO: Increase thresholds as test coverage improves
       thresholds: {
-        branches: 10,
-        functions: 10,
-        lines: 10,
-        statements: 10,
+        branches: 30,
+        functions: 30,
+        lines: 30,
+        statements: 30,
       },
     },
 
