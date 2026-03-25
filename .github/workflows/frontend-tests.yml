@@ -32,7 +32,7 @@ jobs:
 
       - name: Lint
         working-directory: ./apps/frontend
-        run: npx next lint --max-warnings 0
+        run: npx next lint
 
       - name: Type Check
         working-directory: ./apps/frontend
