@@ -36,8 +36,9 @@ CREATE TABLE "RolePermission" (
     CONSTRAINT "RolePermission_pkey" PRIMARY KEY ("id")
 );
 
--- AlterTable: User — add roleId, make role nullable
+-- AlterTable: User — add roleId & lastLoginAt, make role nullable
 ALTER TABLE "User" ADD COLUMN "roleId" UUID;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastLoginAt" TIMESTAMP(3);
 ALTER TABLE "User" ALTER COLUMN "role" DROP NOT NULL;
 ALTER TABLE "User" ALTER COLUMN "role" DROP DEFAULT;
 
