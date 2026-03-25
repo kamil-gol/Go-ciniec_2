@@ -65,48 +65,34 @@ describe('BUG5: Double-booking prevention', () => {
     mockPrisma.reservation.findMany.mockResolvedValue([
       { id: 'res-1', guests: 80, status: 'CONFIRMED' },
     ]);
-    mockPrisma.hall.findUnique.mockResolvedValue({
-      id: 'hall-1',
-      name: 'Sala A',
-      capacity: 100,
-      allowMultipleBookings: true,
-    });
 
     const { validateCapacityForTimeRange } = require('../../../services/reservation-validation.service');
 
-    const result = await validateCapacityForTimeRange({
-      hallId: 'hall-1',
-      startTime: new Date('2027-06-15T14:00:00Z'),
-      endTime: new Date('2027-06-15T22:00:00Z'),
-      guests: 30, // 80 + 30 = 110 > 100
-    });
+    const hall = { id: 'hall-1', capacity: 100, allowMultipleBookings: true };
+    const start = new Date('2027-06-15T14:00:00Z');
+    const end = new Date('2027-06-15T22:00:00Z');
 
-    expect(result.valid).toBe(false);
-    expect(result.reason).toMatch(/capacity|pojemność|przekroczona/i);
+    // 80 + 30 = 110 > 100 → should throw CAPACITY_EXCEEDED
+    await expect(
+      validateCapacityForTimeRange(hall, start, end, 30)
+    ).rejects.toThrow(/capacity|pojemność|przekroczona/i);
   });
 
   it('should reject any booking when hall disallows multiple bookings', async () => {
     mockPrisma.reservation.findMany.mockResolvedValue([
       { id: 'res-1', guests: 20, status: 'CONFIRMED' },
     ]);
-    mockPrisma.hall.findUnique.mockResolvedValue({
-      id: 'hall-1',
-      name: 'Sala A',
-      capacity: 100,
-      allowMultipleBookings: false,
-    });
 
     const { validateCapacityForTimeRange } = require('../../../services/reservation-validation.service');
 
-    const result = await validateCapacityForTimeRange({
-      hallId: 'hall-1',
-      startTime: new Date('2027-06-15T14:00:00Z'),
-      endTime: new Date('2027-06-15T22:00:00Z'),
-      guests: 10,
-    });
+    const hall = { id: 'hall-1', capacity: 100, allowMultipleBookings: false };
+    const start = new Date('2027-06-15T14:00:00Z');
+    const end = new Date('2027-06-15T22:00:00Z');
 
-    expect(result.valid).toBe(false);
-    expect(result.reason).toMatch(/multiple|wielokrotne|zajęta/i);
+    // Hall disallows multiple bookings → should throw MULTIPLE_BOOKINGS_DISABLED
+    await expect(
+      validateCapacityForTimeRange(hall, start, end, 10)
+    ).rejects.toThrow();
   });
 });
 
@@ -238,23 +224,16 @@ describe('Whole venue conflict prevention', () => {
       client: { firstName: 'Jan', lastName: 'Kowalski' },
     });
 
-    try {
-      const { checkWholeVenueConflict } = require('../../../services/reservation-validation.service');
-      const result = await checkWholeVenueConflict({
-        hallId: 'hall-1',
-        startTime: new Date('2027-06-15T14:00:00Z'),
-        endTime: new Date('2027-06-15T22:00:00Z'),
-      });
+    const { checkWholeVenueConflict } = require('../../../services/reservation-validation.service');
 
-      if (result && typeof result === 'object' && 'valid' in result) {
-        expect(result.valid).toBe(false);
-      } else if (result && typeof result === 'object' && 'conflict' in result) {
-        expect(result.conflict).toBe(true);
-      }
-    } catch (err: any) {
-      // If the function throws on conflict, that's also valid
-      expect(err.message).toMatch(/venue|obiekt|konflikt|conflict/i);
-    }
+    // checkWholeVenueConflict(hallId, startDateTime, endDateTime) → throws on conflict
+    await expect(
+      checkWholeVenueConflict(
+        'hall-1',
+        new Date('2027-06-15T14:00:00Z'),
+        new Date('2027-06-15T22:00:00Z'),
+      )
+    ).rejects.toThrow();
   });
 });
 
