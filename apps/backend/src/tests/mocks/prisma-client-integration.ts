@@ -554,7 +554,7 @@ async function loadRelations(
   if ((!include && !select) || rows.length === 0) return rows;
 
   const modelRels = RELATIONS[tableName] || {};
-  const fieldsToLoad = include || {};
+  const fieldsToLoad: Record<string, any> = include ? { ...include } : {};
 
   // If using select, also load relations mentioned in select
   if (select) {
@@ -565,7 +565,7 @@ async function loadRelations(
     }
   }
 
-  for (const [relField, relOpts] of Object.entries(fieldsToLoad)) {
+  for (const [relField, relOpts] of Object.entries(fieldsToLoad) as [string, any][]) {
     const relInfo = modelRels[relField];
     if (!relInfo) continue;
     if (!relOpts) continue; // false or undefined
@@ -617,7 +617,7 @@ async function loadRelations(
 
       // Apply where filter from include options
       if (relOpts && typeof relOpts === 'object' && relOpts !== true && relOpts.where) {
-        const [whereSql, whereVals, _nextIdx] = buildWhere(relOpts.where, childValues.length + 1, childFkInfo.childTable);
+        const [whereSql, whereVals] = buildWhere(relOpts.where, childValues.length + 1, childFkInfo.childTable);
         if (whereSql) {
           childQuery += ` AND ${whereSql}`;
           childValues.push(...whereVals);
@@ -914,8 +914,6 @@ function createModelProxy(pool: Pool, tableName: string) {
 
     aggregate: async ({ where, _count, _sum, _avg, _min, _max }: any = {}) => {
       const parts: string[] = [];
-      const result_map: any = {};
-
       if (_count === true || _count?._all) {
         parts.push('COUNT(*)::int as "_count_all"');
       } else if (_count && typeof _count === 'object') {
