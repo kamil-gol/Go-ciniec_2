@@ -71,6 +71,36 @@ module.exports = {
         }],
       },
     },
+    {
+      displayName: 'security',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      roots: ['<rootDir>/src'],
+      testMatch: ['<rootDir>/src/tests/security/**/*.test.ts'],
+      setupFiles: [
+        '<rootDir>/src/tests/setup.ts',
+        '<rootDir>/src/tests/helpers/integration-setup.ts',
+      ],
+      moduleNameMapper: {
+        '^@/prisma-client$': '<rootDir>/src/tests/mocks/prisma-client-integration',
+        '^@/(.*)$': '<rootDir>/src/$1',
+        '^@utils/(.*)$': '<rootDir>/src/utils/$1',
+        '^@lib/(.*)$': '<rootDir>/src/lib/$1',
+        '^@services/(.*)$': '<rootDir>/src/services/$1',
+        '^@controllers/(.*)$': '<rootDir>/src/controllers/$1',
+        '^@middlewares/(.*)$': '<rootDir>/src/middlewares/$1',
+        '^@routes/(.*)$': '<rootDir>/src/routes/$1',
+        '^@config/(.*)$': '<rootDir>/src/config/$1',
+        '^@constants/(.*)$': '<rootDir>/src/constants/$1',
+        '^@types/(.*)$': '<rootDir>/src/types/$1',
+      },
+      transform: {
+        '^.+\\.tsx?$': ['ts-jest', {
+          tsconfig: 'tsconfig.json',
+          diagnostics: false,
+        }],
+      },
+    },
   ],
   // ========================================
   // Coverage

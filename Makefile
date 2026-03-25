@@ -10,7 +10,7 @@
 # ============================================
 
 .PHONY: dev dev-build dev-down prod prod-build prod-down \
-        test-unit test-integration test-frontend test-e2e test-all \
+        test-unit test-integration test-security test-frontend test-e2e test-all \
         test-coverage test-frontend-coverage test-down \
         migrate-minio migrate-minio-dry minio-stats minio-ls \
         minio-backup minio-policies \
@@ -66,6 +66,11 @@ test-integration:
 		backend-test \
 		sh -c "npx prisma generate && npx prisma db push --force-reset --accept-data-loss && npm run test:integration"
 
+test-security:
+	$(COMPOSE_TEST) run --rm \
+		backend-test \
+		sh -c "npx prisma generate && npx prisma db push --force-reset --accept-data-loss && npm run test:security"
+
 test-coverage:
 	$(COMPOSE_TEST) run --rm \
 		backend-test \
@@ -90,7 +95,7 @@ test-e2e-ui:
 test-e2e-headed:
 	cd apps/frontend && npx playwright test --headed
 
-test-all: test-unit test-integration test-frontend
+test-all: test-unit test-integration test-security test-frontend
 
 test-down:
 	$(COMPOSE_TEST) down -v --remove-orphans
@@ -212,6 +217,7 @@ help:
 	@echo "  TESTING:"
 	@echo "    make test-unit          Backend unit tests"
 	@echo "    make test-integration   Backend integration tests (with DB)"
+	@echo "    make test-security      Backend security tests (with DB)"
 	@echo "    make test-frontend      Frontend component tests (Vitest)"
 	@echo "    make test-coverage      Backend tests with coverage"
 	@echo "    make test-e2e           E2E tests (Playwright, needs make dev)"

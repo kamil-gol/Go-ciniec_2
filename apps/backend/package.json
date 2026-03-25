@@ -11,6 +11,7 @@
     "test": "jest --config jest.config.cjs --selectProjects unit --passWithNoTests && jest --config jest.config.cjs --selectProjects integration --runInBand --passWithNoTests",
     "test:unit": "jest --config jest.config.cjs --selectProjects unit --passWithNoTests",
     "test:integration": "jest --config jest.config.cjs --selectProjects integration --runInBand --passWithNoTests",
+    "test:security": "jest --config jest.config.cjs --selectProjects security --runInBand --passWithNoTests",
     "test:watch": "jest --config jest.config.cjs --watch",
     "test:coverage": "jest --config jest.config.cjs --coverage --passWithNoTests",
     "test:ci": "jest --config jest.config.cjs --selectProjects unit --coverage --ci --forceExit --detectOpenHandles --passWithNoTests && jest --config jest.config.cjs --selectProjects integration --runInBand --ci --forceExit --detectOpenHandles --passWithNoTests",
