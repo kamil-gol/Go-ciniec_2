@@ -496,6 +496,35 @@ function mapDataKeys(tableName: string, data: Record<string, any>): Record<strin
   return mapped;
 }
 
+// Build reverse map: DB column → Prisma field name (lazy, per-table)
+const REVERSE_FIELD_MAP: Record<string, Record<string, string>> = {};
+function getReverseMap(tableName: string): Record<string, string> {
+  if (!REVERSE_FIELD_MAP[tableName]) {
+    const forward = FIELD_MAP[tableName];
+    if (!forward) return {};
+    const rev: Record<string, string> = {};
+    for (const [prismaName, dbCol] of Object.entries(forward)) {
+      rev[dbCol] = prismaName;
+    }
+    REVERSE_FIELD_MAP[tableName] = rev;
+  }
+  return REVERSE_FIELD_MAP[tableName];
+}
+
+/** Reverse-map DB column names back to Prisma field names in query results */
+function reverseMapRows(tableName: string, rows: any[]): void {
+  const rev = getReverseMap(tableName);
+  if (!Object.keys(rev).length) return;
+  for (const row of rows) {
+    for (const [dbCol, prismaName] of Object.entries(rev)) {
+      if (dbCol in row && !(prismaName in row)) {
+        row[prismaName] = row[dbCol];
+        delete row[dbCol];
+      }
+    }
+  }
+}
+
 /* ═══ Decimal field wrapping ═══ */
 // Import Decimal class from unit mock
 import { Decimal as DecimalClass } from './prisma-client-jest';
@@ -527,8 +556,11 @@ const DECIMAL_FIELDS: Record<string, Set<string>> = {
  * PostgreSQL pg driver returns numeric as strings; Prisma returns Decimal objects.
  */
 function wrapDecimalFields(tableName: string, rows: any[]): any[] {
+  if (rows.length === 0) return rows;
+  // Reverse-map DB column names → Prisma field names (e.g. "role" → "legacyRole")
+  reverseMapRows(tableName, rows);
   const decimalFields = DECIMAL_FIELDS[tableName];
-  if (!decimalFields || rows.length === 0) return rows;
+  if (!decimalFields) return rows;
   for (const row of rows) {
     for (const field of decimalFields) {
       if (field in row && row[field] !== null && row[field] !== undefined) {
