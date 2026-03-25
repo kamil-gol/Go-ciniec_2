@@ -9,7 +9,7 @@
  * - Company settings CRUD (settings:manage_company permission)
  * - Archive settings (settings:manage_company permission)
  */
-import { api, authHeader, authHeaderForUser, createTestUser } from '../helpers/test-utils';
+import { api, authHeader, createTestUser } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
 import prismaTest from '../helpers/prisma-test-client';
 import { seedTestData, TestSeedData } from '../helpers/db-seed';
@@ -24,6 +24,20 @@ describe('Users & RBAC API', () => {
   beforeEach(async () => {
     await cleanDatabase();
     seed = await seedTestData();
+    // Ensure the default test token user exists in DB (authHeader uses this UUID).
+    // requirePermission loads user from DB → falls back to legacyRole → '*' for ADMIN.
+    const bcrypt = await import('bcryptjs');
+    await prismaTest.user.create({
+      data: {
+        id: '00000000-0000-0000-0000-000000000001',
+        email: 'token-admin@test.pl',
+        password: await bcrypt.hash('TestPass123!', 10),
+        firstName: 'Token',
+        lastName: 'Admin',
+        legacyRole: 'ADMIN',
+        isActive: true,
+      },
+    }).catch(() => {/* may exist from seed */});
   });
 
   afterAll(async () => {
@@ -31,18 +45,8 @@ describe('Users & RBAC API', () => {
     await disconnectTestDb();
   });
 
-  // Helper: get auth header for the seeded admin user
-  const adminAuth = () => authHeaderForUser({
-    id: seed.admin.id,
-    email: seed.admin.email,
-    role: 'ADMIN',
-  });
-
-  const employeeAuth = () => authHeaderForUser({
-    id: seed.user.id,
-    email: seed.user.email,
-    role: 'EMPLOYEE',
-  });
+  const adminAuth = () => authHeader('ADMIN');
+  const employeeAuth = () => authHeader('EMPLOYEE');
 
   // ================================================================
   // USERS — /api/settings/users

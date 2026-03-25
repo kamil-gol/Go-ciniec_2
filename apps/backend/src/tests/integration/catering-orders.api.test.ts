@@ -9,7 +9,7 @@
  * - Validation (schema enforcement)
  * - History tracking
  */
-import { api, authHeaderForUser } from '../helpers/test-utils';
+import { api, authHeader } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
 import prismaTest from '../helpers/prisma-test-client';
 import { seedTestData, TestSeedData } from '../helpers/db-seed';
@@ -24,6 +24,21 @@ describe('Catering Orders API', () => {
   beforeEach(async () => {
     await cleanDatabase();
     seed = await seedTestData();
+    // Ensure the default test token user (from authHeader) exists in DB.
+    // requirePermission looks up user → legacyRole ADMIN → wildcard '*'.
+    // Also needed as FK for CateringOrder.createdById.
+    const bcrypt = await import('bcryptjs');
+    await prismaTest.user.create({
+      data: {
+        id: '00000000-0000-0000-0000-000000000001',
+        email: 'token-admin@test.pl',
+        password: await bcrypt.hash('TestPass123!', 10),
+        firstName: 'Token',
+        lastName: 'Admin',
+        legacyRole: 'ADMIN',
+        isActive: true,
+      },
+    }).catch(() => {});
   });
 
   afterAll(async () => {
@@ -31,11 +46,7 @@ describe('Catering Orders API', () => {
     await disconnectTestDb();
   });
 
-  const adminAuth = () => authHeaderForUser({
-    id: seed.admin.id,
-    email: seed.admin.email,
-    role: 'ADMIN',
-  });
+  const adminAuth = () => authHeader('ADMIN');
 
   /** Helper: create a catering order directly in DB */
   async function createTestOrder(overrides: Record<string, any> = {}) {

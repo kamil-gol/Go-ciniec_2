@@ -7,7 +7,7 @@
  * - Discount CRUD operations
  * - Company settings edge cases
  */
-import { api, authHeader, authHeaderForUser } from '../helpers/test-utils';
+import { api, authHeader } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
 import prismaTest from '../helpers/prisma-test-client';
 import { seedTestData, TestSeedData } from '../helpers/db-seed';
@@ -22,6 +22,19 @@ describe('Search & Discount API', () => {
   beforeEach(async () => {
     await cleanDatabase();
     seed = await seedTestData();
+    // Ensure the default test token user exists in DB for permission checks
+    const bcrypt = await import('bcryptjs');
+    await prismaTest.user.create({
+      data: {
+        id: '00000000-0000-0000-0000-000000000001',
+        email: 'token-admin@test.pl',
+        password: await bcrypt.hash('TestPass123!', 10),
+        firstName: 'Token',
+        lastName: 'Admin',
+        legacyRole: 'ADMIN',
+        isActive: true,
+      },
+    }).catch(() => {});
   });
 
   afterAll(async () => {
@@ -29,11 +42,7 @@ describe('Search & Discount API', () => {
     await disconnectTestDb();
   });
 
-  const adminAuth = () => authHeaderForUser({
-    id: seed.admin.id,
-    email: seed.admin.email,
-    role: 'ADMIN',
-  });
+  const adminAuth = () => authHeader('ADMIN');
 
   // ================================================================
   // SEARCH — /api/search
