@@ -57,7 +57,7 @@ test.describe('Concurrent Operations Tests (Bug #5)', () => {
       ).toBeVisible({ timeout: 10000 });
 
       // Verify detail link exists (page is interactive)
-      const detailLink = page.locator('a[href*="/dashboard/reservations/"]').first();
+      const detailLink = page.locator('a[href*="/dashboard/reservations/"]:not([href*="/list"]):not([href*="/calendar"])').first();
       const hasReservations = await detailLink.isVisible({ timeout: 5000 }).catch(() => false);
 
       if (hasReservations) {

@@ -134,7 +134,7 @@ export class WizardHelper {
 
   /** Navigate to next month in the calendar */
   async nextMonth() {
-    await this.page.locator('.rdp-nav_button_next, button[aria-label="Go to next month"]').click();
+    await this.page.locator('button[name="next-month"]').click();
     await this.page.waitForTimeout(200);
   }
 

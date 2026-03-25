@@ -72,7 +72,7 @@ test.describe('Wizard Step 3: Szablon → Pakiet → Ceny', () => {
     ).toBeVisible({ timeout: 5000 });
     await wizard.fillInput('adults', '50');
     await wizard.fillInput('children', '10');
-    await wizard.fillInput('babies', '5');
+    await wizard.fillInput('toddlers', '5');
     await wizard.nextStep();
 
     // Now on Step 3: Menu i ceny — wait for it to render

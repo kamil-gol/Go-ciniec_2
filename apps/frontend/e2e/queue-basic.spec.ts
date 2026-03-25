@@ -67,8 +67,9 @@ test.describe('Queue - Basic Operations', () => {
       await page.waitForLoadState('networkidle');
 
       // The "Kolejka" section heading inside the queue list card
+      // Use exact: true to avoid matching the h1 "Kolejka rezerwacji"
       await expect(
-        page.getByRole('heading', { name: 'Kolejka' })
+        page.locator('h2').filter({ hasText: 'Kolejka' })
       ).toBeVisible({ timeout: 10000 });
     });
   });
@@ -93,7 +94,7 @@ test.describe('Queue - Basic Operations', () => {
       await page.goto('/dashboard/queue');
       await page.waitForLoadState('networkidle');
 
-      const addButton = page.getByRole('button', { name: /Dodaj do kolejki/ });
+      const addButton = page.getByRole('button', { name: /Dodaj do kolejki/ }).first();
       await expect(addButton).toBeVisible({ timeout: 10000 });
 
       // Open form
@@ -125,7 +126,7 @@ test.describe('Queue - Basic Operations', () => {
       // Either the empty state message or the queue list should be visible.
       // Empty state shows "Kolejka jest pusta"; otherwise entries are rendered.
       const emptyState = page.getByText('Kolejka jest pusta');
-      const queueSection = page.getByRole('heading', { name: 'Kolejka' });
+      const queueSection = page.locator('h2').filter({ hasText: 'Kolejka' });
 
       // The queue section heading is always visible
       await expect(queueSection).toBeVisible();

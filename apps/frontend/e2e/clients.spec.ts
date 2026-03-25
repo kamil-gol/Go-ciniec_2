@@ -33,7 +33,8 @@ test.describe('Client Management', () => {
       await expect(page.getByText('Wszyscy', { exact: true }).first()).toBeVisible({ timeout: 5000 });
       await expect(page.getByText('Osoby prywatne', { exact: true }).first()).toBeVisible();
       await expect(page.getByText('Firmy', { exact: true }).first()).toBeVisible();
-      await expect(page.getByText('Rezerwacje', { exact: true })).toBeVisible();
+      // Scope to main content to avoid matching sidebar "Rezerwacje" nav link
+      await expect(page.locator('main').getByText('Rezerwacje', { exact: true })).toBeVisible();
     });
 
     test('should have Dodaj klienta button', async ({ page }) => {

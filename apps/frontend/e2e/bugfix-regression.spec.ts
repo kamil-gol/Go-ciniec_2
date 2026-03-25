@@ -179,7 +179,7 @@ test.describe('Form Bugs Regression (Docs Bug #1-8)', () => {
     await page.waitForLoadState('networkidle');
 
     // Find Eye button to open detail
-    const detailLink = page.locator('a[href*="/dashboard/reservations/"]').first();
+    const detailLink = page.locator('a[href*="/dashboard/reservations/"]:not([href*="/list"]):not([href*="/calendar"])').first();
     if (!(await detailLink.isVisible({ timeout: 5000 }).catch(() => false))) {
       return; // No reservations to test
     }
