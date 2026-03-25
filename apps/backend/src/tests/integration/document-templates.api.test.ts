@@ -12,7 +12,6 @@ import { api, authHeader } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
 import prismaTest from '../helpers/prisma-test-client';
 import { seedTestData, TestSeedData } from '../helpers/db-seed';
-import { invalidateAllPermissionCaches } from '../../middlewares/permissions';
 
 describe('Document Templates API', () => {
   let seed: TestSeedData;
@@ -23,22 +22,7 @@ describe('Document Templates API', () => {
 
   beforeEach(async () => {
     await cleanDatabase();
-    invalidateAllPermissionCaches();
     seed = await seedTestData();
-    // Ensure the default test token user (from authHeader) exists in DB.
-    // requirePermission looks up user → legacyRole ADMIN → wildcard '*'.
-    const bcrypt = await import('bcryptjs');
-    await prismaTest.user.create({
-      data: {
-        id: '00000000-0000-0000-0000-000000000001',
-        email: 'token-admin@test.pl',
-        password: await bcrypt.hash('TestPass123!', 10),
-        firstName: 'Token',
-        lastName: 'Admin',
-        legacyRole: 'ADMIN',
-        isActive: true,
-      },
-    }).catch(() => {});
   });
 
   afterAll(async () => {

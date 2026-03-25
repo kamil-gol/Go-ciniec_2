@@ -58,10 +58,14 @@ export async function seedTestData(): Promise<TestSeedData> {
   const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
 
   // ── Users ──
+  // Admin uses deterministic UUID matching authHeader('ADMIN') default token ID.
+  // This ensures requirePermission middleware finds the user in DB
+  // and falls back to legacyRole='ADMIN' → wildcard '*'.
   const admin = await findOrCreate(
     () => prismaTest.user.findUnique({ where: { email: 'admin@test.pl' } }),
     () => prismaTest.user.create({
       data: {
+        id: '00000000-0000-0000-0000-000000000001',
         email: 'admin@test.pl',
         password: hashedPassword,
         firstName: 'Admin',

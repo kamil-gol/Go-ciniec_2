@@ -13,7 +13,6 @@ import { api, authHeader, createTestUser } from '../helpers/test-utils';
 import { cleanDatabase, connectTestDb, disconnectTestDb } from '../helpers/prisma-test-client';
 import prismaTest from '../helpers/prisma-test-client';
 import { seedTestData, TestSeedData } from '../helpers/db-seed';
-import { invalidateAllPermissionCaches } from '../../middlewares/permissions';
 
 describe('Users & RBAC API', () => {
   let seed: TestSeedData;
@@ -24,22 +23,7 @@ describe('Users & RBAC API', () => {
 
   beforeEach(async () => {
     await cleanDatabase();
-    invalidateAllPermissionCaches(); // clear in-memory cache after DB truncate
     seed = await seedTestData();
-    // Ensure the default test token user exists in DB (authHeader uses this UUID).
-    // requirePermission loads user from DB → falls back to legacyRole → '*' for ADMIN.
-    const bcrypt = await import('bcryptjs');
-    await prismaTest.user.create({
-      data: {
-        id: '00000000-0000-0000-0000-000000000001',
-        email: 'token-admin@test.pl',
-        password: await bcrypt.hash('TestPass123!', 10),
-        firstName: 'Token',
-        lastName: 'Admin',
-        legacyRole: 'ADMIN',
-        isActive: true,
-      },
-    }).catch(() => {/* may exist from seed */});
   });
 
   afterAll(async () => {
