@@ -185,10 +185,10 @@ export class MenuHelper {
     const json = await safeJson(response);
     if (!json) return null;
     const items = json.data || json || [];
-    // Normalize: backend uses unitPrice, tests expect priceAmount
+    // Normalize: backend uses basePrice, tests expect priceAmount
     return items.map((item: any) => ({
       ...item,
-      priceAmount: item.priceAmount ?? item.unitPrice,
+      priceAmount: item.priceAmount ?? item.unitPrice ?? item.basePrice,
     }));
   }
 }
