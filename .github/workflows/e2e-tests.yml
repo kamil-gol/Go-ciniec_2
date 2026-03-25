@@ -69,6 +69,13 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
 
+      - name: Seed test data
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+          NODE_ENV: development
+        run: npm run db:seed
+
       - name: Start backend server
         working-directory: apps/backend
         env:
@@ -166,6 +173,13 @@ jobs:
         run: |
           npx prisma generate
           npx prisma migrate deploy
+
+      - name: Seed test data
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+          NODE_ENV: development
+        run: npm run db:seed
 
       - name: Start servers
         env:
