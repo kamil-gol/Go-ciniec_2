@@ -441,17 +441,24 @@ function extractDirection(dir: any): string {
 function buildOrderBy(orderBy: any, tableName = ''): string {
   if (!orderBy) return '';
   const col = (field: string) => tableName ? mapFieldName(tableName, field) : field;
+  const processEntry = (key: string, dir: any): string | null => {
+    // Skip relation-based orderBy (e.g., { category: { name: 'asc' } })
+    if (tableName && isRelationField(tableName, key)) return null;
+    // Skip _count, _relevance etc.
+    if (key.startsWith('_')) return null;
+    return `"${col(key)}" ${extractDirection(dir)}`;
+  };
   if (Array.isArray(orderBy)) {
     const parts = orderBy.map((o: any) => {
       const [key, dir] = Object.entries(o)[0];
-      return `"${col(key)}" ${extractDirection(dir)}`;
-    });
+      return processEntry(key, dir);
+    }).filter(Boolean);
     return parts.length ? ` ORDER BY ${parts.join(', ')}` : '';
   }
   const entries = Object.entries(orderBy);
   if (entries.length === 0) return '';
-  const parts = entries.map(([key, dir]) => `"${col(key)}" ${extractDirection(dir)}`);
-  return ` ORDER BY ${parts.join(', ')}`;
+  const parts = entries.map(([key, dir]) => processEntry(key, dir)).filter(Boolean);
+  return parts.length ? ` ORDER BY ${parts.join(', ')}` : '';
 }
 
 /* ═══ Prisma @map field → DB column mapping ═══ */
@@ -487,11 +494,13 @@ function prepareInsertData(tableName: string, data: Record<string, any>): Record
   const now = new Date();
   const cleaned: Record<string, any> = {};
   for (const [key, val] of Object.entries(data)) {
+    // Skip undefined values
+    if (val === undefined) continue;
     // Skip relation fields entirely (they're not DB columns)
     if (isRelationField(tableName, key)) continue;
 
     // Skip relation objects (nested creates/connects)
-    if (val !== null && val !== undefined && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
+    if (val !== null && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
       if ('create' in val || 'connect' in val || 'connectOrCreate' in val || 'createMany' in val) {
         continue;
       }
@@ -506,10 +515,12 @@ function prepareInsertData(tableName: string, data: Record<string, any>): Record
 function prepareUpdateData(tableName: string, data: Record<string, any>): Record<string, any> {
   const cleaned: Record<string, any> = {};
   for (const [key, val] of Object.entries(data)) {
+    // Skip undefined values — don't overwrite existing DB values with null
+    if (val === undefined) continue;
     // Skip relation fields entirely
     if (isRelationField(tableName, key)) continue;
 
-    if (val !== null && val !== undefined && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
+    if (val !== null && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
       if ('create' in val || 'connect' in val || 'connectOrCreate' in val || 'createMany' in val ||
           'set' in val || 'disconnect' in val || 'delete' in val || 'update' in val || 'updateMany' in val || 'deleteMany' in val) {
         continue;
