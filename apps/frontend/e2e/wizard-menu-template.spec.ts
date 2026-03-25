@@ -54,8 +54,9 @@ test.describe('Wizard Step 3: Szablon → Pakiet → Ceny', () => {
     await authenticatedPage.locator('[role="option"]').first().click();
     await authenticatedPage.waitForTimeout(300);
 
-    // Open date picker popover (calendar is inside a Popover component)
-    const datePickerTrigger = authenticatedPage.locator('button:has-text("Wybierz datę")');
+    // Open START date picker popover (calendar is inside a Popover component)
+    // There are 2 date pickers (start + end), pick the first one
+    const datePickerTrigger = authenticatedPage.locator('button:has-text("Wybierz datę")').first();
     await expect(datePickerTrigger).toBeVisible({ timeout: 3000 });
     await datePickerTrigger.click();
     await authenticatedPage.waitForTimeout(300);
