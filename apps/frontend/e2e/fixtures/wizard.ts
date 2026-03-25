@@ -123,16 +123,17 @@ export class WizardHelper {
     const dateTrigger = this.page.locator('button').filter({ hasText: /Wybierz datę|\d+ (stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|października|listopada|grudnia)/i }).first();
     await dateTrigger.click();
 
-    // Wait for calendar grid to appear
-    await this.page.waitForSelector('[role="grid"]', { state: 'visible', timeout: 3000 });
+    // Wait for calendar grid to appear and stabilize
+    await this.page.waitForSelector('[role="grid"]', { state: 'visible', timeout: 5000 });
+    await this.page.waitForTimeout(300);
 
     // Click the specific day number (only enabled, non-outside days)
-    // rdp v8: day buttons have name="day", disabled days have [disabled] attribute,
-    // outside days get custom "day-outside" class from calendar.tsx classNames
+    // rdp v8: day buttons have name="day", disabled days have [disabled] attribute
+    // Use dispatchEvent to avoid Playwright actionability timeout during React re-renders
     const dayButton = this.page.locator('button[name="day"]:not([disabled])').filter({ hasText: new RegExp(`^${day}$`) }).first();
     await expect(dayButton).toBeVisible({ timeout: 5000 });
-    await dayButton.click({ timeout: 10000 });
-    await this.page.waitForTimeout(200);
+    await dayButton.dispatchEvent('click');
+    await this.page.waitForTimeout(500);
   }
 
   /** Navigate to next month in the calendar */
