@@ -54,16 +54,9 @@ test.describe('Wizard Step 3: Szablon → Pakiet → Ceny', () => {
     await authenticatedPage.locator('[role="option"]').first().click();
     await authenticatedPage.waitForTimeout(300);
 
-    // Open START date picker popover (calendar is inside a Popover component)
-    // There are 2 date pickers (start + end), pick the first one
-    const datePickerTrigger = authenticatedPage.locator('button:has-text("Wybierz datę")').first();
-    await expect(datePickerTrigger).toBeVisible({ timeout: 3000 });
-    await datePickerTrigger.click();
-    await authenticatedPage.waitForTimeout(300);
-
-    // Navigate to next month to avoid "past date" issues, then select day 15
-    await wizard.nextMonth();
-    await wizard.selectDate(15);
+    // Select a future date in the current month — wizard.selectDate() opens the popover itself
+    // Avoid nextMonth() which causes popover instability with Radix UI + React re-renders
+    await wizard.selectDate(28);
 
     // Open START time picker popover (time slots are inside a Popover)
     const startTimeTrigger = authenticatedPage.locator('button:has-text("Wybierz godzinę")').first();

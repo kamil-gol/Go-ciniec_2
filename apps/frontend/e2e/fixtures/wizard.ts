@@ -129,10 +129,10 @@ export class WizardHelper {
 
     // Click the specific day number (only enabled, non-outside days)
     // rdp v8: day buttons have name="day", disabled days have [disabled] attribute
-    // Use dispatchEvent to avoid Playwright actionability timeout during React re-renders
     const dayButton = this.page.locator('button[name="day"]:not([disabled])').filter({ hasText: new RegExp(`^${day}$`) }).first();
     await expect(dayButton).toBeVisible({ timeout: 5000 });
-    await dayButton.dispatchEvent('click');
+    await dayButton.click();
+    // Wait for popover to close (DatePicker calls setOpen(false) after selection)
     await this.page.waitForTimeout(500);
   }
 
