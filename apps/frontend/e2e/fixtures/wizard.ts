@@ -130,14 +130,16 @@ export class WizardHelper {
     // rdp v8: day buttons have name="day", disabled days have [disabled] attribute,
     // outside days get custom "day-outside" class from calendar.tsx classNames
     const dayButton = this.page.locator('button[name="day"]:not([disabled])').filter({ hasText: new RegExp(`^${day}$`) }).first();
-    await dayButton.click();
+    await expect(dayButton).toBeVisible({ timeout: 5000 });
+    await dayButton.click({ timeout: 10000 });
     await this.page.waitForTimeout(200);
   }
 
   /** Navigate to next month in the calendar */
   async nextMonth() {
     await this.page.locator('button[name="next-month"]').click();
-    await this.page.waitForTimeout(200);
+    // Wait for calendar to re-render after month navigation
+    await this.page.waitForTimeout(500);
   }
 
   // ─── TimePicker Helper ─────────────────────────────────────────────
