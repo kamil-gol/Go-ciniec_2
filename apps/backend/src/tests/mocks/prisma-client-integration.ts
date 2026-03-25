@@ -407,6 +407,22 @@ function buildWhere(where: WhereClause, startIdx = 1, tableName = ''): [string, 
           conditions.push(`"${dbCol}" = $${idx++}`);
           values.push(val.equals);
         }
+      } else if ('path' in val && ('equals' in val || 'not' in val)) {
+        // JSON path filter: { path: ['field1', 'field2'], equals: value }
+        const pathArr = val.path as string[];
+        let jsonAccess = `"${dbCol}"`;
+        for (let pi = 0; pi < pathArr.length - 1; pi++) {
+          jsonAccess += `->'${pathArr[pi]}'`;
+        }
+        jsonAccess += `->>'${pathArr[pathArr.length - 1]}'`;
+        if ('equals' in val) {
+          if (val.equals === null) {
+            conditions.push(`${jsonAccess} IS NULL`);
+          } else {
+            conditions.push(`${jsonAccess} = $${idx++}`);
+            values.push(String(val.equals));
+          }
+        }
       } else if ('some' in val || 'every' in val || 'none' in val || 'is' in val || 'isNot' in val) {
         // Skip relation aggregate filters — these need sub-queries
         continue;
@@ -480,6 +496,52 @@ function mapDataKeys(tableName: string, data: Record<string, any>): Record<strin
   return mapped;
 }
 
+/* ═══ Decimal field wrapping ═══ */
+// Import Decimal class from unit mock
+import { Decimal as DecimalClass } from './prisma-client-jest';
+
+const DECIMAL_FIELDS: Record<string, Set<string>> = {
+  EventType: new Set(['extraHourRate']),
+  Reservation: new Set(['pricePerAdult', 'pricePerChild', 'pricePerToddler', 'totalPrice', 'discountValue', 'discountAmount', 'priceBeforeDiscount', 'venueSurcharge', 'extraHoursCost', 'extrasTotalPrice']),
+  Deposit: new Set(['amount', 'remainingAmount', 'paidAmount']),
+  DepositPayment: new Set(['amount']),
+  MenuPackage: new Set(['pricePerAdult', 'pricePerChild', 'pricePerToddler']),
+  MenuCourseOption: new Set(['customPrice']),
+  PackageCategorySettings: new Set(['minSelect', 'maxSelect', 'extraItemPrice', 'maxExtra']),
+  ReservationCategoryExtra: new Set(['quantity', 'pricePerItem', 'totalPrice']),
+  ReservationMenuSnapshot: new Set(['packagePrice', 'optionsPrice', 'totalMenuPrice']),
+  MenuPriceHistory: new Set(['oldValue', 'newValue']),
+  ServiceItem: new Set(['basePrice']),
+  ReservationExtra: new Set(['unitPrice', 'totalPrice']),
+  CateringPackage: new Set(['basePrice']),
+  CateringPackageSection: new Set(['minSelect', 'maxSelect']),
+  CateringSectionOption: new Set(['customPrice']),
+  CateringOrder: new Set(['subtotal', 'extrasTotalPrice', 'discountValue', 'discountAmount', 'totalPrice']),
+  CateringOrderItem: new Set(['unitPrice', 'totalPrice']),
+  CateringOrderExtra: new Set(['unitPrice', 'totalPrice']),
+  CateringDeposit: new Set(['amount', 'paidAmount', 'remainingAmount']),
+};
+
+/**
+ * Wrap Decimal columns in query results with Prisma-compatible Decimal objects.
+ * PostgreSQL pg driver returns numeric as strings; Prisma returns Decimal objects.
+ */
+function wrapDecimalFields(tableName: string, rows: any[]): any[] {
+  const decimalFields = DECIMAL_FIELDS[tableName];
+  if (!decimalFields || rows.length === 0) return rows;
+  for (const row of rows) {
+    for (const field of decimalFields) {
+      if (field in row && row[field] !== null && row[field] !== undefined) {
+        // Only wrap if not already a Decimal instance
+        if (!(row[field] instanceof DecimalClass) && typeof row[field]?.toNumber !== 'function') {
+          row[field] = new DecimalClass(row[field]);
+        }
+      }
+    }
+  }
+  return rows;
+}
+
 /* ═══ Auto-timestamp & data cleanup helpers ═══ */
 
 const NO_UPDATED_AT = new Set([
@@ -489,6 +551,14 @@ const NO_UPDATED_AT = new Set([
 ]);
 
 const NO_CREATED_AT = new Set(['ReservationMenuSnapshot']);
+
+/** Unwrap Decimal instances to plain numbers for SQL parameters */
+function unwrapDecimal(val: any): any {
+  if (val && typeof val === 'object' && typeof val.toNumber === 'function' && !(val instanceof Date)) {
+    return val.toNumber();
+  }
+  return val;
+}
 
 function prepareInsertData(tableName: string, data: Record<string, any>): Record<string, any> {
   const now = new Date();
@@ -505,7 +575,7 @@ function prepareInsertData(tableName: string, data: Record<string, any>): Record
         continue;
       }
     }
-    cleaned[key] = val;
+    cleaned[key] = unwrapDecimal(val);
   }
   if (!NO_CREATED_AT.has(tableName) && !('createdAt' in cleaned)) cleaned['createdAt'] = now;
   if (!NO_UPDATED_AT.has(tableName) && !('updatedAt' in cleaned)) cleaned['updatedAt'] = now;
@@ -529,7 +599,7 @@ function prepareUpdateData(tableName: string, data: Record<string, any>): Record
         continue;
       }
     }
-    cleaned[key] = val;
+    cleaned[key] = unwrapDecimal(val);
   }
   if (!NO_UPDATED_AT.has(tableName) && !('updatedAt' in cleaned)) cleaned['updatedAt'] = new Date();
   return mapDataKeys(tableName, cleaned);
@@ -565,10 +635,53 @@ async function loadRelations(
     }
   }
 
+  // Handle _count in include: { _count: { select: { dishes: true } } }
+  if (include && include._count) {
+    const countSelect = include._count.select || include._count;
+    if (typeof countSelect === 'object') {
+      for (const [countField, countVal] of Object.entries(countSelect)) {
+        if (!countVal) continue;
+        const relInfo = modelRels[countField];
+        if (!relInfo || relInfo.type !== 'many') continue;
+
+        const childFkInfo = getChildFk(tableName, countField);
+        if (!childFkInfo) {
+          for (const row of rows) {
+            if (!row._count) row._count = {};
+            row._count[countField] = 0;
+          }
+          continue;
+        }
+
+        const parentIds = rows.map((r: any) => r.id).filter((v: any) => v != null);
+        if (parentIds.length === 0) {
+          for (const row of rows) {
+            if (!row._count) row._count = {};
+            row._count[countField] = 0;
+          }
+          continue;
+        }
+
+        const uniqueIds = [...new Set(parentIds)];
+        const placeholders = uniqueIds.map((_: any, i: number) => `$${i + 1}`);
+        const countResult = await pool.query(
+          `SELECT "${childFkInfo.childFk}", COUNT(*)::int as cnt FROM "${childFkInfo.childTable}" WHERE "${childFkInfo.childFk}" IN (${placeholders.join(', ')}) GROUP BY "${childFkInfo.childFk}"`,
+          uniqueIds,
+        );
+        const countMap = new Map(countResult.rows.map((r: any) => [r[childFkInfo.childFk], r.cnt]));
+        for (const row of rows) {
+          if (!row._count) row._count = {};
+          row._count[countField] = countMap.get(row.id) || 0;
+        }
+      }
+    }
+  }
+
   for (const [relField, relOpts] of Object.entries(fieldsToLoad) as [string, any][]) {
     const relInfo = modelRels[relField];
     if (!relInfo) continue;
     if (!relOpts) continue; // false or undefined
+    if (relField === '_count') continue; // Already handled above
 
     if (relInfo.type === 'one' && relInfo.fk) {
       // belongs-to: fetch related row by FK
@@ -583,6 +696,7 @@ async function loadRelations(
         `SELECT * FROM "${relInfo.model}" WHERE "id" IN (${placeholders.join(', ')})`,
         uniqueFks,
       );
+      wrapDecimalFields(relInfo.model, relResult.rows);
       const relMap = new Map(relResult.rows.map((r: any) => [r.id, r]));
 
       // Handle nested includes
@@ -630,6 +744,7 @@ async function loadRelations(
       }
 
       const childResult = await pool.query(childQuery, childValues);
+      wrapDecimalFields(childFkInfo.childTable, childResult.rows);
 
       // Handle nested includes on child rows
       if (relOpts && typeof relOpts === 'object' && relOpts !== true) {
@@ -684,6 +799,7 @@ function createModelProxy(pool: Pool, tableName: string) {
         values,
       );
       const rows = result.rows;
+      wrapDecimalFields(tableName, rows);
       if (include || select) {
         await loadRelations(pool, tableName, rows, include, select);
       }
@@ -713,6 +829,7 @@ function createModelProxy(pool: Pool, tableName: string) {
       if (!sql) return null;
       const result = await pool.query(`SELECT * FROM "${tableName}" WHERE ${sql} LIMIT 1`, values);
       if (result.rows.length === 0) return null;
+      wrapDecimalFields(tableName, result.rows);
       if (include || select) {
         await loadRelations(pool, tableName, result.rows, include, select);
       }
@@ -736,6 +853,7 @@ function createModelProxy(pool: Pool, tableName: string) {
       }
       const result = await pool.query(query, values);
       if (result.rows.length === 0) return null;
+      wrapDecimalFields(tableName, result.rows);
       if (include || select) {
         await loadRelations(pool, tableName, result.rows, include, select);
       }
@@ -765,6 +883,7 @@ function createModelProxy(pool: Pool, tableName: string) {
 
       const result = await pool.query(query, values);
       let rows = result.rows;
+      wrapDecimalFields(tableName, rows);
 
       if (distinct) {
         // Simple distinct on specified fields
@@ -791,6 +910,7 @@ function createModelProxy(pool: Pool, tableName: string) {
         // No data to update — just return the existing row
         const [sql, values] = buildWhere(where, 1, tableName);
         const result = await pool.query(`SELECT * FROM "${tableName}" WHERE ${sql} LIMIT 1`, values);
+        wrapDecimalFields(tableName, result.rows);
         if (include || select) await loadRelations(pool, tableName, result.rows, include, select);
         return result.rows[0];
       }
@@ -802,6 +922,7 @@ function createModelProxy(pool: Pool, tableName: string) {
         `UPDATE "${tableName}" SET ${setClauses.join(', ')} WHERE ${whereSql} RETURNING *`,
         [...dataValues, ...whereValues],
       );
+      wrapDecimalFields(tableName, result.rows);
       if (include || select) {
         await loadRelations(pool, tableName, result.rows, include, select);
       }
@@ -833,6 +954,7 @@ function createModelProxy(pool: Pool, tableName: string) {
       if (include) {
         const [selSql, selValues] = buildWhere(where, 1, tableName);
         const selResult = await pool.query(`SELECT * FROM "${tableName}" WHERE ${selSql} LIMIT 1`, selValues);
+        wrapDecimalFields(tableName, selResult.rows);
         if (selResult.rows.length > 0) {
           await loadRelations(pool, tableName, selResult.rows, include);
         }
@@ -845,6 +967,7 @@ function createModelProxy(pool: Pool, tableName: string) {
         `DELETE FROM "${tableName}" WHERE ${sql} RETURNING *`,
         values,
       );
+      wrapDecimalFields(tableName, result.rows);
       return result.rows[0];
     },
 
@@ -885,6 +1008,7 @@ function createModelProxy(pool: Pool, tableName: string) {
         const mapped = prepareUpdateData(tableName, updateData);
         const dataEntries = Object.entries(mapped);
         if (dataEntries.length === 0) {
+          wrapDecimalFields(tableName, existing.rows);
           if (include || select) await loadRelations(pool, tableName, existing.rows, include, select);
           return existing.rows[0];
         }
@@ -896,6 +1020,7 @@ function createModelProxy(pool: Pool, tableName: string) {
           `UPDATE "${tableName}" SET ${setClauses.join(', ')} WHERE ${wSql} RETURNING *`,
           [...dataValues, ...wValues],
         );
+        wrapDecimalFields(tableName, result.rows);
         if (include || select) await loadRelations(pool, tableName, result.rows, include, select);
         return result.rows[0];
       } else {
@@ -907,6 +1032,7 @@ function createModelProxy(pool: Pool, tableName: string) {
           `INSERT INTO "${tableName}" (${columns.map((c: string) => `"${c}"`).join(', ')}) VALUES (${ph.join(', ')}) RETURNING *`,
           vals,
         );
+        wrapDecimalFields(tableName, result.rows);
         if (include || select) await loadRelations(pool, tableName, result.rows, include, select);
         return result.rows[0];
       }
@@ -988,13 +1114,13 @@ function createModelProxy(pool: Pool, tableName: string) {
       if (_sum) {
         formatted._sum = {};
         for (const k of Object.keys(_sum)) {
-          formatted._sum[k] = raw[`_sum_${k}`] != null ? Number(raw[`_sum_${k}`]) : null;
+          formatted._sum[k] = raw[`_sum_${k}`] != null ? new DecimalClass(raw[`_sum_${k}`]) : null;
         }
       }
       if (_avg) {
         formatted._avg = {};
         for (const k of Object.keys(_avg)) {
-          formatted._avg[k] = raw[`_avg_${k}`] != null ? Number(raw[`_avg_${k}`]) : null;
+          formatted._avg[k] = raw[`_avg_${k}`] != null ? new DecimalClass(raw[`_avg_${k}`]) : null;
         }
       }
       if (_min) {

@@ -38,7 +38,11 @@ const mockPrisma = {
 };
 
 jest.mock('../../lib/prisma', () => ({ prisma: mockPrisma }));
-jest.mock('../../middleware/auth.middleware', () => ({
+jest.mock('../../middlewares/auth', () => ({
+  authMiddleware: (_req: any, _res: any, next: any) => {
+    _req.user = { id: 'user-1', role: 'ADMIN' };
+    next();
+  },
   authenticate: (_req: any, _res: any, next: any) => {
     _req.user = { id: 'user-1', role: 'ADMIN' };
     next();

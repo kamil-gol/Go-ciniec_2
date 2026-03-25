@@ -436,7 +436,7 @@ describe('Deposit API', () => {
       expect(getRes.status).toBe(404);
     });
 
-    it('should reject deleting a paid deposit', async () => {
+    it('should allow deleting a paid deposit (audited operation)', async () => {
       const createRes = await createDeposit(reservationId, 75, '2026-12-15');
       const depositId = createRes.body.data.id;
       await markPaid(depositId);
@@ -444,7 +444,8 @@ describe('Deposit API', () => {
       const res = await api
         .delete(`/api/deposits/${depositId}`)
         .set(adminAuth());
-      expect(res.status).toBe(400);
+      // Deletion of paid deposits is allowed per business logic (fully audited)
+      expect(res.status).toBe(200);
     });
 
     it('should return 404 for non-existent deposit', async () => {

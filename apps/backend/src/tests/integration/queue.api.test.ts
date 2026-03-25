@@ -862,8 +862,8 @@ describe('Queue API — /api/queue', () => {
         .send({
           hallId: seed.hall1.id,
           eventTypeId: seed.eventType1.id,
-          startDateTime: `${dateStr}T14:00:00`,
-          endDateTime: `${dateStr}T22:00:00`,
+          startDateTime: `${dateStr}T14:00:00Z`,
+          endDateTime: `${dateStr}T22:00:00Z`,
           adults: 60,
           children: 15,
           toddlers: 5,
@@ -890,8 +890,8 @@ describe('Queue API — /api/queue', () => {
         .send({
           hallId: seed.hall1.id,
           eventTypeId: seed.eventType1.id,
-          startDateTime: `${dateStr}T14:00:00`,
-          endDateTime: `${dateStr}T22:00:00`,
+          startDateTime: `${dateStr}T14:00:00Z`,
+          endDateTime: `${dateStr}T22:00:00Z`,
           adults: 60,
           pricePerAdult: 200,
           status: 'CONFIRMED',
@@ -937,8 +937,8 @@ describe('Queue API — /api/queue', () => {
         .send({
           // hallId missing
           eventTypeId: seed.eventType1.id,
-          startDateTime: `${dateStr}T14:00:00`,
-          endDateTime: `${dateStr}T22:00:00`,
+          startDateTime: `${dateStr}T14:00:00Z`,
+          endDateTime: `${dateStr}T22:00:00Z`,
           adults: 60,
           pricePerAdult: 200,
           status: 'CONFIRMED',
@@ -957,8 +957,8 @@ describe('Queue API — /api/queue', () => {
         .send({
           hallId: seed.hall1.id,
           eventTypeId: seed.eventType1.id,
-          startDateTime: `${dateStr}T14:00:00`,
-          endDateTime: `${dateStr}T22:00:00`,
+          startDateTime: `${dateStr}T14:00:00Z`,
+          endDateTime: `${dateStr}T22:00:00Z`,
           adults: 0,
           pricePerAdult: 200,
           status: 'CONFIRMED',
@@ -980,8 +980,8 @@ describe('Queue API — /api/queue', () => {
         .send({
           hallId: seed.hall1.id,
           eventTypeId: seed.eventType1.id,
-          startDateTime: `${dateStr}T14:00:00`,
-          endDateTime: `${dateStr}T22:00:00`,
+          startDateTime: `${dateStr}T14:00:00Z`,
+          endDateTime: `${dateStr}T22:00:00Z`,
           adults: 40,
           pricePerAdult: 150,
           status: 'PENDING',
