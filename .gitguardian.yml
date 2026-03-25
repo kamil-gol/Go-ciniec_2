@@ -1,0 +1,9 @@
+version: 2
+
+secret:
+  # CI workflow JWT placeholders — not production secrets
+  ignored-paths:
+    - ".github/workflows/e2e-tests.yml"
+  ignored-matches:
+    - match: "e2e-ci-jwt-placeholder-not-production"
+    - match: "test_jwt_secret_key_for_ci"
