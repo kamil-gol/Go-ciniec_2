@@ -14,8 +14,7 @@ describe('calculateVenueSurchargePreview', () => {
   describe('when hall IS whole venue', () => {
     it('returns 3000 for fewer than 30 guests', () => {
       const result = calculateVenueSurchargePreview(true, 15)
-      expect(result).not.toBeNull()
-      expect(result!.amount).toBe(3000)
+      expect(result).toEqual(expect.objectContaining({ amount: 3000 }))
       expect(result!.label).toContain('poniżej 30')
     })
 
@@ -26,7 +25,7 @@ describe('calculateVenueSurchargePreview', () => {
 
     it('returns 2000 for exactly 30 guests (boundary)', () => {
       const result = calculateVenueSurchargePreview(true, 30)
-      expect(result!.amount).toBe(2000)
+      expect(result).toEqual(expect.objectContaining({ amount: 2000 }))
       expect(result!.label).toContain('30+')
     })
 

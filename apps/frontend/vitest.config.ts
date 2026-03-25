@@ -67,7 +67,7 @@ export default defineConfig({
     // Performance
     // ========================================
     pool: 'forks',
-    testTimeout: 10000,
+    testTimeout: 5000,
   },
 
   // ========================================

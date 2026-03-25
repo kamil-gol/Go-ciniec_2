@@ -82,7 +82,7 @@ jobs:
       - name: Start servers
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
-          JWT_SECRET: test_jwt_secret_key_for_ci
+          JWT_SECRET: ${{ secrets.JWT_SECRET_CI || 'e2e-ci-jwt-placeholder-not-production' }}
           NODE_ENV: development
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
         run: |
@@ -179,7 +179,7 @@ jobs:
         working-directory: apps/backend
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
-          JWT_SECRET: test_jwt_secret_key_for_ci
+          JWT_SECRET: ${{ secrets.JWT_SECRET_CI || 'e2e-ci-jwt-placeholder-not-production' }}
           NODE_ENV: development
         run: |
           npx tsx src/index.ts &

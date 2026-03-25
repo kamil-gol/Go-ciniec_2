@@ -318,7 +318,7 @@ describe('MenuCalculator (PriceBreakdown)', () => {
       const { PriceBreakdownSkeleton } = await import('@/components/menu/PriceBreakdown');
       const { container } = render(<PriceBreakdownSkeleton />);
       const pulseElements = container.querySelectorAll('.animate-pulse');
-      expect(pulseElements.length).toBeGreaterThan(0);
+      expect(pulseElements.length).toBeGreaterThanOrEqual(1);
     });
   });
 });

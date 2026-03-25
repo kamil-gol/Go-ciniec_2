@@ -129,7 +129,7 @@ describe('ReservationForm', () => {
 
       // First step shows event type — use getAllByText since multiple matches
       const matches = screen.queryAllByText(/typ wydarzenia|wydarzenie/i)
-      expect(matches.length).toBeGreaterThan(0)
+      expect(matches.length).toBeGreaterThanOrEqual(1)
     })
   })
 
@@ -142,9 +142,11 @@ describe('ReservationForm', () => {
       if (submitButton) {
         fireEvent.click(submitButton)
         await waitFor(() => {
+          // Form should either show validation errors or prevent submission
           const errorMessages = screen.queryAllByRole('alert')
-          // Form should show validation errors or prevent submission
-          expect(errorMessages.length >= 0).toBe(true)
+          const bodyText = document.body.textContent || ''
+          const hasValidationFeedback = errorMessages.length > 0 || bodyText.match(/wymagane|błąd|nieprawidłow/i)
+          expect(hasValidationFeedback || !onComplete).toBeTruthy()
         })
       }
     })
@@ -161,8 +163,8 @@ describe('ReservationForm', () => {
         if (submitButton) fireEvent.click(submitButton)
 
         await waitFor(() => {
-          // Should not accept negative values
-          expect(guestInput).toBeTruthy()
+          // Input should still be in the document; negative value should be rejected
+          expect(guestInput).toBeInTheDocument()
         })
       }
     })
@@ -176,24 +178,20 @@ describe('ReservationForm', () => {
       if (dateInput) {
         fireEvent.change(dateInput, { target: { value: '2020-01-01' } })
         await waitFor(() => {
-          expect(dateInput).toBeTruthy()
+          expect(dateInput).toBeInTheDocument()
         })
       }
     })
   })
 
   describe('Guest breakdown', () => {
-    it('should have fields for adults, children, and toddlers', () => {
+    it('should reference guest-related terminology in the form', () => {
       if (!CreateReservationForm) return
       renderWithProviders(<CreateReservationForm />)
 
-      const adultsField = screen.queryByLabelText(/dorosl|dorosł/i) || screen.queryByText(/dorosl|dorosł/i)
-      const childrenField = screen.queryByLabelText(/dzieci/i) || screen.queryByText(/dzieci/i)
-      const toddlersField = screen.queryByLabelText(/maluch|malusz/i) || screen.queryByText(/maluch|malusz/i)
-
-      // At least some guest-related fields should be present
-      const hasGuestFields = adultsField || childrenField || toddlersField
-      expect(hasGuestFields || true).toBeTruthy()
+      // Guest fields may be on a later wizard step; check the form mentions guests somewhere
+      const bodyText = document.body.textContent || ''
+      expect(bodyText).toMatch(/goś|osob|uczestnik|dorosł|dzieci|sala/i)
     })
   })
 
@@ -217,9 +215,9 @@ describe('ReservationForm', () => {
       renderWithProviders(<CreateReservationForm />)
 
       const submitButton = screen.queryByRole('button', { name: /zapisz|utwórz|dodaj/i })
-      // Button should exist and be clickable
       if (submitButton) {
-        expect(submitButton).toBeTruthy()
+        expect(submitButton).toBeInTheDocument()
+        expect(submitButton).not.toBeDisabled()
       }
     })
   })

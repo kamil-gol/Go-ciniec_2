@@ -147,10 +147,9 @@ describe('CourseList (DishSelector)', () => {
     it('should show spinner when loading', async () => {
       mockUsePackageCategories.mockReturnValue({ data: undefined, isLoading: true });
       const { container } = await renderDishSelector();
-      const hasSpinner = container.querySelector('.animate-spin') ||
-        container.querySelector('[role="status"]') ||
-        document.body.textContent?.match(/ładowan|wczytyw/i);
-      expect(hasSpinner).toBeTruthy();
+      const spinner = container.querySelector('.animate-spin') || container.querySelector('[role="status"]');
+      const hasLoadingText = document.body.textContent?.match(/ładowan|wczytyw/i);
+      expect(spinner || hasLoadingText).not.toBeNull();
     });
 
     it('should show info message when no categories in package', async () => {
@@ -375,7 +374,7 @@ describe('CourseList (DishSelector)', () => {
       await renderDishSelector();
       const buttons = screen.getAllByRole('button');
       const confirmBtn = buttons.find(b => /zatwierdź|potwierdź|dalej/i.test(b.textContent || ''));
-      expect(confirmBtn).toBeDefined();
+      expect(confirmBtn).not.toBeUndefined();
     });
   });
 

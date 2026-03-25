@@ -79,12 +79,29 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 // ========================================
 const originalError = console.error;
 console.error = (...args: any[]) => {
-  // Suppress React act() warnings in tests
-  if (
-    typeof args[0] === 'string' &&
-    args[0].includes('Warning: An update to')
-  ) {
-    return;
+  if (typeof args[0] === 'string') {
+    // Suppress React act() warnings in tests
+    if (
+      args[0].includes('Warning: An update to') ||
+      args[0].includes('not wrapped in act(') ||
+      args[0].includes('inside a test was not wrapped in act')
+    ) {
+      return;
+    }
+    // Suppress React 18 batching warnings
+    if (args[0].includes('ReactDOM.render is no longer supported')) {
+      return;
+    }
   }
   originalError.call(console, ...args);
 };
+
+// ========================================
+// Global cleanup after each test
+// ========================================
+import { cleanup } from '@testing-library/react';
+import { afterEach } from 'vitest';
+
+afterEach(() => {
+  cleanup();
+});

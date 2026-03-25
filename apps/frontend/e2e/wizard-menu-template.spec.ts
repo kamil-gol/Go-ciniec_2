@@ -10,8 +10,8 @@ import { WizardHelper } from './fixtures/wizard';
  *
  * Tests that only need to verify Step 3 UI elements still must navigate
  * through the earlier steps first. Tests that depend on specific menu
- * templates / packages existing in the database are marked as placeholder
- * (.skip) with explanatory comments.
+ * templates / packages require seed data with templates "Wesele" and
+ * "Komunia", package "Standard", and client "Jan Kowalski".
  */
 test.describe('Wizard Step 3: Szablon → Pakiet → Ceny', () => {
   let wizard: WizardHelper;
@@ -161,15 +161,14 @@ test.describe('Wizard Step 3: Szablon → Pakiet → Ceny', () => {
     expect(parseFloat(toddlerValue)).toBe(50);
   });
 
-  // ─── Tests that require specific menu templates/packages in the DB ──────
-  // These tests depend on known menu template names (e.g. "Wesele", "Komunia")
-  // and package names (e.g. "Standard") existing in the database.
-  // They are skipped by default. To run them, ensure seed data includes:
-  //   - At least two menu templates (e.g. "Wesele", "Komunia")
-  //   - At least one package per template (e.g. "Standard")
+  // ─── Tests that require wizard event type ↔ menu template matching ──────
+  // These tests need the wizard step 0 event type to match a seeded template.
+  // The wizard's Szablon dropdown filters by the event type selected in step 0.
+  // Since step 0 picks "first available" option, the template may not appear
+  // unless the test explicitly selects the matching event type (e.g. "Wesele").
+  // Skipped until the beforeEach is updated to select a specific event type.
 
   test.skip('should show package select after choosing template', async ({ authenticatedPage }) => {
-    // Requires: menu template "Wesele" in DB
     await wizard.toggleSwitch('Gotowe menu');
     await wizard.selectByLabel('Szablon', 'Wesele');
 
@@ -179,7 +178,6 @@ test.describe('Wizard Step 3: Szablon → Pakiet → Ceny', () => {
   });
 
   test.skip('should display price card after selecting package', async ({ authenticatedPage }) => {
-    // Requires: menu template "Wesele" + package "Standard" in DB
     await wizard.toggleSwitch('Gotowe menu');
     await wizard.selectByLabel('Szablon', 'Wesele');
     await authenticatedPage.waitForTimeout(500);
@@ -191,7 +189,6 @@ test.describe('Wizard Step 3: Szablon → Pakiet → Ceny', () => {
   });
 
   test.skip('should clear package when template changes', async ({ authenticatedPage }) => {
-    // Requires: menu templates "Wesele" + "Komunia", package "Standard" in DB
     await wizard.toggleSwitch('Gotowe menu');
     await wizard.selectByLabel('Szablon', 'Wesele');
     await authenticatedPage.waitForTimeout(500);
@@ -207,7 +204,6 @@ test.describe('Wizard Step 3: Szablon → Pakiet → Ceny', () => {
   });
 
   test.skip('should show breadcrumb Szablon → Pakiet → Ceny', async ({ authenticatedPage }) => {
-    // Requires: menu template "Wesele" in DB
     await wizard.toggleSwitch('Gotowe menu');
 
     await expect(
@@ -221,7 +217,6 @@ test.describe('Wizard Step 3: Szablon → Pakiet → Ceny', () => {
   });
 
   test.skip('should show template → package path in summary (step 5)', async ({ authenticatedPage }) => {
-    // Requires: menu template "Wesele" + package "Standard" + client "Jan Kowalski" in DB
     await wizard.toggleSwitch('Gotowe menu');
     await wizard.selectByLabel('Szablon', 'Wesele');
     await authenticatedPage.waitForTimeout(500);

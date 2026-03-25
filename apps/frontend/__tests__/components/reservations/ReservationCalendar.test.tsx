@@ -74,8 +74,8 @@ describe('ReservationCalendar (date grouping view)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByText(/poniedziałek/i)).toBeTruthy()
-      expect(screen.getByText(/wtorek/i)).toBeTruthy()
+      expect(screen.getByText(/poniedziałek/i)).toBeInTheDocument()
+      expect(screen.getByText(/wtorek/i)).toBeInTheDocument()
     })
 
     it('should display dates in "d MMMM yyyy" format', () => {
@@ -92,7 +92,7 @@ describe('ReservationCalendar (date grouping view)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByText(/20 czerwca 2026/i)).toBeTruthy()
+      expect(screen.getByText(/20 czerwca 2026/i)).toBeInTheDocument()
     })
 
     it('should highlight today\'s date with special styling', () => {
@@ -113,7 +113,7 @@ describe('ReservationCalendar (date grouping view)', () => {
       // Today's header should have gradient styling (bg-gradient-to-r)
       const todayName = format(new Date(), 'EEEE', { locale: pl })
       const headerText = screen.queryByText(new RegExp(todayName, 'i'))
-      expect(headerText).toBeTruthy()
+      expect(headerText).toBeInTheDocument()
     })
   })
 
@@ -135,12 +135,12 @@ describe('ReservationCalendar (date grouping view)', () => {
       render(<ReservationsList />)
 
       // Should show count badge "3 rezerwacji"
-      expect(screen.getByText('3 rezerwacji')).toBeTruthy()
+      expect(screen.getByText('3 rezerwacji')).toBeInTheDocument()
 
       // All clients should be visible
-      expect(screen.getByText('Jan Kowalski')).toBeTruthy()
-      expect(screen.getByText('Anna Nowak')).toBeTruthy()
-      expect(screen.getByText('Piotr Wiśniewski')).toBeTruthy()
+      expect(screen.getByText('Jan Kowalski')).toBeInTheDocument()
+      expect(screen.getByText('Anna Nowak')).toBeInTheDocument()
+      expect(screen.getByText('Piotr Wiśniewski')).toBeInTheDocument()
     })
 
     it('should sort dates chronologically', () => {
@@ -182,7 +182,7 @@ describe('ReservationCalendar (date grouping view)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.queryByText(/rezerwacji$/i)).toBeTruthy()
+      expect(screen.queryByText(/rezerwacji$/i)).toBeInTheDocument()
     })
   })
 

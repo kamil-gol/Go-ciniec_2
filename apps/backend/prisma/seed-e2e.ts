@@ -778,15 +778,63 @@ async function main() {
   console.log(`✅ ${histCount} wpisów historii\n`)
 
   // ─── ACTIVITY LOGS ───
+  // Uses uppercase entity types and standard actions matching audit-logger.ts
+  // (e.g. entityType: 'RESERVATION', action: 'CREATE') so the frontend
+  // EntityActivityTimeline component can find them via
+  // GET /api/audit-log/entity/RESERVATION/:id
   console.log('📝 Tworzenie logów aktywności...')
-  const logActions = ['LOGIN', 'RESERVATION_CREATE', 'RESERVATION_UPDATE', 'CLIENT_CREATE', 'MENU_UPDATE', 'DEPOSIT_CREATE', 'QUEUE_REORDER', 'EXPORT_PDF']
   let logCount = 0
-  for (let i = 0; i < 25; i++) {
+
+  // 1) Ensure every reservation has at least a CREATE audit entry
+  for (const res of reservations) {
     await prisma.activityLog.create({
       data: {
         userId: admin.id,
-        action: rand(logActions),
-        entityType: rand(['Reservation', 'Client', 'MenuTemplate', 'Deposit', null]),
+        action: 'CREATE',
+        entityType: 'RESERVATION',
+        entityId: res.id,
+        details: {
+          description: 'Utworzono nową rezerwację',
+          changes: { status: { old: null, new: res.status } },
+        },
+        ipAddress: '192.168.1.1',
+        userAgent: 'Seed/E2E',
+        createdAt: new Date(res.createdAt.getTime() - 1000), // just before creation
+      },
+    })
+    logCount++
+  }
+
+  // 2) Add UPDATE / STATUS_CHANGE entries for a subset of reservations
+  const updateTargets = reservations.slice(0, 30)
+  for (const res of updateTargets) {
+    const action = rand(['UPDATE', 'STATUS_CHANGE'])
+    await prisma.activityLog.create({
+      data: {
+        userId: admin.id,
+        action,
+        entityType: 'RESERVATION',
+        entityId: res.id,
+        details: action === 'STATUS_CHANGE'
+          ? { description: 'Zmiana statusu rezerwacji', changes: { status: { old: 'PENDING', new: res.status } } }
+          : { description: 'Aktualizacja danych rezerwacji', changes: { adults: { old: 10, new: res.adults }, notes: { old: null, new: res.notes } } },
+        ipAddress: '192.168.1.1',
+        userAgent: 'Seed/E2E',
+        createdAt: randDate(new Date(2026, 0, 1), now),
+      },
+    })
+    logCount++
+  }
+
+  // 3) Client-level and generic activity logs
+  const genericActions = ['LOGIN', 'CREATE', 'UPDATE', 'DELETE']
+  const genericEntityTypes = ['CLIENT', 'MENU_TEMPLATE', 'DEPOSIT']
+  for (let i = 0; i < 15; i++) {
+    await prisma.activityLog.create({
+      data: {
+        userId: admin.id,
+        action: rand(genericActions),
+        entityType: rand(genericEntityTypes),
         entityId: reservations.length > 0 ? rand(reservations).id : null,
         details: { timestamp: new Date().toISOString(), source: 'seed-e2e' },
         ipAddress: '192.168.1.1',
