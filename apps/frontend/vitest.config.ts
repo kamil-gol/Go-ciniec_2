@@ -65,7 +65,14 @@ export default defineConfig({
     // ========================================
     // Performance — optimized for CI speed
     // ========================================
-    pool: 'forks',
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        // Single thread to avoid jsdom race conditions, rely on sharding for parallelism
+        maxThreads: 1,
+        minThreads: 1,
+      },
+    },
     testTimeout: 10000,
   },
 
