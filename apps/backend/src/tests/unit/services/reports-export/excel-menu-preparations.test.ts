@@ -27,10 +27,13 @@ function createMockSheet() {
       if (!mockCells[ref]) mockCells[ref] = { value: null, font: {}, alignment: {} };
       return mockCells[ref];
     }),
-    getRow: jest.fn((idx: number) => ({
-      height: 20,
-      set height(val: number) { /* noop */ },
-    })),
+    getRow: jest.fn((idx: number) => {
+      let _height = 20;
+      return {
+        get height() { return _height; },
+        set height(val: number) { _height = val; },
+      };
+    }),
     addRow: jest.fn((values: any[]) => {
       const row = {
         values,
