@@ -48,8 +48,8 @@ vi.mock('@/lib/utils', () => ({
   cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
 }))
 
-vi.mock('lucide-react', () => ({
-  Loader2: ({ className }: any) => <div data-testid="loader" className={className} />,
+vi.mock('lucide-react', () => new Proxy({}, {
+  get: (_, name) => (props: any) => <div data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
 }))
 
 import { TemplateEditor } from '@/components/document-templates/TemplateEditor'

@@ -63,11 +63,8 @@ vi.mock('framer-motion', () => {
   }
 })
 
-vi.mock('lucide-react', () => ({
-  Paperclip: () => <span data-testid="icon-paperclip" />,
-  Plus: () => <span data-testid="icon-plus" />,
-  Filter: () => <span />,
-  User: () => <span />,
+vi.mock('lucide-react', () => new Proxy({}, {
+  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
 }))
 
 import AttachmentPanel from '@/components/attachments/attachment-panel'
