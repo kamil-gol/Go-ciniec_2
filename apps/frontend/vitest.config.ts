@@ -7,9 +7,9 @@ export default defineConfig({
   plugins: [react()],
   test: {
     // ========================================
-    // Environment
+    // Environment — happy-dom is 2-10x faster than jsdom
     // ========================================
-    environment: 'jsdom',
+    environment: 'happy-dom',
     globals: true,
 
     // ========================================
@@ -65,55 +65,8 @@ export default defineConfig({
     // ========================================
     // Performance — optimized for CI speed
     // ========================================
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        maxThreads: 4,
-        minThreads: 1,
-      },
-    },
+    pool: 'forks',
     testTimeout: 10000,
-
-    // ========================================
-    // Dependency optimization
-    // ========================================
-    deps: {
-      optimizer: {
-        web: {
-          // Pre-bundle heavy deps so they're not re-transformed per test file
-          include: [
-            '@testing-library/react',
-            '@testing-library/jest-dom',
-            '@testing-library/user-event',
-            '@tanstack/react-query',
-            'react',
-            'react-dom',
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-select',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-checkbox',
-            '@radix-ui/react-switch',
-            '@radix-ui/react-label',
-            '@radix-ui/react-slot',
-            '@radix-ui/react-separator',
-            '@radix-ui/react-alert-dialog',
-            '@radix-ui/react-radio-group',
-            '@radix-ui/react-toast',
-            'framer-motion',
-            'date-fns',
-            'clsx',
-            'class-variance-authority',
-            'axios',
-            'sonner',
-            'cmdk',
-            'lucide-react',
-          ],
-        },
-      },
-    },
   },
 
   // ========================================
