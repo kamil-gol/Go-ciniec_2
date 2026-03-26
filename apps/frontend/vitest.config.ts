@@ -65,9 +65,17 @@ export default defineConfig({
     // ========================================
     // Performance — optimized for CI speed
     // ========================================
-    // Use forks pool with fileParallelism disabled so all test files
-    // in a shard run in ONE process (avoids re-loading jsdom + React per file)
+    // Run all tests in the main thread without isolation.
+    // This avoids the massive overhead of spawning processes/threads
+    // that each need to load jsdom + React + Radix UI dependency tree.
+    // Trade-off: no test isolation, but 10-50x faster.
     pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
+    isolate: false,
     fileParallelism: false,
     testTimeout: 10000,
   },
