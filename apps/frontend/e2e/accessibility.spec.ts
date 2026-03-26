@@ -13,8 +13,25 @@ import AxeBuilder from '@axe-core/playwright';
 const EXCLUDED_SELECTORS =
   '.recharts-wrapper, .rdp, [data-radix-popper-content-wrapper]';
 
+/** Helper: disable CSS animations/transitions so axe doesn't scan mid-animation. */
+async function disableAnimations(page: import('@playwright/test').Page) {
+  await page.addStyleTag({
+    content: `
+      *, *::before, *::after {
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0s !important;
+        transition-delay: 0s !important;
+      }
+    `,
+  });
+  // Small wait to let forced-instant animations settle
+  await page.waitForTimeout(500);
+}
+
 /** Helper: run axe on the current page and return the results. */
 async function scanPage(page: import('@playwright/test').Page) {
+  await disableAnimations(page);
   return new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa'])
     .exclude(EXCLUDED_SELECTORS)

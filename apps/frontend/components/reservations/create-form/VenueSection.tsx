@@ -56,7 +56,7 @@ export function VenueSection({
           control={control}
           render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className={`h-11 ${errors.hallId ? 'border-red-400 dark:border-red-500' : ''}`}>
+              <SelectTrigger className={`h-11 ${errors.hallId ? 'border-red-400 dark:border-red-500' : ''}`} aria-label="Wybierz salę">
                 <SelectValue placeholder="Wybierz salę..." />
               </SelectTrigger>
               <SelectContent>

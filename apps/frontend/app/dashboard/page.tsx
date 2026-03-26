@@ -38,7 +38,7 @@ const statusLabels: Record<string, { label: string; emoji: string; classes: stri
   RESERVED: {
     label: 'W kolejce',
     emoji: '📋',
-    classes: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    classes: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
   },
   COMPLETED: {
     label: 'Zakończone',
@@ -344,12 +344,12 @@ export default function DashboardPage() {
                       {event.guests > 0 && ` • ${event.guests} os.`}
                     </p>
                     {Number(event.totalPrice) > 0 && (
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
                         💰 Wartość: {formatCurrency(Number(event.totalPrice))}
                       </p>
                     )}
                     {pendingDepositTotal > 0 && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
                         ⚠️ Zaliczka do zapłaty: {formatCurrency(pendingDepositTotal)}
                       </p>
                     )}

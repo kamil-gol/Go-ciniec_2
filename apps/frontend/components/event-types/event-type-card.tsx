@@ -102,6 +102,7 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
                     ? 'opacity-100'
                     : 'opacity-0 group-hover:opacity-100'
                 }`}
+                aria-label={`Opcje dla ${eventType.name}`}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
@@ -158,6 +159,7 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
               checked={eventType.isActive}
               onCheckedChange={handleToggleActive}
               disabled={toggling}
+              aria-label={`Przełącz aktywność ${eventType.name}`}
             />
           </div>
         </div>

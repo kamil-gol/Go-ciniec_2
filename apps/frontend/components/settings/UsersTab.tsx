@@ -132,8 +132,8 @@ export function UsersTab() {
                   <TableCell>
                     {user.role ? (
                       <Badge
-                        variant="outline"
-                        style={{ borderColor: user.role.color, color: user.role.color }}
+                        className="font-semibold border-transparent text-white shadow-sm"
+                        style={{ backgroundColor: user.role.color }}
                       >
                         {user.role.name}
                       </Badge>

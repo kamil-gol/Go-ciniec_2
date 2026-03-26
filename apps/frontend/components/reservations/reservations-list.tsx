@@ -223,7 +223,7 @@ export function ReservationsList() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="w-full sm:w-64">
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ReservationStatus | 'ALL')}>
-            <SelectTrigger className="h-11 rounded-xl border-neutral-200 dark:border-neutral-700">
+            <SelectTrigger className="h-11 rounded-xl border-neutral-200 dark:border-neutral-700" aria-label="Filtruj po statusie">
               <SelectValue placeholder="Filtruj po statusie" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
