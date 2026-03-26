@@ -99,7 +99,7 @@ export function MenuSection({
                 field.onChange(val)
                 setValue('menuPackageId', '')
               }}>
-                <SelectTrigger className="h-11 bg-white dark:bg-neutral-900">
+                <SelectTrigger className="h-11 bg-white dark:bg-neutral-900" aria-label="Wybierz szablon menu">
                   <SelectValue placeholder={menuTemplatesLoading ? 'Ładowanie szablonów...' : 'Wybierz szablon menu...'} />
                 </SelectTrigger>
                 <SelectContent>
@@ -151,7 +151,7 @@ export function MenuSection({
               ) : (
                 <Controller name="menuPackageId" control={control} render={({ field }) => (
                   <Select value={field.value || ''} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-11 bg-white dark:bg-neutral-900">
+                    <SelectTrigger className="h-11 bg-white dark:bg-neutral-900" aria-label="Wybierz pakiet menu">
                       <SelectValue placeholder="Wybierz pakiet..." />
                     </SelectTrigger>
                     <SelectContent>

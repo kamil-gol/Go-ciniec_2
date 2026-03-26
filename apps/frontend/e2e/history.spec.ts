@@ -159,11 +159,9 @@ test.describe('History and Audit Trail', () => {
 
       // Wait for the timeline to finish loading (skeleton disappears)
       // Then either timeline entries or empty state should be visible
+      // Use regex locator to avoid strict mode violation with .or().first() chaining
       await expect(
-        page.locator('text=Utworzenie').first()
-          .or(page.locator('text=Aktualizacja').first())
-          .or(page.locator('text=Zmiana statusu').first())
-          .or(page.locator('text=Brak historii zmian'))
+        page.locator('text=/Utworzenie|Aktualizacja|Zmiana statusu|Brak historii zmian/').first()
       ).toBeVisible({ timeout: 15000 });
     });
 

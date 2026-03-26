@@ -100,7 +100,7 @@ export function StatCard({
                     <span
                       className={cn(
                         'text-sm font-medium',
-                        changeType === 'positive' && 'text-emerald-600 dark:text-emerald-400',
+                        changeType === 'positive' && 'text-emerald-700 dark:text-emerald-400',
                         changeType === 'negative' && 'text-red-600 dark:text-red-400',
                         changeType === 'neutral' && 'text-neutral-500 dark:text-neutral-400'
                       )}

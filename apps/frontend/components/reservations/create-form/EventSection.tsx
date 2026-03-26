@@ -40,7 +40,7 @@ export function EventSection({
           control={control}
           render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className={`h-11 ${errors.eventTypeId ? 'border-red-400 dark:border-red-500' : ''}`}>
+              <SelectTrigger className={`h-11 ${errors.eventTypeId ? 'border-red-400 dark:border-red-500' : ''}`} aria-label="Wybierz typ wydarzenia">
                 <SelectValue placeholder="Wybierz typ wydarzenia..." />
               </SelectTrigger>
               <SelectContent>
