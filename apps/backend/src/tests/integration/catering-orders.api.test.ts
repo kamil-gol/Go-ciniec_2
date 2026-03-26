@@ -157,7 +157,6 @@ describe('Catering Orders API', () => {
       const dish = await prismaTest.dish.create({
         data: {
           name: 'Pierogi',
-          price: 25.00,
           categoryId: dishCat.id,
           isActive: true,
         },
@@ -357,7 +356,7 @@ describe('Catering Orders API', () => {
   describe('Catering Order Deposits', () => {
     describe('POST /api/catering/orders/:id/deposits', () => {
       it('should create a deposit for order', async () => {
-        const order = await createTestOrder();
+        const order = await createTestOrder({ totalPrice: 10000 });
 
         const res = await api
           .post(`/api/catering/orders/${order.id}/deposits`)
