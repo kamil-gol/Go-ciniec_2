@@ -110,7 +110,7 @@ jobs:
           if [ "${{ github.event.inputs.update_snapshots }}" = "true" ]; then
             EXTRA_ARGS="--update-snapshots"
           fi
-          npx playwright test specs/12-visual-regression.spec.ts \
+          npx playwright test 12-visual-regression.spec.ts \
             --project=chromium \
             --retries=0 \
             --reporter=html \
@@ -137,6 +137,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: visual-regression-screenshots
-          path: apps/frontend/e2e/__screenshots__/
+          path: apps/frontend/e2e/specs/__screenshots__/
           retention-days: 90
           if-no-files-found: ignore
