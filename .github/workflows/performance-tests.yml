@@ -1,0 +1,95 @@
+name: Performance Tests (k6)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: perf-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  k6-smoke:
+    name: k6 Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: rezerwacje
+          POSTGRES_PASSWORD: rezerwacje_password
+          POSTGRES_DB: rezerwacje_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: apps/backend/package-lock.json
+
+      - name: Install k6
+        run: |
+          curl -fsSL https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      - name: Install backend dependencies
+        working-directory: apps/backend
+        run: npm ci
+
+      - name: Setup database
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+        run: |
+          npx prisma generate
+          npx prisma db push --accept-data-loss --force-reset
+
+      - name: Seed test data
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+          NODE_ENV: development
+        run: npm run db:seed
+
+      - name: Start backend server
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+          JWT_SECRET: ${{ secrets.JWT_SECRET_CI || 'perf-ci-jwt-placeholder-not-production' }}
+          NODE_ENV: development
+        run: |
+          npx tsx src/index.ts &
+          npx wait-on http://localhost:3001/api/health --timeout 60000
+
+      - name: Run k6 smoke test
+        run: |
+          k6 run k6/scenarios/smoke.js \
+            --out json=k6-results.json \
+            --summary-export=k6-summary.json
+        env:
+          BASE_URL: http://localhost:3001
+
+      - name: Upload k6 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-smoke-results
+          path: |
+            k6-results.json
+            k6-summary.json
+          retention-days: 14

@@ -4,6 +4,7 @@
 # Development:   make dev
 # Production:    make prod
 # Testing:       make test-unit / test-integration / test-all
+# Performance:   make test-perf / test-perf-load / test-perf-stress
 # Storage:       make migrate-minio / minio-stats / minio-backup
 # DB migrations: make fix-timezone-dry / fix-timezone
 # Cleanup:       make down / test-down
@@ -12,6 +13,7 @@
 .PHONY: dev dev-build dev-down prod prod-build prod-down \
         test-unit test-integration test-security test-frontend test-e2e test-all \
         test-coverage test-frontend-coverage test-down \
+        test-perf test-perf-smoke test-perf-load test-perf-stress test-perf-spike \
         migrate-minio migrate-minio-dry minio-stats minio-ls \
         minio-backup minio-policies \
         fix-timezone-dry fix-timezone \
@@ -99,6 +101,28 @@ test-all: test-unit test-integration test-security test-frontend
 
 test-down:
 	$(COMPOSE_TEST) down -v --remove-orphans
+
+# ============================================
+# Performance Tests — k6 (#249)
+# ============================================
+# Requires k6 installed: https://grafana.com/docs/k6/latest/set-up/install-k6/
+# Backend must be running (make dev or make prod).
+# Override target: BASE_URL=http://localhost:3001 make test-perf-smoke
+# ============================================
+
+test-perf: test-perf-smoke
+
+test-perf-smoke:
+	k6 run k6/scenarios/smoke.js
+
+test-perf-load:
+	k6 run k6/scenarios/load.js
+
+test-perf-stress:
+	k6 run k6/scenarios/stress.js
+
+test-perf-spike:
+	k6 run k6/scenarios/spike.js
 
 # ============================================
 # Storage / MinIO (#146)
@@ -223,6 +247,13 @@ help:
 	@echo "    make test-e2e           E2E tests (Playwright, needs make dev)"
 	@echo "    make test-all           All tests (unit + integration + frontend)"
 	@echo "    make test-down          Stop test containers"
+	@echo ""
+	@echo "  PERFORMANCE (k6, #249):"
+	@echo "    make test-perf          Alias for test-perf-smoke"
+	@echo "    make test-perf-smoke    k6 smoke test (1 VU, all endpoints)"
+	@echo "    make test-perf-load     k6 load test (50 VU, 30s)"
+	@echo "    make test-perf-stress   k6 stress test (ramp to 200 VU)"
+	@echo "    make test-perf-spike    k6 spike test (0->100 VU instant)"
 	@echo ""
 	@echo "  STORAGE / MINIO (#146):"
 	@echo "    make migrate-minio      Migrate files: local -> MinIO"
