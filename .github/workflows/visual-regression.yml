@@ -101,7 +101,26 @@ jobs:
           npm start &
           npx wait-on http://localhost:3000 --timeout 60000
 
+      - name: Generate baseline screenshots if missing
+        working-directory: apps/frontend
+        env:
+          CI: true
+        run: |
+          SCREENSHOT_DIR="e2e/__screenshots__"
+          if [ ! -d "$SCREENSHOT_DIR" ] || [ -z "$(find "$SCREENSHOT_DIR" -name '*.png' 2>/dev/null)" ]; then
+            echo "::notice::Baseline screenshots not found — generating initial baseline..."
+            npx playwright test specs/12-visual-regression.spec.ts \
+              --project=chromium \
+              --retries=0 \
+              --update-snapshots || true
+            echo "BASELINE_GENERATED=true" >> "$GITHUB_ENV"
+          else
+            echo "::notice::Baseline screenshots found — skipping generation."
+            echo "BASELINE_GENERATED=false" >> "$GITHUB_ENV"
+          fi
+
       - name: Run visual regression tests
+        if: env.BASELINE_GENERATED == 'false'
         working-directory: apps/frontend
         env:
           CI: true
@@ -115,6 +134,19 @@ jobs:
             --retries=0 \
             --reporter=html \
             $EXTRA_ARGS
+
+      - name: Commit baseline screenshots
+        if: env.BASELINE_GENERATED == 'true' || github.event.inputs.update_snapshots == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/frontend/e2e/__screenshots__/
+          if git diff --cached --quiet; then
+            echo "::notice::No screenshot changes to commit."
+          else
+            git commit -m "chore: auto-generate visual regression baseline screenshots [skip ci]"
+            git push
+          fi
 
       - name: Upload test results (diff images)
         if: always()

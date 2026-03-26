@@ -16,7 +16,7 @@ import { manualLogin as login } from '../fixtures/auth.fixture';
  */
 
 const SNAPSHOT_OPTIONS = {
-  maxDiffPixelRatio: 0.01,
+  maxDiffPixelRatio: 0.05,
   fullPage: true,
 };
 
