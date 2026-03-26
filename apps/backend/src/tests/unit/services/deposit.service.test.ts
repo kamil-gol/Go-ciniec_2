@@ -155,8 +155,8 @@ describe('DepositService — core logic & edge cases', () => {
       );
 
       const sqlArgs = db.$queryRawUnsafe.mock.calls[0];
-      // arg[3] = dueDateStr — should be trimmed to 10 chars
-      expect(sqlArgs[3]).toBe('2026-08-15');
+      // args: [0]=SQL, [1]=reservationId, [2]=amount, [3]=remainingAmount, [4]=dueDateStr
+      expect(sqlArgs[4]).toBe('2026-08-15');
     });
 
     it('should pass correct SQL params: reservationId, amount, remainingAmount=amount, dueDateStr', async () => {
