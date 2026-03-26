@@ -65,7 +65,10 @@ export default defineConfig({
     // ========================================
     // Performance — optimized for CI speed
     // ========================================
+    // Use forks pool with fileParallelism disabled so all test files
+    // in a shard run in ONE process (avoids re-loading jsdom + React per file)
     pool: 'forks',
+    fileParallelism: false,
     testTimeout: 10000,
   },
 
