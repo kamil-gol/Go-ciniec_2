@@ -12,6 +12,7 @@
 
 .PHONY: dev dev-build dev-down prod prod-build prod-down \
         test-unit test-integration test-security test-frontend test-e2e test-all \
+        test-visual test-visual-update \
         test-coverage test-frontend-coverage test-down \
         test-perf test-perf-smoke test-perf-load test-perf-stress test-perf-spike \
         migrate-minio migrate-minio-dry minio-stats minio-ls \
@@ -96,6 +97,12 @@ test-e2e-ui:
 
 test-e2e-headed:
 	cd apps/frontend && npx playwright test --headed
+
+test-visual:
+	cd apps/frontend && npx playwright test specs/12-visual-regression.spec.ts --project=chromium
+
+test-visual-update:
+	cd apps/frontend && npx playwright test specs/12-visual-regression.spec.ts --project=chromium --update-snapshots
 
 test-all: test-unit test-integration test-security test-frontend
 
@@ -245,6 +252,8 @@ help:
 	@echo "    make test-frontend      Frontend component tests (Vitest)"
 	@echo "    make test-coverage      Backend tests with coverage"
 	@echo "    make test-e2e           E2E tests (Playwright, needs make dev)"
+	@echo "    make test-visual        Visual regression tests (Playwright screenshots)"
+	@echo "    make test-visual-update Update visual regression baseline screenshots"
 	@echo "    make test-all           All tests (unit + integration + frontend)"
 	@echo "    make test-down          Stop test containers"
 	@echo ""
