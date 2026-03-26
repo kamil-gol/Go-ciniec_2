@@ -13,6 +13,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { MenuSelectionFlow } from '@/components/menu/MenuSelectionFlow';
 
 // ─── Global DOM mocks for jsdom ─────────────────────────────────────────────
 
@@ -167,11 +168,7 @@ function createWrapper() {
   );
 }
 
-async function renderConfigurator(props = {}) {
-  const { MenuSelectionFlow } = await import(
-    '@/components/menu/MenuSelectionFlow'
-  );
-
+function renderConfigurator(props = {}) {
   const defaultProps = {
     adults: 50,
     childrenCount: 10,
@@ -198,7 +195,7 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
 
   describe('Initial Render', () => {
     it('should render guest info banner with adult count', async () => {
-      await renderConfigurator();
+      renderConfigurator();
       // Component shows guest counts — check for the numbers
       const allText = document.body.textContent || '';
       expect(allText).toContain('50');
@@ -206,28 +203,28 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
     });
 
     it('should render step indicators', async () => {
-      await renderConfigurator();
+      renderConfigurator();
       const bodyText = document.body.textContent || '';
       // Wizard has step labels
       expect(bodyText).toMatch(/Menu|Wybór|Pakiet|Dania|Dodatki/);
     });
 
     it('should start at template step with selection prompt', async () => {
-      await renderConfigurator();
+      renderConfigurator();
       const bodyText = document.body.textContent || '';
       expect(bodyText).toMatch(/Wybierz|Menu|szablon/i);
     });
 
     it('should show loading skeletons when templates are loading', async () => {
       mockUseMenuTemplates.mockReturnValue({ data: undefined, isLoading: true });
-      await renderConfigurator();
+      renderConfigurator();
       const skeletons = screen.queryAllByTestId('menu-card-skeleton');
       expect(skeletons.length).toBeGreaterThanOrEqual(1);
     });
 
     it('should show empty state when no templates available', async () => {
       mockUseMenuTemplates.mockReturnValue({ data: [], isLoading: false });
-      await renderConfigurator();
+      renderConfigurator();
       const bodyText = document.body.textContent || '';
       expect(bodyText).toMatch(/brak|pust|dostępn/i);
     });
@@ -237,14 +234,14 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
 
   describe('Step 1: Template Selection', () => {
     it('should render all templates as MenuCards', async () => {
-      await renderConfigurator();
+      renderConfigurator();
       expect(screen.getByTestId('menu-card-tmpl-1')).toBeInTheDocument();
       expect(screen.getByTestId('menu-card-tmpl-2')).toBeInTheDocument();
     });
 
     it('should advance to package step after selecting template', async () => {
       const user = userEvent.setup();
-      await renderConfigurator();
+      renderConfigurator();
 
       await user.click(screen.getByTestId('menu-card-tmpl-1'));
 
@@ -256,7 +253,7 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
 
     it('should show template name after selecting', async () => {
       const user = userEvent.setup();
-      await renderConfigurator();
+      renderConfigurator();
 
       await user.click(screen.getByTestId('menu-card-tmpl-1'));
 
@@ -271,7 +268,7 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
   describe('Step 2: Package Selection', () => {
     async function goToPackageStep() {
       const user = userEvent.setup();
-      await renderConfigurator();
+      renderConfigurator();
       await user.click(screen.getByTestId('menu-card-tmpl-1'));
       await waitFor(() => {
         expect(document.body.textContent).toMatch(/Pakiet|pakiet/);
@@ -320,7 +317,7 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
   describe('Step 3: Dish Selection', () => {
     async function goToDishesStep() {
       const user = userEvent.setup();
-      await renderConfigurator();
+      renderConfigurator();
       await user.click(screen.getByTestId('menu-card-tmpl-1'));
       await waitFor(() => expect(document.body.textContent).toMatch(/Pakiet|pakiet/));
       await user.click(screen.getByTestId('package-card-pkg-1'));
@@ -336,8 +333,6 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
     it('should call onComplete when dishes completed', async () => {
       const onComplete = vi.fn();
       const user = userEvent.setup();
-      const { MenuSelectionFlow } = await import('@/components/menu/MenuSelectionFlow');
-
       render(
         <MenuSelectionFlow adults={50} childrenCount={10} toddlers={5} onComplete={onComplete} />,
         { wrapper: createWrapper() }
@@ -374,7 +369,7 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
   describe('Step Navigation', () => {
     it('should not allow skipping to package step without template', async () => {
       const user = userEvent.setup();
-      await renderConfigurator();
+      renderConfigurator();
 
       // Try clicking on Pakiet step indicator — templates should still be shown
       const bodyText = document.body.textContent || '';
@@ -383,7 +378,7 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
 
     it('should allow clicking back to completed steps', async () => {
       const user = userEvent.setup();
-      await renderConfigurator();
+      renderConfigurator();
 
       // Go to package step
       await user.click(screen.getByTestId('menu-card-tmpl-1'));
@@ -401,7 +396,7 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
       mockUseMenuTemplates.mockReturnValue({ data: undefined, isLoading: true });
       mockUseMenuPackage.mockReturnValue({ data: undefined, isLoading: true });
 
-      await renderConfigurator({
+      renderConfigurator({
         initialSelection: {
           templateId: 'tmpl-1',
           packageId: 'pkg-1',
@@ -415,7 +410,7 @@ describe('MenuConfigurator (MenuSelectionFlow)', () => {
     it('should initialize at dishes step when package is resolved', async () => {
       mockUseMenuPackage.mockReturnValue({ data: mockPackages[0], isLoading: false });
 
-      await renderConfigurator({
+      renderConfigurator({
         initialSelection: {
           templateId: 'tmpl-1',
           packageId: 'pkg-1',

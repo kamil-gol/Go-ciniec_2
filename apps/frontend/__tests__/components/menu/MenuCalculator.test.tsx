@@ -16,6 +16,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import type { PriceBreakdown as PriceBreakdownType } from '@/types/menu.types';
+import { PriceBreakdown, PriceBreakdownSkeleton } from '@/components/menu/PriceBreakdown';
 
 // ─── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -81,8 +82,7 @@ const toddlersPaidBreakdown: PriceBreakdownType = {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-async function renderPriceBreakdown(props: { breakdown: PriceBreakdownType; showDetails?: boolean }) {
-  const { PriceBreakdown } = await import('@/components/menu/PriceBreakdown');
+function renderPriceBreakdown(props: { breakdown: PriceBreakdownType; showDetails?: boolean }) {
   return render(<PriceBreakdown {...props} />);
 }
 
@@ -93,23 +93,23 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
   describe('Core Rendering', () => {
     it('should render component title "Rozliczenie cen"', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText('Rozliczenie cen')).toBeInTheDocument();
     });
 
     it('should display total price formatted in PLN', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       const totalSection = screen.getByText('SUMA CAŁKOWITA').closest('div')!;
       expect(within(totalSection).getByText(/27\s*000\s*zł/)).toBeInTheDocument();
     });
 
     it('should show "SUMA CAŁKOWITA" label', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText('SUMA CAŁKOWITA')).toBeInTheDocument();
     });
 
     it('should show VAT info text', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText('Ceny brutto (zawierają VAT)')).toBeInTheDocument();
     });
   });
@@ -118,28 +118,28 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
   describe('Package Cost Section', () => {
     it('should show "Pakiet" section header', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText('Pakiet')).toBeInTheDocument();
     });
 
     it('should show package subtotal formatted', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       const allPrices = screen.getAllByText(/19\s*500\s*zł/);
       expect(allPrices.length).toBeGreaterThanOrEqual(1);
     });
 
     it('should display adults line item', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText(/50.*×.*Doro/)).toBeInTheDocument();
     });
 
     it('should display children line item', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText(/10.*×.*Dzieci/)).toBeInTheDocument();
     });
 
     it('should display toddlers as "Gratis" when price is 0', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText(/5.*×.*Maluch/)).toBeInTheDocument();
       // "Gratis" appears in both the label "(Gratis)" and the price column — use getAllByText
       const gratisElements = screen.getAllByText(/Gratis/);
@@ -147,7 +147,7 @@ describe('MenuCalculator (PriceBreakdown)', () => {
     });
 
     it('should display toddlers with price when priceEach > 0', async () => {
-      await renderPriceBreakdown({ breakdown: toddlersPaidBreakdown });
+      renderPriceBreakdown({ breakdown: toddlersPaidBreakdown });
       expect(screen.getByText(/5.*×.*Maluch/)).toBeInTheDocument();
       // Toddler line should show price, not Gratis
       // Component may use non-breaking space (\u00a0) between number and "zł"
@@ -157,12 +157,12 @@ describe('MenuCalculator (PriceBreakdown)', () => {
     });
 
     it('should hide children row when count is 0', async () => {
-      await renderPriceBreakdown({ breakdown: noOptionsBreakdown });
+      renderPriceBreakdown({ breakdown: noOptionsBreakdown });
       expect(screen.queryByText(/×.*Dzieci/)).not.toBeInTheDocument();
     });
 
     it('should hide toddlers row when count is 0', async () => {
-      await renderPriceBreakdown({ breakdown: noOptionsBreakdown });
+      renderPriceBreakdown({ breakdown: noOptionsBreakdown });
       expect(screen.queryByText(/×.*Maluch/)).not.toBeInTheDocument();
     });
   });
@@ -171,17 +171,17 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
   describe('Options Cost Section', () => {
     it('should show "Opcje dodatkowe" section when options exist', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText('Opcje dodatkowe')).toBeInTheDocument();
     });
 
     it('should not show options section when no options', async () => {
-      await renderPriceBreakdown({ breakdown: noOptionsBreakdown });
+      renderPriceBreakdown({ breakdown: noOptionsBreakdown });
       expect(screen.queryByText('Opcje dodatkowe')).not.toBeInTheDocument();
     });
 
     it('should show options subtotal', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       const optionsHeader = screen.getByText('Opcje dodatkowe').closest('button');
       if (optionsHeader) {
         const headerText = optionsHeader.textContent || '';
@@ -190,23 +190,23 @@ describe('MenuCalculator (PriceBreakdown)', () => {
     });
 
     it('should display each option name', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText('Bar otwarty')).toBeInTheDocument();
       expect(screen.getByText('Fotobudka')).toBeInTheDocument();
     });
 
     it('should show per-person label for PER_PERSON options', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText(/za os\./)).toBeInTheDocument();
     });
 
     it('should show flat label for FLAT options', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText(/jednorazowo/)).toBeInTheDocument();
     });
 
     it('should show quantity × price for PER_PERSON option', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       const bodyText = document.body.textContent || '';
       expect(bodyText).toMatch(/60.*×.*100\s*zł/);
     });
@@ -216,14 +216,14 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
   describe('Expand/Collapse Sections', () => {
     it('should have clickable package section header', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText(/50.*×.*Doro/)).toBeInTheDocument();
       const pakietBtn = screen.getByText('Pakiet').closest('button');
       expect(pakietBtn).not.toBeNull();
     });
 
     it('should have clickable options section header', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText('Bar otwarty')).toBeInTheDocument();
       const optionsBtn = screen.getByText('Opcje dodatkowe').closest('button');
       expect(optionsBtn).not.toBeNull();
@@ -234,7 +234,7 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
   describe('showDetails Prop', () => {
     it('should hide details when showDetails=false', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown, showDetails: false });
+      renderPriceBreakdown({ breakdown: fullBreakdown, showDetails: false });
       expect(screen.getByText('Rozliczenie cen')).toBeInTheDocument();
       expect(screen.getByText('SUMA CAŁKOWITA')).toBeInTheDocument();
       expect(screen.queryByText('Pakiet')).not.toBeInTheDocument();
@@ -242,7 +242,7 @@ describe('MenuCalculator (PriceBreakdown)', () => {
     });
 
     it('should show details when showDetails=true (default)', async () => {
-      await renderPriceBreakdown({ breakdown: fullBreakdown });
+      renderPriceBreakdown({ breakdown: fullBreakdown });
       expect(screen.getByText('Pakiet')).toBeInTheDocument();
     });
   });
@@ -263,7 +263,7 @@ describe('MenuCalculator (PriceBreakdown)', () => {
         totalMenuPrice: 40000,
       };
 
-      await renderPriceBreakdown({ breakdown: adultsOnly });
+      renderPriceBreakdown({ breakdown: adultsOnly });
       expect(screen.getByText(/100.*×.*Doro/)).toBeInTheDocument();
       const priceMatches = screen.getAllByText(/40\s*000\s*zł/);
       expect(priceMatches.length).toBeGreaterThanOrEqual(2);
@@ -284,7 +284,7 @@ describe('MenuCalculator (PriceBreakdown)', () => {
         totalMenuPrice: 100000,
       };
 
-      await renderPriceBreakdown({ breakdown: expensive });
+      renderPriceBreakdown({ breakdown: expensive });
       const priceMatches = screen.getAllByText(/100\s*000\s*zł/);
       expect(priceMatches.length).toBeGreaterThanOrEqual(2);
     });
@@ -304,7 +304,7 @@ describe('MenuCalculator (PriceBreakdown)', () => {
         totalMenuPrice: 4000,
       };
 
-      await renderPriceBreakdown({ breakdown: singleOption });
+      renderPriceBreakdown({ breakdown: singleOption });
       expect(screen.getByText('DJ')).toBeInTheDocument();
       const totalSection = screen.getByText('SUMA CAŁKOWITA').closest('div')!;
       expect(within(totalSection).getByText(/4\s*000\s*zł/)).toBeInTheDocument();
@@ -315,7 +315,6 @@ describe('MenuCalculator (PriceBreakdown)', () => {
 
   describe('PriceBreakdownSkeleton', () => {
     it('should render skeleton loading state', async () => {
-      const { PriceBreakdownSkeleton } = await import('@/components/menu/PriceBreakdown');
       const { container } = render(<PriceBreakdownSkeleton />);
       const pulseElements = container.querySelectorAll('.animate-pulse');
       expect(pulseElements.length).toBeGreaterThanOrEqual(1);

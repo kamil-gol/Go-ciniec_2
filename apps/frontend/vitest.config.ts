@@ -9,7 +9,7 @@ export default defineConfig({
     // ========================================
     // Environment — happy-dom is 2-10x faster than jsdom
     // ========================================
-    environment: 'happy-dom',
+    environment: 'jsdom',
     globals: true,
 
     // ========================================

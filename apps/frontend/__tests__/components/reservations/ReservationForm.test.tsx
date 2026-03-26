@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { CreateReservationForm } from '@/components/reservations/create-reservation-form'
 
 // Global DOM mock for jsdom
 Element.prototype.scrollIntoView = vi.fn();
@@ -89,15 +90,6 @@ function renderWithProviders(ui: React.ReactElement) {
       {ui}
     </QueryClientProvider>
   )
-}
-
-// Dynamic import of the component
-let CreateReservationForm: any
-try {
-  const mod = await import('@/components/reservations/create-reservation-form')
-  CreateReservationForm = mod.CreateReservationForm || mod.default
-} catch {
-  // Component may not export with this exact name
 }
 
 describe('ReservationForm', () => {

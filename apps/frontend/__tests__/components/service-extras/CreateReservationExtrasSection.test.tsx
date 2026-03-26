@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { CreateReservationExtrasSection } from '@/components/service-extras/CreateReservationExtrasSection'
 
 // ═══ MOCK DATA ═══
 
@@ -143,16 +144,6 @@ function expandSection() {
 function expandCategory(categoryName: string) {
   const catHeader = screen.getByText(categoryName).closest('button')
   if (catHeader) fireEvent.click(catHeader)
-}
-
-// ═══ DYNAMIC IMPORT ═══
-
-let CreateReservationExtrasSection: any
-try {
-  const mod = await import('@/components/service-extras/CreateReservationExtrasSection')
-  CreateReservationExtrasSection = mod.CreateReservationExtrasSection || mod.default
-} catch {
-  // Component may not be available
 }
 
 // ═══ TESTS ═══
