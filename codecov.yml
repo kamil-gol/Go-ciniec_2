@@ -7,7 +7,7 @@ coverage:
     # Project-level coverage (overall repository)
     project:
       default:
-        target: 70%
+        target: 80%
         threshold: 2%  # Allow 2% drop without failing
         flags:
           - backend-unit
@@ -16,7 +16,7 @@ coverage:
     # Patch coverage (only new/changed code in PR)
     patch:
       default:
-        target: 80%
+        target: 85%
         threshold: 5%
 
 # Flag management
