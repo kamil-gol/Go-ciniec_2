@@ -3,15 +3,17 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockAttachmentsApi = {
-  getByEntity: vi.fn(),
-  upload: vi.fn(),
-  update: vi.fn(),
-  delete: vi.fn(),
-  archive: vi.fn(),
-}
-const mockBatchCheckRodo = vi.fn()
-const mockBatchCheckContract = vi.fn()
+const { mockAttachmentsApi, mockBatchCheckRodo, mockBatchCheckContract } = vi.hoisted(() => ({
+  mockAttachmentsApi: {
+    getByEntity: vi.fn(),
+    upload: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    archive: vi.fn(),
+  },
+  mockBatchCheckRodo: vi.fn(),
+  mockBatchCheckContract: vi.fn(),
+}))
 
 vi.mock('@/lib/api/attachments', () => ({
   attachmentsApi: mockAttachmentsApi,

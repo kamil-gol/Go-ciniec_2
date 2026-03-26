@@ -4,12 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 // ── Mocks ──────────────────────────────────────────────────
-const mockGetAll = vi.fn()
-const mockGetById = vi.fn()
-const mockCreate = vi.fn()
-const mockUpdate = vi.fn()
-const mockCancel = vi.fn()
-const mockArchive = vi.fn()
+const { mockGetAll, mockGetById, mockCreate, mockUpdate, mockCancel, mockArchive } = vi.hoisted(() => ({
+  mockGetAll: vi.fn(),
+  mockGetById: vi.fn(),
+  mockCreate: vi.fn(),
+  mockUpdate: vi.fn(),
+  mockCancel: vi.fn(),
+  mockArchive: vi.fn(),
+}))
 
 vi.mock('@/lib/api/reservations', () => ({
   reservationsApi: {

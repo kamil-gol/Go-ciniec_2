@@ -4,30 +4,32 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 // ── Mocks ──────────────────────────────────────────────────
-const mockMenuApi = {
-  getTemplates: vi.fn(),
-  getTemplate: vi.fn(),
-  getActiveTemplate: vi.fn(),
-  createTemplate: vi.fn(),
-  updateTemplate: vi.fn(),
-  deleteTemplate: vi.fn(),
-  getPackages: vi.fn(),
-  getPackage: vi.fn(),
-  getPackageCategories: vi.fn(),
-  createPackage: vi.fn(),
-  updatePackage: vi.fn(),
-  deletePackage: vi.fn(),
-  getOptions: vi.fn(),
-  getOption: vi.fn(),
-  createOption: vi.fn(),
-  updateOption: vi.fn(),
-  deleteOption: vi.fn(),
-  getReservationMenu: vi.fn(),
-  selectMenu: vi.fn(),
-  updateMenu: vi.fn(),
-  removeMenu: vi.fn(),
-  updateGuestCounts: vi.fn(),
-}
+const { mockMenuApi } = vi.hoisted(() => ({
+  mockMenuApi: {
+    getTemplates: vi.fn(),
+    getTemplate: vi.fn(),
+    getActiveTemplate: vi.fn(),
+    createTemplate: vi.fn(),
+    updateTemplate: vi.fn(),
+    deleteTemplate: vi.fn(),
+    getPackages: vi.fn(),
+    getPackage: vi.fn(),
+    getPackageCategories: vi.fn(),
+    createPackage: vi.fn(),
+    updatePackage: vi.fn(),
+    deletePackage: vi.fn(),
+    getOptions: vi.fn(),
+    getOption: vi.fn(),
+    createOption: vi.fn(),
+    updateOption: vi.fn(),
+    deleteOption: vi.fn(),
+    getReservationMenu: vi.fn(),
+    selectMenu: vi.fn(),
+    updateMenu: vi.fn(),
+    removeMenu: vi.fn(),
+    updateGuestCounts: vi.fn(),
+  },
+}))
 
 vi.mock('@/lib/api/menu-api', () => ({
   menuApi: mockMenuApi,
