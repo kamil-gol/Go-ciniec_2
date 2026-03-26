@@ -299,6 +299,7 @@ export function PackageForm({ templateId, pkg, onClose }: Props) {
                       ? 'Ostatni próg jest wymagany'
                       : 'Usuń próg'
                   }
+                  aria-label="Usuń próg cenowy"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>

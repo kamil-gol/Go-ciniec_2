@@ -69,10 +69,10 @@ export function FlatItemView({ categories, onEditItem, onDeleteItem }: FlatItemV
                 {!item.isActive && <Badge variant="secondary" className="text-[10px]">Nieaktywna</Badge>}
               </div>
               <div className="flex items-center gap-0.5">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)} aria-label="Edytuj pozycję">
                   <Edit className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDeleteItem(item)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDeleteItem(item)} aria-label="Usuń pozycję">
                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
                 </Button>
               </div>
@@ -147,10 +147,10 @@ export function FlatItemView({ categories, onEditItem, onDeleteItem }: FlatItemV
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditItem(item)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditItem(item)} aria-label="Edytuj pozycję">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDeleteItem(item)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDeleteItem(item)} aria-label="Usuń pozycję">
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>

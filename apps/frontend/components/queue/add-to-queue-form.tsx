@@ -206,12 +206,13 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
                       </div>
                     )}
                   </div>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="icon" 
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
                     onClick={() => setShowNewClientDialog(true)}
                     title="Dodaj nowego klienta"
+                    aria-label="Dodaj nowego klienta"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>

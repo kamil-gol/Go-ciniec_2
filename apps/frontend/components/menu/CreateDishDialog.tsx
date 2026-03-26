@@ -171,6 +171,7 @@ export function CreateDishDialog({ open, onOpenChange }: CreateDishDialogProps) 
                   variant="outline"
                   size="icon"
                   onClick={handleAddAllergen}
+                  aria-label="Dodaj alergen"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>

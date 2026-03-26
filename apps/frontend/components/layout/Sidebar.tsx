@@ -350,6 +350,7 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
               size="sm"
               onClick={() => setCollapsed(!collapsed)}
               className="h-8 w-8 p-0 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              aria-label={collapsed ? 'Rozwiń sidebar' : 'Zwiń sidebar'}
             >
               <ChevronLeft className={cn('h-4 w-4 transition-transform duration-300', collapsed && 'rotate-180')} />
             </Button>

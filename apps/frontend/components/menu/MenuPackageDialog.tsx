@@ -313,6 +313,7 @@ export function MenuPackageDialog({
                     variant="outline"
                     size="icon"
                     onClick={() => remove(index)}
+                    aria-label="Usuń element"
                   >
                     <X className="h-4 w-4" />
                   </Button>

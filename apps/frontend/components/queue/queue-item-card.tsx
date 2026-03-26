@@ -123,6 +123,7 @@ export function QueueItemCard({
                 size="icon"
                 onClick={() => onMoveUp(item.id)}
                 title="Przesuń w górę"
+                aria-label="Przesuń w górę"
                 className="rounded-xl border-neutral-200 dark:border-neutral-700 h-9 w-9"
               >
                 <ArrowUp className="h-4 w-4" />
@@ -134,6 +135,7 @@ export function QueueItemCard({
                 size="icon"
                 onClick={() => onMoveDown(item.id)}
                 title="Przesuń w dół"
+                aria-label="Przesuń w dół"
                 className="rounded-xl border-neutral-200 dark:border-neutral-700 h-9 w-9"
               >
                 <ArrowDown className="h-4 w-4" />
