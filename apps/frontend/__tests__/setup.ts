@@ -30,6 +30,13 @@ vi.mock('next/navigation', () => ({
 }));
 
 // ========================================
+// Mock Next.js Link
+// ========================================
+vi.mock('next/link', () => ({
+  default: ({ children, ...props }: any) => children,
+}));
+
+// ========================================
 // Mock Next.js Image
 // ========================================
 vi.mock('next/image', () => ({
