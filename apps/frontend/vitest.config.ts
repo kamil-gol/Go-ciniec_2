@@ -1,13 +1,13 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react-swc';
+import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
   plugins: [react()],
   test: {
     // ========================================
-    // Environment — happy-dom is 2-10x faster than jsdom
+    // Environment
     // ========================================
     environment: 'jsdom',
     globals: true,
@@ -65,14 +65,7 @@ export default defineConfig({
     // ========================================
     // Performance — optimized for CI speed
     // ========================================
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        // Single thread to avoid jsdom race conditions, rely on sharding for parallelism
-        maxThreads: 1,
-        minThreads: 1,
-      },
-    },
+    pool: 'forks',
     testTimeout: 10000,
   },
 
