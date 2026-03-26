@@ -65,7 +65,7 @@ jobs:
 
       - name: Run Unit Tests (.ts only)
         working-directory: ./apps/frontend
-        run: npx vitest run --reporter=verbose --include '__tests__/**/*.test.ts'
+        run: npx vitest run --reporter=verbose '__tests__/**/*.test.ts'
 
   # ========================================
   # Job 2b: Component Tests — React components (.tsx, heavy)
@@ -89,7 +89,7 @@ jobs:
 
       - name: Run Component Tests (.tsx only)
         working-directory: ./apps/frontend
-        run: npx vitest run --reporter=verbose --include '__tests__/**/*.test.tsx'
+        run: npx vitest run --reporter=verbose '__tests__/**/*.test.tsx'
 
   # ========================================
   # Job 3: Contract Tests (API response shape validation)
