@@ -98,7 +98,7 @@ describe('renderEmailTemplate', () => {
     await renderEmailTemplate('slug', { name: 'Jan' }, '<p>fb</p>');
 
     // marked.parse should receive cleaned content (without {{notes}})
-    const parsedArg = (marked.parse as jest.Mock).mock.calls[0][0];
+    const parsedArg = (marked.parse as unknown as jest.Mock).mock.calls[0][0];
     expect(parsedArg).not.toContain('{{notes}}');
     expect(parsedArg).toContain('Hello');
   });
