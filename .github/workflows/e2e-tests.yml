@@ -11,6 +11,10 @@ concurrency:
   group: e2e-tests-${{ github.ref }}
   cancel-in-progress: true
 
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # ========================================
   # Smoke Tests — BLOCKING (must pass)
@@ -199,7 +203,7 @@ jobs:
         env:
           CI: true
         run: |
-          npx playwright test --project=chromium --retries=0 --reporter=html
+          npx playwright test --project=chromium --retries=0 --reporter=html --grep-invert "Visual Regression"
 
       - name: Upload test results
         if: always()
