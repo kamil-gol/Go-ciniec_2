@@ -5,11 +5,13 @@ on:
     branches: [main, develop, 'sprint-*']
     paths:
       - 'apps/backend/**'
+      - 'contracts/**'
       - '.github/workflows/backend-ci.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'apps/backend/**'
+      - 'contracts/**'
       - '.github/workflows/backend-ci.yml'
       - 'codecov.yml'
 
@@ -210,10 +212,41 @@ jobs:
           JWT_SECRET: test-secret-key-do-not-use-in-production
 
   # ========================================
-  # Job 5: Docker Build (only on main push)
+  # Job 5: Contract Tests (API response shape validation)
+  # ========================================
+  contract-tests:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        working-directory: ./apps/backend
+        run: npm install
+
+      - name: Generate Prisma Client
+        working-directory: ./apps/backend
+        run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/rezerwacje_test
+
+      - name: Run Contract Tests
+        working-directory: ./apps/backend
+        run: npx jest --config jest.config.cjs --selectProjects unit --testPathPattern='contracts/' --ci --forceExit --verbose
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test:test@localhost:5432/rezerwacje_test
+
+  # ========================================
+  # Job 6: Docker Build (only on main push)
   # ========================================
   docker-build:
-    needs: [unit-tests, integration-tests, security-tests]
+    needs: [unit-tests, integration-tests, security-tests, contract-tests]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
