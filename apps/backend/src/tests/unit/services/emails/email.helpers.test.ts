@@ -17,9 +17,10 @@ jest.mock('../../../../services/document-template.service', () => ({
   },
 }));
 
+const mockMarkedParse = jest.fn().mockReturnValue('<p>parsed</p>');
 jest.mock('marked', () => ({
   marked: {
-    parse: jest.fn().mockResolvedValue('<p>parsed</p>'),
+    parse: mockMarkedParse,
   },
 }));
 
@@ -33,8 +34,6 @@ jest.mock('../../../../utils/logger', () => ({
 import { getCompanyInfo, renderEmailTemplate, formatExtraPriceCell } from '../../../../services/emails/email.helpers';
 import companySettingsService from '../../../../services/company-settings.service';
 import documentTemplateService from '../../../../services/document-template.service';
-import { marked } from 'marked';
-
 const mockSettings = companySettingsService as any;
 const mockDocService = documentTemplateService as any;
 
@@ -86,7 +85,7 @@ describe('renderEmailTemplate', () => {
     const result = await renderEmailTemplate('test-template', { name: 'Jan', event: 'Wesele' }, '<p>fallback</p>');
 
     expect(mockDocService.preview).toHaveBeenCalledWith('test-template', { name: 'Jan', event: 'Wesele' });
-    expect(marked.parse).toHaveBeenCalled();
+    expect(mockMarkedParse).toHaveBeenCalled();
     expect(result).toBe('<p>parsed</p>');
   });
 
@@ -98,7 +97,7 @@ describe('renderEmailTemplate', () => {
     await renderEmailTemplate('slug', { name: 'Jan' }, '<p>fb</p>');
 
     // marked.parse should receive cleaned content (without {{notes}})
-    const parsedArg = (marked.parse as unknown as jest.Mock).mock.calls[0][0];
+    const parsedArg = mockMarkedParse.mock.calls[0][0];
     expect(parsedArg).not.toContain('{{notes}}');
     expect(parsedArg).toContain('Hello');
   });
