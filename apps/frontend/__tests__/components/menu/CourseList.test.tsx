@@ -17,6 +17,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { DishSelector } from '@/components/menu/DishSelector';
 
 // ─── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -111,14 +112,12 @@ function createWrapper() {
   );
 }
 
-async function renderDishSelector(props: Partial<{
+function renderDishSelector(props: Partial<{
   packageId: string;
   initialSelections: any[];
   onComplete: (selections: any[]) => void;
   onBack: () => void;
 }> = {}) {
-  const { DishSelector } = await import('@/components/menu/DishSelector');
-
   const defaultProps = {
     packageId: 'pkg-1',
     onComplete: vi.fn(),
@@ -146,7 +145,7 @@ describe('CourseList (DishSelector)', () => {
   describe('Loading & Empty States', () => {
     it('should show spinner when loading', async () => {
       mockUsePackageCategories.mockReturnValue({ data: undefined, isLoading: true });
-      const { container } = await renderDishSelector();
+      const { container } = renderDishSelector();
       const spinner = container.querySelector('.animate-spin') || container.querySelector('[role="status"]');
       const hasLoadingText = document.body.textContent?.match(/ładowan|wczytyw/i);
       expect(spinner || hasLoadingText).not.toBeNull();
@@ -157,14 +156,14 @@ describe('CourseList (DishSelector)', () => {
         data: { categories: [] },
         isLoading: false,
       });
-      await renderDishSelector();
+      renderDishSelector();
       const bodyText = document.body.textContent || '';
       expect(bodyText).toMatch(/nie wymaga|brak|pust/i);
     });
 
     it('should show info message when categoryData is null', async () => {
       mockUsePackageCategories.mockReturnValue({ data: null, isLoading: false });
-      await renderDishSelector();
+      renderDishSelector();
       const bodyText = document.body.textContent || '';
       expect(bodyText).toMatch(/nie wymaga|brak|pust/i);
     });
@@ -174,28 +173,28 @@ describe('CourseList (DishSelector)', () => {
 
   describe('Category Rendering', () => {
     it('should render all categories', async () => {
-      await renderDishSelector();
+      renderDishSelector();
       expect(screen.getByText('Zupy')).toBeInTheDocument();
       expect(screen.getByText('Danie na ciepło')).toBeInTheDocument();
       expect(screen.getByText('Desery')).toBeInTheDocument();
     });
 
     it('should show category icons', async () => {
-      await renderDishSelector();
+      renderDishSelector();
       expect(screen.getByText('🍲')).toBeInTheDocument();
       expect(screen.getByText('🥩')).toBeInTheDocument();
       expect(screen.getByText('🎂')).toBeInTheDocument();
     });
 
     it('should show selection limits in counter badges', async () => {
-      await renderDishSelector();
+      renderDishSelector();
       const bodyText = document.body.textContent || '';
       expect(bodyText).toMatch(/1.*2/);
       expect(bodyText).toMatch(/2.*3/);
     });
 
     it('should use customLabel instead of categoryName when provided', async () => {
-      await renderDishSelector();
+      renderDishSelector();
       expect(screen.getByText('Danie na ciepło')).toBeInTheDocument();
       expect(screen.queryByText('Dania główne')).not.toBeInTheDocument();
     });
@@ -205,7 +204,7 @@ describe('CourseList (DishSelector)', () => {
 
   describe('Dish Rendering', () => {
     it('should render all dishes in each category', async () => {
-      await renderDishSelector();
+      renderDishSelector();
       expect(screen.getByText('Rosół')).toBeInTheDocument();
       expect(screen.getByText('Żurek')).toBeInTheDocument();
       expect(screen.getByText('Krem z pomidorów')).toBeInTheDocument();
@@ -218,13 +217,13 @@ describe('CourseList (DishSelector)', () => {
     });
 
     it('should display dish descriptions', async () => {
-      await renderDishSelector();
+      renderDishSelector();
       expect(screen.getByText('Tradycyjny rosół z makaronem')).toBeInTheDocument();
       expect(screen.getByText('Z sosem pieprzowym')).toBeInTheDocument();
     });
 
     it('should display allergen badges', async () => {
-      await renderDishSelector();
+      renderDishSelector();
       const allergenBadges = screen.getAllByText('gluten');
       expect(allergenBadges.length).toBeGreaterThan(0);
       expect(screen.getAllByText('jajka').length).toBeGreaterThan(0);
@@ -236,7 +235,7 @@ describe('CourseList (DishSelector)', () => {
   describe('Dish Selection', () => {
     it('should select a dish on click', async () => {
       const user = userEvent.setup();
-      await renderDishSelector();
+      renderDishSelector();
 
       await user.click(screen.getByText('Rosół'));
 
@@ -248,7 +247,7 @@ describe('CourseList (DishSelector)', () => {
 
     it('should deselect a dish on second click', async () => {
       const user = userEvent.setup();
-      await renderDishSelector();
+      renderDishSelector();
 
       await user.click(screen.getByText('Rosół'));
       await waitFor(() => {
@@ -263,7 +262,7 @@ describe('CourseList (DishSelector)', () => {
 
     it('should prevent selecting more dishes than maxSelect', async () => {
       const user = userEvent.setup();
-      await renderDishSelector();
+      renderDishSelector();
 
       // Select 2 soups (max for soup category)
       await user.click(screen.getByText('Rosół'));
@@ -285,7 +284,7 @@ describe('CourseList (DishSelector)', () => {
   describe('Validation', () => {
     it('should show error when required category has too few selections', async () => {
       const user = userEvent.setup();
-      const { onComplete } = await renderDishSelector();
+      const { onComplete } = renderDishSelector();
 
       const buttons = screen.getAllByRole('button');
       const confirmBtn = buttons.find(b => /zatwierdź|potwierdź|dalej/i.test(b.textContent || ''));
@@ -303,7 +302,7 @@ describe('CourseList (DishSelector)', () => {
 
     it('should not require optional categories (desserts)', async () => {
       const user = userEvent.setup();
-      const { onComplete } = await renderDishSelector();
+      const { onComplete } = renderDishSelector();
 
       await user.click(screen.getByText('Rosół'));
       await user.click(screen.getByText('Polędwica wołowa'));
@@ -326,7 +325,7 @@ describe('CourseList (DishSelector)', () => {
   describe('Completion', () => {
     it('should call onComplete with correct selections format', async () => {
       const user = userEvent.setup();
-      const { onComplete } = await renderDishSelector();
+      const { onComplete } = renderDishSelector();
 
       await user.click(screen.getByText('Rosół'));
       await user.click(screen.getByText('Polędwica wołowa'));
@@ -360,7 +359,7 @@ describe('CourseList (DishSelector)', () => {
   describe('Navigation', () => {
     it('should call onBack when clicking back button', async () => {
       const user = userEvent.setup();
-      const { onBack } = await renderDishSelector();
+      const { onBack } = renderDishSelector();
 
       const buttons = screen.getAllByRole('button');
       const backBtn = buttons.find(b => /wstecz|powrót|cofnij/i.test(b.textContent || ''));
@@ -371,7 +370,7 @@ describe('CourseList (DishSelector)', () => {
     });
 
     it('should render confirm button', async () => {
-      await renderDishSelector();
+      renderDishSelector();
       const buttons = screen.getAllByRole('button');
       const confirmBtn = buttons.find(b => /zatwierdź|potwierdź|dalej/i.test(b.textContent || ''));
       expect(confirmBtn).not.toBeUndefined();
@@ -382,7 +381,7 @@ describe('CourseList (DishSelector)', () => {
 
   describe('Initial Selections (Edit Mode)', () => {
     it('should restore selections from initialSelections prop', async () => {
-      await renderDishSelector({
+      renderDishSelector({
         initialSelections: [
           { categoryId: 'cat-soup', dishes: [{ dishId: 'dish-1', quantity: 1 }] },
           { categoryId: 'cat-main', dishes: [{ dishId: 'dish-4', quantity: 2 }, { dishId: 'dish-5', quantity: 1 }] },

@@ -1,10 +1,10 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
-  plugins: [react()],
+  // No React plugin needed — Vitest uses esbuild for JSX transform natively
+  // @vitejs/plugin-react (Babel) was causing 2+ minute module transformation delays
   test: {
     // ========================================
     // Environment
@@ -63,10 +63,21 @@ export default defineConfig({
     },
 
     // ========================================
-    // Performance
+    // Performance — optimized for CI speed
     // ========================================
+    // Run all tests in the main thread without isolation.
+    // This avoids the massive overhead of spawning processes/threads
+    // that each need to load jsdom + React + Radix UI dependency tree.
+    // Trade-off: no test isolation, but 10-50x faster.
     pool: 'forks',
-    testTimeout: 5000,
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
+    isolate: false,
+    fileParallelism: false,
+    testTimeout: 10000,
   },
 
   // ========================================
