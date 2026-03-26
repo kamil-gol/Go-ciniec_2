@@ -12,7 +12,7 @@ export const thresholds = {
 
 // --- Stage presets ---
 export const stages = {
-  smoke: [{ duration: '1s', target: 1 }],
+  smoke: [{ duration: '10s', target: 1 }],
 
   load: [
     { duration: '10s', target: 50 },  // ramp-up
