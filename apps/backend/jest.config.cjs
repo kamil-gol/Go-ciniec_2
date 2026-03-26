@@ -116,16 +116,9 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/tests/**',
   ],
-  // Coverage thresholds — minimum quality gates enforced locally (jest --coverage)
-  // and in CI via codecov (project 70%, patch 80%).
-  // Actual coverage (2026-03-25): statements ~71%, branches ~86%, functions ~81%, lines ~71%.
-  coverageThreshold: {
-    global: {
-      statements: 70,
-      branches: 70,
-      functions: 70,
-      lines: 70,
-    },
-  },
+  // Coverage thresholds enforced via CI script (check-coverage.sh) rather than
+  // Jest's built-in coverageThreshold — the latter crashes with multi-project
+  // configs due to a known Jest bug (glob.sync undefined in CoverageReporter).
+  // Minimum: 70% statements, branches, functions, lines.
   coverageReporters: ['text', 'text-summary', 'lcov', 'json-summary'],
 };
