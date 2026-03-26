@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login } from './fixtures/auth';
+import { manualLogin as login } from '../fixtures/auth.fixture';
 
 /**
  * SMOKE TESTS
