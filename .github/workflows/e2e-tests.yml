@@ -96,7 +96,7 @@ jobs:
         env:
           CI: true
         run: |
-          npx playwright test specs/02-smoke.spec.ts --project=chromium --retries=1 --reporter=list
+          npx playwright test 02-smoke.spec.ts --project=chromium --retries=1 --reporter=list
 
       - name: Upload smoke test results
         if: always()
