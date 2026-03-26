@@ -1,0 +1,142 @@
+name: Visual Regression Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Zaktualizuj baseline screenshoty (--update-snapshots)'
+        required: false
+        type: boolean
+        default: false
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/frontend/**'
+
+concurrency:
+  group: visual-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual-regression:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: rezerwacje
+          POSTGRES_PASSWORD: rezerwacje_password
+          POSTGRES_DB: rezerwacje_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            apps/frontend/package-lock.json
+            apps/backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: apps/backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: apps/frontend
+        run: |
+          npm ci --legacy-peer-deps
+          npx playwright install --with-deps chromium
+
+      - name: Setup environment
+        run: |
+          touch apps/frontend/e2e/.env.test
+          touch apps/backend/.env.test
+
+      - name: Setup database schema
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+        run: |
+          npx prisma generate
+          npx prisma db push --accept-data-loss --force-reset
+
+      - name: Seed test data
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+          NODE_ENV: development
+        run: npm run db:seed
+
+      - name: Start backend server
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
+          JWT_SECRET: ${{ secrets.JWT_SECRET_CI || 'e2e-ci-jwt-placeholder-not-production' }}
+          NODE_ENV: development
+        run: |
+          npx tsx src/index.ts &
+          npx wait-on http://localhost:3001/api/health --timeout 60000
+
+      - name: Build and start frontend
+        working-directory: apps/frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+        run: |
+          npm run build
+          npm start &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Run visual regression tests
+        working-directory: apps/frontend
+        env:
+          CI: true
+        run: |
+          EXTRA_ARGS=""
+          if [ "${{ github.event.inputs.update_snapshots }}" = "true" ]; then
+            EXTRA_ARGS="--update-snapshots"
+          fi
+          npx playwright test specs/12-visual-regression.spec.ts \
+            --project=chromium \
+            --retries=0 \
+            --reporter=html \
+            $EXTRA_ARGS
+
+      - name: Upload test results (diff images)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-results
+          path: apps/frontend/test-results/
+          retention-days: 30
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-report
+          path: apps/frontend/playwright-report/
+          retention-days: 30
+
+      - name: Upload updated screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-screenshots
+          path: apps/frontend/e2e/__screenshots__/
+          retention-days: 90
+          if-no-files-found: ignore

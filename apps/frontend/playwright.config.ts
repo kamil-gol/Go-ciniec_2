@@ -60,7 +60,13 @@ export default defineConfig({
   /* Timeout for expect() assertions */
   expect: {
     timeout: 5000,
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.01,
+    },
   },
+
+  /* Directory for visual regression snapshots */
+  snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}',
   
   /* Configure projects for major browsers */
   projects: [
