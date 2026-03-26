@@ -1,10 +1,10 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
-  plugins: [react()],
+  // No React plugin needed — Vitest uses esbuild for JSX transform natively
+  // @vitejs/plugin-react (Babel) was causing 2+ minute module transformation delays
   test: {
     // ========================================
     // Environment
