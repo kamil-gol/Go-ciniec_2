@@ -65,10 +65,13 @@ jobs:
       - name: Upload Component Test Coverage
         if: always()
         uses: codecov/codecov-action@v4
+        timeout-minutes: 2
+        continue-on-error: true
         with:
           files: ./apps/frontend/coverage/lcov.info
           flags: frontend-components
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # ========================================
   # Job 3: Contract Tests (API response shape validation)
