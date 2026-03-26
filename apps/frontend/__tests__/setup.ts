@@ -1,11 +1,11 @@
 /**
  * Vitest Global Setup for Frontend Component Tests
- * 
+ *
  * Configures:
  * - @testing-library/jest-dom matchers (toBeInTheDocument, etc.)
- * - Mock for Next.js router
- * - Mock for Next.js Image
- * - Global fetch mock
+ * - Common mocks for Next.js, sonner, lucide-react, framer-motion
+ * - Browser API mocks (matchMedia, IntersectionObserver, ResizeObserver)
+ * - Global cleanup after each test
  */
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
@@ -36,6 +36,42 @@ vi.mock('next/image', () => ({
   default: (props: any) => {
     // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
     return props;
+  },
+}));
+
+// ========================================
+// Mock Next.js Link
+// ========================================
+vi.mock('next/link', () => ({
+  default: ({ children, ...props }: any) => children,
+}));
+
+// ========================================
+// Mock sonner (toast notifications) — used in 22 test files
+// ========================================
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    loading: vi.fn(),
+    dismiss: vi.fn(),
+    promise: vi.fn(),
+    custom: vi.fn(),
+    message: vi.fn(),
+  },
+  Toaster: () => null,
+}));
+
+// ========================================
+// Mock lucide-react — Proxy-based catch-all for all icons
+// ========================================
+vi.mock('lucide-react', () => new Proxy({}, {
+  get: (_target: any, name: string) => {
+    if (name === '__esModule') return true;
+    if (name === 'default') return {};
+    return (props: any) => props;
   },
 }));
 
