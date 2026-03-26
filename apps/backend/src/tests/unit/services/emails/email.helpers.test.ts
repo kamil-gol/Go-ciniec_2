@@ -36,7 +36,7 @@ import documentTemplateService from '../../../../services/document-template.serv
 import { marked } from 'marked';
 const mockSettings = companySettingsService as any;
 const mockDocService = documentTemplateService as any;
-const mockMarkedParse = marked.parse as jest.Mock;
+const mockMarkedParse = marked.parse as unknown as jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
