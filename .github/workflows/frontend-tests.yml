@@ -14,6 +14,10 @@ on:
       - 'contracts/**'
       - '.github/workflows/frontend-tests.yml'
 
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # ========================================
   # Job 1: Lint + Type Check
@@ -46,6 +50,7 @@ jobs:
   component-tests:
     runs-on: ubuntu-latest
     needs: lint
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -60,18 +65,7 @@ jobs:
 
       - name: Run Component Tests
         working-directory: ./apps/frontend
-        run: npx vitest run --coverage --reporter=verbose
-
-      - name: Upload Component Test Coverage
-        if: always()
-        uses: codecov/codecov-action@v4
-        timeout-minutes: 2
-        continue-on-error: true
-        with:
-          files: ./apps/frontend/coverage/lcov.info
-          flags: frontend-components
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+        run: npx vitest run --reporter=verbose
 
   # ========================================
   # Job 3: Contract Tests (API response shape validation)

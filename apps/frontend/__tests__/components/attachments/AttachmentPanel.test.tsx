@@ -54,7 +54,7 @@ vi.mock('framer-motion', () => {
     motion: new Proxy({}, {
       get: (_target: any, prop: string) => {
         return React.forwardRef((props: any, ref: any) => {
-          const { initial, animate, exit, transition, variants, whileHover, whileTap, layout, layoutId, ...rest } = props
+          const { initial, animate, exit, transition, variants, whileHover, whileTap: _whileTap, layout: _layout, layoutId, ...rest } = props
           return React.createElement(prop, { ...rest, ref })
         })
       },
