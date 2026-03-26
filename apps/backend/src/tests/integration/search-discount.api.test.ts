@@ -94,7 +94,7 @@ describe('Search & Discount API', () => {
         // Seeded data has clients (Kowalski, Nowak) and halls (Główna, Kameralna)
         const res = await api
           .get('/api/search')
-          .query({ q: 'a' }) // broad query
+          .query({ q: 'Kowalski' }) // min 2 chars required
           .set(adminAuth());
 
         expect(res.status).toBe(200);
@@ -132,9 +132,9 @@ describe('Search & Discount API', () => {
           .patch(`/api/reservations/${reservationId}/discount`)
           .set(adminAuth())
           .send({
-            discountType: 'PERCENTAGE',
-            discountValue: 10,
-            discountReason: 'Rabat stały klient',
+            type: 'PERCENTAGE',
+            value: 10,
+            reason: 'Rabat stały klient',
           });
 
         expect([200, 204]).toContain(res.status);
@@ -145,9 +145,9 @@ describe('Search & Discount API', () => {
           .patch(`/api/reservations/${reservationId}/discount`)
           .set(adminAuth())
           .send({
-            discountType: 'AMOUNT',
-            discountValue: 500,
-            discountReason: 'Rabat okolicznościowy',
+            type: 'FIXED',
+            value: 500,
+            reason: 'Rabat okolicznościowy',
           });
 
         expect([200, 204]).toContain(res.status);
@@ -158,8 +158,9 @@ describe('Search & Discount API', () => {
           .patch(`/api/reservations/${reservationId}/discount`)
           .set(adminAuth())
           .send({
-            discountType: 'PERCENTAGE',
-            discountValue: -10,
+            type: 'PERCENTAGE',
+            value: -10,
+            reason: 'test',
           });
 
         expect([400, 422]).toContain(res.status);
@@ -170,8 +171,9 @@ describe('Search & Discount API', () => {
           .patch(`/api/reservations/${reservationId}/discount`)
           .set(adminAuth())
           .send({
-            discountType: 'PERCENTAGE',
-            discountValue: 150,
+            type: 'PERCENTAGE',
+            value: 150,
+            reason: 'test',
           });
 
         // May be rejected by validation or accepted (capped at 100%)
@@ -181,7 +183,7 @@ describe('Search & Discount API', () => {
       it('should return 401 without auth', async () => {
         const res = await api
           .patch(`/api/reservations/${reservationId}/discount`)
-          .send({ discountType: 'PERCENTAGE', discountValue: 10 });
+          .send({ type: 'PERCENTAGE', value: 10, reason: 'test' });
 
         expect(res.status).toBe(401);
       });
@@ -194,8 +196,9 @@ describe('Search & Discount API', () => {
           .patch(`/api/reservations/${reservationId}/discount`)
           .set(adminAuth())
           .send({
-            discountType: 'PERCENTAGE',
-            discountValue: 10,
+            type: 'PERCENTAGE',
+            value: 10,
+            reason: 'test rabat',
           });
 
         // Then remove it

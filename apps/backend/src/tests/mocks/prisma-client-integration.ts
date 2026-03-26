@@ -14,6 +14,7 @@
  * service code paths.
  */
 import { Pool } from 'pg';
+import { PrismaClientKnownRequestError as _PrismaClientKnownRequestError } from './prisma-client-jest';
 
 /* ═══ Re-export all enums from the unit mock ═══ */
 export {
@@ -820,7 +821,7 @@ async function loadRelations(
 /* ═══ Model proxy factory ═══ */
 
 function createModelProxy(pool: Pool, tableName: string) {
-  return {
+  const modelProxy: any = {
     create: async ({ data, include, select }: any) => {
       const mapped = prepareInsertData(tableName, data);
       const columns = Object.keys(mapped);
@@ -1216,6 +1217,25 @@ function createModelProxy(pool: Pool, tableName: string) {
       });
     },
   };
+
+  // Add OrThrow variants that delegate to the base methods
+  modelProxy.findUniqueOrThrow = async (args: any) => {
+    const result = await modelProxy.findUnique(args);
+    if (!result) {
+      throw new _PrismaClientKnownRequestError('Record not found', { code: 'P2025', clientVersion: '7.0.0' });
+    }
+    return result;
+  };
+
+  modelProxy.findFirstOrThrow = async (args: any) => {
+    const result = await modelProxy.findFirst(args);
+    if (!result) {
+      throw new _PrismaClientKnownRequestError('Record not found', { code: 'P2025', clientVersion: '7.0.0' });
+    }
+    return result;
+  };
+
+  return modelProxy;
 }
 
 /* ═══ PrismaClient class ═══ */

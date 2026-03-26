@@ -152,7 +152,7 @@ describe('Catering Orders API', () => {
     it('should accept order with items', async () => {
       // Create a dish for the order item
       const dishCat = await prismaTest.dishCategory.create({
-        data: { name: 'Kategoria Testowa' },
+        data: { name: 'Kategoria Testowa', slug: 'kategoria-testowa' },
       });
       const dish = await prismaTest.dish.create({
         data: {

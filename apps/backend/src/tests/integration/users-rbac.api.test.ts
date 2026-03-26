@@ -32,7 +32,14 @@ describe('Users & RBAC API', () => {
   });
 
   const adminAuth = () => authHeader('ADMIN');
-  const employeeAuth = () => authHeader('EMPLOYEE');
+  /** Employee auth using the actual seed employee user ID (not the admin ID) */
+  const employeeAuth = () => ({
+    Authorization: `Bearer ${require('jsonwebtoken').sign(
+      { id: seed.user.id, email: 'user@test.pl', role: 'EMPLOYEE' },
+      process.env.JWT_SECRET || 'test-jwt-secret-for-integration-tests',
+      { expiresIn: '1h' },
+    )}`,
+  });
 
   // ================================================================
   // USERS — /api/settings/users
@@ -440,6 +447,17 @@ describe('Users & RBAC API', () => {
     });
 
     describe('PUT /api/settings/archive', () => {
+      beforeEach(async () => {
+        // Archive settings require CompanySettings to exist
+        await prismaTest.companySettings.create({
+          data: {
+            companyName: 'Test Company',
+            defaultCurrency: 'PLN',
+            timezone: 'Europe/Warsaw',
+          },
+        }).catch(() => {/* may already exist */});
+      });
+
       it('should update archive settings', async () => {
         const res = await api
           .put('/api/settings/archive')

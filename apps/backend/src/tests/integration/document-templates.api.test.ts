@@ -39,7 +39,7 @@ describe('Document Templates API', () => {
         slug: `test-template-${Date.now()}`,
         name: 'Szablon Testowy',
         description: 'Opis szablonu testowego',
-        category: 'RESERVATION',
+        category: 'RESERVATION_PDF',
         format: 'MARKDOWN',
         content: '# Potwierdzenie\n\nKlient: {{clientName}}\nData: {{eventDate}}',
         availableVars: ['clientName', 'eventDate', 'hallName'],
@@ -76,7 +76,7 @@ describe('Document Templates API', () => {
 
     it('should filter by category', async () => {
       await createTemplate({ slug: 'tmpl-cat-res', category: 'RESERVATION' });
-      await createTemplate({ slug: 'tmpl-cat-inv', category: 'INVOICE' });
+      await createTemplate({ slug: 'tmpl-cat-inv', category: 'CATERING_PDF' });
 
       const res = await api
         .get('/api/document-templates')
@@ -104,7 +104,7 @@ describe('Document Templates API', () => {
         .send({
           slug: 'new-template',
           name: 'Nowy Szablon',
-          category: 'RESERVATION',
+          category: 'RESERVATION_PDF',
           content: '# Nowy szablon\n\n{{clientName}}',
           format: 'MARKDOWN',
           availableVars: ['clientName'],
@@ -122,7 +122,7 @@ describe('Document Templates API', () => {
         .send({
           slug: 'duplicate-slug',
           name: 'Duplikat',
-          category: 'RESERVATION',
+          category: 'RESERVATION_PDF',
           content: 'test',
         });
 
@@ -136,7 +136,7 @@ describe('Document Templates API', () => {
         .send({
           slug: 'empty-content',
           name: 'Empty',
-          category: 'RESERVATION',
+          category: 'RESERVATION_PDF',
           content: '',
         });
 
