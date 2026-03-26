@@ -2,6 +2,9 @@ name: Performance Tests (k6)
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['k6/**', '.github/workflows/performance-tests.yml']
 
 concurrency:
   group: perf-tests-${{ github.ref }}
@@ -74,7 +77,16 @@ jobs:
           NODE_ENV: development
         run: |
           npx tsx src/index.ts &
-          npx wait-on http://localhost:3001/api/health --timeout 60000
+          echo "Waiting for backend to be ready..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3001/api/health > /dev/null 2>&1; then
+              echo "Backend is ready!"
+              break
+            fi
+            echo "Attempt $i/60 — waiting..."
+            sleep 2
+          done
+          curl -sf http://localhost:3001/api/health || (echo "Backend failed to start" && exit 1)
 
       - name: Run k6 smoke test
         run: |

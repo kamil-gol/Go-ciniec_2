@@ -4,8 +4,8 @@ import { check } from 'k6';
 import { BASE_URL } from '../config.js';
 
 const TEST_USER = {
-  email: __ENV.TEST_USER_EMAIL || 'admin@test.com',
-  password: __ENV.TEST_USER_PASSWORD || 'admin123',
+  email: __ENV.TEST_USER_EMAIL || 'admin@gosciniecrodzinny.pl',
+  password: __ENV.TEST_USER_PASSWORD || 'Admin123!@#',
 };
 
 let cachedToken = null;
