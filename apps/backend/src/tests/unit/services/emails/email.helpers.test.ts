@@ -56,20 +56,20 @@ describe('getCompanyInfo', () => {
     expect(result.footerText).toContain('Moja Sala');
   });
 
-  it('defaults to Gosciniec when no company name', async () => {
+  it('defaults to Gościniec when no company name', async () => {
     mockSettings.getSettings.mockResolvedValue({ companyName: '' });
 
     const result = await getCompanyInfo();
-    expect(result.name).toBe('Gosciniec');
+    expect(result.name).toBe('Gościniec');
   });
 
-  it('falls back to Gosciniec on error', async () => {
+  it('falls back to Gościniec on error', async () => {
     mockSettings.getSettings.mockRejectedValue(new Error('DB down'));
 
     const result = await getCompanyInfo();
 
-    expect(result.name).toBe('Gosciniec');
-    expect(result.footerText).toContain('Gosciniec');
+    expect(result.name).toBe('Gościniec');
+    expect(result.footerText).toContain('Gościniec');
   });
 });
 

@@ -131,7 +131,7 @@ describe('createItem', () => {
 
   it('throws for invalid price type', async () => {
     await expect(createItem({ name: 'X', categoryId: 'c1', priceType: 'INVALID' } as any, 'u1'))
-      .rejects.toThrow('Nieprawidlowy typ ceny');
+      .rejects.toThrow('Nieprawidłowy typ ceny');
   });
 
   it('throws when category not found', async () => {
@@ -231,6 +231,6 @@ describe('deleteItem', () => {
     db.serviceItem.findUnique.mockResolvedValue({ id: 'i1', name: 'DJ', category: {} });
     db.reservationExtra.count.mockResolvedValue(3);
 
-    await expect(deleteItem('i1', 'u1')).rejects.toThrow('Nie mozna usunac');
+    await expect(deleteItem('i1', 'u1')).rejects.toThrow('Nie można usunąć');
   });
 });

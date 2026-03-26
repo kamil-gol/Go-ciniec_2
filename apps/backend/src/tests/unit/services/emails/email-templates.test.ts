@@ -58,7 +58,7 @@ describe('buildHtmlTemplate', () => {
       footer: 'F',
     });
 
-    expect(html).toContain('Gosciniec');
+    expect(html).toContain('Gościniec');
   });
 
   it('uses custom company name', () => {
@@ -114,7 +114,7 @@ describe('buildHtmlFromLayout', () => {
     expect(result).toContain('<p>Content</p>');
   });
 
-  it('defaults company name to Gosciniec', async () => {
+  it('defaults company name to Gościniec', async () => {
     mockDocService.getBySlug.mockResolvedValue({
       content: '{{companyName}}',
     });
@@ -126,7 +126,7 @@ describe('buildHtmlFromLayout', () => {
       footer: 'F',
     });
 
-    expect(result).toContain('Gosciniec');
+    expect(result).toContain('Gościniec');
   });
 });
 

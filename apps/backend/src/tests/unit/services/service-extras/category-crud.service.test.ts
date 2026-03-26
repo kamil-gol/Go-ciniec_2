@@ -210,7 +210,7 @@ describe('deleteCategory', () => {
     db.serviceCategory.findUnique.mockResolvedValue({ id: 'c1', name: 'X', _count: { items: 2 } });
     db.reservationExtra.count.mockResolvedValue(5);
 
-    await expect(deleteCategory('c1', 'u1')).rejects.toThrow('Nie mozna usunac');
+    await expect(deleteCategory('c1', 'u1')).rejects.toThrow('Nie można usunąć');
   });
 });
 

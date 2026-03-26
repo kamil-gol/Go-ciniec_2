@@ -136,7 +136,7 @@ describe('assignExtra', () => {
     db.serviceItem.findUnique.mockResolvedValue({ ...mockItem, priceType: 'PER_UNIT' });
 
     await expect(assignExtra('r1', { serviceItemId: 'si1' } as any, 'u1'))
-      .rejects.toThrow('ilosci');
+      .rejects.toThrow('ilości');
   });
 
   it('throws when item already assigned', async () => {
@@ -145,7 +145,7 @@ describe('assignExtra', () => {
     db.reservationExtra.findFirst.mockResolvedValue({ id: 'existing' });
 
     await expect(assignExtra('r1', { serviceItemId: 'si1' } as any, 'u1'))
-      .rejects.toThrow('jest juz dodana');
+      .rejects.toThrow('jest już dodana');
   });
 
   it('replaces item in exclusive category', async () => {
@@ -208,7 +208,7 @@ describe('updateReservationExtra', () => {
     db.reservation.findUnique.mockResolvedValue({ id: 'r1', adults: 80, children: 20 });
 
     await expect(updateReservationExtra('r1', 'e1', { status: 'INVALID' } as any, 'u1'))
-      .rejects.toThrow('Nieprawidlowy status');
+      .rejects.toThrow('Nieprawidłowy status');
   });
 });
 

@@ -35,7 +35,7 @@ describe('formatCurrency', () => {
 
 describe('translateDayOfWeek', () => {
   it('translates Monday', () => {
-    expect(translateDayOfWeek('Monday')).toBe('Poniedzialek');
+    expect(translateDayOfWeek('Monday')).toBe('Poniedziałek');
   });
 
   it('translates Saturday', () => {
@@ -64,7 +64,7 @@ describe('translateDayOfWeek', () => {
 
 describe('portionTargetLabel', () => {
   it('returns adults label', () => {
-    expect(portionTargetLabel('ADULTS_ONLY')).toContain('dorosli');
+    expect(portionTargetLabel('ADULTS_ONLY')).toContain('dorośli');
   });
 
   it('returns children label', () => {
