@@ -1,6 +1,6 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
+import react from '@vitejs/plugin-react-swc';
 import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
@@ -65,12 +65,11 @@ export default defineConfig({
     // ========================================
     // Performance — optimized for CI speed
     // ========================================
-    pool: 'vmThreads',
+    pool: 'threads',
     poolOptions: {
-      vmThreads: {
-        // Reuse threads to avoid VM startup cost
+      threads: {
         maxThreads: 4,
-        minThreads: 2,
+        minThreads: 1,
       },
     },
     testTimeout: 10000,
