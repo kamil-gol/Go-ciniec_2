@@ -72,6 +72,23 @@ jobs:
           NODE_ENV: test
           DATABASE_URL: postgresql://test:test@localhost:5432/rezerwacje_test
 
+      - name: Check Coverage Thresholds
+        working-directory: ./apps/backend
+        run: |
+          node -e "
+            const r = require('./coverage/coverage-summary.json').total;
+            const min = 70;
+            const metrics = ['statements','branches','functions','lines'];
+            let fail = false;
+            for (const m of metrics) {
+              const pct = r[m].pct;
+              const ok = pct >= min ? '✅' : '❌';
+              console.log(ok + ' ' + m + ': ' + pct + '% (min ' + min + '%)');
+              if (pct < min) fail = true;
+            }
+            if (fail) { console.error('Coverage below threshold!'); process.exit(1); }
+          "
+
       - name: Upload Unit Test Coverage
         if: always()
         uses: codecov/codecov-action@v4

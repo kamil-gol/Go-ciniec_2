@@ -157,6 +157,7 @@ export function UsersTab() {
                         variant="ghost"
                         size="icon"
                         title="Edytuj"
+                        aria-label="Edytuj użytkownika"
                         onClick={() => { setEditingUser(user); setFormOpen(true) }}
                       >
                         <Pencil className="h-4 w-4" />
@@ -165,6 +166,7 @@ export function UsersTab() {
                         variant="ghost"
                         size="icon"
                         title="Zmień hasło"
+                        aria-label="Zmień hasło"
                         onClick={() => setPasswordTarget(user)}
                       >
                         <KeyRound className="h-4 w-4" />
@@ -173,6 +175,7 @@ export function UsersTab() {
                         variant="ghost"
                         size="icon"
                         title={user.isActive ? 'Dezaktywuj' : 'Aktywuj'}
+                        aria-label={user.isActive ? 'Dezaktywuj użytkownika' : 'Aktywuj użytkownika'}
                         onClick={() => handleToggleActive(user)}
                       >
                         {user.isActive
@@ -183,6 +186,7 @@ export function UsersTab() {
                         variant="ghost"
                         size="icon"
                         title="Usuń"
+                        aria-label="Usuń użytkownika"
                         className="text-red-500 hover:text-red-700"
                         onClick={() => setDeleteTarget(user)}
                       >

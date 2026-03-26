@@ -15,6 +15,7 @@ export default function NewCateringOrderPage() {
           variant="ghost"
           size="icon"
           onClick={() => router.push('/dashboard/catering/orders')}
+          aria-label="Wróć do listy zamówień"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>

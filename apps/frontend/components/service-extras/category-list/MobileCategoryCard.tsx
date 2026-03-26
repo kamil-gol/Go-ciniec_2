@@ -48,13 +48,13 @@ export function MobileCategoryCard({
           </div>
         </div>
         <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onCreateItem(category.id)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onCreateItem(category.id)} aria-label="Dodaj pozycję">
             <Plus className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditCategory(category)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditCategory(category)} aria-label="Edytuj kategorię">
             <Edit className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDeleteCategory(category)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDeleteCategory(category)} aria-label="Usuń kategorię">
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
@@ -74,10 +74,10 @@ export function MobileCategoryCard({
             </div>
           </div>
           <div className="flex items-center gap-0.5 flex-shrink-0">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)} aria-label="Edytuj pozycję">
               <Edit className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDeleteItem(item)}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDeleteItem(item)} aria-label="Usuń pozycję">
               <Trash2 className="h-3.5 w-3.5 text-destructive" />
             </Button>
           </div>

@@ -272,6 +272,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
                                 )
                               }
                               disabled={removeExtra.isPending}
+                              aria-label="Usuń usługę dodatkową"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>

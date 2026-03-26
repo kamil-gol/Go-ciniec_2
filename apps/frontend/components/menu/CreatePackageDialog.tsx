@@ -202,6 +202,7 @@ export function CreatePackageDialog({
                         variant="ghost"
                         size="icon"
                         onClick={() => removeIncludedItem(index)}
+                        aria-label="Usuń element"
                       >
                         <X className="h-4 w-4" />
                       </Button>

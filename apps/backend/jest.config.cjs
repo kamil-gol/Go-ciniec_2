@@ -116,9 +116,9 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/tests/**',
   ],
-  // Coverage thresholds enforced via CI (codecov) rather than jest config.
-  // Jest 29 _checkThreshold uses glob.sync() which is removed in glob v13+.
-  // Actual coverage (2026-03-25): statements ~71%, branches ~86%, functions ~81%, lines ~71%.
-  // Target: >80% (issue #102).
+  // Coverage thresholds enforced via CI script (check-coverage.sh) rather than
+  // Jest's built-in coverageThreshold — the latter crashes with multi-project
+  // configs due to a known Jest bug (glob.sync undefined in CoverageReporter).
+  // Minimum: 70% statements, branches, functions, lines.
   coverageReporters: ['text', 'text-summary', 'lcov', 'json-summary'],
 };

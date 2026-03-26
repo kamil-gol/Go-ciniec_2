@@ -1,5 +1,9 @@
 # Go-Ciniec Reservation System
 
+![CI](https://github.com/kamil-gol/Go-ciniec_2/actions/workflows/backend-ci.yml/badge.svg)
+![E2E](https://github.com/kamil-gol/Go-ciniec_2/actions/workflows/e2e-tests.yml/badge.svg)
+[![codecov](https://codecov.io/gh/kamil-gol/Go-ciniec_2/branch/main/graph/badge.svg)](https://codecov.io/gh/kamil-gol/Go-ciniec_2)
+
 > System rezerwacji i zarządzania menu dla restauracji/event venue
 
 ## 🚀 Funkcjonalności
