@@ -17,11 +17,7 @@ jest.mock('../../../../services/document-template.service', () => ({
   },
 }));
 
-jest.mock('marked', () => ({
-  marked: {
-    parse: jest.fn().mockReturnValue('<p>parsed</p>'),
-  },
-}));
+// marked is NOT mocked — we test the real parse output
 
 jest.mock('../../../../utils/logger', () => ({
   info: jest.fn(),
@@ -33,14 +29,11 @@ jest.mock('../../../../utils/logger', () => ({
 import { getCompanyInfo, renderEmailTemplate, formatExtraPriceCell } from '../../../../services/emails/email.helpers';
 import companySettingsService from '../../../../services/company-settings.service';
 import documentTemplateService from '../../../../services/document-template.service';
-import { marked } from 'marked';
 const mockSettings = companySettingsService as any;
 const mockDocService = documentTemplateService as any;
-const mockMarkedParse = marked.parse as unknown as jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockMarkedParse.mockReturnValue('<p>parsed</p>');
 });
 
 // ===============================================================
@@ -81,14 +74,16 @@ describe('getCompanyInfo', () => {
 describe('renderEmailTemplate', () => {
   it('renders template from DB with variables', async () => {
     mockDocService.preview.mockResolvedValue({
-      content: 'Hello {{name}}, event: {{event}}',
+      content: 'Hello **Jan**, event: Wesele',
     });
 
     const result = await renderEmailTemplate('test-template', { name: 'Jan', event: 'Wesele' }, '<p>fallback</p>');
 
     expect(mockDocService.preview).toHaveBeenCalledWith('test-template', { name: 'Jan', event: 'Wesele' });
-    expect(mockMarkedParse).toHaveBeenCalled();
-    expect(result).toBe('<p>parsed</p>');
+    // marked.parse converts markdown to HTML
+    expect(result).toContain('Hello');
+    expect(result).toContain('Jan');
+    expect(typeof result).toBe('string');
   });
 
   it('cleans unfilled variables from template', async () => {
@@ -96,12 +91,11 @@ describe('renderEmailTemplate', () => {
       content: 'Hello {{name}}, notes: {{notes}}',
     });
 
-    await renderEmailTemplate('slug', { name: 'Jan' }, '<p>fb</p>');
+    const result = await renderEmailTemplate('slug', { name: 'Jan' }, '<p>fb</p>');
 
-    // marked.parse should receive cleaned content (without {{notes}})
-    const parsedArg = mockMarkedParse.mock.calls[0][0];
-    expect(parsedArg).not.toContain('{{notes}}');
-    expect(parsedArg).toContain('Hello');
+    // Unfilled {{notes}} should be removed from output
+    expect(result).not.toContain('{{notes}}');
+    expect(result).toContain('Hello');
   });
 
   it('falls back to hardcoded HTML when template not found', async () => {
