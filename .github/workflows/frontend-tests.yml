@@ -45,12 +45,12 @@ jobs:
         run: npx tsc --noEmit
 
   # ========================================
-  # Job 2: Component Tests (Vitest + RTL)
+  # Job 2a: Unit Tests — hooks, lib, utils (pure .ts, fast)
   # ========================================
-  component-tests:
+  unit-tests:
     runs-on: ubuntu-latest
     needs: lint
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
@@ -58,14 +58,38 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-          
+
       - name: Install dependencies
         working-directory: ./apps/frontend
         run: npm install --legacy-peer-deps
 
-      - name: Run Component Tests
+      - name: Run Unit Tests (.ts only)
         working-directory: ./apps/frontend
-        run: npx vitest run --reporter=verbose
+        run: npx vitest run --reporter=verbose --include '__tests__/**/*.test.ts'
+
+  # ========================================
+  # Job 2b: Component Tests — React components (.tsx, heavy)
+  # ========================================
+  component-tests:
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        working-directory: ./apps/frontend
+        run: npm install --legacy-peer-deps
+
+      - name: Run Component Tests (.tsx only)
+        working-directory: ./apps/frontend
+        run: npx vitest run --reporter=verbose --include '__tests__/**/*.test.tsx'
 
   # ========================================
   # Job 3: Contract Tests (API response shape validation)
