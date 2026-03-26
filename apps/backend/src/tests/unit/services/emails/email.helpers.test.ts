@@ -17,10 +17,9 @@ jest.mock('../../../../services/document-template.service', () => ({
   },
 }));
 
-const mockMarkedParse = jest.fn().mockReturnValue('<p>parsed</p>');
 jest.mock('marked', () => ({
   marked: {
-    parse: mockMarkedParse,
+    parse: jest.fn().mockReturnValue('<p>parsed</p>'),
   },
 }));
 
@@ -34,11 +33,14 @@ jest.mock('../../../../utils/logger', () => ({
 import { getCompanyInfo, renderEmailTemplate, formatExtraPriceCell } from '../../../../services/emails/email.helpers';
 import companySettingsService from '../../../../services/company-settings.service';
 import documentTemplateService from '../../../../services/document-template.service';
+import { marked } from 'marked';
 const mockSettings = companySettingsService as any;
 const mockDocService = documentTemplateService as any;
+const mockMarkedParse = marked.parse as jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockMarkedParse.mockReturnValue('<p>parsed</p>');
 });
 
 // ===============================================================
