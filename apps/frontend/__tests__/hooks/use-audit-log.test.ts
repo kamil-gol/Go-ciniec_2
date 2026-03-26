@@ -3,9 +3,11 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockApi = {
-  get: vi.fn(),
-}
+const { mockApi } = vi.hoisted(() => ({
+  mockApi: {
+    get: vi.fn(),
+  },
+}))
 
 vi.mock('@/lib/api', () => ({
   api: mockApi,
