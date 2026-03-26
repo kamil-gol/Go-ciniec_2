@@ -12,7 +12,7 @@
  *   Stats:      GET /api/stats/overview
  *   Clients:    GET /api/clients
  *   Halls:      GET /api/halls
- *   Queue:      GET /api/queue/entries
+ *   Queue:      GET /api/queue
  *   Reservations: GET /api/reservations
  */
 import { test, expect } from '@playwright/test';
@@ -154,10 +154,10 @@ test.describe.serial('API Contract Validation', () => {
   // QUEUE
   // ═══════════════════════════════════════════════════════════════════════
 
-  test('GET /api/queue/entries — returns array', async ({ request }) => {
+  test('GET /api/queue — returns array', async ({ request }) => {
     test.skip(!authToken, 'Not logged in');
 
-    const res = await request.get(`${API_URL}/api/queue/entries`, {
+    const res = await request.get(`${API_URL}/api/queue`, {
       headers: authHeaders(),
     });
     expect(res.ok()).toBeTruthy();
