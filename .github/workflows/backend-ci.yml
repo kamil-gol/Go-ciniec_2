@@ -94,10 +94,13 @@ jobs:
       - name: Upload Unit Test Coverage
         if: always()
         uses: codecov/codecov-action@v4
+        timeout-minutes: 2
+        continue-on-error: true
         with:
           files: ./apps/backend/coverage/lcov.info
           flags: backend-unit
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # ========================================
   # Job 3: Integration Tests (with PostgreSQL)
@@ -154,10 +157,13 @@ jobs:
       - name: Upload Integration Test Coverage
         if: always()
         uses: codecov/codecov-action@v4
+        timeout-minutes: 2
+        continue-on-error: true
         with:
           files: ./apps/backend/coverage/lcov.info
           flags: backend-integration
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # ========================================
   # Job 4: Security Tests (with PostgreSQL)
