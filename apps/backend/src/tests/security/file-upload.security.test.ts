@@ -254,10 +254,11 @@ describe('Security: File Upload Attack Vectors', () => {
   // 5. Null Byte in Filename
   // =========================================
   describe('Null byte in filename', () => {
-    it('should handle null byte injection in filename: file.jpg%00.php', async () => {
-      // Null byte truncation attack — some systems stop reading at \0
+    it('should handle null byte injection in filename: file.jpg[NUL].php', async () => {
+      // Null byte truncation attack — use URL-encoded version since raw \x00
+      // causes HTTP header errors in supertest/node http
       const res = await uploadFile(
-        'file.jpg\x00.php',
+        'file.jpg%00.php',
         Buffer.from('fake content'),
         'image/jpeg',
         DEFAULT_FIELDS
