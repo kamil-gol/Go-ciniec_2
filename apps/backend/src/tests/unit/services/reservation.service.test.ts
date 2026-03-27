@@ -49,9 +49,13 @@ jest.mock('../../../utils/venue-surcharge', () => ({
   calculateVenueSurcharge: jest.fn().mockReturnValue(0),
 }));
 
-jest.mock('../../../utils/reservation.utils', () => ({
-  validateCustomEventFields: jest.fn().mockReturnValue({ valid: true }),
-}));
+jest.mock('../../../utils/reservation.utils', () => {
+  const actual = jest.requireActual('../../../utils/reservation.utils');
+  return {
+    ...actual,
+    validateCustomEventFields: jest.fn().mockReturnValue({ valid: true }),
+  };
+});
 
 jest.mock('../../../services/reservationCategoryExtra.service', () => ({
   __esModule: true,
