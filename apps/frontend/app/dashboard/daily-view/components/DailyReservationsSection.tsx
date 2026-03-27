@@ -15,6 +15,7 @@ import { moduleAccents } from '@/lib/design-tokens'
 import { useReservations } from '@/lib/api/reservations'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ErrorState } from '@/components/shared/ErrorState'
+import { EmptyState } from '@/components/shared/EmptyState'
 import type { Reservation } from '@/types'
 
 function formatCurrency(amount: number): string {
@@ -325,29 +326,13 @@ export default function DailyReservationsSection({ date }: DailyReservationsSect
             onRetry={() => refetch()}
           />
         ) : reservations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div
-              className={cn(
-                'mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br opacity-20',
-                accent.iconBg
-              )}
-            >
-              <Calendar className="h-7 w-7 text-white" />
-            </div>
-            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              Brak rezerwacji na ten dzień
-            </p>
-            <Link
-              href="/dashboard/reservations/new"
-              className={cn(
-                'mt-2 text-sm font-medium hover:opacity-80 transition-opacity',
-                accent.text,
-                accent.textDark
-              )}
-            >
-              + Nowa rezerwacja
-            </Link>
-          </div>
+          <EmptyState
+            icon={Calendar}
+            title="Brak rezerwacji na ten dzień"
+            actionLabel="+ Nowa rezerwacja"
+            actionHref="/dashboard/reservations/new"
+            variant="compact"
+          />
         ) : (
           <>
             {reservations.map((reservation, index) => (

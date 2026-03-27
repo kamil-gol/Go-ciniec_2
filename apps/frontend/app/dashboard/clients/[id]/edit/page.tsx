@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { ErrorState } from '@/components/shared/ErrorState'
 import { useClient, useUpdateClient } from '@/lib/api/clients'
 import type { ClientType } from '@/types'
 import Link from 'next/link'
@@ -127,21 +128,19 @@ export default function EditClientPage() {
 
   if (error || !client) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <Card className="border-0 shadow-xl max-w-md">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="h-8 w-8 text-red-600" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Błąd ładowania</h3>
-            <p className="text-muted-foreground mb-6">
-              {error instanceof Error ? error.message : 'Klient nie został znaleziony'}
-            </p>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-6">
+        <div className="max-w-md w-full">
+          <ErrorState
+            variant="card"
+            title="Błąd ładowania"
+            message={error instanceof Error ? error.message : 'Klient nie został znaleziony'}
+          />
+          <div className="text-center mt-4">
             <Link href="/dashboard/clients">
               <Button variant="outline" size="lg">Powrót do listy klientów</Button>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     )
   }

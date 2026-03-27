@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { ErrorState } from '@/components/shared/ErrorState'
 import { useReservation, useCancelReservation, useArchiveReservation, useUnarchiveReservation, downloadReservationPDF } from '@/lib/api/reservations'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import Link from 'next/link'
@@ -129,13 +130,14 @@ export default function ReservationDetailsPage() {
   if (isError || !reservation) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <XCircle className="h-16 w-16 text-red-400 mx-auto" />
-          <p className="text-muted-foreground">Nie udało się załadować rezerwacji</p>
-          <Link href="/dashboard/reservations">
-            <Button><ArrowLeft className="mr-2 h-4 w-4" />Powrót do listy</Button>
-          </Link>
-        </div>
+        <ErrorState
+          variant="card"
+          title="Błąd ładowania"
+          message="Nie udało się załadować rezerwacji"
+        />
+        <Link href="/dashboard/reservations" className="mt-4">
+          <Button><ArrowLeft className="mr-2 h-4 w-4" />Powrót do listy</Button>
+        </Link>
       </div>
     )
   }
