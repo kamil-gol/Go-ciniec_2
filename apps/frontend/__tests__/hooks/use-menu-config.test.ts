@@ -96,10 +96,6 @@ vi.mock('@/lib/api/menu-courses-api', () => ({
   menuCoursesApi: mockCoursesApi,
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
 import {
   dishCategoriesKeys,
   dishCoursesKeys,

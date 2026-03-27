@@ -16,12 +16,6 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import React, { useEffect } from 'react'
 
-// ── Mocks ────────────────────────────────────────────────────────────────────
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 // ── Import ───────────────────────────────────────────────────────────────────
 
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'

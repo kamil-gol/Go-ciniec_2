@@ -50,7 +50,7 @@ jobs:
   component-tests:
     runs-on: ubuntu-latest
     needs: lint
-    timeout-minutes: 35
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -66,12 +66,7 @@ jobs:
       - name: Run Component Tests
         working-directory: ./apps/frontend
         continue-on-error: true
-        timeout-minutes: 30
         run: npx vitest run --reporter=verbose
-
-      - name: Component Tests Status
-        if: always()
-        run: echo "Component tests completed (may have timed out — this is informational)"
 
   # ========================================
   # Job 3: Contract Tests (API response shape validation)

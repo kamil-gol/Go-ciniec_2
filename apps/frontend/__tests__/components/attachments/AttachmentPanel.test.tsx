@@ -44,29 +44,6 @@ vi.mock('./attachment-preview', () => ({
   default: () => null,
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
-vi.mock('framer-motion', () => {
-  const React = require('react')
-  return {
-    motion: new Proxy({}, {
-      get: (_target: any, prop: string) => {
-        return React.forwardRef((props: any, ref: any) => {
-          const { initial, animate, exit, transition, variants, whileHover, whileTap: _whileTap, layout: _layout, layoutId, ...rest } = props
-          return React.createElement(prop, { ...rest, ref })
-        })
-      },
-    }),
-    AnimatePresence: ({ children }: any) => React.createElement(React.Fragment, null, children),
-  }
-})
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
-}))
-
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 
 describe('AttachmentPanel', () => {

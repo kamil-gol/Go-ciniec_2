@@ -16,10 +16,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 const mockCreateUser = vi.fn()
 const mockUpdateUser = vi.fn()
 

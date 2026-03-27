@@ -22,10 +22,6 @@ vi.mock('next/navigation', () => ({
   useParams: () => ({}),
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/lib/api/clients', () => ({
   clientsApi: {
     create: vi.fn().mockResolvedValue({ id: 'new-client-1', firstName: 'Nowy', lastName: 'Klient', phone: '111222333' }),

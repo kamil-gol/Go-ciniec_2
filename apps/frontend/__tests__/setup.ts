@@ -1,50 +1,15 @@
 /**
  * Vitest Global Setup for Frontend Component Tests
- * 
- * Configures:
- * - @testing-library/jest-dom matchers (toBeInTheDocument, etc.)
- * - Mock for Next.js router
- * - Mock for Next.js Image
- * - Global fetch mock
+ *
+ * Heavy dependencies (framer-motion, lucide-react, sonner, next/*, @/lib/utils)
+ * are handled via resolve.alias in vitest.config.ts — NOT vi.mock().
+ * This prevents esbuild from even opening the real package files.
+ *
+ * vi.mock() here is only for modules NOT aliased in config.
  */
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
-
-// ========================================
-// Mock Next.js Router
-// ========================================
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    back: vi.fn(),
-    forward: vi.fn(),
-    refresh: vi.fn(),
-    prefetch: vi.fn(),
-    pathname: '/',
-    query: {},
-  }),
-  usePathname: () => '/',
-  useSearchParams: () => new URLSearchParams(),
-  useParams: () => ({}),
-}));
-
-// ========================================
-// Mock Next.js Link
-// ========================================
-vi.mock('next/link', () => ({
-  default: ({ children, ...props }: any) => children,
-}));
-
-// ========================================
-// Mock Next.js Image
-// ========================================
-vi.mock('next/image', () => ({
-  default: (props: any) => {
-    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-    return props;
-  },
-}));
+import { vi, afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
 
 // ========================================
 // Mock window.matchMedia (for responsive components)
@@ -82,12 +47,18 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 }));
 
 // ========================================
+// Mock scrollIntoView (not in happy-dom)
+// ========================================
+if (typeof Element !== 'undefined') {
+  Element.prototype.scrollIntoView = vi.fn();
+}
+
+// ========================================
 // Suppress console errors for expected test failures
 // ========================================
 const originalError = console.error;
 console.error = (...args: any[]) => {
   if (typeof args[0] === 'string') {
-    // Suppress React act() warnings in tests
     if (
       args[0].includes('Warning: An update to') ||
       args[0].includes('not wrapped in act(') ||
@@ -95,7 +66,6 @@ console.error = (...args: any[]) => {
     ) {
       return;
     }
-    // Suppress React 18 batching warnings
     if (args[0].includes('ReactDOM.render is no longer supported')) {
       return;
     }
@@ -106,9 +76,6 @@ console.error = (...args: any[]) => {
 // ========================================
 // Global cleanup after each test
 // ========================================
-import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
-
 afterEach(() => {
   cleanup();
 });

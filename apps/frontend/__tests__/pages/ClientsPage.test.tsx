@@ -37,10 +37,6 @@ vi.mock('@/lib/api/clients', () => ({
   clientsKeys: { list: (params: any) => ['clients', params] },
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/lib/design-tokens', () => ({
   moduleAccents: {
     clients: {
@@ -51,10 +47,6 @@ vi.mock('@/lib/design-tokens', () => ({
       gradientSubtle: 'from-violet-50 to-purple-50',
     },
   },
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
 }))
 
 vi.mock('@/components/shared', () => ({

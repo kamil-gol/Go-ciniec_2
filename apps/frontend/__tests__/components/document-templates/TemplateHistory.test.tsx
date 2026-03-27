@@ -59,10 +59,6 @@ vi.mock('@/components/ui/badge', () => ({
   Badge: ({ children, className }: any) => <span className={className}>{children}</span>,
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('lucide-react', () => ({
   History: () => <span data-testid="icon-history" />,
   Loader2: () => <span data-testid="icon-loader" />,

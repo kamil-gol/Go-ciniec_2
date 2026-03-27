@@ -44,14 +44,6 @@ vi.mock('@/components/ui/sheet', () => ({
   SheetDescription: ({ children, className }: any) => <div className={className}>{children}</div>,
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <div data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
-}))
-
 import { TemplateEditor } from '@/components/document-templates/TemplateEditor'
 
 function createWrapper() {

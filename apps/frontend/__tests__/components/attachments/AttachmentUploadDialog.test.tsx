@@ -49,14 +49,6 @@ vi.mock('@/lib/api/attachments', () => ({
   MAX_FILE_SIZE: 10 * 1024 * 1024,
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('lucide-react', () => ({
   Upload: () => <span data-testid="icon-upload" />,
   X: () => <span />,

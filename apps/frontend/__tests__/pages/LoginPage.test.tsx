@@ -35,26 +35,6 @@ vi.mock('@/lib/api-client', () => ({
   apiClient: { post: mockPost },
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
-vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: (_, tag) => ({ children, ...props }: any) => {
-      const Tag = typeof tag === 'string' ? tag : 'div'
-      // Filter out framer-motion specific props
-      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-      return <Tag {...rest}>{children}</Tag>
-    },
-  }),
-  AnimatePresence: ({ children }: any) => <>{children}</>,
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
-}))
-
 // ── Import ───────────────────────────────────────────────────────────────────
 
 import LoginPage from '@/app/login/page'

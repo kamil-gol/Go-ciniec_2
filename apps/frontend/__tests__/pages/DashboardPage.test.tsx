@@ -35,10 +35,6 @@ vi.mock('@/lib/api/stats-api', () => ({
   useDashboardUpcoming: mockUseDashboardUpcoming,
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/lib/design-tokens', () => ({
   moduleAccents: {
     dashboard: {
@@ -49,20 +45,6 @@ vi.mock('@/lib/design-tokens', () => ({
       gradientSubtle: 'from-indigo-50 to-blue-50',
     },
   },
-}))
-
-vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: (_, tag) => ({ children, ...props }: any) => {
-      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-      return <div {...rest}>{children}</div>
-    },
-  }),
-  AnimatePresence: ({ children }: any) => <>{children}</>,
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
 }))
 
 vi.mock('@/components/shared', () => ({

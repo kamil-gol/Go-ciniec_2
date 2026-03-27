@@ -24,10 +24,6 @@ vi.mock('@/lib/api/reservations', () => ({
   },
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
 import {
   useReservations,
   useReservation,

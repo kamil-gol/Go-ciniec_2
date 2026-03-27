@@ -35,24 +35,6 @@ vi.mock('@/lib/api-client', () => ({
   apiClient: { post: mockPost },
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
-vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: (_, tag) => ({ children, ...props }: any) => {
-      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-      return <div {...rest}>{children}</div>
-    },
-  }),
-  AnimatePresence: ({ children }: any) => <>{children}</>,
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
-}))
-
 // ── Import ───────────────────────────────────────────────────────────────────
 
 import ForgotPasswordPage from '@/app/forgot-password/page'

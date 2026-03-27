@@ -19,10 +19,6 @@ import React from 'react'
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 const mockCreateMutateAsync = vi.fn()
 const mockUpdateMutateAsync = vi.fn()
 

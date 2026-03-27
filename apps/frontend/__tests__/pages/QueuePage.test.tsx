@@ -49,10 +49,6 @@ vi.mock('@/lib/api/clients', () => ({
   clientsApi: { getAll: mockClientsGetAll },
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
 vi.mock('date-fns', () => ({
   format: (date: any, fmt: string) => '15 Mar 2026',
   parseISO: (str: string) => new Date(str),
@@ -60,10 +56,6 @@ vi.mock('date-fns', () => ({
 
 vi.mock('date-fns/locale', () => ({
   pl: {},
-}))
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
 }))
 
 vi.mock('@/lib/design-tokens', () => ({
@@ -76,10 +68,6 @@ vi.mock('@/lib/design-tokens', () => ({
       gradientSubtle: 'from-amber-50 to-orange-50',
     },
   },
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
 }))
 
 vi.mock('@/components/shared', () => ({

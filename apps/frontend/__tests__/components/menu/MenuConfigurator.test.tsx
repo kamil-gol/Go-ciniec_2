@@ -14,10 +14,6 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-// ─── Global DOM mocks for jsdom ─────────────────────────────────────────────
-
-Element.prototype.scrollIntoView = vi.fn();
-
 // ─── Mocks ──────────────────────────────────────────────────────────────────
 
 const mockTemplates = [
@@ -90,10 +86,6 @@ vi.mock('@/hooks/use-menu', () => ({
   useMenuOptions: () => ({ data: [], isLoading: false }),
 }));
 
-vi.mock('sonner', () => ({
-  toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
-}));
-
 // Mock child components that are complex
 vi.mock('@/components/menu', () => ({
   MenuCard: ({ template, onSelect, isSelected }: any) => (
@@ -132,28 +124,6 @@ vi.mock('@/components/menu/DishSelector', () => ({
       </button>
     </div>
   ),
-}));
-
-vi.mock('framer-motion', () => {
-  const React = require('react');
-  return {
-    motion: new Proxy({}, {
-      get: (_target: any, prop: string) => {
-        return React.forwardRef((props: any, ref: any) => {
-          const { initial, animate, exit, transition, variants, whileHover, whileTap, whileFocus, whileInView, layout, layoutId, ...rest } = props;
-          return React.createElement(prop, { ...rest, ref });
-        });
-      },
-    }),
-    AnimatePresence: ({ children }: any) => React.createElement(React.Fragment, null, children),
-    useAnimation: () => ({ start: vi.fn(), stop: vi.fn() }),
-    useMotionValue: (val: any) => ({ get: () => val, set: vi.fn() }),
-    useTransform: (val: any) => val,
-  };
-});
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
 }));
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

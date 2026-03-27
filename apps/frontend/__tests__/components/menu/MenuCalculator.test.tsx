@@ -19,25 +19,6 @@ import type { PriceBreakdown as PriceBreakdownType } from '@/types/menu.types';
 
 // ─── Mocks ──────────────────────────────────────────────────────────────────
 
-vi.mock('framer-motion', () => {
-  const React = require('react');
-  return {
-    motion: new Proxy({}, {
-      get: (_target: any, prop: string) => {
-        return React.forwardRef((props: any, ref: any) => {
-          const { initial, animate, exit, transition, variants, whileHover, whileTap, whileFocus, whileInView, layout, layoutId, ...rest } = props;
-          return React.createElement(prop, { ...rest, ref });
-        });
-      },
-    }),
-    AnimatePresence: ({ children }: any) => React.createElement(React.Fragment, null, children),
-  };
-});
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}));
-
 // ─── Test Data ──────────────────────────────────────────────────────────────
 
 const fullBreakdown: PriceBreakdownType = {

@@ -30,10 +30,6 @@ vi.mock('@/lib/api/clients', () => ({
   createClient: (...args: any[]) => mockCreateClient(...args),
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
-}))
-
 // ── Import ───────────────────────────────────────────────────────────────────
 
 import { CreateClientForm } from '@/components/clients/create-client-form'

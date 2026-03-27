@@ -27,16 +27,8 @@ vi.mock('next/link', () => ({
   default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/lib/api/event-types-api', () => ({
   updateEventType: vi.fn(),
-}))
-
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
 }))
 
 // ── Test Data ────────────────────────────────────────────────────────────────

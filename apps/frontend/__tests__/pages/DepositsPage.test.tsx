@@ -39,14 +39,6 @@ vi.mock('@/lib/api/deposits', () => ({
   },
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/lib/design-tokens', () => ({
   moduleAccents: {
     deposits: {
@@ -57,10 +49,6 @@ vi.mock('@/lib/design-tokens', () => ({
       gradientSubtle: 'from-rose-50 to-pink-50',
     },
   },
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
 }))
 
 vi.mock('@/components/shared', () => ({

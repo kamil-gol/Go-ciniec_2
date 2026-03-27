@@ -1,0 +1,148 @@
+/**
+ * Lightweight lucide-react stub — named exports for all icons used in the project.
+ * Prevents esbuild from crawling 1000+ icon modules in node_modules.
+ *
+ * Auto-generated from: grep -roh "import.*from 'lucide-react'" components/ app/
+ */
+
+// Type export
+export type LucideIcon = any;
+
+// Simple icon stub factory
+const icon = (name: string) => {
+  const fn = (props: any) => null;
+  fn.displayName = name;
+  return fn;
+};
+
+// All icons used in the project (120+)
+export const Activity = icon('Activity');
+export const AlertCircle = icon('AlertCircle');
+export const AlertTriangle = icon('AlertTriangle');
+export const Archive = icon('Archive');
+export const ArchiveRestore = icon('ArchiveRestore');
+export const ArrowDown = icon('ArrowDown');
+export const ArrowDownUp = icon('ArrowDownUp');
+export const ArrowLeft = icon('ArrowLeft');
+export const ArrowRight = icon('ArrowRight');
+export const ArrowUp = icon('ArrowUp');
+export const ArrowUpFromLine = icon('ArrowUpFromLine');
+export const Baby = icon('Baby');
+export const BadgeCheck = icon('BadgeCheck');
+export const Ban = icon('Ban');
+export const Banknote = icon('Banknote');
+export const BarChart3 = icon('BarChart3');
+export const Bell = icon('Bell');
+export const Bold = icon('Bold');
+export const Book = icon('Book');
+export const BookOpen = icon('BookOpen');
+export const Briefcase = icon('Briefcase');
+export const Building2 = icon('Building2');
+export const Calculator = icon('Calculator');
+export const Calendar = icon('Calendar');
+export const CalendarCheck = icon('CalendarCheck');
+export const CalendarDays = icon('CalendarDays');
+export const CalendarIcon = icon('CalendarIcon');
+export const Check = icon('Check');
+export const CheckCheck = icon('CheckCheck');
+export const CheckCircle = icon('CheckCircle');
+export const CheckCircle2 = icon('CheckCircle2');
+export const ChefHat = icon('ChefHat');
+export const ChevronDown = icon('ChevronDown');
+export const ChevronLeft = icon('ChevronLeft');
+export const ChevronRight = icon('ChevronRight');
+export const ChevronUp = icon('ChevronUp');
+export const ChevronsUpDown = icon('ChevronsUpDown');
+export const Circle = icon('Circle');
+export const ClipboardCheck = icon('ClipboardCheck');
+export const ClipboardList = icon('ClipboardList');
+export const Clock = icon('Clock');
+export const Code = icon('Code');
+export const CreditCard = icon('CreditCard');
+export const DollarSign = icon('DollarSign');
+export const Download = icon('Download');
+export const Edit = icon('Edit');
+export const ExternalLink = icon('ExternalLink');
+export const Eye = icon('Eye');
+export const EyeOff = icon('EyeOff');
+export const FileSpreadsheet = icon('FileSpreadsheet');
+export const FileText = icon('FileText');
+export const Filter = icon('Filter');
+export const Gift = icon('Gift');
+export const Globe = icon('Globe');
+export const GripVertical = icon('GripVertical');
+export const Hash = icon('Hash');
+export const History = icon('History');
+export const Home = icon('Home');
+export const Image = icon('Image');
+export const Inbox = icon('Inbox');
+export const Info = icon('Info');
+export const KeyRound = icon('KeyRound');
+export const Landmark = icon('Landmark');
+export const Layers = icon('Layers');
+export const LayoutDashboard = icon('LayoutDashboard');
+export const LayoutTemplate = icon('LayoutTemplate');
+export const List = icon('List');
+export const ListOrdered = icon('ListOrdered');
+export const Loader2 = icon('Loader2');
+export const Lock = icon('Lock');
+export const LogIn = icon('LogIn');
+export const LogOut = icon('LogOut');
+export const Mail = icon('Mail');
+export const MapPin = icon('MapPin');
+export const Menu = icon('Menu');
+export const MessageSquare = icon('MessageSquare');
+export const Minus = icon('Minus');
+export const Monitor = icon('Monitor');
+export const Moon = icon('Moon');
+export const MoreHorizontal = icon('MoreHorizontal');
+export const MoreVertical = icon('MoreVertical');
+export const Package = icon('Package');
+export const Palette = icon('Palette');
+export const Paperclip = icon('Paperclip');
+export const Pencil = icon('Pencil');
+export const Percent = icon('Percent');
+export const Phone = icon('Phone');
+export const Plus = icon('Plus');
+export const Receipt = icon('Receipt');
+export const RefreshCw = icon('RefreshCw');
+export const RotateCw = icon('RotateCw');
+export const Save = icon('Save');
+export const Search = icon('Search');
+export const Send = icon('Send');
+export const Settings = icon('Settings');
+export const Shield = icon('Shield');
+export const ShieldAlert = icon('ShieldAlert');
+export const ShieldCheck = icon('ShieldCheck');
+export const ShoppingBag = icon('ShoppingBag');
+export const ShoppingCart = icon('ShoppingCart');
+export const SlidersHorizontal = icon('SlidersHorizontal');
+export const Smartphone = icon('Smartphone');
+export const Smile = icon('Smile');
+export const Sparkles = icon('Sparkles');
+export const Star = icon('Star');
+export const StickyNote = icon('StickyNote');
+export const Sun = icon('Sun');
+export const Tag = icon('Tag');
+export const Tags = icon('Tags');
+export const Theater = icon('Theater');
+export const Timer = icon('Timer');
+export const ToggleLeft = icon('ToggleLeft');
+export const ToggleRight = icon('ToggleRight');
+export const Trash2 = icon('Trash2');
+export const TrendingDown = icon('TrendingDown');
+export const TrendingUp = icon('TrendingUp');
+export const Truck = icon('Truck');
+export const Upload = icon('Upload');
+export const User = icon('User');
+export const UserCheck = icon('UserCheck');
+export const UserPlus = icon('UserPlus');
+export const Users = icon('Users');
+export const UsersRound = icon('UsersRound');
+export const Utensils = icon('Utensils');
+export const UtensilsCrossed = icon('UtensilsCrossed');
+export const Wallet = icon('Wallet');
+export const X = icon('X');
+export const XCircle = icon('XCircle');
+export const ZoomIn = icon('ZoomIn');
+export const ZoomOut = icon('ZoomOut');

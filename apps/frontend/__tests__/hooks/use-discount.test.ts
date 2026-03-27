@@ -13,10 +13,6 @@ vi.mock('@/lib/api/discount', () => ({
   },
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
 import { useApplyDiscount, useRemoveDiscount } from '@/hooks/use-discount'
 import { toast } from 'sonner'
 

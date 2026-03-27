@@ -35,10 +35,6 @@ vi.mock('@/hooks/use-audit-log', () => ({
   useAuditLogStatistics: mockUseAuditLogStatistics,
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/lib/design-tokens', () => ({
   moduleAccents: {
     auditLog: {
@@ -49,10 +45,6 @@ vi.mock('@/lib/design-tokens', () => ({
       gradientSubtle: 'from-zinc-50 to-neutral-50',
     },
   },
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
 }))
 
 vi.mock('@/components/shared', () => ({

@@ -78,28 +78,6 @@ vi.mock('sonner', () => ({
   toast: Object.assign(mockToast, { success: mockToast, error: mockToast }),
 }));
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}));
-
-vi.mock('framer-motion', () => {
-  const React = require('react');
-  return {
-    motion: new Proxy({}, {
-      get: (_target: any, prop: string) => {
-        return React.forwardRef((props: any, ref: any) => {
-          const { initial, animate, exit, transition, variants, whileHover, whileTap, whileFocus, whileInView, layout, layoutId, ...rest } = props;
-          return React.createElement(prop, { ...rest, ref });
-        });
-      },
-    }),
-    AnimatePresence: ({ children }: any) => React.createElement(React.Fragment, null, children),
-    useAnimation: () => ({ start: vi.fn(), stop: vi.fn() }),
-    useMotionValue: (val: any) => ({ get: () => val, set: vi.fn() }),
-    useTransform: (val: any) => val,
-  };
-});
-
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function createWrapper() {
