@@ -897,13 +897,15 @@ describe('ReservationService — Branch Coverage', () => {
 
       it('should validate custom event fields when eventType exists', async () => {
         const { validateCustomEventFields } = require('../../../utils/reservation.utils');
+        validateCustomEventFields.mockReturnValue({ valid: true });
 
         db.reservation.findUnique.mockResolvedValue(RES_BASE);
         db.reservation.update.mockResolvedValue({
           ...RES_BASE, hall: HALL, client: CLIENT, eventType: EVENT,
         });
 
-        await svc.updateReservation('res-001', { notes: 'updated notes' } as any, UID);
+        // notes is a non-important field, no reason needed
+        await svc.updateReservation('res-001', { notes: 'updated notes', reason: 'Aktualizacja notatek do rezerwacji' } as any, UID);
 
         expect(validateCustomEventFields).toHaveBeenCalledWith('Wesele', expect.any(Object));
       });
@@ -915,14 +917,19 @@ describe('ReservationService — Branch Coverage', () => {
         db.reservation.findUnique.mockResolvedValue(RES_BASE);
 
         await expect(
-          svc.updateReservation('res-001', { notes: 'test' } as any, UID)
+          svc.updateReservation('res-001', { notes: 'test', reason: 'Aktualizacja notatek rezerwacji' } as any, UID)
         ).rejects.toThrow('Birthday age is required');
+
+        // Reset mock to default for subsequent tests
+        validateCustomEventFields.mockReturnValue({ valid: true });
       });
     });
 
     // --- branches6: manual price recalculation via recalculateReservationTotalPrice ---
     describe('updateReservation — manual price recalculation (no menu package)', () => {
       beforeEach(() => {
+        const { validateCustomEventFields } = require('../../../utils/reservation.utils');
+        validateCustomEventFields.mockReturnValue({ valid: true });
         db.reservation.findUnique.mockResolvedValue(RES_BASE);
         db.reservation.findFirst.mockResolvedValue(null);
         db.reservation.update.mockResolvedValue({ ...RES_BASE, hall: HALL, client: CLIENT, eventType: EVENT });
