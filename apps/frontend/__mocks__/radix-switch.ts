@@ -3,14 +3,11 @@
  */
 import React from 'react';
 
+// Simple stub without state — tests only need role="switch" + aria-checked
 export const Root = React.forwardRef<HTMLButtonElement, any>(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ({ children, checked, defaultChecked, onCheckedChange, className, disabled, ...props }, ref) => {
-    const [isChecked, setIsChecked] = React.useState(checked ?? defaultChecked ?? false);
-
-    React.useEffect(() => {
-      if (checked !== undefined) setIsChecked(checked);
-    }, [checked]);
-
+    const isChecked = checked ?? defaultChecked ?? false;
     return React.createElement(
       'button',
       {
@@ -21,11 +18,7 @@ export const Root = React.forwardRef<HTMLButtonElement, any>(
         'data-state': isChecked ? 'checked' : 'unchecked',
         disabled,
         className,
-        onClick: () => {
-          const next = !isChecked;
-          if (checked === undefined) setIsChecked(next);
-          onCheckedChange?.(next);
-        },
+        onClick: () => onCheckedChange?.(!isChecked),
         ...props,
       },
       children

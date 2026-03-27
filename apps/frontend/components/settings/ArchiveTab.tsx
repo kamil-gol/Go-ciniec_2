@@ -31,6 +31,8 @@ export function ArchiveTab() {
   const [lastResult, setLastResult] = useState<ArchiveRunResult | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Sync settings to local input state (suppress because this is prop→state sync)
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (settings) {
       setDaysInput(settings.archiveAfterDays.toString());
