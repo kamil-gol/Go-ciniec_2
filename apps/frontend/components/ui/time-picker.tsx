@@ -16,6 +16,8 @@ interface TimePickerProps {
   minuteStep?: number
   defaultScrollHour?: number
   className?: string
+  'aria-required'?: boolean | 'true' | 'false'
+  required?: boolean
 }
 
 export function TimePicker({
@@ -28,6 +30,8 @@ export function TimePicker({
   minuteStep = 30,
   defaultScrollHour = 12,
   className,
+  'aria-required': ariaRequired,
+  required,
 }: TimePickerProps) {
   const [open, setOpen] = React.useState(false)
   const scrollRef = React.useRef<HTMLDivElement>(null)
@@ -73,20 +77,21 @@ export function TimePicker({
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       {label && (
-        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{label}</label>
+        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{label}{(ariaRequired || required) && <span className="text-destructive ml-0.5" aria-hidden="true">*</span>}</label>
       )}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             disabled={disabled}
+            aria-required={ariaRequired ?? required}
             className={cn(
               'w-full justify-start text-left font-normal h-11',
               'border-secondary-300 bg-white dark:bg-neutral-900 dark:border-neutral-700 hover:border-primary-400 hover:bg-primary-50/50 dark:hover:bg-neutral-800',
               'focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
               'transition-all duration-200',
               !value && 'text-neutral-400',
-              error && 'border-red-400 focus:ring-red-400',
+              error && 'border-red-400 dark:border-red-500 focus:ring-red-400 dark:focus:ring-red-500',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
           >

@@ -41,7 +41,7 @@ export function ClientHeroSection({ client, isCompany, isDeleted, stats }: Clien
           </Button>
         </Link>
 
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
@@ -88,11 +88,11 @@ export function ClientHeroSection({ client, isCompany, isDeleted, stats }: Clien
           </div>
 
           {!isDeleted && (
-            <div className="flex gap-3">
+            <div className="flex gap-3 w-full sm:w-auto">
               <Button
                 size="lg"
                 onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
-                className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
+                className="flex-1 sm:flex-none bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
               >
                 <Edit className="mr-2 h-5 w-5" />
                 Edytuj

@@ -162,13 +162,14 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
             name="clientId"
             render={() => (
               <FormItem>
-                <FormLabel>Klient</FormLabel>
+                <FormLabel>Klient<span className="text-destructive ml-0.5" aria-hidden="true">*</span></FormLabel>
                 <div className="flex gap-2">
                   <div className="relative flex-1" ref={dropdownRef}>
                     <FormControl>
                       <Input
                         ref={inputRef}
                         placeholder="Wpisz min. 3 znaki aby wyszukać..."
+                        aria-required="true"
                         value={clientSearchValue}
                         onChange={(e) => {
                           setClientSearchValue(e.target.value)
@@ -186,7 +187,7 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
                     </FormControl>
                     {/* Dropdown */}
                     {showDropdown && filteredClients.length > 0 && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                      <div className="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-800 border rounded-md shadow-lg max-h-60 overflow-auto">
                         {filteredClients.map((client) => (
                           <div
                             key={client.id}
@@ -199,7 +200,7 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
                       </div>
                     )}
                     {showDropdown && clientSearchValue.length >= 3 && filteredClients.length === 0 && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg">
+                      <div className="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-800 border rounded-md shadow-lg">
                         <div className="px-3 py-2 text-sm text-neutral-500 text-center">
                           Nie znaleziono klienta
                         </div>
@@ -228,12 +229,13 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
             name="reservationQueueDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Data wydarzenia (docelowa)</FormLabel>
+                <FormLabel>Data wydarzenia (docelowa)<span className="text-destructive ml-0.5" aria-hidden="true">*</span></FormLabel>
                 <Popover open={calendarOpen} onOpenChange={setCalendarOpen} modal={true}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
                         variant="outline"
+                        aria-required="true"
                         className={cn(
                           'w-full pl-3 text-left font-normal',
                           !field.value && 'text-muted-foreground'
@@ -248,9 +250,9 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
-                  <PopoverContent 
-                    className="w-auto p-0 bg-white" 
-                    align="start" 
+                  <PopoverContent
+                    className="w-auto p-0 bg-white dark:bg-neutral-800"
+                    align="start"
                     style={{ zIndex: 9999 }}
                   >
                     <Calendar
@@ -279,9 +281,9 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
               name="adults"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Dorośli</FormLabel>
+                  <FormLabel>Dorośli<span className="text-destructive ml-0.5" aria-hidden="true">*</span></FormLabel>
                   <FormControl>
-                    <Input type="number" min={1} {...field} />
+                    <Input type="number" min={1} aria-required="true" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -354,9 +356,9 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Imię</FormLabel>
+                      <FormLabel>Imię<span className="text-destructive ml-0.5" aria-hidden="true">*</span></FormLabel>
                       <FormControl>
-                        <Input placeholder="Jan" {...field} />
+                        <Input placeholder="Jan" aria-required="true" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -367,9 +369,9 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nazwisko</FormLabel>
+                      <FormLabel>Nazwisko<span className="text-destructive ml-0.5" aria-hidden="true">*</span></FormLabel>
                       <FormControl>
-                        <Input placeholder="Kowalski" {...field} />
+                        <Input placeholder="Kowalski" aria-required="true" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -381,9 +383,9 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Telefon</FormLabel>
+                    <FormLabel>Telefon<span className="text-destructive ml-0.5" aria-hidden="true">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="+48 123 456 789" {...field} />
+                      <Input placeholder="+48 123 456 789" aria-required="true" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
