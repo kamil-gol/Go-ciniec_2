@@ -112,4 +112,63 @@ describe('AuditLogController', () => {
     );
     expect(svc.getStatistics).toHaveBeenCalledWith('2026-01-01', '2026-02-01');
   });
+
+  describe('edge cases / branch coverage', () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    afterAll(() => consoleSpy.mockRestore());
+
+    it('getEntityLogs — returns 500 on error', async () => {
+      svc.getEntityLogs.mockRejectedValue(new Error('DB error'));
+      const response = res();
+      await auditLogController.getEntityLogs(
+        req({ params: { entityType: 'RESERVATION', entityId: 'r-1' } }), response
+      );
+      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: expect.any(String), message: 'DB error' })
+      );
+    });
+
+    it('getRecentActivity — returns 500 on error', async () => {
+      svc.getRecentActivity.mockRejectedValue(new Error('timeout'));
+      const response = res();
+      await auditLogController.getRecentActivity(req({ query: {} }), response);
+      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'timeout' })
+      );
+    });
+
+    it('getEntityTypes — returns 500 on error', async () => {
+      svc.getEntityTypes.mockRejectedValue(new Error('fail'));
+      const response = res();
+      await auditLogController.getEntityTypes(req(), response);
+      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'fail' })
+      );
+    });
+
+    it('getActions — returns 500 on error', async () => {
+      svc.getActions.mockRejectedValue(new Error('oops'));
+      const response = res();
+      await auditLogController.getActions(req(), response);
+      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'oops' })
+      );
+    });
+
+    it('getStatistics — returns 500 on error', async () => {
+      svc.getStatistics.mockRejectedValue(new Error('stats fail'));
+      const response = res();
+      await auditLogController.getStatistics(
+        req({ query: { dateFrom: '2026-01-01', dateTo: '2026-02-01' } }), response
+      );
+      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'stats fail' })
+      );
+    });
+  });
 });

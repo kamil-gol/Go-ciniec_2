@@ -4,6 +4,12 @@ import { Request, Response, NextFunction } from 'express';
 
 jest.mock('@/services/menuCourse.service');
 
+jest.mock('@/validation/menuCourse.validation', () => ({
+  createMenuCourseSchema: { parse: jest.fn((data: any) => data) },
+  updateMenuCourseSchema: { parse: jest.fn((data: any) => data) },
+  assignDishesToCourseSchema: { parse: jest.fn((data: any) => data) },
+}));
+
 const ctrl = new MenuCourseController();
 
 const mockRes = () => {
@@ -104,5 +110,66 @@ describe('MenuCourseController', () => {
     const res = mockRes();
     await ctrl.removeDish(req, res, mockNext);
     expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  describe('edge cases / branch coverage', () => {
+    describe('create — branch', () => {
+      it('should create with all fields', async () => {
+        (menuCourseService.create as jest.Mock).mockResolvedValue({ id: '1', name: 'A' });
+        const req = {
+          body: { packageId: 'p1', category: 'APPETIZER', name: 'A', description: 'B', displayOrder: 1 },
+          user: { id: 'u1' }
+        } as any;
+        const res = mockRes();
+        await ctrl.create(req, res, mockNext);
+        expect(res.status).toHaveBeenCalledWith(201);
+      });
+
+      it('should create with minimal fields', async () => {
+        (menuCourseService.create as jest.Mock).mockResolvedValue({ id: '2' });
+        const req = { body: { packageId: 'p1', category: 'DESSERT' }, user: { id: 'u1' } } as any;
+        await ctrl.create(req, mockRes(), mockNext);
+        expect(menuCourseService.create).toHaveBeenCalled();
+      });
+    });
+
+    describe('getById — branch', () => {
+      it('should return 404 when service rejects with not found', async () => {
+        (menuCourseService.getById as jest.Mock).mockRejectedValue(new Error('Course not found'));
+        const req = { params: { id: 'x' } } as any;
+        const res = mockRes();
+        await ctrl.getById(req, res, mockNext);
+        expect(res.status).toHaveBeenCalledWith(404);
+      });
+    });
+
+    describe('update — branch', () => {
+      it('should include only name when only name provided', async () => {
+        (menuCourseService.update as jest.Mock).mockResolvedValue({ id: '1' });
+        const req = { params: { id: '1' }, body: { name: 'New' }, user: { id: 'u1' } } as any;
+        await ctrl.update(req, mockRes(), mockNext);
+        expect(menuCourseService.update).toHaveBeenCalledWith('1', { name: 'New' });
+      });
+
+      it('should include all fields when all provided', async () => {
+        (menuCourseService.update as jest.Mock).mockResolvedValue({ id: '1' });
+        const req = {
+          params: { id: '1' },
+          body: { name: 'A', description: 'B', isVegetarian: true, isGlutenFree: false, category: 'MAIN' },
+          user: { id: 'u1' }
+        } as any;
+        await ctrl.update(req, mockRes(), mockNext);
+        expect(menuCourseService.update).toHaveBeenCalledWith(
+          '1', { name: 'A', description: 'B', isVegetarian: true, isGlutenFree: false, category: 'MAIN' }
+        );
+      });
+
+      it('should send empty data when no fields', async () => {
+        (menuCourseService.update as jest.Mock).mockResolvedValue({ id: '1' });
+        const req = { params: { id: '1' }, body: {}, user: { id: 'u1' } } as any;
+        await ctrl.update(req, mockRes(), mockNext);
+        expect(menuCourseService.update).toHaveBeenCalledWith('1', {});
+      });
+    });
   });
 });

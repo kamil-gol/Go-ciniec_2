@@ -266,4 +266,172 @@ describe('RolesService', () => {
         .rejects.toThrow(/nie znaleziono/);
     });
   });
+
+  describe('edge cases / branch coverage', () => {
+    describe('updateRole — conditional fields', () => {
+      it('should skip name check when name is same as existing', async () => {
+        mockPrisma.role.findUnique.mockResolvedValueOnce(mockRoleData);
+        mockPrisma.role.update.mockResolvedValue(mockRoleData);
+        await RolesService.updateRole('role-1', { name: 'Administrator' }, 'actor-1');
+        expect(mockPrisma.role.findUnique).toHaveBeenCalledTimes(1);
+      });
+
+      it('should skip name check when name not provided', async () => {
+        mockPrisma.role.findUnique.mockResolvedValueOnce(mockRoleData);
+        mockPrisma.role.update.mockResolvedValue(mockRoleData);
+        await RolesService.updateRole('role-1', { description: 'New desc' }, 'actor-1');
+        expect(mockPrisma.role.findUnique).toHaveBeenCalledTimes(1);
+      });
+
+      it('should update only description field', async () => {
+        mockPrisma.role.findUnique.mockResolvedValueOnce(mockCustomRole);
+        mockPrisma.role.update.mockResolvedValue(mockCustomRole);
+
+        await RolesService.updateRole('role-custom', { description: 'Updated' }, 'actor-1');
+        expect(mockPrisma.role.update).toHaveBeenCalledWith(
+          expect.objectContaining({ data: { description: 'Updated' } })
+        );
+      });
+
+      it('should update only color field', async () => {
+        mockPrisma.role.findUnique.mockResolvedValueOnce(mockCustomRole);
+        mockPrisma.role.update.mockResolvedValue(mockCustomRole);
+
+        await RolesService.updateRole('role-custom', { color: '#00FF00' }, 'actor-1');
+        expect(mockPrisma.role.update).toHaveBeenCalledWith(
+          expect.objectContaining({ data: { color: '#00FF00' } })
+        );
+      });
+
+      it('should update only isActive field', async () => {
+        mockPrisma.role.findUnique.mockResolvedValueOnce(mockCustomRole);
+        mockPrisma.role.update.mockResolvedValue({ ...mockCustomRole, isActive: false });
+
+        await RolesService.updateRole('role-custom', { isActive: false }, 'actor-1');
+        expect(mockPrisma.role.update).toHaveBeenCalledWith(
+          expect.objectContaining({ data: { isActive: false } })
+        );
+      });
+
+      it('should update with no fields (empty object)', async () => {
+        mockPrisma.role.findUnique.mockResolvedValueOnce(mockCustomRole);
+        mockPrisma.role.update.mockResolvedValue(mockCustomRole);
+
+        await RolesService.updateRole('role-custom', {}, 'actor-1');
+        expect(mockPrisma.role.update).toHaveBeenCalledWith(
+          expect.objectContaining({ data: {} })
+        );
+      });
+
+      it('should throw when role not found', async () => {
+        mockPrisma.role.findUnique.mockResolvedValue(null);
+        await expect(RolesService.updateRole('bad', { name: 'X' }, 'actor-1'))
+          .rejects.toThrow(/nie znaleziono/);
+      });
+    });
+
+    describe('createRole — edge cases', () => {
+      it('should create role without description and color', async () => {
+        mockPrisma.role.findUnique
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(null);
+        mockPrisma.permission.count.mockResolvedValue(0);
+        mockPrisma.role.create.mockResolvedValue({
+          ...mockCustomRole,
+          description: null,
+          color: null,
+          permissions: [],
+        });
+
+        const result = await RolesService.createRole(
+          { name: 'Basic', slug: 'basic', permissionIds: [] }, 'actor-1'
+        );
+        expect(result.description).toBeNull();
+      });
+    });
+
+    describe('formatRole fallbacks', () => {
+      it('should handle missing _count (usersCount=0 fallback)', async () => {
+        mockPrisma.role.findUnique
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(null);
+        mockPrisma.permission.count.mockResolvedValue(0);
+        mockPrisma.role.create.mockResolvedValue({
+          ...mockCustomRole,
+          _count: undefined,
+          permissions: [],
+        });
+
+        const result = await RolesService.createRole(
+          { name: 'New', slug: 'new', permissionIds: [] }, 'actor-1'
+        );
+        expect(result.usersCount).toBe(0);
+      });
+
+      it('should handle null _count.users (|| 0 fallback)', async () => {
+        mockPrisma.role.findUnique
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(null);
+        mockPrisma.permission.count.mockResolvedValue(0);
+        mockPrisma.role.create.mockResolvedValue({
+          ...mockCustomRole,
+          _count: { users: null },
+          permissions: [],
+        });
+
+        const result = await RolesService.createRole(
+          { name: 'New', slug: 'new', permissionIds: [] }, 'actor-1'
+        );
+        expect(result.usersCount).toBe(0);
+      });
+
+      it('should handle missing permissions array', async () => {
+        mockPrisma.role.findUnique
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(null);
+        mockPrisma.permission.count.mockResolvedValue(0);
+        mockPrisma.role.create.mockResolvedValue({
+          ...mockCustomRole,
+          permissions: undefined,
+        });
+
+        const result = await RolesService.createRole(
+          { name: 'New', slug: 'new', permissionIds: [] }, 'actor-1'
+        );
+        expect(result.permissions).toEqual([]);
+      });
+
+      it('should handle null permissions array', async () => {
+        mockPrisma.role.findUnique
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(null);
+        mockPrisma.permission.count.mockResolvedValue(0);
+        mockPrisma.role.create.mockResolvedValue({
+          ...mockCustomRole,
+          permissions: null,
+        });
+
+        const result = await RolesService.createRole(
+          { name: 'New', slug: 'new', permissionIds: [] }, 'actor-1'
+        );
+        expect(result.permissions).toEqual([]);
+      });
+    });
+
+    describe('getRoles — empty', () => {
+      it('should return empty list', async () => {
+        mockPrisma.role.findMany.mockResolvedValue([]);
+        const result = await RolesService.getRoles();
+        expect(result).toHaveLength(0);
+      });
+    });
+
+    describe('updateRolePermissions — not found', () => {
+      it('should throw when role not found', async () => {
+        mockPrisma.role.findUnique.mockResolvedValue(null);
+        await expect(RolesService.updateRolePermissions('bad', ['p-1'], 'actor-1'))
+          .rejects.toThrow(/nie znaleziono/);
+      });
+    });
+  });
 });

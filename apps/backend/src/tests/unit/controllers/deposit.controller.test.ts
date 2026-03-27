@@ -34,6 +34,19 @@ jest.mock('../../../validation/deposit.validation', () => ({
   depositFiltersSchema: { parse: jest.fn((d: any) => d) },
 }));
 
+jest.mock('../../../utils/AppError', () => {
+  class MockAppError extends Error {
+    statusCode: number;
+    constructor(message: string, statusCode: number) {
+      super(message);
+      this.statusCode = statusCode;
+    }
+    static unauthorized(msg?: string) { return new MockAppError(msg || 'Unauthorized', 401); }
+    static badRequest(msg: string) { return new MockAppError(msg, 400); }
+  }
+  return { AppError: MockAppError };
+});
+
 import * as ctrl from '../../../controllers/deposit.controller';
 import depositService from '../../../services/deposit.service';
 import { pdfService } from '../../../services/pdf.service';
@@ -289,6 +302,140 @@ describe('Deposit Controller', () => {
       expect(response.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: true })
       );
+    });
+  });
+
+  describe('edge cases / branch coverage', () => {
+    describe('downloadDepositPdf — additional branches', () => {
+      it('should throw when deposit not paid (rejects.toThrow)', async () => {
+        svc.getById.mockResolvedValue({ id: 'd1', paid: false });
+        const r = { params: { id: 'd1' } } as any;
+        await expect(ctrl.downloadDepositPdf(r, res())).rejects.toThrow('oplaconych');
+      });
+
+      it('should throw when no reservation (rejects.toThrow)', async () => {
+        svc.getById.mockResolvedValue({ id: 'd1', paid: true, reservation: null });
+        const r = { params: { id: 'd1' } } as any;
+        await expect(ctrl.downloadDepositPdf(r, res())).rejects.toThrow('danych');
+      });
+
+      it('should throw when no client', async () => {
+        svc.getById.mockResolvedValue({
+          id: 'd1', paid: true,
+          reservation: { id: 'r1', client: null },
+        });
+        const r = { params: { id: 'd1' } } as any;
+        await expect(ctrl.downloadDepositPdf(r, res())).rejects.toThrow('danych');
+      });
+
+      it('should generate PDF with all fields present', async () => {
+        svc.getById.mockResolvedValue({
+          id: 'd1', paid: true, paidAt: '2026-01-15T10:00:00Z', paymentMethod: 'CASH', amount: 500,
+          reservation: {
+            id: 'r1', date: '2026-03-01', startTime: '10:00', endTime: '18:00',
+            guests: 50, totalPrice: 5000,
+            hall: { name: 'Sala A' }, eventType: { name: 'Wesele' },
+            client: { firstName: 'Jan', lastName: 'K', email: 'jan@k.pl', phone: '123' },
+          },
+        });
+        pdfSvc.generatePaymentConfirmationPDF.mockResolvedValue(Buffer.from('pdf'));
+        const r = { params: { id: 'd1' } } as any;
+        const response = res();
+        await ctrl.downloadDepositPdf(r, response);
+        expect(response.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+        expect(pdfSvc.generatePaymentConfirmationPDF).toHaveBeenCalledWith(
+          expect.objectContaining({
+            paymentMethod: 'CASH',
+            client: expect.objectContaining({ email: 'jan@k.pl' }),
+            reservation: expect.objectContaining({ hall: 'Sala A', eventType: 'Wesele' }),
+          })
+        );
+      });
+
+      it('should use fallbacks when optional fields null', async () => {
+        svc.getById.mockResolvedValue({
+          id: 'd1', paid: true, paidAt: null, paymentMethod: null, amount: 300,
+          reservation: {
+            id: 'r1', date: null, startTime: null, endTime: null, guests: 30, totalPrice: 3000,
+            hall: null, eventType: null,
+            client: { firstName: 'Anna', lastName: 'M', email: null, phone: '456' },
+          },
+        });
+        pdfSvc.generatePaymentConfirmationPDF.mockResolvedValue(Buffer.from('pdf'));
+        const r = { params: { id: 'd1' } } as any;
+        const response = res();
+        await ctrl.downloadDepositPdf(r, response);
+        expect(pdfSvc.generatePaymentConfirmationPDF).toHaveBeenCalledWith(
+          expect.objectContaining({
+            paymentMethod: 'TRANSFER',
+            client: expect.objectContaining({ email: undefined }),
+            reservation: expect.objectContaining({
+              date: '', startTime: '', endTime: '',
+              hall: undefined, eventType: undefined,
+            }),
+          })
+        );
+      });
+    });
+
+    describe('createDeposit — branch', () => {
+      it('should throw unauthorized when no userId (branch)', async () => {
+        const r = { params: { reservationId: 'r1' }, body: { amount: 500, dueDate: '2026-03-01' }, user: undefined } as any;
+        await expect(ctrl.createDeposit(r, res())).rejects.toThrow();
+      });
+
+      it('should create deposit (branch)', async () => {
+        svc.create.mockResolvedValue({ id: 'd1' });
+        const r = { params: { reservationId: 'r1' }, body: { amount: 500, dueDate: '2026-03-01' }, user: { id: 'u1' } } as any;
+        const response = res();
+        await ctrl.createDeposit(r, response);
+        expect(response.status).toHaveBeenCalledWith(201);
+      });
+    });
+
+    describe('updateDeposit — branch', () => {
+      it('should throw unauthorized when no userId (branch)', async () => {
+        const r = { params: { id: 'd1' }, body: {}, user: undefined } as any;
+        await expect(ctrl.updateDeposit(r, res())).rejects.toThrow();
+      });
+    });
+
+    describe('deleteDeposit — branch', () => {
+      it('should throw unauthorized when no userId (branch)', async () => {
+        const r = { params: { id: 'd1' }, user: undefined } as any;
+        await expect(ctrl.deleteDeposit(r, res())).rejects.toThrow();
+      });
+    });
+
+    describe('markDepositAsPaid — branch', () => {
+      it('should throw unauthorized when no userId (branch)', async () => {
+        const r = { params: { id: 'd1' }, body: {}, user: undefined } as any;
+        await expect(ctrl.markDepositAsPaid(r, res())).rejects.toThrow();
+      });
+    });
+
+    describe('markDepositAsUnpaid — branch', () => {
+      it('should throw unauthorized when no userId (branch)', async () => {
+        const r = { params: { id: 'd1' }, user: undefined } as any;
+        await expect(ctrl.markDepositAsUnpaid(r, res())).rejects.toThrow();
+      });
+    });
+
+    describe('cancelDeposit — branch', () => {
+      it('should throw unauthorized when no userId (branch)', async () => {
+        const r = { params: { id: 'd1' }, user: undefined } as any;
+        await expect(ctrl.cancelDeposit(r, res())).rejects.toThrow();
+      });
+    });
+
+    describe('sendDepositEmail — branch', () => {
+      it('should send email (branch)', async () => {
+        svc.sendConfirmationEmail.mockResolvedValue({ success: true });
+        const r = { params: { id: 'd1' } } as any;
+        const response = res();
+        await ctrl.sendDepositEmail(r, response);
+        expect(response.json).toHaveBeenCalledWith({ success: true });
+      });
     });
   });
 });

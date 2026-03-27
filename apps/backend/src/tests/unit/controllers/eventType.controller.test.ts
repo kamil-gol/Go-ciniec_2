@@ -129,4 +129,43 @@ describe('EventTypeController', () => {
       expect.objectContaining({ data: ['#FF0000', '#00FF00'] })
     );
   });
+
+  describe('edge cases / branch coverage', () => {
+    describe('createEventType — branch', () => {
+      it('should create with all fields', async () => {
+        svc.createEventType.mockResolvedValue({ id: '1', name: 'Wedding' });
+        const r = {
+          body: {
+            name: 'Wedding',
+            description: 'Wedding event',
+            color: '#FF0000',
+            isActive: true,
+            standardHours: 5,
+            extraHourRate: 100,
+          },
+          user: { id: 'u1' },
+        } as any;
+        const response = res();
+        await controller.createEventType(r, response);
+        expect(response.status).toHaveBeenCalledWith(201);
+      });
+    });
+
+    describe('getEventTypeById — branch', () => {
+      it('should throw notFound when null (regex)', async () => {
+        svc.getEventTypeById.mockResolvedValue(null);
+        const r = req({ params: { id: 'x' } });
+        await expect(controller.getEventTypeById(r, res()))
+          .rejects.toThrow(/Nie znaleziono|not found/i);
+      });
+
+      it('should return eventType when found (branch)', async () => {
+        svc.getEventTypeById.mockResolvedValue({ id: '1', name: 'Wedding' });
+        const r = req({ params: { id: '1' } });
+        const response = res();
+        await controller.getEventTypeById(r, response);
+        expect(response.status).toHaveBeenCalledWith(200);
+      });
+    });
+  });
 });

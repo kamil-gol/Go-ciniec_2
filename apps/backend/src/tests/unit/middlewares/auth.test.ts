@@ -217,4 +217,72 @@ describe('auth middleware', () => {
       expect(next).toHaveBeenCalledWith();
     });
   });
+
+  // ═══════════ edge cases / branch coverage ═══════════
+  describe('edge cases / branch coverage', () => {
+
+    describe('authMiddleware — payload fields', () => {
+      it('should set user with all payload fields on valid token', () => {
+        const payload = { id: 'u-001', email: 'admin@test.pl', role: 'ADMIN', roleId: 'role-001', roleSlug: 'admin' };
+        const token = generateToken(payload);
+        const req = {
+          headers: { authorization: `Bearer ${token}` },
+          query: {},
+        } as any;
+        const res = {} as any;
+        const next = jest.fn();
+
+        authMiddleware(req, res, next);
+
+        expect(req.user).toEqual(expect.objectContaining({
+          id: 'u-001',
+          email: 'admin@test.pl',
+          role: 'ADMIN',
+          roleId: 'role-001',
+          roleSlug: 'admin',
+        }));
+      });
+    });
+
+    describe('requireRole — single role', () => {
+      it('should work with single role', () => {
+        const req = { user: { id: '1', email: 'a@b.com', role: 'EMPLOYEE' } } as any;
+        const res = {} as any;
+        const next = jest.fn();
+        const middleware = requireRole('EMPLOYEE');
+
+        middleware(req, res, next);
+
+        expect(next).toHaveBeenCalledWith();
+      });
+    });
+
+    describe('verifyToken — expired token', () => {
+      it('should throw on expired token with negative expiry', () => {
+        const expiredToken = jwt.sign(
+          { id: 'u1', email: 'a@b.com', role: 'ADMIN', roleId: 'r1', roleSlug: 'admin' },
+          SECRET,
+          { expiresIn: '-1s' }
+        );
+        expect(() => verifyToken(expiredToken)).toThrow('Nieprawidłowy lub wygasły token');
+      });
+    });
+
+    describe('extractToken — non-Bearer prefix', () => {
+      it('should ignore Authorization header with Basic prefix', () => {
+        const req = {
+          headers: { authorization: 'Basic abc123' },
+          query: {},
+        } as any;
+        const res = {} as any;
+        const next = jest.fn();
+
+        authMiddleware(req, res, next);
+
+        expect(next).toHaveBeenCalledWith(
+          expect.objectContaining({ message: expect.stringContaining('Brak tokena') })
+        );
+      });
+    });
+  });
 });

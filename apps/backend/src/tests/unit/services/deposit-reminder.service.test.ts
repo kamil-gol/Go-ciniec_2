@@ -227,4 +227,120 @@ describe('DepositReminderService', () => {
       expect(count).toBe(0);
     });
   });
+
+  describe('edge cases / branch coverage', () => {
+    /** Helper: return YYYY-MM-DD for N days ago */
+    function daysAgo(n: number): string {
+      const d = new Date();
+      d.setDate(d.getDate() - n);
+      return d.toISOString().substring(0, 10);
+    }
+
+    const makeDeposit = (overrides: any = {}) => ({
+      id: 'dep-1',
+      amount: 1000,
+      dueDate: '2027-06-15',
+      reservation: {
+        client: { firstName: 'Jan', lastName: 'Kowalski', email: 'j@k.pl' },
+        hall: { name: 'Sala A' },
+        eventType: { name: 'Wesele' },
+        date: '2027-08-15',
+        guests: 50,
+      },
+      ...overrides,
+    });
+
+    describe('sendUpcomingReminders() — edge cases', () => {
+      it('should skip deposit when no client at all', async () => {
+        mockPrisma.deposit.findMany.mockResolvedValue([makeDeposit({ reservation: { client: null, hall: null, eventType: null, date: null, guests: 0 } })]);
+        const count = await depositReminderService.sendUpcomingReminders(3);
+        expect(count).toBe(0);
+      });
+
+      it('should use fallback values for missing reservation fields', async () => {
+        mockPrisma.deposit.findMany.mockResolvedValue([makeDeposit({
+          reservation: {
+            client: { firstName: 'A', lastName: 'B', email: 'a@b.pl' },
+            hall: null,
+            eventType: null,
+            date: null,
+            guests: 0,
+          },
+        })]);
+        mockEmailService.sendDepositReminder.mockResolvedValue(true);
+        const count = await depositReminderService.sendUpcomingReminders(1);
+        expect(count).toBe(1);
+        const callData = mockEmailService.sendDepositReminder.mock.calls[0][1];
+        expect(callData.hallName).toBe('\u2014');
+        expect(callData.eventType).toBe('\u2014');
+        expect(callData.reservationDate).toBe('\u2014');
+      });
+
+      it('should not count failed sends', async () => {
+        mockEmailService.sendDepositReminder.mockResolvedValue(false);
+        mockPrisma.deposit.findMany.mockResolvedValue([makeDeposit()]);
+        const count = await depositReminderService.sendUpcomingReminders(7);
+        expect(count).toBe(0);
+      });
+    });
+
+    describe('sendOverdueNotices() — edge cases', () => {
+      it('should send overdue on day 2 (within daily limit)', async () => {
+        mockPrisma.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: daysAgo(2) })]);
+        mockEmailService.sendDepositOverdueNotice.mockResolvedValue(true);
+        const count = await depositReminderService.sendOverdueNotices();
+        expect(count).toBe(1);
+      });
+
+      it('should send overdue on day 3 (within daily limit)', async () => {
+        mockPrisma.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: daysAgo(3) })]);
+        mockEmailService.sendDepositOverdueNotice.mockResolvedValue(true);
+        const count = await depositReminderService.sendOverdueNotices();
+        expect(count).toBe(1);
+      });
+
+      it('should use fallback values for missing reservation fields', async () => {
+        mockPrisma.deposit.findMany.mockResolvedValue([makeDeposit({
+          dueDate: daysAgo(1),
+          reservation: {
+            client: { firstName: 'X', lastName: 'Y', email: 'x@y.pl' },
+            hall: null, eventType: null, date: null,
+          },
+        })]);
+        mockEmailService.sendDepositOverdueNotice.mockResolvedValue(true);
+        const count = await depositReminderService.sendOverdueNotices();
+        expect(count).toBe(1);
+        const callData = mockEmailService.sendDepositOverdueNotice.mock.calls[0][1];
+        expect(callData.hallName).toBe('\u2014');
+        expect(callData.eventType).toBe('\u2014');
+      });
+
+      it('should not count failed sends', async () => {
+        mockEmailService.sendDepositOverdueNotice.mockResolvedValue(false);
+        mockPrisma.deposit.findMany.mockResolvedValue([makeDeposit({ dueDate: daysAgo(1) })]);
+        const count = await depositReminderService.sendOverdueNotices();
+        expect(count).toBe(0);
+      });
+    });
+
+    describe('runReminders() — error handling', () => {
+      it('should count errors when sendUpcomingReminders throws', async () => {
+        const origSend = depositReminderService.sendUpcomingReminders;
+        depositReminderService.sendUpcomingReminders = jest.fn().mockRejectedValue(new Error('fail'));
+        depositReminderService.sendOverdueNotices = jest.fn().mockResolvedValue(0);
+        const result = await depositReminderService.runReminders();
+        expect(result.errors).toBe(3); // 3 REMINDER_DAYS cycles
+        depositReminderService.sendUpcomingReminders = origSend;
+      });
+
+      it('should count error when sendOverdueNotices throws', async () => {
+        depositReminderService.sendUpcomingReminders = jest.fn().mockResolvedValue(0);
+        const origOverdue = depositReminderService.sendOverdueNotices;
+        depositReminderService.sendOverdueNotices = jest.fn().mockRejectedValue(new Error('fail'));
+        const result = await depositReminderService.runReminders();
+        expect(result.errors).toBe(1);
+        depositReminderService.sendOverdueNotices = origOverdue;
+      });
+    });
+  });
 });

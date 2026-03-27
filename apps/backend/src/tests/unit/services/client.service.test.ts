@@ -1,6 +1,11 @@
 import { ClientService } from '@/services/client.service';
 import { prisma } from '@/lib/prisma';
 
+jest.mock('@utils/audit-logger', () => ({
+  logChange: jest.fn().mockResolvedValue(undefined),
+  diffObjects: jest.fn().mockReturnValue({}),
+}));
+
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     client: {
@@ -170,6 +175,101 @@ describe('ClientService', () => {
           '550e8400-e29b-41d4-a716-446655440001'
         )
       ).rejects.toThrow(/już istnieje/i);
+    });
+  });
+
+  describe('edge cases / branch coverage', () => {
+    describe('updateClient — client types', () => {
+      it('should treat as PERSON when no companyName provided', async () => {
+        const existing = {
+          id: 'c1', firstName: 'Jan', lastName: 'Kowalski',
+          phone: '123456789', email: 'jan@test.pl',
+          companyName: null, clientType: 'INDIVIDUAL', isDeleted: false,
+        };
+        (prisma.client.findUnique as jest.Mock).mockResolvedValue(existing);
+        (prisma.client.findFirst as jest.Mock).mockResolvedValue(null);
+        (prisma.client.update as jest.Mock).mockResolvedValue({ ...existing, firstName: 'Adam' });
+
+        await clientService.updateClient('c1', { firstName: 'Adam' }, 'u1');
+        expect(prisma.client.update).toHaveBeenCalled();
+      });
+
+      it('should treat as COMPANY when companyName provided', async () => {
+        const company = {
+          id: 'c1', companyName: 'ACME Corp', firstName: null, lastName: null,
+          phone: '123456789', email: 'jan@test.pl',
+          clientType: 'COMPANY', isDeleted: false,
+        };
+        (prisma.client.findUnique as jest.Mock).mockResolvedValue(company);
+        (prisma.client.findFirst as jest.Mock).mockResolvedValue(null);
+        (prisma.client.update as jest.Mock).mockResolvedValue({ ...company, companyName: 'ACME Ltd' });
+
+        await clientService.updateClient('c1', { companyName: 'ACME Ltd' }, 'u1');
+        expect(prisma.client.update).toHaveBeenCalled();
+      });
+    });
+
+    describe('updateClient — duplicate detection', () => {
+      it('should not throw when updating same client', async () => {
+        const existing = {
+          id: 'c1', firstName: 'Jan', lastName: 'Kowalski',
+          phone: '123456789', email: 'jan@test.pl',
+          companyName: null, clientType: 'INDIVIDUAL', isDeleted: false,
+        };
+        (prisma.client.findUnique as jest.Mock).mockResolvedValue(existing);
+        (prisma.client.findFirst as jest.Mock).mockResolvedValue(existing);
+        (prisma.client.update as jest.Mock).mockResolvedValue({ ...existing, email: 'new@test.pl' });
+
+        await expect(clientService.updateClient('c1', { email: 'new@test.pl' }, 'u1')).resolves.toBeDefined();
+      });
+    });
+
+    describe('updateClient — conditional fields', () => {
+      it('should use provided lastName in phone duplicate check', async () => {
+        const existing = {
+          id: 'c1', firstName: 'Jan', lastName: 'Kowalski',
+          phone: '123456789', email: 'jan@test.pl',
+          companyName: null, clientType: 'INDIVIDUAL', isDeleted: false,
+        };
+        (prisma.client.findUnique as jest.Mock).mockResolvedValue(existing);
+        (prisma.client.findFirst as jest.Mock).mockResolvedValue(null);
+        (prisma.client.update as jest.Mock).mockResolvedValue({ ...existing, lastName: 'Nowak', phone: '999888777' });
+
+        await clientService.updateClient('c1', { lastName: 'Nowak', phone: '999888777' }, 'u1');
+
+        expect(prisma.client.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              phone: '999888777',
+              firstName: 'Jan',
+              lastName: 'Nowak',
+            }),
+          })
+        );
+      });
+
+      it('should fallback to existing lastName in phone duplicate check when not provided', async () => {
+        const existing = {
+          id: 'c1', firstName: 'Jan', lastName: 'Kowalski',
+          phone: '123456789', email: 'jan@test.pl',
+          companyName: null, clientType: 'INDIVIDUAL', isDeleted: false,
+        };
+        (prisma.client.findUnique as jest.Mock).mockResolvedValue(existing);
+        (prisma.client.findFirst as jest.Mock).mockResolvedValue(null);
+        (prisma.client.update as jest.Mock).mockResolvedValue({ ...existing, phone: '999888777' });
+
+        await clientService.updateClient('c1', { phone: '999888777' }, 'u1');
+
+        expect(prisma.client.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              phone: '999888777',
+              firstName: 'Jan',
+              lastName: 'Kowalski',
+            }),
+          })
+        );
+      });
     });
   });
 

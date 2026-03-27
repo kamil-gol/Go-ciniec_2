@@ -312,4 +312,74 @@ describe('MenuSnapshotService', () => {
       expect(result[1].count).toBe(1);
     });
   });
+
+  // ═══════════ edge cases / branch coverage ═══════════
+  describe('edge cases / branch coverage', () => {
+
+    describe('createSnapshot — empty dish/category arrays', () => {
+      it('should handle dishSelections with empty dish arrays', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPkg);
+        mockPrisma.dish.findMany.mockResolvedValue([]);
+        mockPrisma.dishCategory.findMany.mockResolvedValue([
+          { id: 'cat1', name: 'Zupy', icon: 'soup' },
+        ]);
+        mockPrisma.reservationMenuSnapshot.create.mockResolvedValue(mockSnapshot);
+
+        const result = await menuSnapshotService.createSnapshot({
+          reservationId: 'res-1', packageId: 'pkg-1',
+          selectedOptions: [], adultsCount: 10, childrenCount: 5, toddlersCount: 2,
+          dishSelections: [{ categoryId: 'cat1', dishes: [] }],
+        });
+
+        expect(result).toBeDefined();
+      });
+
+      it('should handle no dishSelections (empty categoryIds)', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue({
+          ...mockPkg, description: null, color: null, icon: null,
+        });
+        mockPrisma.reservationMenuSnapshot.create.mockResolvedValue(mockSnapshot);
+
+        const result = await menuSnapshotService.createSnapshot({
+          reservationId: 'res-2', packageId: 'pkg-1',
+          selectedOptions: [], adultsCount: 8, childrenCount: 0, toddlersCount: 0,
+        });
+
+        expect(result).toBeDefined();
+      });
+
+      it('should skip dish.findMany when dishSelections have no dishes', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPkg);
+        mockPrisma.dishCategory.findMany.mockResolvedValue([
+          { id: 'cat-1', name: 'Zupy', icon: 'soup' },
+        ]);
+        mockPrisma.reservationMenuSnapshot.create.mockResolvedValue(mockSnapshot);
+
+        await menuSnapshotService.createSnapshot({
+          reservationId: 'res-1', packageId: 'pkg-1', selectedOptions: [],
+          dishSelections: [{ categoryId: 'cat-1', dishes: [] }],
+          adultsCount: 10, childrenCount: 2, toddlersCount: 1,
+        });
+
+        expect(mockPrisma.dish.findMany).not.toHaveBeenCalled();
+        expect(mockPrisma.dishCategory.findMany).toHaveBeenCalled();
+      });
+    });
+
+    describe('getSnapshotStatistics — null aggregates', () => {
+      it('should return 0 for all averages when no snapshots exist', async () => {
+        mockPrisma.reservationMenuSnapshot.count.mockResolvedValue(0);
+        mockPrisma.reservationMenuSnapshot.aggregate.mockResolvedValue({
+          _avg: { totalMenuPrice: null, packagePrice: null, optionsPrice: null },
+        });
+
+        const result = await menuSnapshotService.getSnapshotStatistics();
+
+        expect(result.totalSnapshots).toBe(0);
+        expect(result.averageMenuPrice).toBe(0);
+        expect(result.averagePackagePrice).toBe(0);
+        expect(result.averageOptionsPrice).toBe(0);
+      });
+    });
+  });
 });

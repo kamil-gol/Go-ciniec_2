@@ -687,4 +687,358 @@ describe('DepositService — core logic & edge cases', () => {
       expect(result).toBeDefined();
     });
   });
+
+  // ═══════════ edge cases / branch coverage ═══════════
+  describe('edge cases / branch coverage', () => {
+
+    describe('update() — 4-way branch paths', () => {
+      const setupUpdate = (deposit: any, reservation: any = null) => {
+        db.deposit.findUnique
+          .mockResolvedValueOnce(deposit)
+          .mockResolvedValueOnce(deposit);
+        if (reservation) {
+          db.reservation.findUnique.mockResolvedValueOnce(reservation);
+        }
+        db.$queryRawUnsafe.mockResolvedValue([{ count: 1 }]);
+      };
+
+      it('should update both amount and dueDate (branch 1)', async () => {
+        const dep = makeDeposit();
+        setupUpdate(dep, { ...dep.reservation, deposits: [dep], totalPrice: 5000 });
+        await depositService.update('dep-1', { amount: 600, dueDate: '2027-07-01' }, USER_ID);
+        expect(db.$queryRawUnsafe).toHaveBeenCalledWith(
+          expect.stringContaining('amount'),
+          600, 600, '2027-07-01', 'dep-1'
+        );
+      });
+
+      it('should update amount only (branch 2)', async () => {
+        const dep = makeDeposit();
+        setupUpdate(dep, { ...dep.reservation, deposits: [dep], totalPrice: 5000 });
+        await depositService.update('dep-1', { amount: 600 }, USER_ID);
+        const call = db.$queryRawUnsafe.mock.calls[0];
+        expect(call[0]).toContain('amount');
+        expect(call[0]).not.toContain('dueDate');
+      });
+
+      it('should update dueDate only (branch 3)', async () => {
+        const dep = makeDeposit();
+        setupUpdate(dep);
+        await depositService.update('dep-1', { dueDate: '2027-07-01' }, USER_ID);
+        const call = db.$queryRawUnsafe.mock.calls[0];
+        expect(call[0]).toContain('dueDate');
+        expect(call[0]).not.toContain('amount =');
+      });
+
+      it('should skip raw query when neither amount nor dueDate (branch 4)', async () => {
+        const dep = makeDeposit();
+        setupUpdate(dep);
+        await depositService.update('dep-1', {}, USER_ID);
+        expect(db.$queryRawUnsafe).not.toHaveBeenCalled();
+      });
+
+      it('should throw when deposit is paid', async () => {
+        db.deposit.findUnique.mockResolvedValueOnce(makeDeposit({ paid: true }));
+        await expect(depositService.update('dep-1', { amount: 100 }, USER_ID))
+          .rejects.toThrow(/edytowa.*op.*aconej/i);
+      });
+
+      it('should throw when amount <= 0', async () => {
+        db.deposit.findUnique.mockResolvedValueOnce(makeDeposit());
+        await expect(depositService.update('dep-1', { amount: 0 }, USER_ID))
+          .rejects.toThrow(/większa od 0|greater than/i);
+      });
+
+      it('should throw when new amount exceeds total', async () => {
+        const dep = makeDeposit({ amount: '500' });
+        db.deposit.findUnique.mockResolvedValueOnce(dep);
+        db.reservation.findUnique.mockResolvedValueOnce({
+          totalPrice: 1000,
+          deposits: [dep, { id: 'dep-2', amount: '800', status: 'PENDING' }],
+        });
+        await expect(depositService.update('dep-1', { amount: 300 }, USER_ID))
+          .rejects.toThrow(/przekracza|exceed/i);
+      });
+
+      it('should throw when deposit not found', async () => {
+        db.deposit.findUnique.mockResolvedValueOnce(null);
+        await expect(depositService.update('bad', { amount: 100 }, USER_ID))
+          .rejects.toThrow();
+      });
+    });
+
+    describe('checkAndAutoConfirmReservation()', () => {
+      it('should return early when reservation not found', async () => {
+        db.reservation.findUnique.mockResolvedValueOnce(null);
+        await depositService.checkAndAutoConfirmReservation('bad', USER_ID);
+        expect(db.reservation.update).not.toHaveBeenCalled();
+      });
+
+      it('should return early when reservation is not PENDING', async () => {
+        db.reservation.findUnique.mockResolvedValueOnce({
+          id: 'res-1', status: 'CONFIRMED', deposits: [], client: null,
+        });
+        await depositService.checkAndAutoConfirmReservation('res-1', USER_ID);
+        expect(db.reservation.update).not.toHaveBeenCalled();
+      });
+
+      it('should return early when no active deposits (all cancelled)', async () => {
+        db.reservation.findUnique.mockResolvedValueOnce({
+          id: 'res-1', status: 'PENDING',
+          deposits: [{ status: 'CANCELLED' }],
+          client: null,
+        });
+        await depositService.checkAndAutoConfirmReservation('res-1', USER_ID);
+        expect(db.reservation.update).not.toHaveBeenCalled();
+      });
+
+      it('should return early when not all deposits are paid', async () => {
+        db.reservation.findUnique.mockResolvedValueOnce({
+          id: 'res-1', status: 'PENDING',
+          deposits: [{ status: 'PAID', amount: 500 }, { status: 'PENDING', amount: 500 }],
+          client: null,
+        });
+        await depositService.checkAndAutoConfirmReservation('res-1', USER_ID);
+        expect(db.reservation.update).not.toHaveBeenCalled();
+      });
+
+      it('should auto-confirm when all deposits are PAID', async () => {
+        db.reservation.findUnique.mockResolvedValueOnce({
+          id: 'res-1', status: 'PENDING',
+          deposits: [{ status: 'PAID', amount: 500 }, { status: 'PAID', amount: 500 }],
+          client: { firstName: 'Jan', lastName: 'K' },
+        });
+        db.reservation.update.mockResolvedValueOnce({});
+        db.reservationHistory.create.mockResolvedValueOnce({});
+        await depositService.checkAndAutoConfirmReservation('res-1', USER_ID);
+        expect(db.reservation.update).toHaveBeenCalledWith({
+          where: { id: 'res-1' },
+          data: { status: 'CONFIRMED' },
+        });
+      });
+
+      it('should auto-confirm with null client (N/A name)', async () => {
+        db.reservation.findUnique.mockResolvedValueOnce({
+          id: 'res-1', status: 'PENDING',
+          deposits: [{ status: 'PAID', amount: 500 }],
+          client: null,
+        });
+        db.reservation.update.mockResolvedValueOnce({});
+        db.reservationHistory.create.mockResolvedValueOnce({});
+        await depositService.checkAndAutoConfirmReservation('res-1', USER_ID);
+        expect(db.reservation.update).toHaveBeenCalled();
+      });
+
+      it('should catch errors and not throw', async () => {
+        db.reservation.findUnique.mockRejectedValueOnce(new Error('DB'));
+        await depositService.checkAndAutoConfirmReservation('res-1', USER_ID);
+      });
+    });
+
+    describe('list() — filter branches', () => {
+      const setupList = () => {
+        db.deposit.findMany.mockResolvedValue([]);
+        db.deposit.count.mockResolvedValue(0);
+      };
+
+      it('should apply overdue filter', async () => {
+        setupList();
+        await depositService.list({ overdue: true });
+        const where = db.deposit.findMany.mock.calls[0][0].where;
+        expect(where.status).toEqual({ equals: 'PENDING' });
+        expect(where.dueDate).toBeDefined();
+      });
+
+      it('should apply dateFrom only', async () => {
+        setupList();
+        await depositService.list({ dateFrom: '2027-01-01' });
+        const where = db.deposit.findMany.mock.calls[0][0].where;
+        expect(where.dueDate.gte).toBe('2027-01-01');
+        expect(where.dueDate.lte).toBeUndefined();
+      });
+
+      it('should apply dateTo only', async () => {
+        setupList();
+        await depositService.list({ dateTo: '2027-12-31' });
+        const where = db.deposit.findMany.mock.calls[0][0].where;
+        expect(where.dueDate.lte).toBe('2027-12-31');
+        expect(where.dueDate.gte).toBeUndefined();
+      });
+
+      it('should apply dateFrom and dateTo', async () => {
+        setupList();
+        await depositService.list({ dateFrom: '2027-01-01', dateTo: '2027-12-31' });
+        const where = db.deposit.findMany.mock.calls[0][0].where;
+        expect(where.dueDate.gte).toBe('2027-01-01');
+        expect(where.dueDate.lte).toBe('2027-12-31');
+      });
+
+      it('should apply search filter', async () => {
+        setupList();
+        await depositService.list({ search: 'Jan' });
+        const where = db.deposit.findMany.mock.calls[0][0].where;
+        expect(where.reservation.client.OR).toBeDefined();
+      });
+
+      it('should apply paid filter', async () => {
+        setupList();
+        await depositService.list({ paid: true });
+        const where = db.deposit.findMany.mock.calls[0][0].where;
+        expect(where.paid).toBe(true);
+      });
+
+      it('should apply status filter', async () => {
+        setupList();
+        await depositService.list({ status: 'PAID' });
+        const where = db.deposit.findMany.mock.calls[0][0].where;
+        expect(where.status).toEqual({ equals: 'PAID' });
+      });
+
+      it('should use default pagination and sorting', async () => {
+        setupList();
+        await depositService.list({});
+        const args = db.deposit.findMany.mock.calls[0][0];
+        expect(args.skip).toBe(0);
+        expect(args.take).toBe(20);
+        expect(args.orderBy).toEqual({ dueDate: 'asc' });
+      });
+
+      it('should calculate hasMore correctly', async () => {
+        db.deposit.findMany.mockResolvedValue([{ id: '1' }]);
+        db.deposit.count.mockResolvedValue(50);
+        const result = await depositService.list({ page: 1, limit: 1 });
+        expect(result.pagination.hasMore).toBe(true);
+      });
+    });
+
+    describe('getByReservation() — edge cases', () => {
+      it('should return percentPaid = 0 when reservationTotal = 0', async () => {
+        db.reservation.findUnique.mockResolvedValueOnce({ id: 'res-1', totalPrice: 0 });
+        db.deposit.findMany.mockResolvedValueOnce([]);
+        const result = await depositService.getByReservation('res-1');
+        expect(result.summary.percentPaid).toBe(0);
+      });
+
+      it('should throw when reservation not found', async () => {
+        db.reservation.findUnique.mockResolvedValueOnce(null);
+        await expect(depositService.getByReservation('bad')).rejects.toThrow();
+      });
+    });
+
+    describe('markAsPaid() — partial payment branches', () => {
+      it('should mark as PARTIALLY_PAID when amountPaid < amount', async () => {
+        const dep = makeDeposit({ amount: '500' });
+        db.deposit.findUnique
+          .mockResolvedValueOnce(dep)
+          .mockResolvedValueOnce({ ...dep, status: 'PARTIALLY_PAID', paid: false });
+        db.$queryRawUnsafe.mockResolvedValue([]);
+        await depositService.markAsPaid('dep-1', {
+          paymentMethod: 'CASH', paidAt: '2027-06-15', amountPaid: 200,
+        }, USER_ID);
+        const updateCall = db.$queryRawUnsafe.mock.calls[0];
+        expect(updateCall[1]).toBe(false);
+        expect(updateCall[2]).toBe('PARTIALLY_PAID');
+      });
+
+      it('should use deposit.amount when amountPaid not provided', async () => {
+        const dep = makeDeposit({ amount: '500' });
+        db.deposit.findUnique
+          .mockResolvedValueOnce(dep)
+          .mockResolvedValueOnce({ ...dep, status: 'PAID', paid: true });
+        db.$queryRawUnsafe.mockResolvedValue([]);
+        db.reservation.findUnique.mockResolvedValueOnce(null);
+        await depositService.markAsPaid('dep-1', {
+          paymentMethod: 'TRANSFER', paidAt: '2027-06-15',
+        }, USER_ID);
+        const updateCall = db.$queryRawUnsafe.mock.calls[0];
+        expect(updateCall[1]).toBe(true);
+        expect(updateCall[6]).toBe(500);
+      });
+
+      it('should throw when already paid', async () => {
+        db.deposit.findUnique.mockResolvedValueOnce(makeDeposit({ paid: true }));
+        await expect(depositService.markAsPaid('dep-1', {
+          paymentMethod: 'CASH', paidAt: '2027-06-15',
+        }, USER_ID)).rejects.toThrow(/ju.*oznaczona/i);
+      });
+    });
+
+    describe('sendConfirmationEmail() guards', () => {
+      it('should throw when deposit not paid', async () => {
+        db.deposit.findUnique.mockResolvedValueOnce(makeDeposit({ paid: false }));
+        await expect(depositService.sendConfirmationEmail('dep-1'))
+          .rejects.toThrow(/op.*aconej.*zaliczk/i);
+      });
+
+      it('should throw when client has no email', async () => {
+        db.deposit.findUnique.mockResolvedValueOnce(makeDeposit({
+          paid: true,
+          reservation: {
+            id: 'res-1', client: { firstName: 'A', lastName: 'B', email: null, phone: '123' },
+            hall: null, eventType: null, date: null, startTime: null, endTime: null,
+            guests: 0, totalPrice: 1000,
+          },
+        }));
+        await expect(depositService.sendConfirmationEmail('dep-1'))
+          .rejects.toThrow(/email/i);
+      });
+
+      it('should throw when deposit not found', async () => {
+        db.deposit.findUnique.mockResolvedValueOnce(null);
+        await expect(depositService.sendConfirmationEmail('bad'))
+          .rejects.toThrow();
+      });
+    });
+
+    describe('markAsUnpaid() guards', () => {
+      it('should throw when deposit already unpaid and PENDING', async () => {
+        db.deposit.findUnique.mockResolvedValueOnce(makeDeposit({ paid: false, status: 'PENDING' }));
+        await expect(depositService.markAsUnpaid('dep-1', USER_ID))
+          .rejects.toThrow(/nie jest oznaczona/i);
+      });
+
+      it('should throw when deposit not found', async () => {
+        db.deposit.findUnique.mockResolvedValueOnce(null);
+        await expect(depositService.markAsUnpaid('bad', USER_ID))
+          .rejects.toThrow();
+      });
+    });
+
+    describe('cancel() guards', () => {
+      it('should throw when deposit is paid', async () => {
+        db.deposit.findUnique.mockResolvedValueOnce(makeDeposit({ paid: true }));
+        await expect(depositService.cancel('dep-1', USER_ID))
+          .rejects.toThrow(/anulowa.*op.*aconej/i);
+      });
+    });
+
+    describe('getStats() fallback', () => {
+      it('should handle empty stats row', async () => {
+        db.$queryRawUnsafe.mockResolvedValueOnce([{}]);
+        const result = await depositService.getStats();
+        expect(result.counts.total).toBe(0);
+        expect(result.amounts.total).toBe(0);
+      });
+
+      it('should handle no rows returned', async () => {
+        db.$queryRawUnsafe.mockResolvedValueOnce([]);
+        const result = await depositService.getStats();
+        expect(result.counts.total).toBe(0);
+      });
+    });
+
+    describe('autoMarkOverdue()', () => {
+      it('should handle empty result', async () => {
+        db.$queryRawUnsafe.mockResolvedValueOnce([]);
+        const result = await depositService.autoMarkOverdue();
+        expect(result.markedOverdueCount).toBe(0);
+      });
+
+      it('should return count from result', async () => {
+        db.$queryRawUnsafe.mockResolvedValueOnce([{ count: 5 }]);
+        const result = await depositService.autoMarkOverdue();
+        expect(result.markedOverdueCount).toBe(5);
+      });
+    });
+  });
 });
