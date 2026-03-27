@@ -5,7 +5,6 @@ import Link from 'next/link'
 import {
   Calendar,
   ArrowRight,
-  AlertCircle,
   Users,
   Building2,
   RefreshCw,
@@ -14,37 +13,9 @@ import {
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
 import { useReservations } from '@/lib/api/reservations'
+import { StatusBadge } from '@/components/shared/StatusBadge'
+import { ErrorState } from '@/components/shared/ErrorState'
 import type { Reservation } from '@/types'
-
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-
-const STATUS_LABELS: Record<string, { label: string; emoji: string; classes: string }> = {
-  CONFIRMED: {
-    label: 'Potwierdzone',
-    emoji: '✅',
-    classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  },
-  PENDING: {
-    label: 'Oczekuje',
-    emoji: '⏳',
-    classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  },
-  RESERVED: {
-    label: 'W kolejce',
-    emoji: '📋',
-    classes: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  },
-  COMPLETED: {
-    label: 'Zakończone',
-    emoji: '🏁',
-    classes: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400',
-  },
-  CANCELLED: {
-    label: 'Anulowane',
-    emoji: '❌',
-    classes: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-  },
-}
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('pl-PL', {
@@ -114,7 +85,6 @@ function SkeletonRow() {
 function ReservationRow({ reservation, index }: { reservation: Reservation; index: number }) {
   const r = reservation as any
   const accent = moduleAccents.reservations
-  const statusInfo = STATUS_LABELS[r.status] ?? STATUS_LABELS.PENDING
   const clientName = `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim()
 
   const startTime = getStartTime(r)
@@ -172,9 +142,7 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
             <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
               {r.eventType?.name ?? 'Wydarzenie'}
             </span>
-            <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold flex-shrink-0', statusInfo.classes)}>
-              {statusInfo.emoji} {statusInfo.label}
-            </span>
+            <StatusBadge type="reservation" status={r.status} />
           </div>
 
           {/* Linia 2: klient + sala */}
@@ -352,18 +320,10 @@ export default function DailyReservationsSection({ date }: DailyReservationsSect
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
         ) : error ? (
-          <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
-            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-            <p className="text-sm font-medium text-red-800 dark:text-red-300 flex-1">
-              Nie udało się pobrać rezerwacji
-            </p>
-            <button
-              onClick={() => refetch()}
-              className="text-sm font-medium text-red-700 dark:text-red-300 hover:underline flex-shrink-0"
-            >
-              Spróbuj ponownie
-            </button>
-          </div>
+          <ErrorState
+            message="Nie udało się pobrać rezerwacji"
+            onRetry={() => refetch()}
+          />
         ) : reservations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <div
