@@ -320,4 +320,343 @@ describe('ReservationMenuService', () => {
       spy.mockRestore();
     });
   });
+
+  // ═══════════ edge cases / branch coverage ═══════════
+  describe('edge cases / branch coverage', () => {
+
+    const makeSnapshotResult = (overrides: any = {}) => ({
+      id: 'snap1', reservationId: 'r1',
+      menuData: {
+        packageId: 'pkg-001', packageName: 'Gold',
+        pricePerAdult: 150, pricePerChild: 80, pricePerToddler: 30,
+        adults: 10, children: 5, toddlers: 2,
+        dishSelections: [], selectedOptions: [],
+        prices: { packageTotal: 1960, optionsTotal: 0, total: 1960 },
+      },
+      menuTemplateId: 'tpl-001', packageId: 'pkg-001',
+      packagePrice: 1960, optionsPrice: 0, totalMenuPrice: 1960,
+      adultsCount: 10, childrenCount: 5, toddlersCount: 2,
+      selectedAt: new Date(), updatedAt: new Date(),
+      ...overrides,
+    });
+
+    describe('selectMenu — additional branches', () => {
+      it('should select as new with dishes and PER_PERSON option', async () => {
+        mockPrisma.dish.findMany.mockResolvedValue([
+          { id: 'dish-001', name: 'Pomidorowa', description: 'Klasyczna', allergens: ['gluten'], isActive: true },
+        ]);
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
+        mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult({
+          menuData: {
+            ...makeSnapshotResult().menuData,
+            selectedOptions: [{ optionId: 'opt1', optionName: 'Woda', priceAmount: 10, priceUnit: 'PER_PERSON', quantity: 2 }],
+          },
+        }));
+
+        const result = await reservationMenuService.selectMenu('res-001', {
+          packageId: 'pkg-001',
+          dishSelections: [{ categoryId: 'cat-001', dishes: [{ dishId: 'dish-001', quantity: 2 }] }],
+          selectedOptions: [{ optionId: 'opt1', quantity: 2, name: 'Woda', priceAmount: 10, priceType: 'PER_PERSON', category: 'DRINK' }],
+        }, TEST_USER);
+
+        expect(result).toBeDefined();
+        expect(logChange).toHaveBeenCalledWith(expect.objectContaining({
+          action: 'MENU_SELECTED',
+          details: expect.objectContaining({ isNewSelection: true }),
+        }));
+      });
+
+      it('should select as update with null client', async () => {
+        mockPrisma.reservation.findUnique.mockResolvedValue({ ...RESERVATION, client: null });
+        mockPrisma.menuPackage.findUnique.mockResolvedValue({ ...MENU_PACKAGE, categorySettings: [] });
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue({ id: 'existing' });
+        mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
+
+        const result = await reservationMenuService.selectMenu('res-001', { packageId: 'pkg-001' }, TEST_USER);
+
+        expect(result).toBeDefined();
+        expect(logChange).toHaveBeenCalledWith(expect.objectContaining({
+          details: expect.objectContaining({ isNewSelection: false }),
+        }));
+      });
+
+      it('should select without userId (userId || null branch)', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue({ ...MENU_PACKAGE, categorySettings: [] });
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
+        mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
+
+        await reservationMenuService.selectMenu('res-001', { packageId: 'pkg-001' });
+        expect(logChange).toHaveBeenCalledWith(expect.objectContaining({ userId: null }));
+      });
+
+      it('should use input adults/children/toddlers when provided', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue({ ...MENU_PACKAGE, categorySettings: [] });
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
+        mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
+
+        await reservationMenuService.selectMenu('res-001', { packageId: 'pkg-001', adults: 20, children: 10, toddlers: 5 });
+        expect(logChange).toHaveBeenCalledWith(expect.objectContaining({
+          details: expect.objectContaining({ guests: { adults: 20, children: 10, toddlers: 5 } }),
+        }));
+      });
+
+      it('should handle FLAT option in calculateOptionsPrice', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue({ ...MENU_PACKAGE, categorySettings: [] });
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
+        mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
+
+        await reservationMenuService.selectMenu('res-001', {
+          packageId: 'pkg-001',
+          selectedOptions: [{ optionId: 'opt2', quantity: 1, name: 'DJ', priceAmount: 500, priceType: 'FLAT', category: 'ENTERTAINMENT' }],
+        });
+
+        expect(mockPrisma.reservationMenuSnapshot.upsert).toHaveBeenCalled();
+      });
+
+      it('should handle option with missing price fields (defaults to 0/FLAT)', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue({ ...MENU_PACKAGE, categorySettings: [] });
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
+        mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
+
+        await reservationMenuService.selectMenu('res-001', {
+          packageId: 'pkg-001',
+          selectedOptions: [{ optionId: 'nonexistent', quantity: 1 }],
+        });
+
+        expect(mockPrisma.reservationMenuSnapshot.upsert).toHaveBeenCalled();
+      });
+
+      it('should handle dishSelection with unknown categoryId', async () => {
+        mockPrisma.dish.findMany.mockResolvedValue([]);
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
+        mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
+
+        await reservationMenuService.selectMenu('res-001', {
+          packageId: 'pkg-001',
+          dishSelections: [
+            { categoryId: 'cat-001', dishes: [{ dishId: 'dish-001', quantity: 1 }] },
+            { categoryId: 'unknown_cat', dishes: [{ dishId: 'dx', quantity: 1 }] },
+          ],
+        });
+
+        expect(mockPrisma.reservationMenuSnapshot.upsert).toHaveBeenCalled();
+      });
+
+      it('should use Unknown dish when dish not found in buildMenuSnapshot', async () => {
+        mockPrisma.dish.findMany.mockResolvedValue([]);
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
+        mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
+
+        await reservationMenuService.selectMenu('res-001', {
+          packageId: 'pkg-001',
+          dishSelections: [{ categoryId: 'cat-001', dishes: [{ dishId: 'nonexistent', quantity: 1 }] }],
+        });
+
+        const upsertCall = mockPrisma.reservationMenuSnapshot.upsert.mock.calls[0][0];
+        const menuData = upsertCall.create.menuData;
+        const dishSel = menuData.dishSelections.find((s: any) => s !== null);
+        if (dishSel) {
+          expect(dishSel.dishes[0].dishName).toBe('Nieznane danie');
+        }
+      });
+    });
+
+    describe('validateDishSelections via selectMenu', () => {
+      it('should throw when required category has less than minSelect', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue({
+          ...MENU_PACKAGE,
+          categorySettings: [{
+            categoryId: 'cat-001', isEnabled: true, displayOrder: 1,
+            minSelect: 2, maxSelect: 5, isRequired: true,
+            category: { name: 'Zupy', dishes: [] },
+          }],
+        });
+
+        await expect(reservationMenuService.selectMenu('res-001', {
+          packageId: 'pkg-001',
+          dishSelections: [{ categoryId: 'cat-001', dishes: [{ dishId: 'd1', quantity: 1 }] }],
+        })).rejects.toThrow('minimum 2');
+      });
+
+      it('should throw when selections exceed maxSelect', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue({
+          ...MENU_PACKAGE,
+          categorySettings: [{
+            categoryId: 'cat-001', isEnabled: true, displayOrder: 1,
+            minSelect: 1, maxSelect: 2, isRequired: false,
+            category: { name: 'Zupy', dishes: [] },
+          }],
+        });
+
+        await expect(reservationMenuService.selectMenu('res-001', {
+          packageId: 'pkg-001',
+          dishSelections: [{ categoryId: 'cat-001', dishes: [{ dishId: 'd1', quantity: 5 }] }],
+        })).rejects.toThrow('maksimum 2');
+      });
+
+      it('should pass when no selection for non-required category', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue({
+          ...MENU_PACKAGE,
+          categorySettings: [{
+            categoryId: 'cat-001', isEnabled: true, displayOrder: 1,
+            minSelect: 1, maxSelect: 3, isRequired: false,
+            category: { name: 'Zupy', dishes: [] },
+          }],
+        });
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue(null);
+        mockPrisma.reservationMenuSnapshot.upsert.mockResolvedValue(makeSnapshotResult());
+
+        await reservationMenuService.selectMenu('res-001', {
+          packageId: 'pkg-001',
+          dishSelections: [],
+        });
+
+        expect(mockPrisma.reservationMenuSnapshot.upsert).toHaveBeenCalled();
+      });
+    });
+
+    describe('recalculateForGuestChange — additional branches', () => {
+      it('should return null when menuData is null', async () => {
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue({
+          id: 's1', menuData: null, packagePrice: 0, optionsPrice: 0, totalMenuPrice: 0,
+          adultsCount: 5, childrenCount: 2, toddlersCount: 1,
+        });
+        const result = await reservationMenuService.recalculateForGuestChange('res-001', 10, 5, 2);
+        expect(result).toBeNull();
+      });
+
+      it('should recalculate with PER_PERSON options and trigger audit', async () => {
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue({
+          id: 's1', reservationId: 'res-001',
+          packagePrice: 1000, optionsPrice: 200, totalMenuPrice: 1200,
+          adultsCount: 5, childrenCount: 2, toddlersCount: 1,
+          menuData: {
+            pricePerAdult: 100, pricePerChild: 50, pricePerToddler: 20, packageName: 'Gold',
+            selectedOptions: [{ optionId: 'o1', priceAmount: 10, priceUnit: 'PER_PERSON', quantity: 1 }],
+            prices: { packageTotal: 1000, optionsTotal: 200, total: 1200 },
+          },
+        });
+        mockPrisma.reservationMenuSnapshot.update.mockResolvedValue({});
+
+        const result = await reservationMenuService.recalculateForGuestChange('res-001', 10, 5, 2);
+        expect(result!.packagePrice).toBe(1290);
+        expect(result!.optionsPrice).toBe(170);
+        expect(logChange).toHaveBeenCalledWith(expect.objectContaining({ action: 'MENU_RECALCULATED' }));
+      });
+
+      it('should handle missing price fields with || 0 fallbacks', async () => {
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue({
+          id: 's1', reservationId: 'res-001',
+          packagePrice: 0, optionsPrice: 0, totalMenuPrice: 0,
+          adultsCount: 1, childrenCount: 0, toddlersCount: 0,
+          menuData: { selectedOptions: null, prices: { packageTotal: 0, optionsTotal: 0, total: 0 } },
+        });
+        mockPrisma.reservationMenuSnapshot.update.mockResolvedValue({});
+
+        const result = await reservationMenuService.recalculateForGuestChange('res-001', 3, 0, 0);
+        expect(result!.packagePrice).toBe(0);
+      });
+
+      it('should handle option with missing priceAmount/quantity', async () => {
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue({
+          id: 's1', reservationId: 'res-001',
+          packagePrice: 100, optionsPrice: 50, totalMenuPrice: 150,
+          adultsCount: 1, childrenCount: 0, toddlersCount: 0,
+          menuData: {
+            pricePerAdult: 100, pricePerChild: 0, pricePerToddler: 0, packageName: 'Test',
+            selectedOptions: [{ optionId: 'o3', priceUnit: 'PER_PERSON' }],
+            prices: { packageTotal: 100, optionsTotal: 50, total: 150 },
+          },
+        });
+        mockPrisma.reservationMenuSnapshot.update.mockResolvedValue({});
+
+        const result = await reservationMenuService.recalculateForGuestChange('res-001', 2, 0, 0);
+        expect(result!.optionsPrice).toBe(0);
+      });
+
+      it('should recalculate with PER_PERSON and FLAT options combined', async () => {
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue({
+          id: 'snap1', reservationId: 'res-001',
+          packagePrice: 1500, optionsPrice: 500, totalMenuPrice: 2000,
+          adultsCount: 10, childrenCount: 5, toddlersCount: 2,
+          menuData: {
+            packageName: 'Gold',
+            pricePerAdult: 100, pricePerChild: 50, pricePerToddler: 0,
+            selectedOptions: [
+              { optionId: 'o1', optionName: 'DJ', priceAmount: 500, priceUnit: 'FLAT', quantity: 1 },
+              { optionId: 'o2', optionName: 'Fotograf', priceAmount: 20, priceUnit: 'PER_PERSON', quantity: 1 },
+            ],
+            prices: { packageTotal: 1500, optionsTotal: 500, total: 2000 },
+          },
+        });
+        mockPrisma.reservationMenuSnapshot.update.mockResolvedValue({});
+
+        const result = await reservationMenuService.recalculateForGuestChange('res-001', 20, 10, 5, TEST_USER);
+
+        expect(result).not.toBeNull();
+        expect(result!.packagePrice).toBe(2500);
+        expect(result!.optionsPrice).toBe(500 + 20 * 35);
+        expect(result!.totalMenuPrice).toBe(2500 + 500 + 700);
+      });
+
+      it('should handle snapshot with no selectedOptions', async () => {
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue({
+          id: 'snap1', reservationId: 'res-001',
+          packagePrice: 800, optionsPrice: 0, totalMenuPrice: 800,
+          adultsCount: 10, childrenCount: 5, toddlersCount: 2,
+          menuData: {
+            packageName: 'Basic',
+            pricePerAdult: 80, pricePerChild: 40, pricePerToddler: 0,
+            selectedOptions: [],
+            prices: { packageTotal: 800, optionsTotal: 0, total: 800 },
+          },
+        });
+        mockPrisma.reservationMenuSnapshot.update.mockResolvedValue({});
+
+        const result = await reservationMenuService.recalculateForGuestChange('res-001', 15, 5, 0, TEST_USER);
+
+        expect(result).not.toBeNull();
+        expect(result!.packagePrice).toBe(15 * 80 + 5 * 40);
+        expect(result!.optionsPrice).toBe(0);
+      });
+    });
+
+    describe('removeMenu — additional branches', () => {
+      it('should handle menuData with no packageName', async () => {
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue({
+          id: 's1', totalMenuPrice: 500, packagePrice: 500, optionsPrice: 0, menuData: {},
+        });
+
+        await reservationMenuService.removeMenu('res-001', TEST_USER);
+        expect(logChange).toHaveBeenCalledWith(expect.objectContaining({
+          details: expect.objectContaining({ packageName: null }),
+        }));
+      });
+    });
+
+    describe('getReservationMenu — additional branches', () => {
+      it('should return formatted response with selectedOptions', async () => {
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue({
+          ...SNAPSHOT_DB,
+          menuData: {
+            ...SNAPSHOT_DB.menuData,
+            selectedOptions: [
+              { optionId: 'o1', optionName: 'DJ', priceAmount: 500, priceUnit: 'FLAT', quantity: 1 },
+            ],
+          },
+        });
+        const result = await reservationMenuService.getReservationMenu('res-001');
+        expect(result.priceBreakdown.optionsCost).toHaveLength(1);
+      });
+
+      it('should return empty optionsCost when selectedOptions null', async () => {
+        mockPrisma.reservationMenuSnapshot.findUnique.mockResolvedValue({
+          ...SNAPSHOT_DB,
+          menuData: { ...SNAPSHOT_DB.menuData, selectedOptions: null },
+        });
+        const result = await reservationMenuService.getReservationMenu('res-001');
+        expect(result.priceBreakdown.optionsCost).toEqual([]);
+      });
+    });
+  });
 });

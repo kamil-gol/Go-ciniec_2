@@ -498,6 +498,174 @@ describe('PDFService', () => {
     });
   });
 
+  // ═══════════ edge cases / branch coverage ═══════════
+  describe('edge cases / branch coverage', () => {
+    let svc: any;
+
+    beforeEach(() => {
+      const mod = loadPDFService(false);
+      svc = new mod.PDFService();
+    });
+
+    describe('generateReservationPDF — reservationExtras', () => {
+      it('should handle reservationExtras with multiple priceTypes', async () => {
+        const buffer = await svc.generateReservationPDF({
+          id: 'TEST-EXTRAS',
+          client: { firstName: 'Marcin', lastName: 'P', phone: '+48777888999' },
+          adults: 90, children: 0, toddlers: 0, guests: 90,
+          pricePerAdult: 190, pricePerChild: 0, pricePerToddler: 0,
+          totalPrice: 21100, extrasTotalPrice: 4000, status: 'CONFIRMED',
+          reservationExtras: [
+            { serviceItem: { name: 'DJ', priceType: 'FLAT', category: { name: 'Muzyka' } },
+              quantity: 1, unitPrice: 2000, totalPrice: 2000, priceType: 'FLAT', status: 'CONFIRMED' },
+            { serviceItem: { name: 'Kwiaty', priceType: 'PER_UNIT', category: null },
+              quantity: 5, unitPrice: 100, totalPrice: 500, priceType: 'PER_UNIT', status: 'CONFIRMED' },
+            { serviceItem: { name: 'Tort', priceType: 'FREE', category: { name: 'Catering' } },
+              quantity: 1, unitPrice: 0, totalPrice: 0, priceType: 'FREE', status: 'CONFIRMED' },
+            { serviceItem: { name: 'Drink', priceType: 'PER_PERSON', category: { name: 'Napoje' } },
+              quantity: 90, unitPrice: 15, totalPrice: 1350, priceType: 'PER_PERSON', status: 'CONFIRMED' },
+          ],
+          createdAt: new Date(),
+        });
+        expect(buffer).toBeInstanceOf(Buffer);
+      });
+    });
+
+    describe('generateReservationPDF — venueSurcharge', () => {
+      it('should handle venueSurcharge and label', async () => {
+        const buffer = await svc.generateReservationPDF({
+          id: 'TEST-VENUE',
+          client: { firstName: 'A', lastName: 'B', phone: '1' },
+          adults: 30, children: 0, toddlers: 0, guests: 30,
+          pricePerAdult: 150, pricePerChild: 0, pricePerToddler: 0,
+          totalPrice: 7500, venueSurcharge: 3000,
+          venueSurchargeLabel: 'Doplata za wylacznosc',
+          status: 'CONFIRMED', createdAt: new Date(),
+        });
+        expect(buffer).toBeInstanceOf(Buffer);
+      });
+    });
+
+    describe('generateReservationPDF — extraHoursCost', () => {
+      it('should handle extraHoursCost with DateTime objects', async () => {
+        const buffer = await svc.generateReservationPDF({
+          id: 'TEST-HOURS',
+          client: { firstName: 'K', lastName: 'Z', phone: '2' },
+          startDateTime: new Date('2026-08-20T16:00:00'),
+          endDateTime: new Date('2026-08-21T01:00:00'),
+          eventType: { name: 'Wesele', standardHours: 6, extraHourRate: 600 },
+          adults: 120, children: 15, toddlers: 5, guests: 140,
+          pricePerAdult: 210, pricePerChild: 105, pricePerToddler: 0,
+          totalPrice: 28575, extraHoursCost: 1800,
+          status: 'CONFIRMED', createdAt: new Date(),
+        });
+        expect(buffer).toBeInstanceOf(Buffer);
+      });
+    });
+
+    describe('generateReservationPDF — single deposit (legacy)', () => {
+      it('should handle single deposit paid', async () => {
+        const buffer = await svc.generateReservationPDF({
+          id: 'TEST-DEP',
+          client: { firstName: 'B', lastName: 'L', phone: '3' },
+          adults: 60, children: 0, toddlers: 0, guests: 60,
+          pricePerAdult: 150, pricePerChild: 0, pricePerToddler: 0,
+          totalPrice: 9000, status: 'CONFIRMED',
+          deposit: { amount: 500, dueDate: '2026-05-01', status: 'PAID', paid: true },
+          createdAt: new Date(),
+        });
+        expect(buffer).toBeInstanceOf(Buffer);
+      });
+    });
+
+    describe('generateRevenueReportPDF', () => {
+      it('should handle full revenue report', async () => {
+        const buffer = await svc.generateRevenueReportPDF({
+          filters: { dateFrom: '2026-01-01', dateTo: '2026-03-31', groupBy: 'month' },
+          summary: {
+            totalRevenue: 250000, avgRevenuePerReservation: 12500,
+            totalReservations: 20, completedReservations: 18,
+            pendingRevenue: 25000, growthPercent: 15.5, extrasRevenue: 45000,
+          },
+          breakdown: [{ period: '2026-01', revenue: 80000, count: 8, avgRevenue: 10000 }],
+          byHall: [{ hallName: 'Sala A', revenue: 150000, count: 12, avgRevenue: 12500 }],
+          byEventType: [{ eventTypeName: 'Wesele', revenue: 200000, count: 15, avgRevenue: 13333 }],
+          byServiceItem: [{ name: 'DJ', revenue: 30000, count: 15, avgRevenue: 2000 }],
+        });
+        expect(buffer).toBeInstanceOf(Buffer);
+      });
+
+      it('should handle minimal revenue report', async () => {
+        const buffer = await svc.generateRevenueReportPDF({
+          filters: { dateFrom: '2026-01-01', dateTo: '2026-01-31' },
+          summary: {
+            totalRevenue: 50000, avgRevenuePerReservation: 10000,
+            totalReservations: 5, completedReservations: 5,
+            pendingRevenue: 0, growthPercent: 0,
+          },
+          breakdown: [], byHall: [], byEventType: [],
+        });
+        expect(buffer).toBeInstanceOf(Buffer);
+      });
+
+      it('should handle report without extrasRevenue', async () => {
+        const buffer = await svc.generateRevenueReportPDF({
+          filters: { dateFrom: '2026-02-01', dateTo: '2026-02-28', groupBy: 'week' },
+          summary: {
+            totalRevenue: 30000, avgRevenuePerReservation: 3000,
+            totalReservations: 10, completedReservations: 9,
+            pendingRevenue: 3000, growthPercent: -5.2,
+          },
+          breakdown: [{ period: 'Tydzien 1', revenue: 15000, count: 5, avgRevenue: 3000 }],
+          byHall: [{ hallName: 'Sala A', revenue: 20000, count: 6, avgRevenue: 3333 }],
+          byEventType: [{ eventTypeName: 'Wesele', revenue: 25000, count: 8, avgRevenue: 3125 }],
+        });
+        expect(buffer).toBeInstanceOf(Buffer);
+      });
+    });
+
+    describe('generateOccupancyReportPDF', () => {
+      it('should handle full occupancy report', async () => {
+        const buffer = await svc.generateOccupancyReportPDF({
+          filters: { dateFrom: '2026-01-01', dateTo: '2026-03-31' },
+          summary: {
+            avgOccupancy: 75, peakDay: 'Saturday', peakHall: 'Sala A',
+            totalReservations: 25, totalDaysInPeriod: 90,
+          },
+          halls: [{ hallName: 'Sala A', occupancy: 85, reservations: 15, avgGuestsPerReservation: 95 }],
+          peakHours: [{ hour: 18, count: 12 }],
+          peakDaysOfWeek: [{ dayOfWeek: 'Saturday', count: 15 }],
+        });
+        expect(buffer).toBeInstanceOf(Buffer);
+      });
+
+      it('should handle report without peakHall', async () => {
+        const buffer = await svc.generateOccupancyReportPDF({
+          filters: { dateFrom: '2026-02-01', dateTo: '2026-02-28' },
+          summary: {
+            avgOccupancy: 50, peakDay: 'Saturday',
+            totalReservations: 8, totalDaysInPeriod: 28,
+          },
+          halls: [], peakHours: [],
+          peakDaysOfWeek: [{ dayOfWeek: 'Saturday', count: 5 }],
+        });
+        expect(buffer).toBeInstanceOf(Buffer);
+      });
+
+      it('should handle empty halls/peakHours/peakDaysOfWeek', async () => {
+        const buffer = await svc.generateOccupancyReportPDF({
+          filters: { dateFrom: '2026-03-01', dateTo: '2026-03-15' },
+          summary: {
+            avgOccupancy: 0, peakDay: 'Monday', peakHall: 'Brak danych',
+            totalReservations: 0, totalDaysInPeriod: 15,
+          },
+          halls: [], peakHours: [], peakDaysOfWeek: [],
+        });
+        expect(buffer).toBeInstanceOf(Buffer);
+      });
+    });
+  });
+
   // ========== Font registration with custom fonts ==========
   describe('with custom fonts', () => {
     it('should register custom fonts when available', async () => {

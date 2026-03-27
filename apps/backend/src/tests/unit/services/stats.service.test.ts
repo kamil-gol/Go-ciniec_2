@@ -133,4 +133,34 @@ describe('StatsService', () => {
       );
     });
   });
+
+  // ═══════════ edge cases / branch coverage ═══════════
+  describe('edge cases / branch coverage', () => {
+
+    describe('getOverview — Sunday branch (dayOfWeek===0)', () => {
+      it('should calculate mondayOffset = -6 when dayOfWeek is 0 (Sunday)', async () => {
+        // Reset all mocks to return default values for getOverview
+        db.reservation.count.mockResolvedValue(0);
+        db.reservation.aggregate.mockResolvedValue({ _sum: { totalPrice: null } });
+        db.client.count.mockResolvedValue(0);
+        db.deposit.aggregate.mockResolvedValue({ _count: 0, _sum: { remainingAmount: null } });
+        db.hall.count.mockResolvedValue(0);
+
+        const realDate = Date;
+        const sunday = new Date('2026-02-22T12:00:00Z'); // Sunday
+        jest.spyOn(global, 'Date').mockImplementation((...args: any[]) => {
+          if (args.length === 0) return sunday;
+          // @ts-ignore
+          return new realDate(...args);
+        });
+        (Date as any).now = realDate.now;
+
+        const result = await svc.getOverview();
+        expect(result).toBeDefined();
+        expect(result.reservationsToday).toBe(0);
+
+        jest.restoreAllMocks();
+      });
+    });
+  });
 });

@@ -182,4 +182,52 @@ describe('MenuCourseService', () => {
       expect(result.id).toBe('course-1');
     });
   });
+
+  // ═══════════ edge cases / branch coverage ═══════════
+  describe('edge cases / branch coverage', () => {
+
+    describe('getForSelection — detailed behavior', () => {
+      it('should return course with filtered active dishes', async () => {
+        mockPrisma.menuCourse.findUnique.mockResolvedValue({
+          id: 'c1', name: 'Appetizer', packageId: 'p1',
+          minSelect: 1, maxSelect: 2, isRequired: true,
+          options: [
+            {
+              id: 'co1', dishId: 'd1', isRecommended: true, isDefault: false, displayOrder: 0,
+              dish: { id: 'd1', name: 'Soup', description: 'Hot soup', category: 'SOUP',
+                allergens: [], priceModifier: 0, imageUrl: null, thumbnailUrl: null },
+            },
+          ],
+        });
+
+        const result = await menuCourseService.getForSelection('c1');
+        expect(result.options).toHaveLength(1);
+        expect(result.options[0].dish.name).toBe('Soup');
+      });
+    });
+
+    describe('reorderDishes — updateMany calls', () => {
+      it('should reorder dishes and call updateMany for each dish', async () => {
+        mockPrisma.menuCourse.findUnique
+          .mockResolvedValueOnce({ id: 'c1', name: 'Main', options: [] })
+          .mockResolvedValueOnce({ id: 'c1', name: 'Main', options: [] });
+
+        mockPrisma.menuCourseOption.updateMany.mockResolvedValue({ count: 1 });
+
+        const result = await menuCourseService.reorderDishes('c1', [
+          { dishId: 'd1', displayOrder: 2 },
+          { dishId: 'd2', displayOrder: 1 },
+        ]);
+
+        expect(result).toBeDefined();
+        expect(mockPrisma.menuCourseOption.updateMany).toHaveBeenCalledTimes(2);
+      });
+
+      it('should throw when course not found for reorder', async () => {
+        mockPrisma.menuCourse.findUnique.mockResolvedValue(null);
+        await expect(menuCourseService.reorderDishes('bad', []))
+          .rejects.toThrow('Nie znaleziono kursu menu');
+      });
+    });
+  });
 });

@@ -115,4 +115,39 @@ describe('HallController', () => {
       );
     });
   });
+
+  describe('edge cases / branch coverage', () => {
+    it('getHalls should call next(error) when service throws', async () => {
+      const error = new Error('DB connection failed');
+      svc.getHalls.mockRejectedValue(error);
+      await hallController.getHalls(req({ query: {} }), res(), next);
+      expect(next).toHaveBeenCalledWith(error);
+    });
+
+    it('getHallById should call next(error) when service throws', async () => {
+      const error = new Error('Nie znaleziono sali');
+      svc.getHallById.mockRejectedValue(error);
+      await hallController.getHallById(req({ params: { id: 'bad-id' } }), res(), next);
+      expect(next).toHaveBeenCalledWith(error);
+    });
+
+    it('getHalls with isActive=false filter', async () => {
+      svc.getHalls.mockResolvedValue([]);
+      const response = res();
+      await hallController.getHalls(req({ query: { isActive: 'false' } }), response, next);
+      expect(svc.getHalls).toHaveBeenCalledWith(
+        expect.objectContaining({ isActive: false })
+      );
+      expect(response.json).toHaveBeenCalled();
+    });
+
+    it('getHalls with no isActive filter (undefined)', async () => {
+      svc.getHalls.mockResolvedValue([]);
+      const response = res();
+      await hallController.getHalls(req({ query: { search: 'Sala' } }), response, next);
+      expect(svc.getHalls).toHaveBeenCalledWith(
+        expect.objectContaining({ isActive: undefined })
+      );
+    });
+  });
 });

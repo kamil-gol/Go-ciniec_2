@@ -156,4 +156,108 @@ describe('UsersController', () => {
       expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
   });
+
+  describe('edge cases / branch coverage', () => {
+    describe('getUsers — branch', () => {
+      it('should parse page/limit/isActive from query', async () => {
+        svc.getUsers.mockResolvedValue({ users: [], pagination: {} });
+        const r = req({ query: { page: '2', limit: '10', isActive: 'true', search: 'jan', sortBy: 'name', sortOrder: 'asc', roleId: 'r1' } });
+        await controller.getUsers(r, res());
+        expect(svc.getUsers).toHaveBeenCalledWith(expect.objectContaining({
+          page: 2, limit: 10, isActive: true, search: 'jan',
+        }));
+      });
+
+      it('should pass undefined for missing page/limit/isActive', async () => {
+        svc.getUsers.mockResolvedValue({ users: [], pagination: {} });
+        const r = req({ query: {} });
+        await controller.getUsers(r, res());
+        expect(svc.getUsers).toHaveBeenCalledWith(expect.objectContaining({
+          page: undefined, limit: undefined, isActive: undefined,
+        }));
+      });
+
+      it('should parse isActive=false', async () => {
+        svc.getUsers.mockResolvedValue({ users: [], pagination: {} });
+        const r = req({ query: { isActive: 'false' } });
+        await controller.getUsers(r, res());
+        expect(svc.getUsers).toHaveBeenCalledWith(expect.objectContaining({ isActive: false }));
+      });
+    });
+
+    describe('createUser — branch', () => {
+      it('should throw when missing required fields (branch)', async () => {
+        const r = req({ body: { email: 'a@b.pl' } });
+        await expect(controller.createUser(r, res())).rejects.toThrow();
+      });
+
+      it('should throw on invalid email format (branch)', async () => {
+        const r = req({ body: { email: 'not-email', password: 'P1!', firstName: 'A', lastName: 'B', roleId: 'r1' } });
+        await expect(controller.createUser(r, res())).rejects.toThrow();
+      });
+
+      it('should create user with valid data (branch)', async () => {
+        svc.createUser.mockResolvedValue({ id: 'u2' });
+        const r = req({
+          body: { email: 'jan@test.pl', password: 'Pass1!', firstName: 'Jan', lastName: 'K', roleId: 'r1' },
+        });
+        const response = res();
+        await controller.createUser(r, response);
+        expect(response.status).toHaveBeenCalledWith(201);
+      });
+    });
+
+    describe('changePassword — branch', () => {
+      it('should throw when no newPassword (branch)', async () => {
+        const r = req({ params: { id: 'u1' }, body: {} });
+        await expect(controller.changePassword(r, res())).rejects.toThrow();
+      });
+
+      it('should change password successfully (branch)', async () => {
+        svc.changePassword.mockResolvedValue(undefined);
+        const r = req({ params: { id: 'u1' }, body: { newPassword: 'NewPass1!' } });
+        const response = res();
+        await controller.changePassword(r, response);
+        expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Has\u0142o') }));
+      });
+    });
+
+    describe('toggleActive — branch', () => {
+      it('should return aktywowany when isActive=true', async () => {
+        svc.toggleActive.mockResolvedValue({ id: 'u1', isActive: true });
+        const r = req({ params: { id: 'u1' } });
+        const response = res();
+        await controller.toggleActive(r, response);
+        expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('aktywowany') }));
+      });
+
+      it('should return dezaktywowany when isActive=false (branch)', async () => {
+        svc.toggleActive.mockResolvedValue({ id: 'u1', isActive: false });
+        const r = req({ params: { id: 'u1' } });
+        const response = res();
+        await controller.toggleActive(r, response);
+        expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('dezaktywowany') }));
+      });
+    });
+
+    describe('updateUser — branch', () => {
+      it('should update successfully (branch)', async () => {
+        svc.updateUser.mockResolvedValue({ id: 'u1' });
+        const r = req({ params: { id: 'u1' }, body: { firstName: 'New' } });
+        const response = res();
+        await controller.updateUser(r, response);
+        expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+      });
+    });
+
+    describe('deleteUser — branch', () => {
+      it('should delete successfully (branch)', async () => {
+        svc.deleteUser.mockResolvedValue(undefined);
+        const r = req({ params: { id: 'u1' } });
+        const response = res();
+        await controller.deleteUser(r, response);
+        expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+      });
+    });
+  });
 });

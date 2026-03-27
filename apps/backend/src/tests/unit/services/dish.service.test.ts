@@ -183,4 +183,175 @@ describe('DishService', () => {
       await expect(dishService.remove('x', userId)).rejects.toThrow(/Nie znaleziono dania/);
     });
   });
+
+  describe('edge cases / branch coverage', () => {
+    const { diffObjects } = require('@utils/audit-logger');
+
+    describe('findAll() — filter combos', () => {
+      it('should apply no filters when none provided', async () => {
+        mockPrisma.dish.findMany.mockResolvedValue([]);
+        await dishService.findAll();
+        expect(mockPrisma.dish.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({ where: {} })
+        );
+      });
+
+      it('should apply isActive filter', async () => {
+        mockPrisma.dish.findMany.mockResolvedValue([]);
+        await dishService.findAll({ isActive: false });
+        expect(mockPrisma.dish.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { isActive: false } })
+        );
+      });
+
+      it('should apply all filters at once', async () => {
+        mockPrisma.dish.findMany.mockResolvedValue([]);
+        await dishService.findAll({ categoryId: 'cat-1', isActive: true, search: 'Ros' });
+        const where = mockPrisma.dish.findMany.mock.calls[0][0].where;
+        expect(where.categoryId).toBe('cat-1');
+        expect(where.isActive).toBe(true);
+        expect(where.OR).toBeDefined();
+      });
+
+      it('should not apply isActive filter when undefined', async () => {
+        mockPrisma.dish.findMany.mockResolvedValue([]);
+        await dishService.findAll({ categoryId: 'cat-1' });
+        const where = mockPrisma.dish.findMany.mock.calls[0][0].where;
+        expect(where.isActive).toBeUndefined();
+      });
+    });
+
+    describe('create() — defaults', () => {
+      it('should default allergens to [] when not provided', async () => {
+        mockPrisma.dish.findFirst.mockResolvedValue(null);
+        mockPrisma.dishCategory.findUnique.mockResolvedValue(mockCategory);
+        mockPrisma.dish.create.mockResolvedValue({ ...mockDish, allergens: [] });
+
+        await dishService.create({ name: 'New', categoryId: 'cat-1' }, userId);
+        expect(mockPrisma.dish.create).toHaveBeenCalledWith(
+          expect.objectContaining({ data: expect.objectContaining({ allergens: [] }) })
+        );
+      });
+
+      it('should default isActive to true when not provided', async () => {
+        mockPrisma.dish.findFirst.mockResolvedValue(null);
+        mockPrisma.dishCategory.findUnique.mockResolvedValue(mockCategory);
+        mockPrisma.dish.create.mockResolvedValue(mockDish);
+
+        await dishService.create({ name: 'New', categoryId: 'cat-1' }, userId);
+        expect(mockPrisma.dish.create).toHaveBeenCalledWith(
+          expect.objectContaining({ data: expect.objectContaining({ isActive: true }) })
+        );
+      });
+
+      it('should use provided isActive=false', async () => {
+        mockPrisma.dish.findFirst.mockResolvedValue(null);
+        mockPrisma.dishCategory.findUnique.mockResolvedValue(mockCategory);
+        mockPrisma.dish.create.mockResolvedValue({ ...mockDish, isActive: false });
+
+        await dishService.create({ name: 'New', categoryId: 'cat-1', isActive: false }, userId);
+        expect(mockPrisma.dish.create).toHaveBeenCalledWith(
+          expect.objectContaining({ data: expect.objectContaining({ isActive: false }) })
+        );
+      });
+
+      it('should use provided allergens', async () => {
+        mockPrisma.dish.findFirst.mockResolvedValue(null);
+        mockPrisma.dishCategory.findUnique.mockResolvedValue(mockCategory);
+        mockPrisma.dish.create.mockResolvedValue(mockDish);
+
+        await dishService.create({ name: 'New', categoryId: 'cat-1', allergens: ['milk'] }, userId);
+        expect(mockPrisma.dish.create).toHaveBeenCalledWith(
+          expect.objectContaining({ data: expect.objectContaining({ allergens: ['milk'] }) })
+        );
+      });
+    });
+
+    describe('update() — conditional validation', () => {
+      it('should skip name check when name not provided', async () => {
+        mockPrisma.dish.findUnique.mockResolvedValue(mockDish);
+        mockPrisma.dish.update.mockResolvedValue(mockDish);
+        (diffObjects as jest.Mock).mockReturnValue({});
+
+        await dishService.update('dish-1', { description: 'New desc' }, userId);
+        expect(mockPrisma.dish.findFirst).not.toHaveBeenCalled();
+      });
+
+      it('should validate categoryId when provided', async () => {
+        mockPrisma.dish.findUnique.mockResolvedValue(mockDish);
+        mockPrisma.dishCategory.findUnique.mockResolvedValue(null);
+
+        await expect(dishService.update('dish-1', { categoryId: 'bad' }, userId))
+          .rejects.toThrow('Nie znaleziono kategorii');
+      });
+
+      it('should skip categoryId validation when not provided', async () => {
+        mockPrisma.dish.findUnique.mockResolvedValue(mockDish);
+        mockPrisma.dish.update.mockResolvedValue(mockDish);
+        (diffObjects as jest.Mock).mockReturnValue({});
+
+        await dishService.update('dish-1', { description: 'X' }, userId);
+        expect(mockPrisma.dishCategory.findUnique).not.toHaveBeenCalled();
+      });
+
+      it('should skip audit when no changes', async () => {
+        mockPrisma.dish.findUnique.mockResolvedValue(mockDish);
+        mockPrisma.dish.update.mockResolvedValue(mockDish);
+        (diffObjects as jest.Mock).mockReturnValue({});
+
+        await dishService.update('dish-1', { name: 'Rosol' }, userId);
+        expect(logChange).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('toggleActive() — ternary', () => {
+      it('should deactivate active dish', async () => {
+        mockPrisma.dish.findUnique.mockResolvedValue({ ...mockDish, isActive: true });
+        mockPrisma.dish.update.mockResolvedValue({ ...mockDish, isActive: false });
+
+        await dishService.toggleActive('dish-1', userId);
+        expect(mockPrisma.dish.update).toHaveBeenCalledWith(
+          expect.objectContaining({ data: { isActive: false } })
+        );
+      });
+
+      it('should activate inactive dish', async () => {
+        mockPrisma.dish.findUnique.mockResolvedValue({ ...mockDish, isActive: false });
+        mockPrisma.dish.update.mockResolvedValue({ ...mockDish, isActive: true });
+
+        await dishService.toggleActive('dish-1', userId);
+        expect(mockPrisma.dish.update).toHaveBeenCalledWith(
+          expect.objectContaining({ data: { isActive: true } })
+        );
+      });
+
+      it('should log Aktywowano for true', async () => {
+        mockPrisma.dish.findUnique.mockResolvedValue({ ...mockDish, isActive: false });
+        mockPrisma.dish.update.mockResolvedValue({ ...mockDish, isActive: true });
+
+        await dishService.toggleActive('dish-1', userId);
+        expect(logChange).toHaveBeenCalledWith(
+          expect.objectContaining({
+            details: expect.objectContaining({
+              description: expect.stringContaining('Aktywowano'),
+            }),
+          })
+        );
+      });
+
+      it('should log Dezaktywowano for false', async () => {
+        mockPrisma.dish.findUnique.mockResolvedValue({ ...mockDish, isActive: true });
+        mockPrisma.dish.update.mockResolvedValue({ ...mockDish, isActive: false });
+
+        await dishService.toggleActive('dish-1', userId);
+        expect(logChange).toHaveBeenCalledWith(
+          expect.objectContaining({
+            details: expect.objectContaining({
+              description: expect.stringContaining('Dezaktywowano'),
+            }),
+          })
+        );
+      });
+    });
+  });
 });

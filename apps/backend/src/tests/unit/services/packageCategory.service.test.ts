@@ -133,4 +133,19 @@ describe('PackageCategoryService', () => {
       await expect(packageCategoryService.delete('x')).rejects.toThrow('Category setting — nie znaleziono');
     });
   });
+
+  describe('edge cases / branch coverage', () => {
+    it('should create with default values', async () => {
+      mockPrisma.packageCategorySettings.findUnique.mockResolvedValue(null);
+      mockPrisma.packageCategorySettings.create.mockResolvedValue({ id: 'new' });
+      await packageCategoryService.create({
+        packageId: 'pkg-1', category: 'SOUP' as any,
+      });
+      expect(mockPrisma.packageCategorySettings.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          minSelect: 1, maxSelect: 1, isRequired: true, isEnabled: true, displayOrder: 0, customLabel: null,
+        }),
+      });
+    });
+  });
 });

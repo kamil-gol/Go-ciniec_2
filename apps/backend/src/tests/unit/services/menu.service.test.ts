@@ -306,4 +306,62 @@ describe('MenuService', () => {
       expect(result).toHaveLength(1);
     });
   });
+
+  // ═══════════ edge cases / branch coverage ═══════════
+  describe('edge cases / branch coverage', () => {
+
+    describe('updatePackage — pricePerChild/pricePerToddler branches', () => {
+      it('should detect pricePerChild change and create price history', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPackage);
+        mockPrisma.menuPackage.update.mockResolvedValue({ ...mockPackage, menuTemplate: {}, categorySettings: [] });
+        mockPrisma.menuPriceHistory.create.mockResolvedValue({});
+
+        await menuService.updatePackage('pkg-1', { pricePerChild: 200 } as any, userId);
+
+        expect(mockPrisma.menuPriceHistory.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ fieldName: 'pricePerChild', oldValue: 150, newValue: 200 }),
+          })
+        );
+      });
+
+      it('should detect pricePerToddler change and create price history', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPackage);
+        mockPrisma.menuPackage.update.mockResolvedValue({ ...mockPackage, menuTemplate: {}, categorySettings: [] });
+        mockPrisma.menuPriceHistory.create.mockResolvedValue({});
+
+        await menuService.updatePackage('pkg-1', { pricePerToddler: 50 } as any, userId);
+
+        expect(mockPrisma.menuPriceHistory.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ fieldName: 'pricePerToddler', oldValue: 0, newValue: 50 }),
+          })
+        );
+      });
+
+      it('should detect all three price changes at once', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPackage);
+        mockPrisma.menuPackage.update.mockResolvedValue({ ...mockPackage, menuTemplate: {}, categorySettings: [] });
+        mockPrisma.menuPriceHistory.create.mockResolvedValue({});
+
+        await menuService.updatePackage('pkg-1', {
+          pricePerAdult: 300, pricePerChild: 200, pricePerToddler: 50,
+        } as any, userId);
+
+        expect(mockPrisma.menuPriceHistory.create).toHaveBeenCalledTimes(3);
+      });
+
+      it('should NOT create price history when prices unchanged', async () => {
+        mockPrisma.menuPackage.findUnique.mockResolvedValue(mockPackage);
+        mockPrisma.menuPackage.update.mockResolvedValue({ ...mockPackage, menuTemplate: {}, categorySettings: [] });
+        mockPrisma.menuPriceHistory.create.mockResolvedValue({});
+
+        await menuService.updatePackage('pkg-1', {
+          pricePerAdult: 250, pricePerChild: 150, pricePerToddler: 0,
+        } as any, userId);
+
+        expect(mockPrisma.menuPriceHistory.create).not.toHaveBeenCalled();
+      });
+    });
+  });
 });

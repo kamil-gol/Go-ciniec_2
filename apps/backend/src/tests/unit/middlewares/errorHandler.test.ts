@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { errorHandler } from '../../../middlewares/errorHandler';
 import { AppError } from '../../../utils/AppError';
+import { Prisma } from '@/prisma-client';
 
 const mockRes = () => {
   const res = {} as Response;
@@ -118,6 +119,76 @@ describe('errorHandler', () => {
       errorHandler(error, req, res, mockNext);
 
       expect(console.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('edge cases / branch coverage', () => {
+    it('should return 400 for PrismaClientValidationError', () => {
+      const req = {} as Request;
+      const res = mockRes();
+      const validationError = new Prisma.PrismaClientValidationError('Invalid data', { clientVersion: '5.0.0' });
+
+      errorHandler(validationError, req, res, mockNext);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: false,
+        error: 'Podano nieprawidłowe dane',
+      }));
+    });
+
+    it('should fall through to 500 for unknown Prisma error code', () => {
+      const req = {} as Request;
+      const res = mockRes();
+      const prismaError = new Prisma.PrismaClientKnownRequestError('Unknown', {
+        code: 'P2024',
+        clientVersion: '5.0.0',
+      });
+
+      errorHandler(prismaError, req, res, mockNext);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it('should return 409 for "already exists" error', () => {
+      const req = {} as Request;
+      const res = mockRes();
+      errorHandler(new Error('Użytkownik z tym adresem email już istnieje'), req, res, mockNext);
+      expect(res.status).toHaveBeenCalledWith(409);
+    });
+
+    it('should return 409 for "already booked" error', () => {
+      const req = {} as Request;
+      const res = mockRes();
+      errorHandler(new Error('Hall already booked for this date'), req, res, mockNext);
+      expect(res.status).toHaveBeenCalledWith(409);
+    });
+
+    it('should return 409 for "conflict" error', () => {
+      const req = {} as Request;
+      const res = mockRes();
+      errorHandler(new Error('Schedule conflict detected'), req, res, mockNext);
+      expect(res.status).toHaveBeenCalledWith(409);
+    });
+
+    it('should hide error message in production', () => {
+      const origEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+      const req = {} as Request;
+      const res = mockRes();
+
+      errorHandler(new Error('secret info'), req, res, mockNext);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: false,
+        error: expect.objectContaining({
+          code: 'INTERNAL_ERROR',
+          message: 'Wewnętrzny błąd serwera',
+          statusCode: 500,
+        }),
+      }));
+      process.env.NODE_ENV = origEnv;
     });
   });
 });

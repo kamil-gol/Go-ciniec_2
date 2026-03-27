@@ -173,4 +173,30 @@ describe('EventTypeService', () => {
       expect(colors[0]).toMatch(/^#[0-9A-Fa-f]{6}$/);
     });
   });
+
+  describe('edge cases / branch coverage', () => {
+    describe('updateEventType() — empty name', () => {
+      it('should throw when name is empty string (whitespace)', async () => {
+        await expect(service.updateEventType('et-001', { name: '  ' } as any, USER))
+          .rejects.toThrow(/pusta|empty/i);
+      });
+    });
+
+    describe('deleteEventType() — dependency checks', () => {
+      it('should throw when has reservations (specific count)', async () => {
+        mockPrisma.reservation.count.mockResolvedValue(5);
+
+        await expect(service.deleteEventType('et-001', USER))
+          .rejects.toThrow(/5.*rezerwacj|5.*reservation/i);
+      });
+
+      it('should throw when has menu templates (specific count)', async () => {
+        mockPrisma.reservation.count.mockResolvedValue(0);
+        mockPrisma.menuTemplate.count.mockResolvedValue(3);
+
+        await expect(service.deleteEventType('et-001', USER))
+          .rejects.toThrow(/3.*szablon|3.*template/i);
+      });
+    });
+  });
 });

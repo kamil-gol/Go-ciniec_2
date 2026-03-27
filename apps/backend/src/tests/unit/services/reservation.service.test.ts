@@ -34,6 +34,7 @@ jest.mock('../../../lib/prisma', () => {
     activityLog: { create: jest.fn() },
     serviceItem: { findMany: jest.fn() },
     reservationExtra: { findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), deleteMany: jest.fn() },
+    reservationCategoryExtra: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
     $transaction: jest.fn((fn: any) => fn(txMock)),
   };
   return { prisma: mock, __esModule: true, default: mock };
@@ -46,6 +47,23 @@ jest.mock('../../../utils/audit-logger', () => ({
 
 jest.mock('../../../utils/venue-surcharge', () => ({
   calculateVenueSurcharge: jest.fn().mockReturnValue(0),
+}));
+
+jest.mock('../../../utils/reservation.utils', () => {
+  const actual = jest.requireActual('../../../utils/reservation.utils');
+  return {
+    ...actual,
+    validateCustomEventFields: jest.fn().mockReturnValue({ valid: true }),
+    validateConfirmationDeadline: jest.fn().mockImplementation(actual.validateConfirmationDeadline),
+  };
+});
+
+jest.mock('../../../services/reservationCategoryExtra.service', () => ({
+  reservationCategoryExtraService: {
+    recalculateForGuestChange: jest.fn().mockResolvedValue(undefined),
+    deleteByReservation: jest.fn().mockResolvedValue(undefined),
+    upsertExtras: jest.fn().mockResolvedValue(undefined),
+  },
 }));
 
 jest.mock('../../../utils/recalculate-price', () => ({
@@ -655,6 +673,309 @@ describe('ReservationService — Branch Coverage', () => {
     it('should set archived=false filter explicitly', async () => {
       await svc.getReservations({ archived: false });
       expect(db.reservation.findMany.mock.calls[0][0].where.archivedAt).toBeNull();
+    });
+  });
+
+  // ════════════════════════════════════
+  // edge cases / branch coverage (consolidated from branches2-6)
+  // ════════════════════════════════════
+  describe('edge cases / branch coverage', () => {
+
+    // --- branches2: updateReservation guest change ---
+    describe('updateReservation — guest change branches', () => {
+      const makeExisting = (overrides: any = {}) => ({
+        id: 'r1', status: 'PENDING', hallId: 'hall-001',
+        adults: 10, children: 5, toddlers: 2, guests: 17,
+        pricePerAdult: 100, pricePerChild: 50, pricePerToddler: 0,
+        totalPrice: 1250, startDateTime: new Date(Date.now() + 86400000 * 30),
+        endDateTime: new Date(Date.now() + 86400000 * 30 + 3600000 * 8),
+        archivedAt: null, confirmationDeadline: null,
+        hall: { id: 'hall-001', name: 'Sala A', capacity: 200, isWholeVenue: false },
+        eventType: { id: 'ev-001', name: 'Wesele' },
+        menuSnapshot: null,
+        client: { id: 'cl-001', firstName: 'Jan', lastName: 'K' },
+        ...overrides,
+      });
+
+      it('should recalculate price when guests change WITHOUT menu package', async () => {
+        db.reservation.findUnique.mockResolvedValue(makeExisting());
+        db.reservation.findFirst.mockResolvedValue(null);
+        db.hall.findUnique.mockResolvedValue({ id: 'hall-001', isWholeVenue: false });
+        db.hall.findFirst.mockResolvedValue(null);
+        db.reservation.update.mockResolvedValue(makeExisting({ adults: 20 }));
+
+        await svc.updateReservation('r1', { adults: 20, reason: 'Zmiana liczby gości na 20 osób' } as any, UID);
+
+        expect(db.reservation.update).toHaveBeenCalled();
+      });
+
+      it('should recalculate menu price when guests change WITH menu package', async () => {
+        const recalcMock = require('../../../services/reservation-menu.service').default.recalculateForGuestChange;
+        recalcMock.mockResolvedValue({ totalMenuPrice: 3000, packagePrice: 2500, optionsPrice: 500 });
+
+        db.reservation.findUnique.mockResolvedValue(makeExisting({
+          menuSnapshot: { id: 'ms1', menuData: { packageName: 'Gold' }, totalMenuPrice: 2000 },
+        }));
+        db.reservation.update.mockResolvedValue(makeExisting({ adults: 20 }));
+        db.reservation.findFirst.mockResolvedValue(null);
+        db.hall.findUnique.mockResolvedValue({ id: 'hall-001', isWholeVenue: false });
+        db.hall.findFirst.mockResolvedValue(null);
+
+        await svc.updateReservation('r1', { adults: 20, reason: 'Zmiana gości z pakietem menu' } as any, UID);
+
+        expect(recalcMock).toHaveBeenCalledWith('r1', 20, 5, 2);
+      });
+
+      it('should update pricePerAdult without menu package', async () => {
+        db.reservation.findUnique.mockResolvedValue(makeExisting());
+        db.reservation.update.mockResolvedValue(makeExisting({ pricePerAdult: 120 }));
+        db.reservation.findFirst.mockResolvedValue(null);
+        db.hall.findUnique.mockResolvedValue({ id: 'hall-001', isWholeVenue: false });
+        db.hall.findFirst.mockResolvedValue(null);
+
+        await svc.updateReservation('r1', { pricePerAdult: 120, reason: 'Korekta ceny za osobę dorosłą' } as any, UID);
+
+        expect(db.reservation.update).toHaveBeenCalled();
+      });
+    });
+
+    // --- branches3: hall.isActive = false ---
+    describe('createReservation — hall inactive', () => {
+      it('should throw when hall is inactive', async () => {
+        db.hall.findUnique.mockResolvedValue({ id: 'hall-001', isActive: false, capacity: 200 });
+        await expect(svc.createReservation(BASE_DTO as any, UID)).rejects.toThrow('Sala jest nieaktywna');
+      });
+    });
+
+    // --- branches4: capacity exceeded, valid confirmationDeadline, date change with excludeId ---
+    describe('createReservation — capacity exceeded', () => {
+      it('should throw when capacity exceeded on legacy format', async () => {
+        db.reservation.findMany.mockResolvedValue([{ id: 'existing', guests: 180 }]);
+        const futureDate = (() => {
+          const d = new Date(Date.now() + 86400000 * 60);
+          return d.toISOString().split('T')[0];
+        })();
+        await expect(svc.createReservation({
+          hallId: HALL.id, clientId: CLIENT.id, eventTypeId: EVENT.id,
+          date: futureDate, startTime: '14:00', endTime: '20:00',
+          adults: 50, children: 10, toddlers: 5,
+          pricePerAdult: 200, pricePerChild: 100,
+        } as any, UID)).rejects.toThrow(/przekracza|dostępność|nie dopuszcza wielu rezerwacji/);
+      });
+    });
+
+    describe('createReservation — valid confirmationDeadline', () => {
+      it('should pass with valid confirmationDeadline before event', async () => {
+        const future = new Date(Date.now() + 86400000 * 30).toISOString();
+        const futureEnd = new Date(Date.now() + 86400000 * 30 + 3600000 * 4).toISOString();
+        const deadline = new Date(Date.now() + 86400000 * 10).toISOString();
+
+        db.reservation.create.mockResolvedValue({
+          ...RES_BASE, startDateTime: new Date(future), endDateTime: new Date(futureEnd),
+        });
+        db.reservation.findUnique.mockResolvedValue({
+          ...RES_BASE, startDateTime: new Date(future), endDateTime: new Date(futureEnd),
+        });
+        db.reservation.update.mockResolvedValue({
+          ...RES_BASE, startDateTime: new Date(future), endDateTime: new Date(futureEnd),
+        });
+
+        const { validateConfirmationDeadline } = require('../../../utils/reservation.utils');
+        validateConfirmationDeadline.mockReturnValue(true);
+
+        await svc.createReservation({
+          hallId: HALL.id, clientId: CLIENT.id, eventTypeId: EVENT.id,
+          startDateTime: future, endDateTime: futureEnd,
+          confirmationDeadline: deadline,
+          adults: 20, children: 5, toddlers: 0,
+          pricePerAdult: 200, pricePerChild: 100,
+        } as any, UID);
+
+        expect(db.reservation.create).toHaveBeenCalled();
+      });
+    });
+
+    describe('updateReservation — date change with excludeId', () => {
+      it('should check overlap and wholeVenue with excludeId when changing dates', async () => {
+        const future = new Date(Date.now() + 86400000 * 30);
+        const futureEnd = new Date(Date.now() + 86400000 * 30 + 3600000 * 4);
+        const newFuture = new Date(Date.now() + 86400000 * 31).toISOString();
+        const newFutureEnd = new Date(Date.now() + 86400000 * 31 + 3600000 * 4).toISOString();
+
+        db.reservation.findUnique.mockResolvedValue({
+          ...RES_BASE,
+          startDateTime: future, endDateTime: futureEnd,
+          hall: { ...HALL, capacity: 200 },
+        });
+        db.reservation.findFirst.mockResolvedValue(null);
+        db.reservation.findMany.mockResolvedValue([]);
+        db.hall.findUnique.mockResolvedValue({ id: HALL.id, isWholeVenue: false });
+        db.hall.findFirst.mockResolvedValue(null);
+        db.reservation.update.mockResolvedValue({
+          ...RES_BASE, hall: HALL, client: CLIENT, eventType: EVENT,
+        });
+
+        await svc.updateReservation('res-001', {
+          startDateTime: newFuture, endDateTime: newFutureEnd,
+          reason: 'Zmiana terminu rezerwacji na inny dzień',
+        } as any, UID);
+
+        expect(db.reservation.findMany).toHaveBeenCalled();
+        expect(db.reservation.update).toHaveBeenCalled();
+      });
+    });
+
+    // --- branches5: getReservations extra filters, menuPackageId delegation, eventType validation ---
+    describe('getReservations — extra date filters', () => {
+      beforeEach(() => db.reservation.findMany.mockResolvedValue([]));
+
+      it('should build OR filter with dateTo only', async () => {
+        await svc.getReservations({ dateTo: '2026-12-31' } as any);
+        const call = db.reservation.findMany.mock.calls[0][0];
+        expect(call.where.OR).toBeDefined();
+        expect(call.where.OR[0].startDateTime.lte).toBeInstanceOf(Date);
+      });
+
+      it('should build OR filter with both dateFrom and dateTo', async () => {
+        await svc.getReservations({ dateFrom: '2026-01-01', dateTo: '2026-12-31' } as any);
+        const call = db.reservation.findMany.mock.calls[0][0];
+        expect(call.where.OR).toBeDefined();
+        expect(call.where.OR[0].startDateTime.gte).toBeInstanceOf(Date);
+        expect(call.where.OR[0].startDateTime.lte).toBeInstanceOf(Date);
+        expect(call.where.OR[1].date.gte).toBe('2026-01-01');
+        expect(call.where.OR[1].date.lte).toBe('2026-12-31');
+      });
+
+      it('should handle archived=true filter', async () => {
+        await svc.getReservations({ archived: true } as any);
+        const call = db.reservation.findMany.mock.calls[0][0];
+        expect(call.where.archivedAt).toEqual({ not: null });
+      });
+    });
+
+    describe('updateReservation — menuPackageId delegation', () => {
+      it('should delegate to updateReservationMenu when menuPackageId=null (remove menu)', async () => {
+        db.reservation.findUnique
+          .mockResolvedValueOnce(RES_BASE)
+          .mockResolvedValueOnce({
+            ...RES_BASE, menuSnapshot: { id: 'snap-1', menuData: { packageName: 'Old' }, totalMenuPrice: 5000 },
+          });
+        db.reservationMenuSnapshot.delete.mockResolvedValue({});
+        db.reservation.update.mockResolvedValue({
+          ...RES_BASE, hall: HALL, client: CLIENT, eventType: EVENT,
+        });
+
+        await svc.updateReservation('res-001', { menuPackageId: null } as any, UID);
+        expect(db.reservationMenuSnapshot.delete).toHaveBeenCalled();
+      });
+
+      it('should delegate to updateReservationMenu when menuPackageId is set (change menu)', async () => {
+        db.reservation.findUnique
+          .mockResolvedValueOnce(RES_BASE)
+          .mockResolvedValueOnce({
+            ...RES_BASE, menuSnapshot: null,
+          });
+        db.menuPackage.findUnique.mockResolvedValue(MENU_PKG);
+        db.reservationMenuSnapshot.create.mockResolvedValue({});
+        db.reservation.update.mockResolvedValue({
+          ...RES_BASE, hall: HALL, client: CLIENT, eventType: EVENT,
+        });
+
+        await svc.updateReservation('res-001', { menuPackageId: 'pkg-001' } as any, UID);
+        expect(db.menuPackage.findUnique).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { id: 'pkg-001' } })
+        );
+      });
+    });
+
+    describe('updateReservation — eventType customValidation', () => {
+      beforeEach(() => {
+        db.reservation.findFirst.mockResolvedValue(null);
+        db.hall.findUnique.mockResolvedValue({ id: HALL.id, isWholeVenue: false });
+        db.hall.findFirst.mockResolvedValue(null);
+      });
+
+      it('should validate custom event fields when eventType exists', async () => {
+        const { validateCustomEventFields } = require('../../../utils/reservation.utils');
+        validateCustomEventFields.mockReturnValue({ valid: true });
+
+        db.reservation.findUnique.mockResolvedValue(RES_BASE);
+        db.reservation.update.mockResolvedValue({
+          ...RES_BASE, hall: HALL, client: CLIENT, eventType: EVENT,
+        });
+
+        // notes is a non-important field, no reason needed
+        await svc.updateReservation('res-001', { notes: 'updated notes', reason: 'Aktualizacja notatek do rezerwacji' } as any, UID);
+
+        expect(validateCustomEventFields).toHaveBeenCalledWith('Wesele', expect.any(Object));
+      });
+
+      it('should throw when custom validation fails in updateReservation', async () => {
+        const { validateCustomEventFields } = require('../../../utils/reservation.utils');
+        validateCustomEventFields.mockReturnValueOnce({ valid: false, error: 'Birthday age is required' });
+
+        db.reservation.findUnique.mockResolvedValue(RES_BASE);
+
+        await expect(
+          svc.updateReservation('res-001', { notes: 'test', reason: 'Aktualizacja notatek rezerwacji' } as any, UID)
+        ).rejects.toThrow('Birthday age is required');
+
+        // Reset mock to default for subsequent tests
+        validateCustomEventFields.mockReturnValue({ valid: true });
+      });
+    });
+
+    // --- branches6: manual price recalculation via recalculateReservationTotalPrice ---
+    describe('updateReservation — manual price recalculation (no menu package)', () => {
+      beforeEach(() => {
+        const { validateCustomEventFields } = require('../../../utils/reservation.utils');
+        validateCustomEventFields.mockReturnValue({ valid: true });
+        db.reservation.findUnique.mockResolvedValue(RES_BASE);
+        db.reservation.findFirst.mockResolvedValue(null);
+        db.reservation.update.mockResolvedValue({ ...RES_BASE, hall: HALL, client: CLIENT, eventType: EVENT });
+        db.hall.findUnique.mockResolvedValue({ id: HALL.id, isWholeVenue: false });
+        db.hall.findFirst.mockResolvedValue(null);
+      });
+
+      it('should recalculate totalPrice when adults change (no menu)', async () => {
+        await svc.updateReservation('res-001', {
+          adults: 60,
+          reason: 'Zmiana liczby gosci w rezerwacji',
+        } as any, UID);
+        expect(db.reservation.update).toHaveBeenCalled();
+        const updateCall = db.reservation.update.mock.calls[0][0];
+        expect(updateCall.data.adults).toBe(60);
+      });
+
+      it('should recalculate totalPrice when pricePerAdult changes', async () => {
+        await svc.updateReservation('res-001', {
+          pricePerAdult: 250,
+          reason: 'Aktualizacja ceny za osobe dorosla',
+        } as any, UID);
+        expect(db.reservation.update).toHaveBeenCalled();
+        const updateCall = db.reservation.update.mock.calls[0][0];
+        expect(updateCall.data.pricePerAdult).toBe(250);
+      });
+
+      it('should recalculate totalPrice when pricePerChild changes', async () => {
+        await svc.updateReservation('res-001', {
+          pricePerChild: 120,
+          reason: 'Aktualizacja ceny za dziecko w rezerwacji',
+        } as any, UID);
+        expect(db.reservation.update).toHaveBeenCalled();
+        const updateCall = db.reservation.update.mock.calls[0][0];
+        expect(updateCall.data.pricePerChild).toBe(120);
+      });
+
+      it('should recalculate totalPrice when pricePerToddler changes', async () => {
+        await svc.updateReservation('res-001', {
+          pricePerToddler: 50,
+          reason: 'Aktualizacja ceny za niemowle w rezerwacji',
+        } as any, UID);
+        expect(db.reservation.update).toHaveBeenCalled();
+        const updateCall = db.reservation.update.mock.calls[0][0];
+        expect(updateCall.data.pricePerToddler).toBe(50);
+      });
     });
   });
 });
