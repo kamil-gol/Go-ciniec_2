@@ -236,7 +236,7 @@ describe('ReservationController', () => {
     describe('createReservation validation', () => {
       it('should throw unauthorized when no userId', async () => {
         const response = res();
-        await expect(controller.createReservation(req({ body: BASE_BODY, user: undefined }), response)).rejects.toThrow('Unauthorized');
+        await expect(controller.createReservation(req({ body: BASE_BODY, user: undefined }), response)).rejects.toMatchObject({ statusCode: 401 });
       });
 
       it('should throw when missing hallId', async () => {
@@ -348,7 +348,7 @@ describe('ReservationController', () => {
     describe('updateReservation validation', () => {
       it('should throw unauthorized when no userId', async () => {
         const response = res();
-        await expect(controller.updateReservation(req({ params: { id: 'r1' }, body: {}, user: undefined }), response)).rejects.toThrow('Unauthorized');
+        await expect(controller.updateReservation(req({ params: { id: 'r1' }, body: {}, user: undefined }), response)).rejects.toMatchObject({ statusCode: 401 });
       });
 
       it('should throw when important changes without reason', async () => {
@@ -382,7 +382,7 @@ describe('ReservationController', () => {
     describe('updateStatus edge cases', () => {
       it('should throw unauthorized when no userId', async () => {
         const response = res();
-        await expect(controller.updateStatus(req({ params: { id: 'r1' }, body: { status: 'CONFIRMED' }, user: undefined }), response)).rejects.toThrow('Unauthorized');
+        await expect(controller.updateStatus(req({ params: { id: 'r1' }, body: { status: 'CONFIRMED' }, user: undefined }), response)).rejects.toMatchObject({ statusCode: 401 });
       });
 
       it('should throw when status missing', async () => {
@@ -407,7 +407,7 @@ describe('ReservationController', () => {
     describe('cancelReservation edge cases', () => {
       it('should throw unauthorized when no userId', async () => {
         const response = res();
-        await expect(controller.cancelReservation(req({ params: { id: 'r1' }, body: {}, user: undefined }), response)).rejects.toThrow('Unauthorized');
+        await expect(controller.cancelReservation(req({ params: { id: 'r1' }, body: {}, user: undefined }), response)).rejects.toMatchObject({ statusCode: 401 });
       });
 
       it('should block when paid deposits exist', async () => {
@@ -420,12 +420,12 @@ describe('ReservationController', () => {
     describe('archive/unarchive edge cases', () => {
       it('should throw unauthorized for archive when no userId', async () => {
         const response = res();
-        await expect(controller.archiveReservation(req({ params: { id: 'r1' }, body: {}, user: undefined }), response)).rejects.toThrow('Unauthorized');
+        await expect(controller.archiveReservation(req({ params: { id: 'r1' }, body: {}, user: undefined }), response)).rejects.toMatchObject({ statusCode: 401 });
       });
 
       it('should throw unauthorized for unarchive when no userId', async () => {
         const response = res();
-        await expect(controller.unarchiveReservation(req({ params: { id: 'r1' }, body: {}, user: undefined }), response)).rejects.toThrow('Unauthorized');
+        await expect(controller.unarchiveReservation(req({ params: { id: 'r1' }, body: {}, user: undefined }), response)).rejects.toMatchObject({ statusCode: 401 });
       });
     });
 

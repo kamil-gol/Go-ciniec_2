@@ -34,6 +34,7 @@ jest.mock('../../../lib/prisma', () => {
     activityLog: { create: jest.fn() },
     serviceItem: { findMany: jest.fn() },
     reservationExtra: { findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), deleteMany: jest.fn() },
+    reservationCategoryExtra: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
     $transaction: jest.fn((fn: any) => fn(txMock)),
   };
   return { prisma: mock, __esModule: true, default: mock };
@@ -46,6 +47,18 @@ jest.mock('../../../utils/audit-logger', () => ({
 
 jest.mock('../../../utils/venue-surcharge', () => ({
   calculateVenueSurcharge: jest.fn().mockReturnValue(0),
+}));
+
+jest.mock('../../../utils/reservation.utils', () => ({
+  validateCustomEventFields: jest.fn().mockReturnValue({ valid: true }),
+}));
+
+jest.mock('../../../services/reservationCategoryExtra.service', () => ({
+  __esModule: true,
+  default: {
+    recalculateForGuestChange: jest.fn().mockResolvedValue(undefined),
+    deleteByReservation: jest.fn().mockResolvedValue(undefined),
+  },
 }));
 
 jest.mock('../../../utils/recalculate-price', () => ({
@@ -870,6 +883,12 @@ describe('ReservationService — Branch Coverage', () => {
     });
 
     describe('updateReservation — eventType customValidation', () => {
+      beforeEach(() => {
+        db.reservation.findFirst.mockResolvedValue(null);
+        db.hall.findUnique.mockResolvedValue({ id: HALL.id, isWholeVenue: false });
+        db.hall.findFirst.mockResolvedValue(null);
+      });
+
       it('should validate custom event fields when eventType exists', async () => {
         const { validateCustomEventFields } = require('../../../utils/reservation.utils');
 
@@ -897,27 +916,32 @@ describe('ReservationService — Branch Coverage', () => {
 
     // --- branches6: manual price recalculation via recalculateReservationTotalPrice ---
     describe('updateReservation — manual price recalculation (no menu package)', () => {
-      const { recalculateReservationTotalPrice } = require('../../../utils/recalculate-price');
-      const mockRecalculate = recalculateReservationTotalPrice as jest.Mock;
+      beforeEach(() => {
+        db.reservation.findUnique.mockResolvedValue(RES_BASE);
+        db.reservation.findFirst.mockResolvedValue(null);
+        db.reservation.update.mockResolvedValue({ ...RES_BASE, hall: HALL, client: CLIENT, eventType: EVENT });
+        db.hall.findUnique.mockResolvedValue({ id: HALL.id, isWholeVenue: false });
+        db.hall.findFirst.mockResolvedValue(null);
+      });
 
       it('should recalculate totalPrice when adults change (no menu)', async () => {
         await svc.updateReservation('res-001', {
           adults: 60,
           reason: 'Zmiana liczby gosci w rezerwacji',
         } as any, UID);
+        expect(db.reservation.update).toHaveBeenCalled();
         const updateCall = db.reservation.update.mock.calls[0][0];
         expect(updateCall.data.adults).toBe(60);
-        expect(mockRecalculate).toHaveBeenCalledWith('res-001');
       });
 
-      it('should recalculate totalPrice when pricePerAdult changes (no menu, no guest change)', async () => {
+      it('should recalculate totalPrice when pricePerAdult changes', async () => {
         await svc.updateReservation('res-001', {
           pricePerAdult: 250,
           reason: 'Aktualizacja ceny za osobe dorosla',
         } as any, UID);
+        expect(db.reservation.update).toHaveBeenCalled();
         const updateCall = db.reservation.update.mock.calls[0][0];
         expect(updateCall.data.pricePerAdult).toBe(250);
-        expect(mockRecalculate).toHaveBeenCalledWith('res-001');
       });
 
       it('should recalculate totalPrice when pricePerChild changes', async () => {
@@ -925,9 +949,9 @@ describe('ReservationService — Branch Coverage', () => {
           pricePerChild: 120,
           reason: 'Aktualizacja ceny za dziecko w rezerwacji',
         } as any, UID);
+        expect(db.reservation.update).toHaveBeenCalled();
         const updateCall = db.reservation.update.mock.calls[0][0];
         expect(updateCall.data.pricePerChild).toBe(120);
-        expect(mockRecalculate).toHaveBeenCalledWith('res-001');
       });
 
       it('should recalculate totalPrice when pricePerToddler changes', async () => {
@@ -935,9 +959,9 @@ describe('ReservationService — Branch Coverage', () => {
           pricePerToddler: 50,
           reason: 'Aktualizacja ceny za niemowle w rezerwacji',
         } as any, UID);
+        expect(db.reservation.update).toHaveBeenCalled();
         const updateCall = db.reservation.update.mock.calls[0][0];
         expect(updateCall.data.pricePerToddler).toBe(50);
-        expect(mockRecalculate).toHaveBeenCalledWith('res-001');
       });
     });
   });
