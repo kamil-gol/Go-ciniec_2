@@ -5,7 +5,6 @@ import Link from 'next/link'
 import {
   UtensilsCrossed,
   ArrowRight,
-  AlertCircle,
   Users,
   Clock,
   MapPin,
@@ -16,9 +15,11 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
+import { StatusBadge } from '@/components/shared/StatusBadge'
+import { ErrorState } from '@/components/shared/ErrorState'
+import { EmptyState } from '@/components/shared/EmptyState'
 import {
   useCateringOrdersByDate,
-  CATERING_STATUS_LABELS,
   CATERING_DELIVERY_LABELS,
   formatCateringCurrency,
   type CateringOrderListItem,
@@ -46,7 +47,6 @@ function SkeletonRow() {
 
 function OrderRow({ order, index }: { order: CateringOrderListItem; index: number }) {
   const accent = moduleAccents.catering
-  const statusInfo = CATERING_STATUS_LABELS[order.status]
 
   const clientName = order.client.companyName
     ? order.client.companyName
@@ -94,14 +94,7 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
               <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
                 {clientName}
               </span>
-              <span
-                className={cn(
-                  'rounded-full px-2 py-0.5 text-xs font-semibold flex-shrink-0',
-                  statusInfo.classes
-                )}
-              >
-                {statusInfo.emoji} {statusInfo.label}
-              </span>
+              <StatusBadge type="catering" status={order.status} />
             </div>
 
             {/* Linia 2: sposób dostawy + godzina + goście + liczba dań */}
@@ -286,42 +279,18 @@ export default function CateringDailyWidget({ date }: CateringDailyWidgetProps) 
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
         ) : error ? (
-          <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
-            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-            <p className="text-sm font-medium text-red-800 dark:text-red-300 flex-1">
-              Nie udało się pobrać zamówień
-            </p>
-            <button
-              onClick={() => refetch()}
-              className="text-sm font-medium text-red-700 dark:text-red-300 hover:underline flex-shrink-0"
-            >
-              Spróbuj ponownie
-            </button>
-          </div>
+          <ErrorState
+            message="Nie udało się pobrać zamówień"
+            onRetry={() => refetch()}
+          />
         ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div
-              className={cn(
-                'mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br opacity-20',
-                accent.iconBg
-              )}
-            >
-              <UtensilsCrossed className="h-7 w-7 text-white" />
-            </div>
-            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              Brak zamówień cateringowych
-            </p>
-            <Link
-              href="/dashboard/catering/orders/new"
-              className={cn(
-                'mt-2 text-sm font-medium hover:opacity-80 transition-opacity',
-                accent.text,
-                accent.textDark
-              )}
-            >
-              + Nowe zamówienie
-            </Link>
-          </div>
+          <EmptyState
+            icon={UtensilsCrossed}
+            title="Brak zamówień cateringowych"
+            actionLabel="+ Nowe zamówienie"
+            actionHref="/dashboard/catering/orders/new"
+            variant="compact"
+          />
         ) : (
           <>
             {orders.map((order, index) => (

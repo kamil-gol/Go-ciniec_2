@@ -21,7 +21,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { PageLayout, PageHero, StatCard } from '@/components/shared'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { PageLayout, PageHero, StatCard, ErrorState } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { getReservations } from '@/lib/api/reservations'
 import {
@@ -29,7 +30,8 @@ import {
   useCalendarHalls,
   CalendarReservation,
 } from '@/lib/api/calendar-api'
-import { DAYS_PL, MONTHS_PL, STATUS_CONFIG } from './calendar.constants'
+import { DAYS_PL, MONTHS_PL } from './calendar.constants'
+import { reservationStatusColors } from '@/lib/status-colors'
 import { getMonthGrid, dateKey, isToday, buildPillTooltip } from './calendar.helpers'
 import DayDetailPanel from './DayDetailPanel'
 
@@ -43,7 +45,7 @@ function ReservationPill({
   onClick: () => void
 }) {
   const color = reservation.eventType?.color || '#6366f1'
-  const status = STATUS_CONFIG[reservation.status]
+  const status = reservationStatusColors[reservation.status]
   const name = reservation.client
     ? `${reservation.client.firstName} ${reservation.client.lastName.charAt(0)}.`
     : 'Klient'
@@ -54,7 +56,7 @@ function ReservationPill({
       style={{ backgroundColor: `${color}18`, color, borderLeft: `3px solid ${color}` }}
       title={buildPillTooltip(reservation, allDayReservations)}
     >
-      <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0', status?.dotClass || 'bg-neutral-400')} />
+      <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0', status?.dot || 'bg-neutral-400')} />
       {reservation.startTime && <span className="opacity-70">{reservation.startTime} </span>}
       {name}
     </button>
@@ -285,21 +287,23 @@ export default function CalendarPage() {
         {halls && halls.length > 0 && (
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-neutral-400 flex-shrink-0" />
-            <select value={hallFilter} onChange={(e) => setHallFilter(e.target.value)}
-              className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1.5 text-sm text-neutral-700 dark:text-neutral-300 focus:ring-2 focus:ring-ring focus:border-transparent w-full sm:w-auto"
-            >
-              <option value="all">Wszystkie sale</option>
-              {halls.filter((h) => h.isActive).map((h) => (<option key={h.id} value={h.id}>{h.name}</option>))}
-            </select>
+            <Select value={hallFilter} onValueChange={setHallFilter}>
+              <SelectTrigger className="w-auto min-w-[160px] h-9">
+                <SelectValue placeholder="Wszystkie sale" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie sale</SelectItem>
+                {halls.filter((h) => h.isActive).map((h) => (
+                  <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 flex items-center gap-3">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700 dark:text-red-300">Nie udało się załadować rezerwacji</p>
-        </div>
+        <ErrorState message="Nie udało się załadować rezerwacji" variant="banner" />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -393,9 +397,9 @@ export default function CalendarPage() {
             </span>
           ))}
           <span className="ml-2 sm:ml-4 font-semibold">Statusy:</span>
-          {Object.values(STATUS_CONFIG).filter((s) => s.label !== 'Anulowane').map((s) => (
+          {Object.values(reservationStatusColors).filter((s) => s.label !== 'Anulowana').map((s) => (
             <span key={s.label} className="flex items-center gap-1.5">
-              <span className={cn('w-2 h-2 rounded-full flex-shrink-0', s.dotClass)} />
+              <span className={cn('w-2 h-2 rounded-full flex-shrink-0', s.dot)} />
               {s.label}
             </span>
           ))}
