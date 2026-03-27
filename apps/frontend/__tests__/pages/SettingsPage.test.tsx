@@ -114,7 +114,12 @@ describe('SettingsPage', () => {
 
   it('renders Company tab trigger', () => {
     render(<SettingsPage />)
-    expect(screen.getByText('Dane firmy')).toBeInTheDocument()
+    const matches = screen.getAllByText('Dane firmy')
+    // One from tab trigger, one from CompanyTab content mock
+    expect(matches.length).toBeGreaterThanOrEqual(1)
+    // Check that at least one is a tab trigger button
+    const tabTrigger = matches.find(el => el.closest('[role="tab"]'))
+    expect(tabTrigger).toBeTruthy()
   })
 
   it('renders Archive tab trigger', () => {

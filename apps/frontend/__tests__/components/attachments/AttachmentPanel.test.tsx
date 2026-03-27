@@ -32,15 +32,15 @@ vi.mock('@/lib/api/attachments', () => ({
   getCategoryLabel: (cat: string) => cat,
 }))
 
-vi.mock('./attachment-row', () => ({
+vi.mock('@/components/attachments/attachment-row', () => ({
   default: ({ attachment }: any) => <div data-testid={`row-${attachment.id}`}>{attachment.label}</div>,
 }))
 
-vi.mock('./attachment-upload-dialog', () => ({
+vi.mock('@/components/attachments/attachment-upload-dialog', () => ({
   default: ({ open }: any) => open ? <div data-testid="upload-dialog">Upload Dialog</div> : null,
 }))
 
-vi.mock('./attachment-preview', () => ({
+vi.mock('@/components/attachments/attachment-preview', () => ({
   default: () => null,
 }))
 

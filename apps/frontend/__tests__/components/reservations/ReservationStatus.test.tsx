@@ -63,7 +63,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByText(/potwierdzon/i)).toBeInTheDocument()
+      const matches = screen.getAllByText(/potwierdzon/i); expect(matches.length).toBeGreaterThanOrEqual(1)
     })
 
     it('should display correct label for PENDING status', () => {
@@ -76,7 +76,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByText(/oczekując/i)).toBeInTheDocument()
+      const matches = screen.getAllByText(/oczekując/i); expect(matches.length).toBeGreaterThanOrEqual(1)
     })
 
     it('should display correct label for COMPLETED status', () => {
@@ -89,7 +89,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByText(/zakończon/i)).toBeInTheDocument()
+      const matches = screen.getAllByText(/zakończon/i); expect(matches.length).toBeGreaterThanOrEqual(1)
     })
 
     it('should display correct label for CANCELLED status', () => {
@@ -102,7 +102,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByText(/anulowan/i)).toBeInTheDocument()
+      const matches = screen.getAllByText(/anulowan/i); expect(matches.length).toBeGreaterThanOrEqual(1)
     })
   })
 

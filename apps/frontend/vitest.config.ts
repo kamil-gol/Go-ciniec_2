@@ -42,7 +42,7 @@ export default defineConfig({
     // avoiding repeated environment bootstrap (~10-50x faster).
     pool: 'forks',
     poolOptions: { forks: { singleFork: true } },
-    isolate: false,
+    isolate: true,
     fileParallelism: false,
     testTimeout: 10000,
   },
@@ -72,8 +72,8 @@ export default defineConfig({
       { find: '@radix-ui/react-dialog', replacement: mock('radix-stub.ts') },
       { find: '@radix-ui/react-alert-dialog', replacement: mock('radix-stub.ts') },
       { find: '@radix-ui/react-select', replacement: mock('radix-stub.ts') },
-      { find: '@radix-ui/react-switch', replacement: mock('radix-stub.ts') },
-      { find: '@radix-ui/react-label', replacement: mock('radix-stub.ts') },
+      { find: '@radix-ui/react-switch', replacement: mock('radix-switch.ts') },
+      { find: '@radix-ui/react-label', replacement: mock('radix-label.ts') },
       { find: '@radix-ui/react-slot', replacement: mock('radix-stub.ts') },
 
       // ── Other heavy deps ──
