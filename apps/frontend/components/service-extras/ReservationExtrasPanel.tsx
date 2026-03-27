@@ -296,7 +296,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
                                 onKeyDown={(e) => handleNoteKeyDown(e, extra.id)}
                                 placeholder="Wpisz notatkę..."
                                 rows={2}
-                                className="w-full text-xs px-2.5 py-1.5 rounded-md border border-violet-300 dark:border-violet-700 bg-violet-50/50 dark:bg-violet-900/20 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent resize-none placeholder:text-violet-400 dark:placeholder:text-violet-600"
+                                className="w-full text-xs px-2.5 py-1.5 rounded-md border border-violet-300 dark:border-violet-700 bg-violet-50/50 dark:bg-violet-900/20 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none placeholder:text-violet-400 dark:placeholder:text-violet-600"
                               />
                               <div className="flex items-center gap-1.5">
                                 <button

@@ -17,11 +17,9 @@ export function Toaster() {
         style: {
           padding: '16px',
           borderRadius: '12px',
-          fontSize: '14px',
           boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-          zIndex: 99999,
         },
-        className: 'backdrop-blur-sm',
+        className: 'backdrop-blur-sm z-[99999] text-sm',
       }}
     />
   )
