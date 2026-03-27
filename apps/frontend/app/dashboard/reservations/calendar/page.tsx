@@ -286,7 +286,7 @@ export default function CalendarPage() {
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-neutral-400 flex-shrink-0" />
             <select value={hallFilter} onChange={(e) => setHallFilter(e.target.value)}
-              className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1.5 text-sm text-neutral-700 dark:text-neutral-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full sm:w-auto"
+              className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1.5 text-sm text-neutral-700 dark:text-neutral-300 focus:ring-2 focus:ring-ring focus:border-transparent w-full sm:w-auto"
             >
               <option value="all">Wszystkie sale</option>
               {halls.filter((h) => h.isActive).map((h) => (<option key={h.id} value={h.id}>{h.name}</option>))}

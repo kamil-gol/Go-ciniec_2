@@ -167,7 +167,7 @@ export default function ForgotPasswordPage() {
                         type="email"
                         autoComplete="email"
                         autoFocus
-                        className="w-full pl-12 pr-4 py-3 bg-neutral-50 dark:bg-neutral-900/50 border-2 border-neutral-200 dark:border-neutral-700 focus:border-violet-500 focus:ring-violet-500/20 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all duration-200"
+                        className="w-full pl-12 pr-4 py-3 bg-neutral-50 dark:bg-neutral-900/50 border-2 border-neutral-200 dark:border-neutral-700 focus:border-violet-500 focus:ring-ring/20 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all duration-200"
                         placeholder="twoj@email.pl"
                         value={email}
                         onChange={(e) => {

@@ -251,9 +251,8 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="w-auto p-0 bg-white dark:bg-neutral-800"
+                    className="w-auto p-0 bg-white dark:bg-neutral-800 z-[9999]"
                     align="start"
-                    style={{ zIndex: 9999 }}
                   >
                     <Calendar
                       mode="single"

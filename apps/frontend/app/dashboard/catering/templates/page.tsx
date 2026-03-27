@@ -22,19 +22,9 @@ import {
 import { CateringTemplateList } from './components/CateringTemplateList';
 import { CateringTemplateForm } from './components/CateringTemplateForm';
 import type { CateringTemplate } from '@/types/catering.types';
-import type { ModuleAccent } from '@/lib/design-tokens';
+import { moduleAccents } from '@/lib/design-tokens';
 
-const CATERING_ACCENT: ModuleAccent = {
-  name: 'Catering',
-  gradient: 'from-orange-600 via-orange-500 to-amber-600',
-  gradientSubtle: 'from-orange-500/5 via-amber-500/5 to-orange-500/5',
-  iconBg: 'from-orange-500 to-amber-500',
-  text: 'text-orange-600',
-  textDark: 'dark:text-orange-400',
-  ring: 'ring-orange-500/20',
-  badge: 'bg-orange-100 dark:bg-orange-900/30',
-  badgeText: 'text-orange-700 dark:text-orange-300',
-};
+const CATERING_ACCENT = moduleAccents.catering;
 
 export default function CateringTemplatesPage() {
   const [formOpen, setFormOpen] = useState(false);

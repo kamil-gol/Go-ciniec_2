@@ -204,8 +204,7 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
                     <div className="flex items-center gap-1.5">
                       <span className="text-neutral-300 dark:text-neutral-600 text-xs">·</span>
                       <div
-                        className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white shrink-0"
-                        style={{ fontSize: '9px', fontWeight: 700, lineHeight: 1 }}
+                        className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white shrink-0 text-[9px] font-bold leading-none"
                       >
                         {getAuthorInitials(entry.changedBy)}
                       </div>

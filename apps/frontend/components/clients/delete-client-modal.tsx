@@ -130,11 +130,11 @@ export function DeleteClientModal({
                     </div>
                   )}
                   {summary.archived > 0 && (
-                    <div className="flex items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
-                      <Archive className="h-4 w-4 text-gray-500" />
+                    <div className="flex items-center gap-2 p-2.5 bg-neutral-50 dark:bg-neutral-900/20 rounded-lg">
+                      <Archive className="h-4 w-4 text-neutral-500" />
                       <div>
                         <p className="text-xs text-muted-foreground">Zarchiwizowane</p>
-                        <p className="text-sm font-bold text-gray-600 dark:text-gray-400">{summary.archived}</p>
+                        <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400">{summary.archived}</p>
                       </div>
                     </div>
                   )}
