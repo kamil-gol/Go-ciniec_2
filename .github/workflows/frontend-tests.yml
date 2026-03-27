@@ -65,7 +65,6 @@ jobs:
 
       - name: Run Component Tests
         working-directory: ./apps/frontend
-        continue-on-error: true
         run: npx vitest run --reporter=verbose
 
   # ========================================
