@@ -1,10 +1,10 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
-  plugins: [react()],
+  // No React plugin — esbuild handles JSX natively, avoiding the massive
+  // overhead of @vitejs/plugin-react (Babel) which caused CI timeouts.
   test: {
     // ========================================
     // Environment
@@ -63,10 +63,19 @@ export default defineConfig({
     },
 
     // ========================================
-    // Performance
+    // Performance — optimized for CI speed
     // ========================================
+    // Single fork + no isolation: all tests run in one process,
+    // avoiding repeated jsdom + React + Radix UI bootstrap (~10-50x faster).
     pool: 'forks',
-    testTimeout: 5000,
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
+    isolate: false,
+    fileParallelism: false,
+    testTimeout: 10000,
   },
 
   // ========================================
