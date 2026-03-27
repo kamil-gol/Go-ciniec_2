@@ -52,11 +52,12 @@ export function SortableQueueItem({
           {/* Drag Handle */}
           <div
             className={cn(
-              'flex-shrink-0 touch-none',
+              'flex-shrink-0 touch-none touch-manipulation p-3 -m-2',
               disabled
                 ? 'cursor-not-allowed opacity-50'
                 : 'cursor-grab active:cursor-grabbing'
             )}
+            aria-label="Przeciągnij aby zmienić kolejność"
             {...attributes}
             {...listeners}
           >

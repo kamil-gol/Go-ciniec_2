@@ -25,6 +25,7 @@ import {
   CheckCircle2, XCircle, Clock, Edit, Loader2, AlertCircle,
   ArrowRight, ShieldAlert, Archive,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useUpdateReservationStatus } from '@/lib/api/reservations'
 import { ReservationStatus } from '@/types'
 import { toast } from 'sonner'
@@ -239,6 +240,12 @@ export function StatusChanger({
             rows={2}
             placeholder="Powód zmiany statusu (min. 10 znaków)..."
           />
+          <p className={cn(
+            "text-xs mt-1 text-right",
+            reason.length < 10 ? "text-destructive" : "text-muted-foreground"
+          )}>
+            {reason.length}/10 min
+          </p>
           {reasonError && (
             <p className="mt-1 text-xs text-red-300 flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />

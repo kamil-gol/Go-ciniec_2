@@ -98,12 +98,32 @@ export default function ReportsPage() {
 
   const presets = defaultPresets;
 
-  const tabClass = (isActive: boolean, color: string) =>
-    `py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-1.5 ${
-      isActive
-        ? `border-${color}-500 text-${color}-600 dark:text-${color}-400`
-        : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300'
+  const TAB_STYLES = {
+    revenue: {
+      active: 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300',
+      inactive: 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
+    },
+    occupancy: {
+      active: 'border-green-500 bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300',
+      inactive: 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
+    },
+    preparations: {
+      active: 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300',
+      inactive: 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
+    },
+    'menu-preparations': {
+      active: 'border-purple-500 bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300',
+      inactive: 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
+    },
+  } as const;
+
+  const tabClass = (tab: ReportTab) => {
+    const isActive = activeTab === tab;
+    const styles = TAB_STYLES[tab];
+    return `py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-1.5 ${
+      isActive ? styles.active : styles.inactive
     }`;
+  };
 
   return (
     <PageLayout>
@@ -130,24 +150,28 @@ export default function ReportsPage() {
 
       {/* Tabs */}
       <div className="border-b border-neutral-200 dark:border-neutral-700">
-        <nav className="flex gap-4 overflow-x-auto" aria-label="Tabs">
+        <nav className="flex gap-4 overflow-x-auto" role="tablist" aria-label="Tabs">
           <button onClick={() => setActiveTab('revenue')}
-            className={tabClass(activeTab === 'revenue', 'blue')}>
+            role="tab" aria-selected={activeTab === 'revenue'}
+            className={tabClass('revenue')}>
             <DollarSign className="h-3.5 w-3.5" />
             Przychody
           </button>
           <button onClick={() => setActiveTab('occupancy')}
-            className={tabClass(activeTab === 'occupancy', 'blue')}>
+            role="tab" aria-selected={activeTab === 'occupancy'}
+            className={tabClass('occupancy')}>
             <Building2 className="h-3.5 w-3.5" />
             {"Zajętość sal"}
           </button>
           <button onClick={() => setActiveTab('preparations')}
-            className={tabClass(activeTab === 'preparations', 'purple')}>
+            role="tab" aria-selected={activeTab === 'preparations'}
+            className={tabClass('preparations')}>
             <ClipboardList className="h-3.5 w-3.5" />
             Przygotowania
           </button>
           <button onClick={() => setActiveTab('menu-preparations')}
-            className={tabClass(activeTab === 'menu-preparations', 'amber')}>
+            role="tab" aria-selected={activeTab === 'menu-preparations'}
+            className={tabClass('menu-preparations')}>
             <UtensilsCrossed className="h-3.5 w-3.5" />
             <span className="whitespace-nowrap">Menu</span>
           </button>
@@ -170,10 +194,12 @@ export default function ReportsPage() {
         setMenuPrepView={setMenuPrepView}
       />
 
-      {activeTab === 'revenue' && <RevenueTab query={revenueQuery} />}
-      {activeTab === 'occupancy' && <OccupancyTab query={occupancyQuery} />}
-      {activeTab === 'preparations' && <PreparationsTab query={preparationsQuery} view={prepView} />}
-      {activeTab === 'menu-preparations' && <MenuPreparationsTab query={menuPreparationsQuery} view={menuPrepView} />}
+      <div role="tabpanel">
+        {activeTab === 'revenue' && <RevenueTab query={revenueQuery} />}
+        {activeTab === 'occupancy' && <OccupancyTab query={occupancyQuery} />}
+        {activeTab === 'preparations' && <PreparationsTab query={preparationsQuery} view={prepView} />}
+        {activeTab === 'menu-preparations' && <MenuPreparationsTab query={menuPreparationsQuery} view={menuPrepView} />}
+      </div>
     </PageLayout>
   );
 }

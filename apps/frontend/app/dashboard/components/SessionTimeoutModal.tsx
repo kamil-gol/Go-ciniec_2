@@ -101,10 +101,10 @@ export default function SessionTimeoutModal() {
                 strokeDashoffset={dashOffset}
                 className={`transition-all duration-1000 ease-linear ${
                   (remainingSeconds ?? 60) <= 10
-                    ? 'text-red-500'
+                    ? 'text-red-500 dark:text-red-400'
                     : (remainingSeconds ?? 60) <= 30
-                      ? 'text-orange-500'
-                      : 'text-amber-400'
+                      ? 'text-orange-500 dark:text-orange-400'
+                      : 'text-amber-400 dark:text-amber-300'
                 }`}
               />
             </svg>
