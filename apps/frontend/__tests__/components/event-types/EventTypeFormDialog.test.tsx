@@ -22,10 +22,6 @@ vi.mock('next/navigation', () => ({
   useParams: () => ({}),
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/lib/api/event-types-api', () => ({
   createEventType: vi.fn(),
   updateEventType: vi.fn(),
@@ -33,10 +29,6 @@ vi.mock('@/lib/api/event-types-api', () => ({
     '#EF4444', '#F97316', '#EAB308', '#22C55E', '#06B6D4',
     '#3B82F6', '#8B5CF6', '#EC4899', '#F43F5E', '#14B8A6',
   ]),
-}))
-
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
 }))
 
 // Mock Radix Dialog to render inline (no portal) so content is visible in tests

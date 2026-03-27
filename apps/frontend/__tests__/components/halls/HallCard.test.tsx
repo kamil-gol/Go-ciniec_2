@@ -28,10 +28,6 @@ vi.mock('next/link', () => ({
   default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/lib/design-tokens', () => ({
   moduleAccents: {
     halls: {
@@ -55,10 +51,6 @@ vi.mock('@/hooks/use-confirm-dialog', () => ({
     confirm: vi.fn().mockResolvedValue(true),
     ConfirmDialog: null,
   }),
-}))
-
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
 }))
 
 // ── Test Data ────────────────────────────────────────────────────────────────

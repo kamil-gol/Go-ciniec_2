@@ -31,10 +31,6 @@ vi.mock('@/lib/api/dishes-api', () => ({
   dishesApi: mockDishesApi,
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
 import {
   dishesKeys,
   useDishes,

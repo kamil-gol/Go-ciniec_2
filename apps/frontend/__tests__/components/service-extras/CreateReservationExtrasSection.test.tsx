@@ -105,18 +105,6 @@ vi.mock('@/hooks/use-service-extras', () => ({
   useServiceCategories: (...args: any[]) => mockUseServiceCategories(...args),
 }))
 
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: React.forwardRef(({ children, ...props }: any, ref: any) =>
-      React.createElement('div', { ...props, ref }, children)
-    ),
-    button: React.forwardRef(({ children, ...props }: any, ref: any) =>
-      React.createElement('button', { ...props, ref }, children)
-    ),
-  },
-  AnimatePresence: ({ children }: any) => children,
-}))
-
 // ═══ HELPERS ═══
 
 function renderWithProviders(ui: React.ReactElement) {

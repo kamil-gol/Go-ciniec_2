@@ -30,10 +30,6 @@ vi.mock('next/link', () => ({
   default: ({ children, href, ...rest }: any) => <a href={href} {...rest}>{children}</a>,
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/lib/design-tokens', () => ({
   moduleAccents: {},
 }))

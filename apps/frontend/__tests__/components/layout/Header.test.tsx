@@ -19,14 +19,6 @@ vi.mock('next-themes', () => ({
   }),
 }))
 
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => React.createElement('div', props, children),
-    span: ({ children, ...props }: any) => React.createElement('span', props, children),
-  },
-  AnimatePresence: ({ children }: any) => children,
-}))
-
 const mockMarkAsRead = { mutate: vi.fn() }
 const mockMarkAllAsRead = { mutate: vi.fn() }
 

@@ -35,26 +35,6 @@ vi.mock('@/lib/api-client', () => ({
   apiClient: { post: mockPost },
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
-vi.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: (_, tag) => ({ children, ...props }: any) => {
-      const Tag = typeof tag === 'string' ? tag : 'div'
-      // Filter out framer-motion specific props
-      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-      return <Tag {...rest}>{children}</Tag>
-    },
-  }),
-  AnimatePresence: ({ children }: any) => <>{children}</>,
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
-}))
-
 // ── Import ───────────────────────────────────────────────────────────────────
 
 import LoginPage from '@/app/login/page'
@@ -73,7 +53,7 @@ describe('LoginPage', () => {
 
   it('renders login form heading', () => {
     render(<LoginPage />)
-    expect(screen.getByText('Zaloguj się')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /zaloguj się/i })).toBeInTheDocument()
   })
 
   it('renders branding text', () => {
@@ -120,14 +100,9 @@ describe('LoginPage', () => {
 
     render(<LoginPage />)
 
-    const emailInput = screen.getByLabelText('Adres email')
-    const passwordInput = screen.getByLabelText('Hasło')
-
-    await userEvent.type(emailInput, 'test@example.pl')
-    await userEvent.type(passwordInput, 'password123')
-
-    const submitButton = screen.getByRole('button', { name: /zaloguj/i })
-    fireEvent.click(submitButton)
+    fireEvent.change(screen.getByLabelText('Adres email'), { target: { value: 'test@example.pl' } })
+    fireEvent.change(screen.getByLabelText('Hasło'), { target: { value: 'password123' } })
+    fireEvent.click(screen.getByRole('button', { name: /zaloguj/i }))
 
     await waitFor(() => {
       expect(mockPost).toHaveBeenCalledWith('/auth/login', {
@@ -144,8 +119,8 @@ describe('LoginPage', () => {
 
     render(<LoginPage />)
 
-    await userEvent.type(screen.getByLabelText('Adres email'), 'test@example.pl')
-    await userEvent.type(screen.getByLabelText('Hasło'), 'password123')
+    fireEvent.change(screen.getByLabelText('Adres email'), { target: { value: 'test@example.pl' } })
+    fireEvent.change(screen.getByLabelText('Hasło'), { target: { value: 'password123' } })
     fireEvent.click(screen.getByRole('button', { name: /zaloguj/i }))
 
     await waitFor(() => {
@@ -160,8 +135,8 @@ describe('LoginPage', () => {
 
     render(<LoginPage />)
 
-    await userEvent.type(screen.getByLabelText('Adres email'), 'wrong@test.pl')
-    await userEvent.type(screen.getByLabelText('Hasło'), 'wrongpass')
+    fireEvent.change(screen.getByLabelText('Adres email'), { target: { value: 'wrong@test.pl' } })
+    fireEvent.change(screen.getByLabelText('Hasło'), { target: { value: 'wrongpass' } })
     fireEvent.click(screen.getByRole('button', { name: /zaloguj/i }))
 
     await waitFor(() => {

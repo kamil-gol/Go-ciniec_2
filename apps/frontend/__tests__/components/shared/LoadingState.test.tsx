@@ -14,12 +14,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
-// ── Mocks ────────────────────────────────────────────────────────────────────
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 // ── Import ───────────────────────────────────────────────────────────────────
 
 import { LoadingState } from '@/components/shared/LoadingState'

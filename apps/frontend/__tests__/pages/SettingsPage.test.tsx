@@ -24,10 +24,6 @@ vi.mock('next/link', () => ({
   default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }))
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/lib/design-tokens', () => ({
   moduleAccents: {
     settings: {
@@ -38,10 +34,6 @@ vi.mock('@/lib/design-tokens', () => ({
       gradientSubtle: 'from-gray-50 to-slate-50',
     },
   },
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
 }))
 
 vi.mock('@/components/shared', () => ({
@@ -122,7 +114,12 @@ describe('SettingsPage', () => {
 
   it('renders Company tab trigger', () => {
     render(<SettingsPage />)
-    expect(screen.getByText('Dane firmy')).toBeInTheDocument()
+    const matches = screen.getAllByText('Dane firmy')
+    // One from tab trigger, one from CompanyTab content mock
+    expect(matches.length).toBeGreaterThanOrEqual(1)
+    // Check that at least one is a tab trigger button
+    const tabTrigger = matches.find(el => el.closest('[role="tab"]'))
+    expect(tabTrigger).toBeTruthy()
   })
 
   it('renders Archive tab trigger', () => {

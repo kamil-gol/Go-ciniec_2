@@ -15,10 +15,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/components/audit-log/AuditLogDetails', () => ({
   AuditLogDetails: ({ log, open, onClose }: any) =>
     open ? <div data-testid="audit-details">{log.action}</div> : null,

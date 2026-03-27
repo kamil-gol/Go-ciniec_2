@@ -26,7 +26,7 @@ vi.mock('@/hooks/use-document-templates', () => ({
   usePreviewTemplate: (...a: any[]) => mockUsePreviewTemplate(...a),
 }))
 
-vi.mock('./editor', () => ({
+vi.mock('@/components/document-templates/editor', () => ({
   EditorHeader: ({ templateName }: any) => <div data-testid="editor-header">{templateName}</div>,
   VariablePicker: () => <div data-testid="variable-picker" />,
   EditorToolbar: () => <div data-testid="editor-toolbar" />,
@@ -42,14 +42,6 @@ vi.mock('@/components/ui/sheet', () => ({
   SheetContent: ({ children }: any) => <div data-testid="sheet-content">{children}</div>,
   SheetTitle: ({ children, className }: any) => <div className={className}>{children}</div>,
   SheetDescription: ({ children, className }: any) => <div className={className}>{children}</div>,
-}))
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <div data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
 }))
 
 import { TemplateEditor } from '@/components/document-templates/TemplateEditor'
@@ -70,7 +62,7 @@ describe('TemplateEditor', () => {
   it('shows loading spinner while fetching', () => {
     mockUseDocumentTemplate.mockReturnValue({ data: undefined, isLoading: true })
     render(<TemplateEditor slug="invoice" open={true} onClose={vi.fn()} />, { wrapper: createWrapper() })
-    expect(screen.getByTestId('loader')).toBeInTheDocument()
+    expect(screen.getByTestId('icon-Loader2')).toBeInTheDocument()
   })
 
   it('renders template name after loading', async () => {
@@ -92,7 +84,8 @@ describe('TemplateEditor', () => {
   it('shows "Nie znaleziono" when template is null', () => {
     mockUseDocumentTemplate.mockReturnValue({ data: null, isLoading: false })
     render(<TemplateEditor slug="missing" open={true} onClose={vi.fn()} />, { wrapper: createWrapper() })
-    expect(screen.getByText('Nie znaleziono szablonu')).toBeInTheDocument()
+    const matches = screen.getAllByText('Nie znaleziono szablonu')
+    expect(matches.length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders nothing when not open', () => {

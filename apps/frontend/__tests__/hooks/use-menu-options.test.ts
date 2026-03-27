@@ -27,10 +27,6 @@ vi.mock('@/lib/api/menu-options-api', () => ({
   deleteMenuOption: (...a: any[]) => mockDeleteMenuOption(...a),
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
 import {
   useMenuOptions,
   useMenuOption,

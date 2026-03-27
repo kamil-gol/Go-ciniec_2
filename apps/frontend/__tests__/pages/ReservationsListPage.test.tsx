@@ -33,14 +33,6 @@ vi.mock('@/lib/api/reservations', () => ({
   getReservations: mockGetReservations,
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
-vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
-}))
-
 vi.mock('@/lib/design-tokens', () => ({
   moduleAccents: {
     reservations: {
@@ -51,10 +43,6 @@ vi.mock('@/lib/design-tokens', () => ({
       gradientSubtle: 'from-blue-50 to-cyan-50',
     },
   },
-}))
-
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
 }))
 
 vi.mock('@/components/shared', () => ({

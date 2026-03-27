@@ -3,33 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-// Global DOM mock for jsdom
-Element.prototype.scrollIntoView = vi.fn();
-
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
   useParams: () => ({}),
 }))
-
-// Mock framer-motion
-vi.mock('framer-motion', () => {
-  const React = require('react');
-  return {
-    motion: new Proxy({}, {
-      get: (_target: any, prop: string) => {
-        return React.forwardRef((props: any, ref: any) => {
-          const { initial, animate, exit, transition, variants, whileHover, whileTap, whileFocus, whileInView, layout, layoutId, ...rest } = props;
-          return React.createElement(prop, { ...rest, ref });
-        });
-      },
-    }),
-    AnimatePresence: ({ children }: any) => React.createElement(React.Fragment, null, children),
-    useAnimation: () => ({ start: vi.fn(), stop: vi.fn() }),
-    useMotionValue: (val: any) => ({ get: () => val, set: vi.fn() }),
-    useTransform: (val: any) => val,
-  };
-});
 
 // Mock API hooks
 const mockCreateReservation = vi.fn()
@@ -70,10 +48,6 @@ vi.mock('@/lib/api/menu-templates', () => ({
 
 vi.mock('@/lib/api/discounts', () => ({
   useDiscounts: () => ({ data: [], isLoading: false }),
-}))
-
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), promise: vi.fn() },
 }))
 
 // Helper: render with QueryClientProvider

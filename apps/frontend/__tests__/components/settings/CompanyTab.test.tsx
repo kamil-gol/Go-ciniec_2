@@ -13,10 +13,6 @@ vi.mock('@/lib/api/settings', () => ({
   },
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
 vi.mock('@/components/shared', () => ({
   LoadingState: ({ message }: { message: string }) =>
     React.createElement('div', { 'data-testid': 'loading' }, message),

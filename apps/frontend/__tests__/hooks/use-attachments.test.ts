@@ -21,10 +21,6 @@ vi.mock('@/lib/api/attachments', () => ({
   batchCheckContract: (...a: any[]) => mockBatchCheckContract(...a),
 }))
 
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}))
-
 import {
   attachmentKeys,
   useAttachments,

@@ -12,11 +12,6 @@ vi.mock('next/link', () => ({
   default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }))
 
-// Mock sonner
-vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), promise: vi.fn() },
-}))
-
 // Mock deposit API
 vi.mock('@/lib/api/deposits', () => ({
   depositsApi: { getAll: vi.fn().mockResolvedValue([]) },
