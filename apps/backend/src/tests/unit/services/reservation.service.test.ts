@@ -54,14 +54,15 @@ jest.mock('../../../utils/reservation.utils', () => {
   return {
     ...actual,
     validateCustomEventFields: jest.fn().mockReturnValue({ valid: true }),
+    validateConfirmationDeadline: jest.fn().mockImplementation(actual.validateConfirmationDeadline),
   };
 });
 
 jest.mock('../../../services/reservationCategoryExtra.service', () => ({
-  __esModule: true,
-  default: {
+  reservationCategoryExtraService: {
     recalculateForGuestChange: jest.fn().mockResolvedValue(undefined),
     deleteByReservation: jest.fn().mockResolvedValue(undefined),
+    upsertExtras: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -816,6 +817,7 @@ describe('ReservationService — Branch Coverage', () => {
 
         await svc.updateReservation('res-001', {
           startDateTime: newFuture, endDateTime: newFutureEnd,
+          reason: 'Zmiana terminu rezerwacji na inny dzień',
         } as any, UID);
 
         expect(db.reservation.findMany).toHaveBeenCalled();
