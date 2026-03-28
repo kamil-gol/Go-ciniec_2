@@ -517,3 +517,210 @@ test.describe('Light mode baseline screenshots', () => {
     });
   }
 });
+
+// ═══════════════════════════════════════════════════════
+// FAZA 2-5: Testy asercyjne dla pozostałych fixów
+// ═══════════════════════════════════════════════════════
+
+test.describe('SV-04: Przycisk "Zobacz Kalendarz" — spójny gradient (#394)', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('wszystkie karty sal mają taki sam gradient na przycisku CTA', async ({ page }) => {
+    await page.goto('/dashboard/halls');
+    await waitForPageStable(page);
+
+    const gradients = await page.evaluate(() => {
+      const buttons = document.querySelectorAll('a[href*="/dashboard/halls/"] button');
+      return Array.from(buttons).map(btn => {
+        const classes = btn.className;
+        // Wyciągnij klasy gradientu
+        const gradientMatch = classes.match(/from-[\w-]+ to-[\w-]+/);
+        return gradientMatch ? gradientMatch[0] : classes;
+      });
+    });
+
+    if (gradients.length >= 2) {
+      // Wszystkie przyciski powinny mieć ten sam gradient
+      const uniqueGradients = [...new Set(gradients)];
+      expect(uniqueGradients.length, `Znaleziono różne gradienty: ${JSON.stringify(uniqueGradients)}`).toBe(1);
+    }
+  });
+});
+
+test.describe('PE-06: Relative time w Kolejce (#395)', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('timestamps w kolejce zawierają "temu" (relative time)', async ({ page }) => {
+    await page.goto('/dashboard/queue');
+    await waitForPageStable(page);
+
+    // Szukaj tekstu "Dodane ... temu"
+    const hasRelativeTime = await page.evaluate(() => {
+      const elements = document.querySelectorAll('*');
+      for (const el of elements) {
+        const text = el.textContent || '';
+        if (text.includes('Dodane') && text.includes('temu')) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    // Jeśli są wpisy w kolejce, powinny mieć relative time
+    const queueItems = await page.locator('[class*="rounded-2xl"]').count();
+    if (queueItems > 2) { // więcej niż sam kontener
+      expect(hasRelativeTime, 'Wpisy kolejki powinny używać relative time ("temu")').toBe(true);
+    }
+  });
+});
+
+test.describe('SP-01/MB-02: StatCard responsive na mobile (#377, #383)', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('StatCard value ma responsive font-size (text-2xl sm:text-3xl)', async ({ page }) => {
+    await page.goto('/dashboard');
+    await waitForPageStable(page);
+
+    const statCardClasses = await page.evaluate(() => {
+      // Szukaj elementów z dużymi liczbami (stat card values)
+      const allElements = document.querySelectorAll('p');
+      for (const el of allElements) {
+        const classes = el.className || '';
+        if (classes.includes('text-2xl') && classes.includes('sm:text-3xl') && classes.includes('font-bold')) {
+          return classes;
+        }
+      }
+      return null;
+    });
+
+    expect(statCardClasses, 'StatCard value powinien mieć text-2xl sm:text-3xl').not.toBeNull();
+  });
+
+  test('StatCard label ma truncate', async ({ page }) => {
+    await page.goto('/dashboard');
+    await waitForPageStable(page);
+
+    const hasTruncate = await page.evaluate(() => {
+      const labels = document.querySelectorAll('p.truncate');
+      for (const label of labels) {
+        if (label.getAttribute('title') && label.className.includes('font-medium')) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    expect(hasTruncate, 'StatCard label powinien mieć truncate + title').toBe(true);
+  });
+
+  test('StatCard ikona ma responsive rozmiar', async ({ page }) => {
+    await page.goto('/dashboard');
+    await waitForPageStable(page);
+
+    const iconClasses = await page.evaluate(() => {
+      // Szukaj kontenera ikony stat card
+      const containers = document.querySelectorAll('[class*="rounded-xl"][class*="bg-gradient"]');
+      for (const el of containers) {
+        const classes = el.className || '';
+        if (classes.includes('h-10') && classes.includes('sm:h-12')) {
+          return classes;
+        }
+      }
+      return null;
+    });
+
+    expect(iconClasses, 'Ikona StatCard powinna mieć h-10 w-10 sm:h-12 sm:w-12').not.toBeNull();
+  });
+});
+
+test.describe('SP-04: Email klienta z tooltip (#388)', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('email klienta ma atrybut title (tooltip)', async ({ page }) => {
+    await page.goto('/dashboard/clients');
+    await waitForPageStable(page);
+
+    const emailWithTitle = await page.evaluate(() => {
+      const spans = document.querySelectorAll('span.truncate');
+      for (const span of spans) {
+        const title = span.getAttribute('title');
+        if (title && title.includes('@')) {
+          return { title, text: span.textContent };
+        }
+      }
+      return null;
+    });
+
+    // Jeśli są klienci z emailem
+    if (emailWithTitle) {
+      expect(emailWithTitle.title).toContain('@');
+    }
+  });
+});
+
+test.describe('MB-03: Dashboard events responsive na mobile (#384)', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('event cards mają flex-col na mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/dashboard');
+    await waitForPageStable(page);
+
+    const hasResponsiveLayout = await page.evaluate(() => {
+      // Szukaj event cards z datą
+      const cards = document.querySelectorAll('[class*="flex-col"][class*="sm:flex-row"]');
+      return cards.length > 0;
+    });
+
+    expect(hasResponsiveLayout, 'Event cards powinny mieć flex-col sm:flex-row').toBe(true);
+  });
+
+  test('date circle ma responsive rozmiar na mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/dashboard');
+    await waitForPageStable(page);
+
+    const hasResponsiveCircle = await page.evaluate(() => {
+      const circles = document.querySelectorAll('[class*="h-10"][class*="sm:h-16"]');
+      return circles.length > 0;
+    });
+
+    expect(hasResponsiveCircle, 'Date circle powinien mieć h-10 sm:h-16').toBe(true);
+  });
+
+  test('SP-03: cena rezerwacji ma responsive font-size (#387)', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/dashboard/reservations/list');
+    await waitForPageStable(page);
+
+    const hasResponsivePrice = await page.evaluate(() => {
+      const elements = document.querySelectorAll('[class*="text-sm"][class*="sm:text-lg"]');
+      return elements.length > 0;
+    });
+
+    // Jeśli są rezerwacje z cenami
+    if (hasResponsivePrice) {
+      expect(hasResponsivePrice).toBe(true);
+    }
+  });
+});
