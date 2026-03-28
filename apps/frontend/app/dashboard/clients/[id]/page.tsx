@@ -10,6 +10,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingState } from '@/components/shared/LoadingState'
+import { StatCard } from '@/components/shared/StatCard'
+import { statGradients, layout } from '@/lib/design-tokens'
 import { getClientById, deleteClient } from '@/lib/api/clients'
 import Link from 'next/link'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
@@ -119,67 +121,32 @@ export default function ClientDetailsPage() {
           stats={stats}
         />
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <Card className="relative overflow-hidden border-0 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10" />
-            <CardContent className="relative p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Rezerwacje</p>
-                  <p className="text-3xl font-bold">{stats.total}</p>
-                </div>
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg">
-                  <Calendar className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-0 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10" />
-            <CardContent className="relative p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Potwierdzone</p>
-                  <p className="text-3xl font-bold">{stats.confirmed}</p>
-                </div>
-                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg">
-                  <CheckCircle2 className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-0 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10" />
-            <CardContent className="relative p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Zakończone</p>
-                  <p className="text-3xl font-bold">{stats.completed}</p>
-                </div>
-                <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
-                  <TrendingUp className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-0 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-amber-500/10" />
-            <CardContent className="relative p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Wydano</p>
-                  <p className="text-3xl font-bold">{stats.totalSpent.toLocaleString('pl-PL')} zł</p>
-                </div>
-                <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg">
-                  <DollarSign className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Stats Grid — shared StatCard */}
+        <div className={layout.statGrid}>
+          <StatCard
+            label="Rezerwacje"
+            value={String(stats.total)}
+            icon={Calendar}
+            iconGradient={statGradients.count}
+          />
+          <StatCard
+            label="Potwierdzone"
+            value={String(stats.confirmed)}
+            icon={CheckCircle2}
+            iconGradient={statGradients.success}
+          />
+          <StatCard
+            label="Zakończone"
+            value={String(stats.completed)}
+            icon={TrendingUp}
+            iconGradient={statGradients.info}
+          />
+          <StatCard
+            label="Wydano"
+            value={`${stats.totalSpent.toLocaleString('pl-PL')} zł`}
+            icon={DollarSign}
+            iconGradient={statGradients.financial}
+          />
         </div>
 
         {/* Tab bar */}
