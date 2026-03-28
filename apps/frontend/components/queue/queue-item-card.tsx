@@ -3,7 +3,7 @@
 import { QueueItem } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Calendar, Users, Phone, Mail, ArrowUp, ArrowDown, Check, Pencil } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
+import { format, formatDistanceToNow, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -98,7 +98,7 @@ export function QueueItemCard({
           )}
 
           <div className="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
-            Dodane {format(parseISO(item.createdAt), 'd MMM yyyy HH:mm', { locale: pl })}
+            Dodane {formatDistanceToNow(parseISO(item.createdAt), { addSuffix: true, locale: pl })}
             {' przez '}
             {item.createdBy.firstName} {item.createdBy.lastName}
           </div>

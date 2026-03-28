@@ -256,9 +256,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
             <Button
               className={cn(
                 'w-full bg-gradient-to-r text-white shadow-md hover:shadow-lg transition-all duration-300 rounded-xl',
-                hall.isWholeVenue
-                  ? 'from-amber-500 to-orange-500'
-                  : accent.gradient
+                accent.gradient
               )}
             >
               <Calendar className="mr-2 h-4 w-4" />

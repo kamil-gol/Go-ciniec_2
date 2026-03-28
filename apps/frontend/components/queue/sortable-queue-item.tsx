@@ -5,7 +5,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { QueueItem } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Calendar, Users, Phone, Mail, Check, Pencil, GripVertical, ChevronUp, ChevronDown } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -118,7 +118,7 @@ export function SortableQueueItem({
             )}
 
             <div className="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
-              Dodane {format(new Date(item.createdAt), 'd MMM yyyy HH:mm', { locale: pl })}
+              Dodane {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: pl })}
               {' przez '}
               {item.createdBy.firstName} {item.createdBy.lastName}
             </div>

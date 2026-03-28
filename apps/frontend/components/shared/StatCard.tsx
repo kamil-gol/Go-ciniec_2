@@ -108,7 +108,7 @@ export function StatCard({
             <p className="text-sm font-medium text-neutral-500 dark:text-neutral-300 leading-tight">
               {label}
             </p>
-            <p className="mt-2 text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+            <p className="mt-2 text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">
               {value}
             </p>
             {(change || subtitle) && (
