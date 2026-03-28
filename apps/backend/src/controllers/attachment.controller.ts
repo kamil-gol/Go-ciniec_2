@@ -32,7 +32,7 @@ class AttachmentController {
         description: req.body.description || undefined,
       };
 
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ error: 'Brak autoryzacji' });
       }
@@ -129,7 +129,7 @@ class AttachmentController {
     try {
       const { id } = req.params;
       const dto: UpdateAttachmentDTO = req.body;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       const updated = await attachmentService.updateAttachment(id, dto, userId);
 
@@ -146,7 +146,7 @@ class AttachmentController {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       await attachmentService.deleteAttachment(id, userId);
 
@@ -163,7 +163,7 @@ class AttachmentController {
   async archive(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       const archived = await attachmentService.deleteAttachment(id, userId);
 

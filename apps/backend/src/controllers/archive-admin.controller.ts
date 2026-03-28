@@ -70,7 +70,7 @@ export class ArchiveAdminController {
    * Update archiveAfterDays setting. Accepts { archiveAfterDays: number }.
    */
   async updateArchiveSettings(req: Request, res: Response): Promise<void> {
-    const actorId = (req as any).user?.id;
+    const actorId = req.user?.id;
     if (!actorId) throw AppError.unauthorized('Nie zalogowano');
 
     const { archiveAfterDays } = req.body;
@@ -122,7 +122,7 @@ export class ArchiveAdminController {
    * Manually trigger the archive process (same logic as CRON).
    */
   async runArchiveNow(req: Request, res: Response): Promise<void> {
-    const actorId = (req as any).user?.id;
+    const actorId = req.user?.id;
     if (!actorId) throw AppError.unauthorized('Nie zalogowano');
 
     logger.info(`[Archive] Manual archive triggered by user ${actorId}`);

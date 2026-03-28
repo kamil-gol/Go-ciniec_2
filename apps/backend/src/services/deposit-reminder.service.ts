@@ -38,7 +38,7 @@ const depositReminderService = {
       try {
         const count = await this.sendUpcomingReminders(daysLeft);
         upcomingSent += count;
-      } catch (error: unknown) {
+      } catch (error: any) {
         logger.error(`[Reminder] Error sending ${daysLeft}-day reminders: ${error instanceof Error ? error.message : String(error)}`);
         errors++;
       }
@@ -48,7 +48,7 @@ const depositReminderService = {
     try {
       const count = await this.sendOverdueNotices();
       overdueSent += count;
-    } catch (error: unknown) {
+    } catch (error: any) {
       logger.error(`[Reminder] Error sending overdue notices: ${error instanceof Error ? error.message : String(error)}`);
       errors++;
     }

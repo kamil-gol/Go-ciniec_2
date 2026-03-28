@@ -38,7 +38,7 @@ class DishController {
 
   async createDish(req: Request, res: Response): Promise<void> {
     const { name, description, categoryId, allergens, isActive } = req.body;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) throw AppError.unauthorized('User not authenticated');
     if (!name || !categoryId) throw AppError.badRequest('Name and categoryId are required');
@@ -59,7 +59,7 @@ class DishController {
   async updateDish(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const { name, description, categoryId, allergens, isActive } = req.body;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -76,7 +76,7 @@ class DishController {
 
   async deleteDish(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) throw AppError.unauthorized('User not authenticated');
 

@@ -46,7 +46,7 @@ class DocumentTemplateController {
    */
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       if (!userId) {
         throw AppError.unauthorized();
       }
@@ -86,7 +86,7 @@ class DocumentTemplateController {
    */
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       if (!userId) {
         throw AppError.unauthorized();
       }
@@ -119,7 +119,7 @@ class DocumentTemplateController {
    */
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       if (!userId) {
         throw AppError.unauthorized();
       }
@@ -137,7 +137,7 @@ class DocumentTemplateController {
    */
   async restore(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       if (!userId) {
         throw AppError.unauthorized();
       }

@@ -28,7 +28,7 @@ export class UsersController {
   }
 
   async createUser(req: Request, res: Response): Promise<void> {
-    const actorId = (req as any).user?.id;
+    const actorId = req.user?.id;
     if (!actorId) throw AppError.unauthorized('Nie zalogowano');
 
     const { email, password, firstName, lastName, roleId } = req.body;
@@ -51,7 +51,7 @@ export class UsersController {
   }
 
   async updateUser(req: Request, res: Response): Promise<void> {
-    const actorId = (req as any).user?.id;
+    const actorId = req.user?.id;
     if (!actorId) throw AppError.unauthorized('Nie zalogowano');
 
     const user = await usersService.updateUser(req.params.id, req.body, actorId);
@@ -59,7 +59,7 @@ export class UsersController {
   }
 
   async changePassword(req: Request, res: Response): Promise<void> {
-    const actorId = (req as any).user?.id;
+    const actorId = req.user?.id;
     if (!actorId) throw AppError.unauthorized('Nie zalogowano');
 
     const { newPassword } = req.body;
@@ -70,7 +70,7 @@ export class UsersController {
   }
 
   async toggleActive(req: Request, res: Response): Promise<void> {
-    const actorId = (req as any).user?.id;
+    const actorId = req.user?.id;
     if (!actorId) throw AppError.unauthorized('Nie zalogowano');
 
     const result = await usersService.toggleActive(req.params.id, actorId);
@@ -78,7 +78,7 @@ export class UsersController {
   }
 
   async deleteUser(req: Request, res: Response): Promise<void> {
-    const actorId = (req as any).user?.id;
+    const actorId = req.user?.id;
     if (!actorId) throw AppError.unauthorized('Nie zalogowano');
 
     await usersService.deleteUser(req.params.id, actorId);

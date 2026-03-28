@@ -12,7 +12,7 @@ export class CompanySettingsController {
   }
 
   async updateSettings(req: Request, res: Response): Promise<void> {
-    const actorId = (req as any).user?.id;
+    const actorId = req.user?.id;
     if (!actorId) throw AppError.unauthorized('Nie zalogowano');
 
     const settings = await companySettingsService.updateSettings(req.body, actorId);

@@ -79,7 +79,7 @@ class HallController {
   async createHall(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const data = req.body;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) {
         throw AppError.unauthorized('User not authenticated');
@@ -102,7 +102,7 @@ class HallController {
    */
   async updateHall(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) {
         throw AppError.unauthorized('User not authenticated');
@@ -120,7 +120,7 @@ class HallController {
    */
   async deleteHall(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) {
         throw AppError.unauthorized('User not authenticated');

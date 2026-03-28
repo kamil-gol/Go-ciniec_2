@@ -9,7 +9,7 @@ import { AppError } from '../utils/AppError';
 
 export class NotificationController {
   async getNotifications(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized();
 
     const page = parseInt(req.query.page as string) || 1;
@@ -26,7 +26,7 @@ export class NotificationController {
   }
 
   async getUnreadCount(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized();
 
     const count = await notificationService.getUnreadCount(userId);
@@ -35,7 +35,7 @@ export class NotificationController {
   }
 
   async markAsRead(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized();
 
     const { id } = req.params;
@@ -45,7 +45,7 @@ export class NotificationController {
   }
 
   async markAllAsRead(req: Request, res: Response): Promise<void> {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) throw AppError.unauthorized();
 
     await notificationService.markAllAsRead(userId);

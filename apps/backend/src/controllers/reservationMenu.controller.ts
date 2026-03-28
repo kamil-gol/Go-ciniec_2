@@ -90,7 +90,7 @@ export class ReservationMenuController {
 
   async selectMenu(req: Request, res: Response): Promise<void> {
     const { id: reservationId } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     // Zod validation
     const data = selectMenuSchema.parse(req.body);
@@ -162,7 +162,7 @@ export class ReservationMenuController {
    */
   async updateMenu(req: Request, res: Response): Promise<void> {
     const { id: reservationId } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     // Use same schema as selectMenu - full menu data
     const data = selectMenuSchema.parse(req.body);
@@ -215,7 +215,7 @@ export class ReservationMenuController {
    */
   async deleteMenu(req: Request, res: Response): Promise<void> {
     const { id: reservationId } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },

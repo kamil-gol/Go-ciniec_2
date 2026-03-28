@@ -12,7 +12,7 @@ import { CreateEventTypeDTO, UpdateEventTypeDTO } from '../types/eventType.types
 export class EventTypeController {
   async createEventType(req: Request, res: Response, _next?: NextFunction): Promise<void> {
     const { name, description, color, isActive, standardHours, extraHourRate } = req.body;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) {
       throw AppError.unauthorized('User not authenticated');
@@ -58,7 +58,7 @@ export class EventTypeController {
   async updateEventType(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const { name, description, color, isActive, standardHours, extraHourRate } = req.body;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) {
       throw AppError.unauthorized('User not authenticated');
@@ -83,7 +83,7 @@ export class EventTypeController {
 
   async deleteEventType(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) {
       throw AppError.unauthorized('User not authenticated');

@@ -163,7 +163,7 @@ export async function recalculateReservationTotalPrice(
 ): Promise<number> {
   const breakdown = await computeReservationBasePrice(reservationId);
 
-  const updateData: any = {
+  const updateData: Record<string, number | null> = {
     totalPrice: breakdown.totalPrice,
     extrasTotalPrice: breakdown.extrasTotal,
     extraHoursCost: breakdown.extraHoursCost,

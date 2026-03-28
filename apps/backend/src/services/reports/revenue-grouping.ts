@@ -5,6 +5,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/prisma-client';
 import type {
   RevenueBreakdownItem,
   RevenueByHallItem,
@@ -13,7 +14,19 @@ import type {
 } from '@/types/reports.types';
 import { getReservationDate } from './report-helpers';
 
-export function groupRevenueByDay(reservations: any[]): RevenueBreakdownItem[] {
+/** Minimal reservation shape needed for revenue grouping */
+interface RevenueReservation {
+  id: string;
+  date: string | null;
+  startTime: string | null;
+  startDateTime: Date | null;
+  totalPrice: number | string | Prisma.Decimal | null;
+  status: string;
+  hall?: { id: string; name: string } | null;
+  eventType?: { id: string; name: string } | null;
+}
+
+export function groupRevenueByDay(reservations: RevenueReservation[]): RevenueBreakdownItem[] {
   const grouped = new Map<string, { revenue: number; count: number }>();
   reservations.forEach(r => {
     const period = getReservationDate(r);
@@ -41,7 +54,7 @@ export function getWeekNumber(date: Date): number {
 }
 
 export function groupRevenueByPeriod(
-  reservations: any[],
+  reservations: RevenueReservation[],
   groupBy: GroupByPeriod
 ): RevenueBreakdownItem[] {
   const grouped = new Map<string, { revenue: number; count: number }>();
@@ -81,7 +94,7 @@ export function groupRevenueByPeriod(
     .sort((a, b) => a.period.localeCompare(b.period));
 }
 
-export function groupRevenueByHall(reservations: any[]): RevenueByHallItem[] {
+export function groupRevenueByHall(reservations: RevenueReservation[]): RevenueByHallItem[] {
   const grouped = new Map<string, { name: string; revenue: number; count: number }>();
   reservations.forEach(r => {
     if (!r.hall) return;
@@ -103,7 +116,7 @@ export function groupRevenueByHall(reservations: any[]): RevenueByHallItem[] {
     .sort((a, b) => b.revenue - a.revenue);
 }
 
-export function groupRevenueByEventType(reservations: any[]): RevenueByEventTypeItem[] {
+export function groupRevenueByEventType(reservations: RevenueReservation[]): RevenueByEventTypeItem[] {
   const grouped = new Map<string, { name: string; revenue: number; count: number }>();
   reservations.forEach(r => {
     if (!r.eventType) return;
@@ -132,7 +145,7 @@ export function groupRevenueByEventType(reservations: any[]): RevenueByEventType
 export async function getPreviousPeriodRevenue(
   dateFrom: string,
   dateTo: string,
-  whereClause: any
+  whereClause: Prisma.ReservationWhereInput
 ): Promise<number> {
   const from = new Date(dateFrom);
   const to = new Date(dateTo);

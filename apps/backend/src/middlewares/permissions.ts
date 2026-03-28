@@ -157,8 +157,8 @@ export const requirePermission = (...requiredPermissions: string[]) => {
       }
 
       // Attach permissions to request for downstream use
-      (req as any).userPermissions = permissions;
-      (req as any).userRoleName = roleName;
+      req.userPermissions = permissions;
+      req.userRoleName = roleName;
 
       next();
     } catch (error) {
@@ -200,8 +200,8 @@ export const requireAnyPermission = (...requiredPermissions: string[]) => {
         );
       }
 
-      (req as any).userPermissions = permissions;
-      (req as any).userRoleName = roleName;
+      req.userPermissions = permissions;
+      req.userRoleName = roleName;
 
       next();
     } catch (error) {
@@ -222,7 +222,7 @@ export const attachPermissionCheck = (...permissionsToCheck: string[]) => {
   return async (req: AuthenticatedRequest, _res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user) {
-        (req as any).permissionResults = {};
+        req.permissionResults = {};
         return next();
       }
 
@@ -233,12 +233,12 @@ export const attachPermissionCheck = (...permissionsToCheck: string[]) => {
         results[perm] = permissions.has('*') || permissions.has(perm);
       }
 
-      (req as any).permissionResults = results;
-      (req as any).userPermissions = permissions;
+      req.permissionResults = results;
+      req.userPermissions = permissions;
 
       next();
     } catch (error) {
-      (req as any).permissionResults = {};
+      req.permissionResults = {};
       next();
     }
   };

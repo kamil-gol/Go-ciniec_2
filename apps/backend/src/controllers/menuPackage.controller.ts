@@ -99,7 +99,7 @@ export class MenuPackageController {
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const data = createMenuPackageSchema.parse(req.body) as unknown as CreateMenuPackageInput;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -126,7 +126,7 @@ export class MenuPackageController {
     try {
       const { id } = req.params;
       const data = updateMenuPackageSchema.parse(req.body) as unknown as UpdateMenuPackageInput;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) throw AppError.unauthorized('User not authenticated');
 
@@ -158,7 +158,7 @@ export class MenuPackageController {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) throw AppError.unauthorized('User not authenticated');
 
