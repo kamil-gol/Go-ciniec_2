@@ -32,8 +32,13 @@ echo ""
 # Domyślnie localhost:4000 (dev frontend w Docker na tym samym serwerze)
 # Aby testować publiczny URL: PLAYWRIGHT_TEST_BASE_URL=https://dev.gosciniec.online ./e2e/run-audit.sh
 export PLAYWRIGHT_TEST_BASE_URL="${PLAYWRIGHT_TEST_BASE_URL:-http://localhost:4000}"
-export TEST_ADMIN_EMAIL="$email"
-export TEST_ADMIN_PASSWORD="$password"
+# Export z single-quote ochroną przed interpretacją znaków specjalnych
+export TEST_ADMIN_EMAIL="${email}"
+export TEST_ADMIN_PASSWORD="${password}"
+
+# Debug: pokaż długość hasła (nie treść)
+echo "   Email: ${TEST_ADMIN_EMAIL}"
+echo "   Password length: ${#TEST_ADMIN_PASSWORD} chars"
 
 npx playwright test specs/13-uiux-audit3.spec.ts \
   --project=chromium \
