@@ -191,13 +191,13 @@ describe('ClientsList', () => {
     it('should show empty state when no clients exist', () => {
       render(<ClientsList clients={[]} />)
       expect(screen.getByText('Brak klientów')).toBeInTheDocument()
-      expect(screen.getByText('Dodaj pierwszego klienta, aby rozpocząć')).toBeInTheDocument()
+      expect(screen.getByText('Nie masz jeszcze żadnych klientów w bazie. Dodaj pierwszego klienta, aby rozpocząć zarządzanie kontaktami.')).toBeInTheDocument()
     })
 
     it('should show search empty state when search finds nothing', () => {
       render(<ClientsList clients={mockClients} searchQuery="XXXXXX" />)
       expect(screen.getByText('Nie znaleziono klientów')).toBeInTheDocument()
-      expect(screen.getByText('Spróbuj zmienić kryteria wyszukiwania')).toBeInTheDocument()
+      expect(screen.getByText('Spróbuj zmienić kryteria wyszukiwania lub wyczyść filtr, aby zobaczyć wszystkich klientów.')).toBeInTheDocument()
     })
   })
 

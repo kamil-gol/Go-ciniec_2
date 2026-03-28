@@ -51,7 +51,7 @@ export function CompanyTab() {
   }
 
   if (loading) return (
-    <div className="rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 p-6 lg:p-8 space-y-6">
+    <div data-testid="loading" className="rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 p-6 lg:p-8 space-y-6">
       {/* Header skeleton */}
       <div className="flex items-center gap-3">
         <Skeleton className="h-10 w-10 rounded-xl" />

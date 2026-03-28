@@ -216,7 +216,7 @@ export default function DepositsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-4 sm:p-6 space-y-3">
+            <div data-testid="loading-state" className="p-4 sm:p-6 space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-20 rounded-xl" />
               ))}

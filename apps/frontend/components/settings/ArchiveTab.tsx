@@ -68,7 +68,7 @@ export function ArchiveTab() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div data-testid="loading-state" className="space-y-6">
         {/* Settings card skeleton */}
         <div className="rounded-2xl border p-6 space-y-4">
           <div className="flex items-center gap-3">

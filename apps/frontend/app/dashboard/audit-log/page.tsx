@@ -145,7 +145,7 @@ export default function AuditLogPage() {
       {statsLoading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 rounded-xl" />
+            <Skeleton key={i} data-testid="loading-state" className="h-24 rounded-xl" />
           ))}
         </div>
       )}
@@ -205,7 +205,7 @@ export default function AuditLogPage() {
 
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-4 sm:p-6 space-y-3">
+            <div data-testid="loading-state" className="p-4 sm:p-6 space-y-3">
               {Array.from({ length: 8 }).map((_, i) => (
                 <Skeleton key={i} className="h-16 rounded-xl" />
               ))}

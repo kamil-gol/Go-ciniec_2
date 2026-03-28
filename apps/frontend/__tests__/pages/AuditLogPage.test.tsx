@@ -61,7 +61,6 @@ vi.mock('@/components/shared', () => ({
       <span>{value}</span>
     </div>
   ),
-  LoadingState: ({ message }: any) => <div data-testid="loading-state">{message}</div>,
   EmptyState: ({ title, description }: any) => (
     <div data-testid="empty-state">
       <h3>{title}</h3>
@@ -79,6 +78,10 @@ vi.mock('@/components/ui/card', () => ({
 
 vi.mock('@/components/ui/button', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+}))
+
+vi.mock('@/components/ui/skeleton', () => ({
+  Skeleton: (props: any) => <div {...props} />,
 }))
 
 vi.mock('@/components/audit-log/AuditLogFilters', () => ({

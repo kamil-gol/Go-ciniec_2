@@ -77,7 +77,7 @@ export function UsersTab() {
   }
 
   if (loading) return (
-    <div className="space-y-4">
+    <div data-testid="loading-state" className="space-y-4">
       {/* Search bar skeleton */}
       <div className="flex items-center justify-between gap-4">
         <Skeleton className="h-10 w-80 rounded-lg" />

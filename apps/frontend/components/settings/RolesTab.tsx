@@ -107,7 +107,7 @@ export function RolesTab() {
   }
 
   if (loading) return (
-    <div className="space-y-6">
+    <div data-testid="loading-state" className="space-y-6">
       {/* Header skeleton */}
       <div className="flex items-center justify-between">
         <Skeleton className="h-5 w-64 rounded-lg" />
