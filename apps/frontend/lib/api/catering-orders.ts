@@ -212,4 +212,5 @@ export const CATERING_DELIVERY_LABELS: Record<CateringDeliveryType, string> = {
 }
 
 /** @deprecated Use formatCurrency from '@/lib/utils' instead */
-export { formatCurrency as formatCateringCurrency } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
+export const formatCateringCurrency = formatCurrency

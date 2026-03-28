@@ -5,7 +5,9 @@ export type { CateringOrder, CateringDeposit };
 
 // ═══ HELPERS ═══
 
-export { formatCurrency as formatPrice, formatDateLong as formatDatePl } from '@/lib/utils'
+import { formatCurrency, formatDateLong } from '@/lib/utils'
+export const formatPrice = formatCurrency
+export const formatDatePl = formatDateLong
 
 export function getInitials(
   firstName?: string | null,
