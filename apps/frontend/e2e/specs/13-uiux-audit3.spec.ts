@@ -18,12 +18,23 @@ import { manualLogin as login } from '../fixtures/auth.fixture';
  *   ... --update-snapshots
  */
 
-const ADMIN_EMAIL = 'kamilgolebiowski@10g.pl';
-const ADMIN_PASSWORD = 'Admin123!@#';
+const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl';
+const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || '';
+
+// Fail fast if password not provided
+if (!ADMIN_PASSWORD) {
+  throw new Error(
+    'TEST_ADMIN_PASSWORD is required.\n' +
+    'Usage: TEST_ADMIN_PASSWORD=xxx npx playwright test specs/13-uiux-audit3.spec.ts'
+  );
+}
+
+// Zwiększony timeout dla dev serwera (Turbopack cold start ~15s)
+test.setTimeout(90_000);
 
 async function waitForPageStable(page: import('@playwright/test').Page) {
   await page.waitForLoadState('domcontentloaded');
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2000);
 }
 
 async function toggleDarkMode(page: import('@playwright/test').Page) {
@@ -46,6 +57,8 @@ async function isDarkMode(page: import('@playwright/test').Page): Promise<boolea
 
 test.describe('DT-01: Em-dash w tabeli Zaliczek (#369)', () => {
   test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   });
 
@@ -115,6 +128,8 @@ test.describe('DT-01: Em-dash w tabeli Zaliczek (#369)', () => {
 
 test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
   test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   });
 
@@ -207,6 +222,8 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
 
 test.describe('Dark Mode — wszystkie moduły (#371-#374)', () => {
   test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   });
 
@@ -364,6 +381,8 @@ test.describe('Dark Mode — wszystkie moduły (#371-#374)', () => {
 
 test.describe('Mobile responsywność (#377)', () => {
   test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   });
 
@@ -418,6 +437,8 @@ test.describe('Mobile responsywność (#377)', () => {
 
 test.describe('Light mode baseline screenshots', () => {
   test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   });
 
