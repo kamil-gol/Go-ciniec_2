@@ -15,7 +15,6 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useReservations, useUnarchiveReservation } from '@/lib/api/reservations'
 import { formatCurrency } from '@/lib/utils'

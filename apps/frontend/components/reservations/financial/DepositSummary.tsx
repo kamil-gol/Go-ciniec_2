@@ -1,7 +1,7 @@
 'use client'
 
 import {
-  DollarSign, Plus, FileDown, CheckCircle2, Clock,
+  DollarSign, Plus, FileDown, CheckCircle2,
   XCircle, Loader2, ExternalLink, CalendarDays,
   Undo2, Mail, Trash2, ChevronDown, ChevronUp,
 } from 'lucide-react'

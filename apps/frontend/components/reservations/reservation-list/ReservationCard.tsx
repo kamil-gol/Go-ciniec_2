@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { formatCurrency } from '@/lib/utils'
 import {
