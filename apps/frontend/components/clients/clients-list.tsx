@@ -165,24 +165,32 @@ export function ClientsList({ clients, searchQuery, rodoMap = {} }: ClientsListP
                     {/* Contact details */}
                     <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500 dark:text-neutral-400">
                       {client.email && !isDeleted && (
-                        <a
-                          href={`mailto:${client.email}`}
-                          className="flex items-center gap-1 hover:text-primary transition-colors"
-                          onClick={(e) => e.stopPropagation()}
+                        <span
+                          role="link"
+                          className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            window.location.href = `mailto:${client.email}`
+                          }}
                         >
                           <Mail className="h-3 w-3" />
                           <span>{client.email}</span>
-                        </a>
+                        </span>
                       )}
                       {!isDeleted && (
-                        <a
-                          href={`tel:${client.phone}`}
-                          className="flex items-center gap-1 hover:text-primary transition-colors"
-                          onClick={(e) => e.stopPropagation()}
+                        <span
+                          role="link"
+                          className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            window.location.href = `tel:${client.phone}`
+                          }}
                         >
                           <Phone className="h-3 w-3" />
                           <span>{client.phone}</span>
-                        </a>
+                        </span>
                       )}
                       {!isDeleted && isCompany && client.nip && (
                         <div className="flex items-center gap-1">
