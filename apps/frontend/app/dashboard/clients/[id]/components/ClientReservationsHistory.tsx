@@ -45,7 +45,7 @@ export function ClientReservationsHistory({ reservations, clientId, isDeleted }:
         return (
           <Link key={reservation.id} href={`/dashboard/reservations/${reservation.id}`}>
             <Card className="border-0 bg-white dark:bg-black/20 shadow-sm hover:shadow-md transition-all cursor-pointer rounded-lg">
-              <CardContent className="p-4">
+              <CardContent className="!p-4">
                 <div className="flex items-start justify-between">
                   <div className="space-y-2 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
