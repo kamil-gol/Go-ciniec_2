@@ -36,47 +36,37 @@ async function waitForPageStable(page: import('@playwright/test').Page) {
 }
 
 async function ensureLoggedIn(page: import('@playwright/test').Page) {
-  // Strategy: login via API, then set token in localStorage
-  const baseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:4000';
-  // Backend API runs on port 4001 (dev) when frontend is on 4000
-  const apiUrl = baseUrl.replace(':4000', ':4001').replace(':3000', ':3001');
-
-  // First navigate to the app so we can set localStorage on the correct origin
   await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
 
-  // Login via API
-  const response = await page.evaluate(async ({ email, password, apiUrl }) => {
-    try {
-      const res = await fetch(`${apiUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (data.success && data.data?.token) {
-        localStorage.setItem('token', data.data.token);
-        if (data.data.refreshToken) {
-          localStorage.setItem('refreshToken', data.data.refreshToken);
-        }
-        return { ok: true };
-      }
-      return { ok: false, error: data.message || 'Login failed' };
-    } catch (e: any) {
-      return { ok: false, error: e.message };
-    }
-  }, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD, apiUrl });
+  // Jeśli już zalogowany (przekierowanie na dashboard)
+  if (!page.url().includes('/login')) return;
 
-  if (!response.ok) {
-    throw new Error(`API login failed for ${ADMIN_EMAIL}: ${response.error}`);
+  // Wyczyść pola i wpisz dane — type() triggeruje onChange (fill() nie zawsze)
+  const emailInput = page.locator('input[name="email"]');
+  await emailInput.click();
+  await emailInput.fill('');
+  await emailInput.type(ADMIN_EMAIL, { delay: 10 });
+
+  const passInput = page.locator('input[name="password"]');
+  await passInput.click();
+  await passInput.fill('');
+  await passInput.type(ADMIN_PASSWORD, { delay: 10 });
+
+  await page.click('button[type="submit"]');
+
+  // Czekaj na redirect do dashboard
+  try {
+    await page.waitForURL(/\/dashboard/, { timeout: 30_000, waitUntil: 'domcontentloaded' });
+  } catch {
+    // Może redirect jest wolny — czekamy
+    await page.waitForTimeout(5000);
   }
 
-  // Navigate to dashboard with the token set
-  await page.goto('/dashboard', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  await page.waitForTimeout(3000);
-
   if (page.url().includes('/login')) {
-    throw new Error(`Login succeeded via API but redirect to login — check auth flow`);
+    // Sprawdź czy jest komunikat błędu
+    const errorMsg = await page.locator('text=Błąd logowania, text=Niepoprawny').textContent().catch(() => '');
+    throw new Error(`Login failed for ${ADMIN_EMAIL} — still on login page. Error: ${errorMsg}`);
   }
 }
 
