@@ -212,64 +212,67 @@ export default function ClientDetailsPage() {
                 </Card>
               )}
 
-              <Card className="border-0 shadow-xl">
-                <CardHeader className="border-b">
-                  <CardTitle className="text-lg mb-3">Szybkie akcje</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 space-y-3">
-                  {!isDeleted && (
-                    <>
-                      <Link href={`/dashboard/reservations/new?clientId=${client.id}`}>
-                        <Button variant="outline" className="w-full justify-start" size="lg">
-                          <Calendar className="mr-2 h-4 w-4 flex-shrink-0" />
-                          Nowa rezerwacja
+              <Card className="border-0 shadow-xl overflow-hidden">
+                <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-red-950/30 p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg shadow-lg">
+                      <Sparkles className="h-5 w-5 text-white" />
+                    </div>
+                    <h2 className="text-xl font-bold">Szybkie akcje</h2>
+                  </div>
+                  <div className="space-y-3">
+                    {!isDeleted && (
+                      <>
+                        <Link href={`/dashboard/reservations/new?clientId=${client.id}`}>
+                          <Button variant="outline" className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md" size="lg">
+                            <Calendar className="mr-2 h-4 w-4 flex-shrink-0" />
+                            Nowa rezerwacja
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md"
+                          size="lg"
+                          onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
+                        >
+                          <Edit className="mr-2 h-4 w-4 flex-shrink-0" />
+                          Edytuj dane
                         </Button>
-                      </Link>
+                      </>
+                    )}
+                    {!isDeleted && (
                       <Button
                         variant="outline"
-                        className="w-full justify-start"
+                        className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md text-red-600 hover:text-red-700"
                         size="lg"
-                        onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
+                        disabled={deleting}
+                        onClick={() => setShowDeleteModal(true)}
                       >
-                        <Edit className="mr-2 h-4 w-4 flex-shrink-0" />
-                        Edytuj dane
+                        <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
+                        Usuń klienta
                       </Button>
-                    </>
-                  )}
-                  {!isDeleted && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-red-600 hover:text-red-700"
-                      size="lg"
-                      disabled={deleting}
-                      onClick={() => setShowDeleteModal(true)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
-                      Usuń klienta
-                    </Button>
-                  )}
-                </CardContent>
+                    )}
+                  </div>
+                </div>
               </Card>
             </div>
 
             {/* Right Column - Reservations History + Attachments */}
             <div className="lg:col-span-2 space-y-6 min-w-0">
-              <Card className="border-0 shadow-xl">
-                <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+              <Card className="border-0 shadow-xl overflow-hidden">
+                <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
                       <Sparkles className="h-5 w-5 text-white" />
                     </div>
-                    <CardTitle className="text-2xl font-bold">Historia rezerwacji</CardTitle>
+                    <h2 className="text-xl font-bold">Historia rezerwacji</h2>
                   </div>
-                </CardHeader>
-                <CardContent className="p-6">
                   <ClientReservationsHistory
                     reservations={reservations}
                     clientId={client.id}
                     isDeleted={isDeleted}
                   />
-                </CardContent>
+                </div>
               </Card>
 
               {/* Attachments Panel */}
