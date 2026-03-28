@@ -23,6 +23,8 @@ interface StatCardProps {
   delay?: number
   /** Optional onClick handler */
   onClick?: () => void
+  /** Show skeleton loading state */
+  isLoading?: boolean
 }
 
 /**
@@ -46,7 +48,26 @@ export function StatCard({
   subtitle,
   delay = 0,
   onClick,
+  isLoading = false,
 }: StatCardProps) {
+  if (isLoading) {
+    return (
+      <div className={cn(
+        'rounded-2xl bg-white dark:bg-neutral-800/80 p-6 shadow-soft',
+        'border border-neutral-100 dark:border-neutral-700/50 animate-pulse'
+      )}>
+        <div className="flex items-start justify-between">
+          <div className="flex-1 space-y-3">
+            <div className="h-3 w-1/2 rounded bg-neutral-200 dark:bg-neutral-700" />
+            <div className="h-7 w-1/3 rounded bg-neutral-200 dark:bg-neutral-700" />
+            <div className="h-3 w-2/3 rounded bg-neutral-100 dark:bg-neutral-700/50" />
+          </div>
+          <div className="h-12 w-12 rounded-xl bg-neutral-200 dark:bg-neutral-700" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}

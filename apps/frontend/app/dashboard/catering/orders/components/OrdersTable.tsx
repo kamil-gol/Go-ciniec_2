@@ -1,6 +1,5 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -12,17 +11,12 @@ import {
 } from '@/components/ui/table';
 import type {
   CateringOrderListItem,
-  CateringOrderStatus,
   CateringDeliveryType,
 } from '@/types/catering-order.types';
+import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { EmptyState } from '@/components/shared/EmptyState';
 import {
-  ORDER_STATUS_LABEL,
-  ORDER_STATUS_COLOR,
-  DELIVERY_TYPE_LABEL,
-} from '@/types/catering-order.types';
-import {
-  ChevronLeft,
-  ChevronRight,
   ShoppingBag,
   Building2,
   User,
@@ -30,6 +24,7 @@ import {
   ShoppingCart,
   Truck,
 } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 
 interface Props {
   orders: CateringOrderListItem[];
@@ -67,13 +62,12 @@ function clientName(order: CateringOrderListItem) {
 export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
   if (orders.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-700 py-20 bg-neutral-50 dark:bg-neutral-900/30">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 flex items-center justify-center mb-4">
-          <ShoppingBag className="h-7 w-7 text-orange-500 dark:text-orange-400" />
-        </div>
-        <p className="font-semibold text-neutral-700 dark:text-neutral-300">Brak zamówień</p>
-        <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-1">Spróbuj zmienić filtry lub utwórz nowe zamówienie</p>
-      </div>
+      <EmptyState
+        icon={ShoppingBag}
+        title="Brak zamówień"
+        description="Spróbuj zmienić filtry lub utwórz nowe zamówienie"
+        variant="dashed"
+      />
     );
   }
 
@@ -129,12 +123,7 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    className={`text-xs font-medium ${ORDER_STATUS_COLOR[order.status as CateringOrderStatus]}`}
-                    variant="outline"
-                  >
-                    {ORDER_STATUS_LABEL[order.status as CateringOrderStatus]}
-                  </Badge>
+                  <StatusBadge type="catering" status={order.status} />
                 </TableCell>
                 <TableCell className="text-right font-semibold text-neutral-900 dark:text-neutral-100">
                   {formatPrice(order.totalPrice)}
@@ -145,34 +134,12 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
         </Table>
       </div>
 
-      {meta && meta.totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-neutral-500 dark:text-neutral-400">
-          <span>
-            Strona <strong className="text-neutral-800 dark:text-neutral-200">{meta.page}</strong> z {meta.totalPages}
-            <span className="ml-2 text-xs">({meta.total} wyników)</span>
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={meta.page <= 1}
-              onClick={() => onPageChange(meta.page - 1)}
-              className="rounded-xl"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={meta.page >= meta.totalPages}
-              onClick={() => onPageChange(meta.page + 1)}
-              className="rounded-xl"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={meta?.page ?? 1}
+        totalPages={meta?.totalPages ?? 1}
+        total={meta?.total}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 }

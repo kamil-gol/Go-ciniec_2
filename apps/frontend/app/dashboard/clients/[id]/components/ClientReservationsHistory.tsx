@@ -1,26 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { Calendar, Clock, CheckCircle2, XCircle, Building2 } from 'lucide-react'
+import { Calendar, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Oczekująca',
-  CONFIRMED: 'Potwierdzona',
-  CANCELLED: 'Anulowana',
-  COMPLETED: 'Zakończona',
-}
-
-const STATUS_CONFIG: Record<string, { color: string; icon: any }> = {
-  PENDING: { color: 'bg-orange-500', icon: Clock },
-  CONFIRMED: { color: 'bg-green-500', icon: CheckCircle2 },
-  CANCELLED: { color: 'bg-red-500', icon: XCircle },
-  COMPLETED: { color: 'bg-blue-500', icon: CheckCircle2 },
-}
 
 interface ClientReservationsHistoryProps {
   reservations: any[]
@@ -56,10 +42,6 @@ export function ClientReservationsHistory({ reservations, clientId, isDeleted }:
           ? new Date(reservation.date)
           : null
 
-        const statusCfg = STATUS_CONFIG[reservation.status] || STATUS_CONFIG.PENDING
-        const StatusIcon = statusCfg.icon
-        const statusLabel = STATUS_LABELS[reservation.status] || reservation.status
-
         return (
           <Link key={reservation.id} href={`/dashboard/reservations/${reservation.id}`}>
             <Card className="border-2 hover:border-indigo-300 transition-all hover:shadow-lg cursor-pointer">
@@ -67,10 +49,7 @@ export function ClientReservationsHistory({ reservations, clientId, isDeleted }:
                 <div className="flex items-start justify-between">
                   <div className="space-y-2 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <Badge className={`${statusCfg.color} text-white border-0`}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {statusLabel}
-                      </Badge>
+                      <StatusBadge type="reservation" status={reservation.status} variant="solid" />
                       {eventDate && (
                         <span className="text-sm text-muted-foreground">
                           {format(eventDate, 'dd MMM yyyy', { locale: pl })}

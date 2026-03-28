@@ -39,7 +39,7 @@ export function StepTemplate({
           value={templateId || 'NONE'}
           onValueChange={v => set({ templateId: v === 'NONE' ? '' : v, packageId: '' })}
         >
-          <SelectTrigger className="h-11 bg-white dark:bg-neutral-900">
+          <SelectTrigger className="h-9 bg-white dark:bg-neutral-900">
             <SelectValue placeholder="Wybierz szablon" />
           </SelectTrigger>
           <SelectContent>
@@ -64,7 +64,7 @@ export function StepTemplate({
             value={packageId || 'NONE'}
             onValueChange={v => set({ packageId: v === 'NONE' ? '' : v })}
           >
-            <SelectTrigger className="h-11 bg-white dark:bg-neutral-900">
+            <SelectTrigger className="h-9 bg-white dark:bg-neutral-900">
               <SelectValue placeholder="Wybierz pakiet" />
             </SelectTrigger>
             <SelectContent>
