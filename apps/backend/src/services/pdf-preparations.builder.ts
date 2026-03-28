@@ -25,23 +25,7 @@
  */
 
 import type { PreparationsReport } from '@/types/reports.types';
-
-const COLORS = {
-  primary: '#1a2332',
-  primaryLight: '#2c3e50',
-  accent: '#c8a45a',
-  success: '#27ae60',
-  warning: '#f39c12',
-  danger: '#e74c3c',
-  info: '#3498db',
-  textDark: '#1a2332',
-  textMuted: '#7f8c8d',
-  textLight: '#bdc3c7',
-  border: '#dce1e8',
-  bgLight: '#f4f6f9',
-  bgWhite: '#ffffff',
-  purple: '#8e44ad',
-};
+import { COLORS } from './pdf/pdf.types';
 
 const PAGE_HEIGHT = 841.89;  // A4
 const FOOTER_AREA = 50;
