@@ -179,7 +179,9 @@ describe('ReservationCalendar (date grouping view)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.queryByText(/rezerwacji$/i)).toBeInTheDocument()
+      // The "N rezerwacji" count badge only appears when > 1 reservations on a date
+      // With 1 reservation, no badge like "1 rezerwacji" should appear in the date header
+      expect(screen.queryByText('1 rezerwacji')).toBeNull()
     })
   })
 

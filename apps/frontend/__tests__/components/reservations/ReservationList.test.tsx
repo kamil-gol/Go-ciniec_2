@@ -233,14 +233,14 @@ describe('ReservationsList', () => {
       renderWithProviders(<ReservationsList />)
 
       // Each reservation should have view, PDF, archive, and delete buttons
-      const links = screen.getAllByTitle('Zobacz szczegóły i edytuj')
+      const links = screen.getAllByLabelText('Podgląd szczegółów')
       expect(links.length).toBe(3)
     })
 
     it('should disable delete button for cancelled reservations', () => {
       renderWithProviders(<ReservationsList />)
 
-      const deleteButtons = screen.getAllByTitle('Anuluj rezerwację')
+      const deleteButtons = screen.getAllByLabelText('Anuluj rezerwację')
       // The cancelled reservation (res-3) delete button should be disabled
       const cancelledDeleteBtn = deleteButtons[deleteButtons.length - 1]
       expect(cancelledDeleteBtn).toBeInTheDocument()
@@ -261,7 +261,11 @@ describe('ReservationsList', () => {
     it('should not show pagination when there is only one page', () => {
       renderWithProviders(<ReservationsList />)
 
-      expect(screen.queryByText(/następna/i)).toBeNull()
+      // Pagination bar always shows now, but buttons should be disabled on single page
+      const nextButton = screen.getByText(/następna/i).closest('button')
+      expect(nextButton?.disabled).toBe(true)
+      const prevButton = screen.getByText(/poprzednia/i).closest('button')
+      expect(prevButton?.disabled).toBe(true)
     })
 
     it('should show pagination controls when multiple pages exist', () => {
