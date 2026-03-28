@@ -83,7 +83,7 @@ export function StepDelivery({ state, set, isStep4Valid }: StepDeliveryProps) {
             deliveryTime: '',
           })}
         >
-          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             {(Object.entries(DELIVERY_TYPE_LABEL) as [CateringDeliveryType, string][]).map(([v, l]) => (
               <SelectItem key={v} value={v}>{l}</SelectItem>
@@ -104,7 +104,7 @@ export function StepDelivery({ state, set, isStep4Valid }: StepDeliveryProps) {
               <Clock className="w-3.5 h-3.5" /> Godzina odbioru <span className="text-red-500">*</span>
             </Label>
             <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })}
-              className={`h-11 max-w-[160px] ${!state.deliveryTime ? 'border-red-300 dark:border-red-700' : ''}`} />
+              className={`h-9 max-w-[160px] ${!state.deliveryTime ? 'border-red-300 dark:border-red-700' : ''}`} />
           </div>
           {state.eventDate && (
             <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
@@ -126,7 +126,7 @@ export function StepDelivery({ state, set, isStep4Valid }: StepDeliveryProps) {
               <Clock className="w-3.5 h-3.5" /> Godzina przyjazdu <span className="text-red-500">*</span>
             </Label>
             <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })}
-              className={`h-11 max-w-[160px] ${!state.deliveryTime ? 'border-red-300 dark:border-red-700' : ''}`} />
+              className={`h-9 max-w-[160px] ${!state.deliveryTime ? 'border-red-300 dark:border-red-700' : ''}`} />
           </div>
           {addressSection('Adres klienta')}
           {state.eventDate && (
@@ -158,7 +158,7 @@ export function StepDelivery({ state, set, isStep4Valid }: StepDeliveryProps) {
               <Clock className="w-3.5 h-3.5" /> Godzina dostawy <span className="text-red-500">*</span>
             </Label>
             <Input type="time" value={state.deliveryTime} onChange={e => set({ deliveryTime: e.target.value })}
-              className={`h-11 max-w-[160px] ${!state.deliveryTime ? 'border-red-300 dark:border-red-700' : ''}`} />
+              className={`h-9 max-w-[160px] ${!state.deliveryTime ? 'border-red-300 dark:border-red-700' : ''}`} />
           </div>
         </motion.div>
       )}

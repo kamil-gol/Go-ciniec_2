@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
-  Loader2,
 } from 'lucide-react';
 import { useCateringOrders } from '@/hooks/use-catering-orders';
 import { Button } from '@/components/ui/button';
@@ -16,22 +15,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { OrdersTable } from './components/OrdersTable';
 import { OrdersFilters } from './components/OrdersFilters';
 import { NewOrderWizard } from './components/NewOrderWizard';
-import { PageLayout, PageHero, StatCard } from '@/components/shared';
-import type { ModuleAccent } from '@/lib/design-tokens';
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
+import { moduleAccents } from '@/lib/design-tokens';
 import type { CateringOrdersFilter } from '@/types/catering-order.types';
 
-// Accent zdefiniowany inline — nie przez moduleAccents[key], żeby uniknąć błędu przy cache buildowym
-const CATERING_ACCENT: ModuleAccent = {
-  name: 'Catering',
-  gradient: 'from-orange-600 via-orange-500 to-amber-600',
-  gradientSubtle: 'from-orange-500/5 via-amber-500/5 to-orange-500/5',
-  iconBg: 'from-orange-500 to-amber-500',
-  text: 'text-orange-600',
-  textDark: 'dark:text-orange-400',
-  ring: 'ring-orange-500/20',
-  badge: 'bg-orange-100 dark:bg-orange-900/30',
-  badgeText: 'text-orange-700 dark:text-orange-300',
-};
+const CATERING_ACCENT = moduleAccents.catering;
 
 export default function CateringOrdersPage() {
   const router = useRouter();
@@ -170,12 +158,18 @@ export default function CateringOrdersPage() {
         <CardContent className="p-4 sm:p-6 space-y-4">
           <OrdersFilters filter={filter} onChange={handleFilterChange} />
           {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <LoadingState variant="skeleton" rows={6} message="Wczytywanie zamówień..." />
+          ) : !data?.data?.length ? (
+            <EmptyState
+              icon={ShoppingBag}
+              title="Brak zamówień"
+              description="Utwórz pierwsze zamówienie cateringowe"
+              actionLabel="Nowe zamówienie"
+              onAction={() => setShowWizard(true)}
+            />
           ) : (
             <OrdersTable
-              orders={data?.data ?? []}
+              orders={data.data}
               meta={data?.meta}
               onPageChange={handlePageChange}
               onRowClick={(id) => router.push(`/dashboard/catering/orders/${id}`)}

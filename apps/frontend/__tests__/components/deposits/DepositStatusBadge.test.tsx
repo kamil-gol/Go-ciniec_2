@@ -30,9 +30,9 @@ describe('DepositStatusBadge', () => {
       expect(screen.getByText('Opłacona')).toBeInTheDocument()
     })
 
-    it('should render "Przetermin." for OVERDUE status', () => {
+    it('should render "Przeterminowana" for OVERDUE status', () => {
       render(<DepositStatusBadge status="OVERDUE" />)
-      expect(screen.getByText('Przetermin.')).toBeInTheDocument()
+      expect(screen.getByText('Przeterminowana')).toBeInTheDocument()
     })
 
     it('should render "Częściowa" for PARTIALLY_PAID status', () => {
@@ -62,9 +62,9 @@ describe('DepositStatusBadge', () => {
   })
 
   describe('Unknown Status', () => {
-    it('should return null for unknown status', () => {
-      const { container } = render(<DepositStatusBadge status={'UNKNOWN' as any} />)
-      expect(container.innerHTML).toBe('')
+    it('should render fallback "Nieznany" for unknown status', () => {
+      render(<DepositStatusBadge status={'UNKNOWN' as any} />)
+      expect(screen.getByText('Nieznany')).toBeInTheDocument()
     })
   })
 })

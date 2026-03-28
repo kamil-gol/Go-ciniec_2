@@ -34,13 +34,13 @@ export function EventSection({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Typ wydarzenia</label>
+        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Typ wydarzenia<span className="text-destructive ml-0.5" aria-hidden="true">*</span></label>
         <Controller
           name="eventTypeId"
           control={control}
           render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className={`h-11 ${errors.eventTypeId ? 'border-red-400 dark:border-red-500' : ''}`} aria-label="Wybierz typ wydarzenia">
+              <SelectTrigger className={`h-11 ${errors.eventTypeId ? 'border-red-400 dark:border-red-500' : ''}`} aria-label="Wybierz typ wydarzenia" aria-required="true">
                 <SelectValue placeholder="Wybierz typ wydarzenia..." />
               </SelectTrigger>
               <SelectContent>

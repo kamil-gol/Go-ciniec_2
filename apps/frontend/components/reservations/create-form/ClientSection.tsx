@@ -62,6 +62,7 @@ export function ClientSection({
               value={field.value}
               onChange={field.onChange}
               label="Klient"
+              aria-required="true"
               placeholder="Wyszukaj po nazwisku, firmie lub NIP..."
               searchPlaceholder="Wpisz imię, nazwisko, firmę lub NIP..."
               emptyMessage="Nie znaleziono klienta."

@@ -276,7 +276,7 @@ export default function ServiceExtrasPage() {
 
       {/* Dialog: Category Form */}
       <Dialog open={categoryFormOpen} onOpenChange={handleCategoryFormClose}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editingCategory ? 'Edytuj kategorię' : 'Nowa kategoria usług'}
@@ -291,7 +291,7 @@ export default function ServiceExtrasPage() {
 
       {/* Dialog: Item Form */}
       <Dialog open={itemFormOpen} onOpenChange={handleItemFormClose}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>
               {editingItem ? 'Edytuj pozycję' : 'Nowa pozycja usługi'}

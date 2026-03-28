@@ -114,7 +114,7 @@ export function DishCard({
               <select
                 value={quantity}
                 onChange={(e) => onQuantityChange(parseFloat(e.target.value))}
-                className="w-full px-3 py-1.5 border border-blue-300 dark:border-blue-700 rounded-md text-sm font-bold bg-white dark:bg-neutral-900 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
+                className="w-full px-3 py-1.5 border border-blue-300 dark:border-blue-700 rounded-md text-sm font-bold bg-white dark:bg-neutral-900 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-ring focus:border-blue-500 transition-all cursor-pointer"
               >
                 {availableOptions.map(opt => (
                   <option key={opt} value={opt}>

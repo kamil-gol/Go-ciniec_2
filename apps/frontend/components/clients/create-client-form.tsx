@@ -154,7 +154,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="companyName" className="text-base font-semibold">
-                Nazwa firmy <span className="text-red-500">*</span>
+                Nazwa firmy <span className="text-destructive ml-0.5" aria-hidden="true">*</span>
               </Label>
               <Input
                 id="companyName"
@@ -162,6 +162,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
                 value={formData.companyName}
                 onChange={handleChange}
                 placeholder="np. Budimex S.A."
+                aria-required="true"
                 className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
               />
             </div>
@@ -253,7 +254,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="firstName" className="text-base font-semibold">
-              Imię <span className="text-red-500">*</span>
+              Imię <span className="text-destructive ml-0.5" aria-hidden="true">*</span>
             </Label>
             <Input
               id="firstName"
@@ -262,13 +263,14 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
               onChange={handleChange}
               placeholder="Jan"
               required
+              aria-required="true"
               className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="lastName" className="text-base font-semibold">
-              Nazwisko <span className="text-red-500">*</span>
+              Nazwisko <span className="text-destructive ml-0.5" aria-hidden="true">*</span>
             </Label>
             <Input
               id="lastName"
@@ -277,6 +279,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
               onChange={handleChange}
               placeholder="Kowalski"
               required
+              aria-required="true"
               className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500"
             />
           </div>
@@ -309,7 +312,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
           <div className="space-y-2">
             <Label htmlFor="phone" className="text-base font-semibold flex items-center gap-2">
               <Phone className="h-4 w-4" />
-              Telefon <span className="text-red-500">*</span>
+              Telefon <span className="text-destructive ml-0.5" aria-hidden="true">*</span>
             </Label>
             <Input
               id="phone"
@@ -319,6 +322,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
               onChange={handleChange}
               placeholder="+48 123 456 789"
               required
+              aria-required="true"
               className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-blue-500"
             />
           </div>

@@ -47,9 +47,9 @@ export function OrdersFilters({ filter, onChange }: Props) {
   return (
     <div className="space-y-3">
       {/* Top row — search + selects */}
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3">
         {/* Search */}
-        <div className="relative flex-1 min-w-[220px]">
+        <div className="relative flex-1 w-full sm:min-w-[220px] sm:w-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500 pointer-events-none" />
           <Input
             placeholder="Numer, klient, wydarzenie..."
@@ -73,7 +73,7 @@ export function OrdersFilters({ filter, onChange }: Props) {
           value={filter.status ?? 'ALL'}
           onValueChange={v => onChange({ status: v === 'ALL' ? undefined : v as CateringOrderStatus })}
         >
-          <SelectTrigger className="w-44 h-10 rounded-xl">
+          <SelectTrigger className="w-full sm:w-44 h-10 rounded-xl">
             <SelectValue placeholder="Wszystkie statusy" />
           </SelectTrigger>
           <SelectContent>
@@ -89,7 +89,7 @@ export function OrdersFilters({ filter, onChange }: Props) {
           value={filter.deliveryType ?? 'ALL'}
           onValueChange={v => onChange({ deliveryType: v === 'ALL' ? undefined : v as CateringDeliveryType })}
         >
-          <SelectTrigger className="w-44 h-10 rounded-xl">
+          <SelectTrigger className="w-full sm:w-44 h-10 rounded-xl">
             <SelectValue placeholder="Typ realizacji" />
           </SelectTrigger>
           <SelectContent>
@@ -107,7 +107,7 @@ export function OrdersFilters({ filter, onChange }: Props) {
             type="date"
             value={filter.eventDateFrom ?? ''}
             onChange={e => onChange({ eventDateFrom: e.target.value || undefined })}
-            className="w-40 h-10 rounded-xl"
+            className="w-full sm:w-40 h-10 rounded-xl"
           />
         </div>
 
@@ -118,7 +118,7 @@ export function OrdersFilters({ filter, onChange }: Props) {
             type="date"
             value={filter.eventDateTo ?? ''}
             onChange={e => onChange({ eventDateTo: e.target.value || undefined })}
-            className="w-40 h-10 rounded-xl"
+            className="w-full sm:w-40 h-10 rounded-xl"
           />
         </div>
 

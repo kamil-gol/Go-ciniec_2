@@ -1,6 +1,7 @@
 'use client';
 
-import { ConfirmDialog } from '@/components/shared';
+import { Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 
 interface DeleteTemplateDialogProps {
   open: boolean;
@@ -21,12 +22,18 @@ export function DeleteTemplateDialog({
     <ConfirmDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Usuń szablon"
-      description={`Czy na pewno chcesz usunąć szablon „${templateName}"? Ta operacja jest nieodwracalna — zostaną usunięte także wszystkie wersje historyczne.`}
-      confirmLabel="Usuń szablon"
       variant="destructive"
+      icon={Trash2}
+      title="Usuń szablon"
+      description={
+        <>
+          Czy na pewno chcesz usunąć szablon <strong>„{templateName}"</strong>?
+          Ta operacja jest nieodwracalna — zostaną usunięte także wszystkie wersje historyczne.
+        </>
+      }
+      confirmLabel="Usuń szablon"
       onConfirm={onDelete}
-      loading={isPending}
+      isLoading={isPending}
     />
   );
 }

@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { LoadingState } from '@/components/shared/LoadingState';
+import { moduleAccents } from '@/lib/design-tokens';
 import { toast } from 'sonner';
 import { useCateringOrder, useUpdateCateringOrder } from '@/hooks/use-catering-orders';
 import { useCateringTemplates } from '@/hooks/use-catering';
@@ -179,18 +181,14 @@ export default function EditOrderPage() {
     : '';
 
   if (isLoading || !form) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingState message="Ładowanie zamówienia..." className="py-24" />;
   }
 
   return (
     <div className="space-y-6 p-6">
 
       {/* ═══ GRADIENT HERO HEADER ═══ */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 px-6 py-6 text-white shadow-lg">
+      <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${moduleAccents.catering.gradient} px-6 py-6 text-white shadow-lg`}>
         {/* Decorative circles */}
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
         <div className="pointer-events-none absolute -left-6 -bottom-8 h-28 w-28 rounded-full bg-white/5" />

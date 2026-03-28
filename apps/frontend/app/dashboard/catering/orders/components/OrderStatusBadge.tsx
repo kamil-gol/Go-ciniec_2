@@ -1,11 +1,10 @@
-import { Badge } from '@/components/ui/badge';
-import type { CateringOrderStatus } from '@/types/catering-order.types';
-import { ORDER_STATUS_LABEL, ORDER_STATUS_COLOR } from '@/types/catering-order.types';
+import type { CateringOrderStatus } from '@/types/catering-order.types'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 
+/**
+ * OrderStatusBadge — Thin wrapper around shared StatusBadge.
+ * Delegates all styling/icons/labels to lib/status-colors.ts.
+ */
 export function OrderStatusBadge({ status }: { status: CateringOrderStatus }) {
-  return (
-    <Badge className={`${ORDER_STATUS_COLOR[status]}`} variant="outline">
-      {ORDER_STATUS_LABEL[status]}
-    </Badge>
-  );
+  return <StatusBadge type="catering" status={status} />
 }

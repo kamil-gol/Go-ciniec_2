@@ -77,7 +77,7 @@ export default function SessionTimeoutModal() {
           className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2
                      rounded-2xl border border-orange-200 bg-white p-8 shadow-2xl
                      animate-in fade-in-0 zoom-in-95 slide-in-from-left-1/2 slide-in-from-top-[48%]
-                     dark:border-orange-800 dark:bg-gray-900"
+                     dark:border-orange-800 dark:bg-neutral-900"
         >
           {/* Timer ring */}
           <div className="mx-auto mb-6 flex h-28 w-28 items-center justify-center relative">
@@ -88,7 +88,7 @@ export default function SessionTimeoutModal() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="6"
-                className="text-gray-200 dark:text-gray-700"
+                className="text-neutral-200 dark:text-neutral-700"
               />
               {/* Progress circle */}
               <circle
@@ -101,28 +101,28 @@ export default function SessionTimeoutModal() {
                 strokeDashoffset={dashOffset}
                 className={`transition-all duration-1000 ease-linear ${
                   (remainingSeconds ?? 60) <= 10
-                    ? 'text-red-500'
+                    ? 'text-red-500 dark:text-red-400'
                     : (remainingSeconds ?? 60) <= 30
-                      ? 'text-orange-500'
-                      : 'text-amber-400'
+                      ? 'text-orange-500 dark:text-orange-400'
+                      : 'text-amber-400 dark:text-amber-300'
                 }`}
               />
             </svg>
-            <span className="absolute text-3xl font-bold tabular-nums text-gray-900 dark:text-white">
+            <span className="absolute text-3xl font-bold tabular-nums text-neutral-900 dark:text-white">
               {remainingSeconds ?? 0}
             </span>
           </div>
 
           {/* Title */}
-          <AlertDialog.Title className="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-white">
+          <AlertDialog.Title className="mb-2 text-center text-xl font-semibold text-neutral-900 dark:text-white">
             <Clock className="mb-1 inline-block h-5 w-5 text-orange-500" />{' '}
             Sesja wygasa
           </AlertDialog.Title>
 
           {/* Description */}
-          <AlertDialog.Description className="mb-8 text-center text-sm text-gray-600 dark:text-gray-400">
+          <AlertDialog.Description className="mb-8 text-center text-sm text-neutral-600 dark:text-neutral-400">
             Z powodu braku aktywności Twoja sesja wygaśnie za{' '}
-            <strong className="text-gray-900 dark:text-white">
+            <strong className="text-neutral-900 dark:text-white">
               {remainingSeconds ?? 0} sekund
             </strong>.
             Kliknij &bdquo;Przedłuż sesję&rdquo;, aby kontynuować pracę.
@@ -136,7 +136,7 @@ export default function SessionTimeoutModal() {
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-6 py-2.5
                            text-sm font-medium text-white shadow-sm transition-colors
                            hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
-                           dark:focus:ring-offset-gray-900"
+                           dark:focus:ring-offset-neutral-900"
               >
                 <RefreshCw className="h-4 w-4" />
                 Przedłuż sesję
@@ -146,11 +146,11 @@ export default function SessionTimeoutModal() {
             <AlertDialog.Cancel asChild>
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-2.5
-                           text-sm font-medium text-gray-700 shadow-sm transition-colors
-                           hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2
-                           dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700
-                           dark:focus:ring-offset-gray-900"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-6 py-2.5
+                           text-sm font-medium text-neutral-700 shadow-sm transition-colors
+                           hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2
+                           dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700
+                           dark:focus:ring-offset-neutral-900"
               >
                 <LogOut className="h-4 w-4" />
                 Wyloguj

@@ -11,6 +11,7 @@ import {
   Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { moduleAccents } from '@/lib/design-tokens';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,7 +47,7 @@ export function OrderHeader({
   onDownloadPDF,
 }: OrderHeaderProps) {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 px-6 py-8 text-white">
+    <div className={`relative overflow-hidden bg-gradient-to-br ${moduleAccents.catering.gradient} px-6 py-8 text-white`}>
       <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10" />
       <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-white/5" />
       <div className="pointer-events-none absolute right-32 bottom-0 h-24 w-24 rounded-full bg-white/5" />

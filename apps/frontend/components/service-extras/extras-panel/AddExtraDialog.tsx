@@ -97,7 +97,7 @@ export function AddExtraDialog({
 
   return (
     <Dialog open={open} onOpenChange={resetForm}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">

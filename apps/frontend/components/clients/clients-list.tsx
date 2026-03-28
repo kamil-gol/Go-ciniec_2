@@ -159,16 +159,32 @@ export function ClientsList({ clients, searchQuery, rodoMap = {} }: ClientsListP
                     {/* Contact details */}
                     <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500 dark:text-neutral-300">
                       {client.email && !isDeleted && (
-                        <div className="flex items-center gap-1">
+                        <span
+                          role="link"
+                          className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            window.location.href = `mailto:${client.email}`
+                          }}
+                        >
                           <Mail className="h-3 w-3" />
                           <span>{client.email}</span>
-                        </div>
+                        </span>
                       )}
                       {!isDeleted && (
-                        <div className="flex items-center gap-1">
+                        <span
+                          role="link"
+                          className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            window.location.href = `tel:${client.phone}`
+                          }}
+                        >
                           <Phone className="h-3 w-3" />
                           <span>{client.phone}</span>
-                        </div>
+                        </span>
                       )}
                       {!isDeleted && isCompany && client.nip && (
                         <div className="flex items-center gap-1">

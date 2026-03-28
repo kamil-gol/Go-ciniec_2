@@ -20,6 +20,7 @@ import {
   useMenuPackages, 
 } from '@/hooks/use-menu';
 import { toast } from 'sonner';
+import { LoadingState } from '@/components/shared/LoadingState';
 
 export default function MenuDemoPage() {
   const [activeTab, setActiveTab] = useState<'components' | 'flow'>('components');
@@ -96,11 +97,7 @@ export default function MenuDemoPage() {
                 </p>
               </div>
               {templatesLoading ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  <div className="h-64 animate-pulse rounded-xl bg-neutral-200" />
-                  <div className="h-64 animate-pulse rounded-xl bg-neutral-200" />
-                  <div className="h-64 animate-pulse rounded-xl bg-neutral-200" />
-                </div>
+                <LoadingState variant="skeleton" count={3} />
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {templates?.slice(0, 3).map(template => (

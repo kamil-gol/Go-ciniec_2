@@ -5,6 +5,7 @@ import { Calendar, Clock, User, DollarSign, Plus, ChevronRight, AlertCircle, Use
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { reservationsApi } from '@/lib/api/reservations'
 import { Reservation } from '@/types'
@@ -94,26 +95,6 @@ export function HallReservationsCalendar({
   // Get today's reservations
   const todayKey = format(new Date(), 'yyyy-MM-dd')
   const todayReservations = reservationsByDate[todayKey] || []
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'CONFIRMED': return 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-400'
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-400'
-      case 'COMPLETED': return 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-400'
-      case 'CANCELLED': return 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-400'
-      default: return 'bg-neutral-100 text-neutral-800 dark:bg-neutral-950/50 dark:text-neutral-300'
-    }
-  }
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'CONFIRMED': return 'Potwierdzona'
-      case 'PENDING': return 'Oczekująca'
-      case 'COMPLETED': return 'Zakończona'
-      case 'CANCELLED': return 'Anulowana'
-      default: return status
-    }
-  }
 
   /** #165: Calculate occupied guests for a date (excluding cancelled) */
   const getDateOccupancy = (dateReservations: Reservation[]) => {
@@ -359,9 +340,7 @@ export function HallReservationsCalendar({
                               </div>
 
                               {/* Right: Status */}
-                              <Badge className={getStatusColor(reservation.status)}>
-                                {getStatusLabel(reservation.status)}
-                              </Badge>
+                              <StatusBadge type="reservation" status={reservation.status} />
                             </div>
 
                             {/* Divider */}

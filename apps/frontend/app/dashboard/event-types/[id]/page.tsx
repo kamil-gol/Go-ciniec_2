@@ -6,6 +6,7 @@ import { ArrowLeft, Edit, Trash2, Calendar, FileText, Theater, CheckCircle2, Clo
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { LoadingState } from '@/components/shared/LoadingState'
 import { Switch } from '@/components/ui/switch'
 import {
   getEventTypeById,
@@ -64,11 +65,8 @@ export default function EventTypeDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-fuchsia-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Wczytywanie...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <LoadingState message="Wczytywanie typu wydarzenia..." />
       </div>
     )
   }
@@ -121,8 +119,11 @@ export default function EventTypeDetailPage() {
                       <div
                         className="h-6 w-6 rounded-full border-2 border-white/50 shadow-lg"
                         style={{ backgroundColor: color }}
+                        role="img"
+                        aria-label={`Kolor typu wydarzenia: ${color}`}
                         title={`Kolor: ${color}`}
                       />
+                      <span className="text-sm font-mono text-white/70">{color}</span>
                     </div>
                     {eventType.description && (
                       <p className="text-white/80 text-lg mt-1">{eventType.description}</p>
@@ -205,6 +206,8 @@ export default function EventTypeDetailPage() {
                     <div
                       className="h-6 w-6 rounded-full shadow-sm border border-neutral-200 dark:border-neutral-700"
                       style={{ backgroundColor: color }}
+                      role="img"
+                      aria-label={`Kolor typu wydarzenia: ${color}`}
                     />
                     <span className="font-mono text-sm text-muted-foreground">{eventType.color || 'Brak'}</span>
                   </div>

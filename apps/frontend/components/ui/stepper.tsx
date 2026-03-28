@@ -61,9 +61,9 @@ export function Stepper({
                   className={cn(
                     'w-12 h-12 rounded-full flex items-center justify-center border-2 transition-colors',
                     isActive && 'border-primary-500 bg-primary-500 text-white shadow-lg shadow-primary-500/30',
-                    isCompleted && 'border-green-500 bg-green-500 text-white',
+                    isCompleted && 'border-success-500 bg-success-500 text-white',
                     isPast && !isCompleted && 'border-primary-300 bg-primary-100 text-primary-600',
-                    !isActive && !isCompleted && !isPast && 'border-secondary-300 bg-white text-neutral-400',
+                    !isActive && !isCompleted && !isPast && 'border-secondary-300 bg-white dark:bg-neutral-900 text-neutral-400',
                     isClickable && !isActive && 'group-hover:border-primary-400 group-hover:bg-primary-50'
                   )}
                   animate={isActive ? { scale: [1, 1.05, 1] } : {}}
@@ -82,7 +82,7 @@ export function Stepper({
                     className={cn(
                       'text-xs font-medium transition-colors',
                       isActive && 'text-primary-700',
-                      isCompleted && 'text-green-700',
+                      isCompleted && 'text-success-700',
                       !isActive && !isCompleted && 'text-neutral-500'
                     )}
                   >
@@ -145,7 +145,7 @@ export function Stepper({
                 className={cn(
                   'w-2 h-2 rounded-full transition-colors',
                   isActive && 'bg-primary-500',
-                  isCompleted && 'bg-green-500',
+                  isCompleted && 'bg-success-500',
                   !isActive && !isCompleted && 'bg-secondary-300'
                 )}
               />

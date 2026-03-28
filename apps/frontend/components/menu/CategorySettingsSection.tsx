@@ -164,7 +164,7 @@ export default function CategorySettingsSection({
                         type="checkbox"
                         checked={enabled}
                         onChange={(e) => handleToggle(category.id, e.target.checked)}
-                        className="w-6 h-6 rounded-lg border-2 border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer transition-all"
+                        className="w-6 h-6 rounded-lg border-2 border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer transition-all"
                       />
                     </div>
                     <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ export default function CategorySettingsSection({
                           }
                           min="0"
                           step="0.5"
-                          className={`w-full px-4 py-2.5 border-2 rounded-xl text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                          className={`w-full px-4 py-2.5 border-2 rounded-xl text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all ${
                             hasError ? 'border-red-400' : 'border-neutral-300 dark:border-neutral-600'
                           }`}
                         />
@@ -242,7 +242,7 @@ export default function CategorySettingsSection({
                           }
                           min="0"
                           step="0.5"
-                          className={`w-full px-4 py-2.5 border-2 rounded-xl text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                          className={`w-full px-4 py-2.5 border-2 rounded-xl text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all ${
                             hasError ? 'border-red-400' : 'border-neutral-300 dark:border-neutral-600'
                           }`}
                         />
@@ -283,7 +283,7 @@ export default function CategorySettingsSection({
                           onChange={(e) =>
                             handleChange(category.id, 'isRequired', e.target.checked)
                           }
-                          className="w-5 h-5 rounded border-2 border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                          className="w-5 h-5 rounded border-2 border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-ring cursor-pointer"
                         />
                         <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Wymagana</span>
                       </div>
@@ -301,7 +301,7 @@ export default function CategorySettingsSection({
                           handleChange(category.id, 'customLabel', e.target.value || undefined)
                         }
                         placeholder={category.name}
-                        className="w-full px-4 py-2.5 border-2 border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-2.5 border-2 border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
                       />
                     </div>
 

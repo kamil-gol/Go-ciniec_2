@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Calendar, Users, Sparkles, CheckCircle2, Building2, UsersRound, UserCheck } from 'lucide-react'
+import { Edit, Calendar, Users, Sparkles, CheckCircle2, Building2, UsersRound, UserCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getHallById, type Hall } from '@/lib/api/halls'
 import { HallReservationsCalendar } from '@/components/halls/hall-reservations-calendar'
+import { DetailHero } from '@/components/shared/DetailHero'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
@@ -58,76 +59,51 @@ export default function HallDetailsPage() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Premium Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-8 text-white shadow-2xl">
-          <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
-
-          <div className="relative z-10 space-y-6">
-            {/* Back Button */}
-            <Link href="/dashboard/halls">
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Powrót do listy
+        <DetailHero
+          gradient="from-violet-600 via-purple-600 to-indigo-600"
+          backHref="/dashboard/halls"
+          backLabel="Powrót do listy"
+          icon={Building2}
+          title={hall.name}
+          subtitle="Szczegóły sali weselnej"
+          badges={
+            <>
+              {hall.isActive ? (
+                <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Aktywna
+                </Badge>
+              ) : (
+                <Badge className="bg-red-500/80 backdrop-blur-sm border-red-400/30 text-white">
+                  Nieaktywna
+                </Badge>
+              )}
+              <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
+                <Users className="h-3 w-3 mr-1" />
+                Pojemność: {hall.capacity} osób
+              </Badge>
+              {hall.allowMultipleBookings ? (
+                <Badge className="bg-violet-400/30 backdrop-blur-sm border-violet-300/30 text-white">
+                  <UsersRound className="h-3 w-3 mr-1" />
+                  Wiele rezerwacji
+                </Badge>
+              ) : (
+                <Badge className="bg-blue-400/30 backdrop-blur-sm border-blue-300/30 text-white">
+                  <UserCheck className="h-3 w-3 mr-1" />
+                  Wyłączność
+                </Badge>
+              )}
+            </>
+          }
+          actions={
+            <Link href={`/dashboard/halls/${hall.id}/edit`}>
+              <Button size="lg" className="bg-white text-purple-600 hover:bg-white/90 shadow-xl">
+                <Edit className="mr-2 h-5 w-5" />
+                Edytuj Salę
               </Button>
             </Link>
-
-            {/* Title Section */}
-            <div className="flex justify-between items-start">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                    <Building2 className="h-8 w-8" />
-                  </div>
-                  <div>
-                    <h1 className="text-4xl font-bold">{hall.name}</h1>
-                    <p className="text-white/90 text-lg mt-1">Szczegóły sali weselnej</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  {hall.isActive ? (
-                    <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Aktywna
-                    </Badge>
-                  ) : (
-                    <Badge className="bg-red-500/80 backdrop-blur-sm border-red-400/30 text-white">
-                      Nieaktywna
-                    </Badge>
-                  )}
-                  <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
-                    <Users className="h-3 w-3 mr-1" />
-                    Pojemność: {hall.capacity} osób
-                  </Badge>
-                  {/* #165: Booking mode badge */}
-                  {hall.allowMultipleBookings ? (
-                    <Badge className="bg-violet-400/30 backdrop-blur-sm border-violet-300/30 text-white">
-                      <UsersRound className="h-3 w-3 mr-1" />
-                      Wiele rezerwacji
-                    </Badge>
-                  ) : (
-                    <Badge className="bg-blue-400/30 backdrop-blur-sm border-blue-300/30 text-white">
-                      <UserCheck className="h-3 w-3 mr-1" />
-                      Wyłączność
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <Link href={`/dashboard/halls/${hall.id}/edit`}>
-                  <Button size="lg" className="bg-white text-purple-600 hover:bg-white/90 shadow-xl">
-                    <Edit className="mr-2 h-5 w-5" />
-                    Edytuj Salę
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
-        </div>
+          }
+        />
 
         {/* Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

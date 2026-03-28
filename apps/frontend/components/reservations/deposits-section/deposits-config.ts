@@ -1,14 +1,10 @@
 import {
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
   ArrowDownUp,
   Banknote,
   Smartphone,
   CreditCard,
 } from 'lucide-react'
-import type { DepositStatus, PaymentMethod } from '@/lib/api/deposits'
+import type { PaymentMethod } from '@/lib/api/deposits'
 
 // ═════════════════════════════════════════════
 // Types
@@ -20,46 +16,8 @@ export interface ReservationDepositsSectionProps {
 }
 
 // ═════════════════════════════════════════════
-// Config
+// Config (status colors moved to lib/status-colors.ts)
 // ═════════════════════════════════════════════
-
-export const statusConfig: Record<DepositStatus, {
-  label: string
-  icon: React.ElementType
-  className: string
-  dotColor: string
-}> = {
-  PENDING: {
-    label: 'Oczekująca',
-    icon: Clock,
-    className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-    dotColor: 'bg-amber-400',
-  },
-  PAID: {
-    label: 'Opłacona',
-    icon: CheckCircle2,
-    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-    dotColor: 'bg-emerald-400',
-  },
-  OVERDUE: {
-    label: 'Przetermin.',
-    icon: AlertTriangle,
-    className: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
-    dotColor: 'bg-red-400',
-  },
-  PARTIALLY_PAID: {
-    label: 'Częściowa',
-    icon: Clock,
-    className: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
-    dotColor: 'bg-blue-400',
-  },
-  CANCELLED: {
-    label: 'Anulowana',
-    icon: XCircle,
-    className: 'bg-neutral-50 text-neutral-500 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700',
-    dotColor: 'bg-neutral-400',
-  },
-}
 
 export const paymentMethodIcons: Record<PaymentMethod, { label: string; icon: React.ElementType }> = {
   TRANSFER: { label: 'Przelew', icon: ArrowDownUp },

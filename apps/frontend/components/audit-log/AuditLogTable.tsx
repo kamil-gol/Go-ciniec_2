@@ -13,7 +13,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Eye, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, Clock } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 import { AuditLogDetails } from './AuditLogDetails';
 import { entityLabels } from './audit-log.constants';
 import { groupLogEntries, isSystemAction, type LogGroup } from './audit-log.utils';
@@ -194,39 +195,13 @@ export function AuditLogTable({
       </div>
 
       {/* Paginacja */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t bg-muted/20">
-          <p className="text-sm text-muted-foreground">
-            Strona <span className="font-medium text-neutral-900 dark:text-neutral-100">{page}</span> z{' '}
-            <span className="font-medium text-neutral-900 dark:text-neutral-100">{totalPages}</span>
-            {total && (
-              <span className="ml-2">{'\u00b7'} {total} {total === 1 ? 'wpis' : total < 5 ? 'wpisy' : 'wpisów'} łącznie</span>
-            )}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(page - 1)}
-              disabled={page <= 1}
-              className="h-8"
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Poprzednia
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(page + 1)}
-              disabled={page >= totalPages}
-              className="h-8"
-            >
-              Następna
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        onPageChange={onPageChange}
+        className="px-4 sm:px-6 py-4 border-t bg-muted/20"
+      />
 
       {/* Modal szczegółów */}
       {selectedLog && (

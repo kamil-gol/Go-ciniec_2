@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import {
   useCateringOrder,
@@ -10,7 +10,7 @@ import {
   useUpdateCateringOrder,
   useDeleteCateringDeposit,
 } from '@/hooks/use-catering-orders';
-import { Button } from '@/components/ui/button';
+import { LoadingState, EmptyState } from '@/components/shared';
 import { ChangeStatusDialog } from '../components/ChangeStatusDialog';
 import { DiscountDialog } from '../components/DiscountDialog';
 import { AddDepositDialog } from '../components/AddDepositDialog';
@@ -89,23 +89,19 @@ export default function CateringOrderDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-32 gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary-500" />
-        <p className="text-sm text-neutral-500 dark:text-neutral-300">Wczytywanie zamówienia…</p>
-      </div>
-    );
+    return <LoadingState message="Wczytywanie zamówienia…" className="py-32" />;
   }
 
   if (!order) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 gap-4">
-        <AlertCircle className="h-12 w-12 text-neutral-300" />
-        <p className="font-semibold text-neutral-600 dark:text-neutral-300">Zamówienie nie istnieje</p>
-        <Button variant="outline" onClick={() => router.push('/dashboard/catering/orders')}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Powrót do listy
-        </Button>
-      </div>
+      <EmptyState
+        icon={AlertCircle}
+        title="Nie znaleziono zamówienia"
+        description="Zamówienie nie istnieje lub zostało usunięte."
+        actionLabel="Powrót do listy"
+        actionHref="/dashboard/catering/orders"
+        className="py-32"
+      />
     );
   }
 

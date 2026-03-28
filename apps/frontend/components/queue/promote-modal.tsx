@@ -56,7 +56,7 @@ export function PromoteModal({ open, onClose, queueItem, onPromote }: PromoteMod
               {' | '}
               Liczba gości: {queueItem.guests}
             </p>
-            <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+            <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded text-sm text-blue-800">
               <AlertCircle className="w-4 h-4" />
               <span>Wybierz salę, typ wydarzenia i uzupełnij szczegóły rezerwacji</span>
             </div>

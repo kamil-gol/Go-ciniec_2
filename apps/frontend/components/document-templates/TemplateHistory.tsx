@@ -75,7 +75,7 @@ export function TemplateHistory({ slug, open, onClose }: TemplateHistoryProps) {
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] p-0 overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 overflow-hidden flex flex-col">
           {/* Gradient header */}
           <div className="flex-shrink-0 bg-gradient-to-r from-cyan-500/5 via-blue-500/5 to-cyan-500/5 border-b">
             <DialogHeader className="p-6 pb-4">

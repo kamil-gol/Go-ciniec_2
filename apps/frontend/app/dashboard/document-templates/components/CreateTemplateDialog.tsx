@@ -3,6 +3,7 @@
 import { Plus, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -105,18 +106,18 @@ export function CreateTemplateDialog({
 
           <div>
             <Label htmlFor="new-category">Kategoria *</Label>
-            <select
-              id="new-category"
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value as TemplateCategory)}
-              className="mt-1.5 w-full h-9 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {TEMPLATE_CATEGORY_ORDER.map((cat) => (
-                <option key={cat} value={cat}>
-                  {TEMPLATE_CATEGORY_LABELS[cat]}
-                </option>
-              ))}
-            </select>
+            <Select value={newCategory} onValueChange={(v) => setNewCategory(v as TemplateCategory)}>
+              <SelectTrigger className="mt-1.5 w-full h-9">
+                <SelectValue placeholder="Wybierz kategorię" />
+              </SelectTrigger>
+              <SelectContent>
+                {TEMPLATE_CATEGORY_ORDER.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {TEMPLATE_CATEGORY_LABELS[cat]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

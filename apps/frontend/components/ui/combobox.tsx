@@ -45,6 +45,8 @@ interface ComboboxProps {
   }
   /** Max items to display before showing "show more" */
   maxDisplayed?: number
+  'aria-required'?: boolean | 'true' | 'false'
+  required?: boolean
 }
 
 export function Combobox({
@@ -60,6 +62,8 @@ export function Combobox({
   className,
   footerAction,
   maxDisplayed = 50,
+  'aria-required': ariaRequired,
+  required,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -111,8 +115,8 @@ export function Combobox({
   return (
     <div className={cn('w-full', className)}>
       {label && (
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
-          {label}
+        <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+          {label}{(ariaRequired || required) && <span className="text-destructive ml-0.5" aria-hidden="true">*</span>}
         </label>
       )}
 
@@ -124,6 +128,7 @@ export function Combobox({
             aria-expanded={open}
             aria-controls={listboxId}
             aria-label={label || placeholder}
+            aria-required={ariaRequired ?? required}
             disabled={disabled}
             className={cn(
               'flex h-10 w-full items-center justify-between rounded-md border px-3 py-2',

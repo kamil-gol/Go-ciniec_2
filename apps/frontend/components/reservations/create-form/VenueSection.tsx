@@ -50,13 +50,13 @@ export function VenueSection({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Sala</label>
+        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Sala<span className="text-destructive ml-0.5" aria-hidden="true">*</span></label>
         <Controller
           name="hallId"
           control={control}
           render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className={`h-11 ${errors.hallId ? 'border-red-400 dark:border-red-500' : ''}`} aria-label="Wybierz salę">
+              <SelectTrigger className={`h-11 ${errors.hallId ? 'border-red-400 dark:border-red-500' : ''}`} aria-label="Wybierz salę" aria-required="true">
                 <SelectValue placeholder="Wybierz salę..." />
               </SelectTrigger>
               <SelectContent>
@@ -97,19 +97,19 @@ export function VenueSection({
         <div className="space-y-3">
           <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">Rozpoczęcie</p>
           <Controller name="startDate" control={control} render={({ field }) => (
-            <DatePicker value={field.value} onChange={field.onChange} label="Data" placeholder="Wybierz datę..." error={errors.startDate?.message} minDate={new Date()} />
+            <DatePicker value={field.value} onChange={field.onChange} label="Data" placeholder="Wybierz datę..." error={errors.startDate?.message} minDate={new Date()} aria-required="true" />
           )} />
           <Controller name="startTime" control={control} render={({ field }) => (
-            <TimePicker value={field.value} onChange={field.onChange} label="Godzina" placeholder="Wybierz godzinę..." error={errors.startTime?.message} />
+            <TimePicker value={field.value} onChange={field.onChange} label="Godzina" placeholder="Wybierz godzinę..." error={errors.startTime?.message} aria-required="true" />
           )} />
         </div>
         <div className="space-y-3">
           <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">Zakończenie</p>
           <Controller name="endDate" control={control} render={({ field }) => (
-            <DatePicker value={field.value} onChange={field.onChange} label="Data" placeholder="Wybierz datę..." error={errors.endDate?.message} disabled={!startDate} minDate={startDate ? new Date(startDate) : undefined} />
+            <DatePicker value={field.value} onChange={field.onChange} label="Data" placeholder="Wybierz datę..." error={errors.endDate?.message} disabled={!startDate} minDate={startDate ? new Date(startDate) : undefined} aria-required="true" />
           )} />
           <Controller name="endTime" control={control} render={({ field }) => (
-            <TimePicker value={field.value} onChange={field.onChange} label="Godzina" placeholder="Wybierz godzinę..." error={errors.endTime?.message} disabled={!startDate || !startTime} />
+            <TimePicker value={field.value} onChange={field.onChange} label="Godzina" placeholder="Wybierz godzinę..." error={errors.endTime?.message} disabled={!startDate || !startTime} aria-required="true" />
           )} />
         </div>
       </div>
