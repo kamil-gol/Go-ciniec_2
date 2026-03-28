@@ -726,3 +726,298 @@ test.describe('MB-03: Dashboard events responsive na mobile (#384)', () => {
     }
   });
 });
+
+// ═══════════════════════════════════════════════════════
+// AUDYT #4: Spacing, truncation, layout polish (#397-#407)
+// ═══════════════════════════════════════════════════════
+
+test.describe('#398: StatCard — line-clamp-2, responsive font, spacing', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('StatCard label ma line-clamp-2 zamiast truncate', async ({ page }) => {
+    await page.goto('/dashboard');
+    await waitForPageStable(page);
+
+    const hasLineClamp = await page.evaluate(() => {
+      const labels = document.querySelectorAll('p');
+      for (const p of labels) {
+        if (p.className.includes('line-clamp-2') && p.className.includes('font-medium')) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    expect(hasLineClamp, 'StatCard label powinien mieć line-clamp-2').toBe(true);
+  });
+
+  test('StatCard label NIE ma truncate', async ({ page }) => {
+    await page.goto('/dashboard');
+    await waitForPageStable(page);
+
+    const hasTruncateOnLabel = await page.evaluate(() => {
+      const labels = document.querySelectorAll('p.truncate');
+      for (const p of labels) {
+        if (p.className.includes('font-medium') && p.className.includes('text-neutral-500')) {
+          return true; // BAD — truncate still present on stat label
+        }
+      }
+      return false;
+    });
+
+    expect(hasTruncateOnLabel, 'StatCard label NIE powinien mieć truncate').toBe(false);
+  });
+
+  test('StatCard label ma responsive font (text-xs sm:text-sm)', async ({ page }) => {
+    await page.goto('/dashboard');
+    await waitForPageStable(page);
+
+    const hasResponsiveFont = await page.evaluate(() => {
+      const labels = document.querySelectorAll('p');
+      for (const p of labels) {
+        if (p.className.includes('text-xs') && p.className.includes('sm:text-sm') && p.className.includes('font-medium')) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    expect(hasResponsiveFont, 'StatCard label powinien mieć text-xs sm:text-sm').toBe(true);
+  });
+});
+
+test.describe('#399: PageHero — graduated padding', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('PageHero ma graduated padding (p-4 sm:p-6 lg:p-8)', async ({ page }) => {
+    await page.goto('/dashboard');
+    await waitForPageStable(page);
+
+    const hasGraduatedPadding = await page.evaluate(() => {
+      const heroes = document.querySelectorAll('[class*="bg-gradient"]');
+      for (const el of heroes) {
+        const cls = el.className;
+        if (cls.includes('p-4') && cls.includes('sm:p-6') && cls.includes('lg:p-8')) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    expect(hasGraduatedPadding, 'PageHero powinien mieć p-4 sm:p-6 lg:p-8').toBe(true);
+  });
+
+  test('PageHero icon-title gap ma sm:gap-5', async ({ page }) => {
+    await page.goto('/dashboard');
+    await waitForPageStable(page);
+
+    const hasGap5 = await page.evaluate(() => {
+      const containers = document.querySelectorAll('[class*="gap-3"][class*="sm:gap-5"]');
+      return containers.length > 0;
+    });
+
+    expect(hasGap5, 'PageHero icon-title powinien mieć gap-3 sm:gap-5').toBe(true);
+  });
+});
+
+test.describe('#400: Szybkie akcje — spacing', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('Client detail: Szybkie akcje ma space-y-3 na przyciskach', async ({ page }) => {
+    // Idź do detali pierwszego klienta
+    await page.goto('/dashboard/clients');
+    await waitForPageStable(page);
+
+    // Kliknij pierwszą kartę klienta
+    const clientCard = page.locator('[class*="rounded-2xl"][class*="cursor-pointer"]').first();
+    if (await clientCard.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await clientCard.click();
+      await waitForPageStable(page);
+
+      const hasSpaceY3 = await page.evaluate(() => {
+        const containers = document.querySelectorAll('[class*="space-y-3"]');
+        for (const el of containers) {
+          // Szukaj kontenera z przyciskami "Nowa rezerwacja", "Edytuj dane"
+          if (el.querySelector('button') && el.textContent?.includes('rezerwacj')) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      expect(hasSpaceY3, 'Szybkie akcje powinny mieć space-y-3').toBe(true);
+    }
+  });
+});
+
+test.describe('#401: Settings — tab bar responsive', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('Settings tab bar ma grid-cols-2 sm:grid-cols-4', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/dashboard/settings');
+    await waitForPageStable(page);
+
+    const hasResponsiveGrid = await page.evaluate(() => {
+      const grids = document.querySelectorAll('[class*="grid-cols-2"][class*="sm:grid-cols-4"]');
+      return grids.length > 0;
+    });
+
+    expect(hasResponsiveGrid, 'Settings tabs powinny mieć grid-cols-2 sm:grid-cols-4').toBe(true);
+  });
+});
+
+test.describe('#402: ReservationCard — flex-wrap na ikonach', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('ReservationCard ikony mają flex-shrink-0', async ({ page }) => {
+    await page.goto('/dashboard/reservations/list');
+    await waitForPageStable(page);
+
+    const hasFlexShrink = await page.evaluate(() => {
+      const icons = document.querySelectorAll('svg.flex-shrink-0');
+      // Powinny być ikony z flex-shrink-0 w kartach rezerwacji
+      return icons.length > 0;
+    });
+
+    expect(hasFlexShrink, 'Ikony w ReservationCard powinny mieć flex-shrink-0').toBe(true);
+  });
+});
+
+test.describe('#403: Client detail — tab bar i stats grid', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('Client detail tab bar ma w-full sm:w-fit', async ({ page }) => {
+    await page.goto('/dashboard/clients');
+    await waitForPageStable(page);
+
+    const clientCard = page.locator('[class*="rounded-2xl"][class*="cursor-pointer"]').first();
+    if (await clientCard.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await clientCard.click();
+      await waitForPageStable(page);
+
+      const hasResponsiveWidth = await page.evaluate(() => {
+        const elements = document.querySelectorAll('[class*="w-full"][class*="sm:w-fit"]');
+        return elements.length > 0;
+      });
+
+      expect(hasResponsiveWidth, 'Tab bar powinien mieć w-full sm:w-fit').toBe(true);
+    }
+  });
+});
+
+test.describe('#405: Halls — filter button height', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('Halls filter button ma h-12 (matching input)', async ({ page }) => {
+    await page.goto('/dashboard/halls');
+    await waitForPageStable(page);
+
+    const hasMatchingHeight = await page.evaluate(() => {
+      const buttons = document.querySelectorAll('button');
+      for (const btn of buttons) {
+        if (btn.className.includes('h-12') && btn.textContent?.includes('Dodaj')) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    // Tylko jeśli jest przycisk "Dodaj salę"
+    if (hasMatchingHeight !== null) {
+      expect(hasMatchingHeight).toBe(true);
+    }
+  });
+});
+
+test.describe('#406: Deposits — form card margin', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('screenshot: deposits z formularzem', async ({ page }) => {
+    await page.goto('/dashboard/deposits');
+    await waitForPageStable(page);
+
+    await expect(page).toHaveScreenshot('audit4-deposits-with-spacing.png', {
+      maxDiffPixelRatio: 0.08,
+      fullPage: true,
+    });
+  });
+});
+
+test.describe('#407: Reservation detail — responsive padding', () => {
+  test.beforeEach(async ({ page }) => {
+    page.setDefaultTimeout(60_000);
+    page.setDefaultNavigationTimeout(60_000);
+    await ensureLoggedIn(page);
+  });
+
+  test('Reservation detail ma graduated padding (p-4 sm:p-6 lg:p-8)', async ({ page }) => {
+    // Idź do pierwszej rezerwacji
+    await page.goto('/dashboard/reservations/list');
+    await waitForPageStable(page);
+
+    // Kliknij pierwszą kartę rezerwacji
+    const resCard = page.locator('[class*="rounded-2xl"][class*="cursor-pointer"]').first();
+    if (await resCard.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await resCard.click();
+      await waitForPageStable(page);
+
+      const hasGraduatedPadding = await page.evaluate(() => {
+        const cards = document.querySelectorAll('[class*="p-4"][class*="sm:p-6"][class*="lg:p-8"]');
+        return cards.length > 0;
+      });
+
+      expect(hasGraduatedPadding, 'Reservation detail powinien mieć p-4 sm:p-6 lg:p-8').toBe(true);
+    }
+  });
+
+  test('Reservation detail tab buttons mają px-3 sm:px-5', async ({ page }) => {
+    await page.goto('/dashboard/reservations/list');
+    await waitForPageStable(page);
+
+    const resCard = page.locator('[class*="rounded-2xl"][class*="cursor-pointer"]').first();
+    if (await resCard.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await resCard.click();
+      await waitForPageStable(page);
+
+      const hasResponsivePadding = await page.evaluate(() => {
+        const buttons = document.querySelectorAll('button[class*="px-3"][class*="sm:px-5"]');
+        return buttons.length > 0;
+      });
+
+      expect(hasResponsivePadding, 'Tab buttons powinny mieć px-3 sm:px-5').toBe(true);
+    }
+  });
+});
