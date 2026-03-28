@@ -36,27 +36,47 @@ async function waitForPageStable(page: import('@playwright/test').Page) {
 }
 
 async function ensureLoggedIn(page: import('@playwright/test').Page) {
+  // Strategy: login via API, then set token in localStorage
+  const baseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:4000';
+  // Backend API runs on port 4001 (dev) when frontend is on 4000
+  const apiUrl = baseUrl.replace(':4000', ':4001').replace(':3000', ':3001');
+
+  // First navigate to the app so we can set localStorage on the correct origin
+  await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await page.waitForTimeout(1000);
+
+  // Login via API
+  const response = await page.evaluate(async ({ email, password, apiUrl }) => {
+    try {
+      const res = await fetch(`${apiUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (data.success && data.data?.token) {
+        localStorage.setItem('token', data.data.token);
+        if (data.data.refreshToken) {
+          localStorage.setItem('refreshToken', data.data.refreshToken);
+        }
+        return { ok: true };
+      }
+      return { ok: false, error: data.message || 'Login failed' };
+    } catch (e: any) {
+      return { ok: false, error: e.message };
+    }
+  }, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD, apiUrl });
+
+  if (!response.ok) {
+    throw new Error(`API login failed for ${ADMIN_EMAIL}: ${response.error}`);
+  }
+
+  // Navigate to dashboard with the token set
   await page.goto('/dashboard', { waitUntil: 'domcontentloaded', timeout: 60_000 });
   await page.waitForTimeout(3000);
 
-  // Retry login up to 2 times
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (!page.url().includes('/login')) break;
-    await page.fill('input[name="email"]', ADMIN_EMAIL);
-    await page.fill('input[name="password"]', ADMIN_PASSWORD);
-    await page.click('button[type="submit"]');
-    try {
-      await page.waitForURL(/\/dashboard/, { timeout: 30_000, waitUntil: 'domcontentloaded' });
-      break;
-    } catch {
-      // Retry
-      await page.waitForTimeout(2000);
-    }
-  }
-
-  // Final check
   if (page.url().includes('/login')) {
-    throw new Error(`Login failed for ${ADMIN_EMAIL} — still on login page`);
+    throw new Error(`Login succeeded via API but redirect to login — check auth flow`);
   }
 }
 
