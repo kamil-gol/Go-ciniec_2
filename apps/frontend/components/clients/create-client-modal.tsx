@@ -112,7 +112,7 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] max-w-[90vw]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {isCompany ? 'Dodaj nową firmę' : 'Dodaj nowego klienta'}

@@ -16,6 +16,7 @@ import { useReservations } from '@/lib/api/reservations'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ErrorState } from '@/components/shared/ErrorState'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { LoadingState } from '@/components/shared/LoadingState'
 import type { Reservation } from '@/types'
 
 function formatCurrency(amount: number): string {
@@ -60,25 +61,6 @@ function getDeadlineInfo(
   const daysLeft = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86_400_000)
   if (daysLeft < 0 || daysLeft > 7) return null
   return { daysLeft, urgent: daysLeft <= 3 }
-}
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function SkeletonRow() {
-  return (
-    <div className="flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 border border-neutral-100 dark:border-neutral-700/50 animate-pulse">
-      <div className="h-14 w-14 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
-      <div className="flex-1 space-y-2">
-        <div className="flex gap-2">
-          <div className="h-4 w-32 rounded bg-neutral-200 dark:bg-neutral-700" />
-          <div className="h-4 w-20 rounded-full bg-neutral-200 dark:bg-neutral-700" />
-        </div>
-        <div className="h-3 w-56 rounded bg-neutral-200 dark:bg-neutral-700" />
-        <div className="h-3 w-40 rounded bg-neutral-200 dark:bg-neutral-700" />
-      </div>
-      <div className="h-4 w-16 rounded bg-neutral-200 dark:bg-neutral-700" />
-    </div>
-  )
 }
 
 // ─── Reservation row ─────────────────────────────────────────────────────────
@@ -319,7 +301,7 @@ export default function DailyReservationsSection({ date }: DailyReservationsSect
       {/* Content */}
       <div className="space-y-2">
         {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
+          <LoadingState variant="skeleton" count={3} />
         ) : error ? (
           <ErrorState
             message="Nie udało się pobrać rezerwacji"

@@ -17,8 +17,6 @@ import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import {
-  ChevronLeft,
-  ChevronRight,
   ShoppingBag,
   Building2,
   User,
@@ -26,6 +24,7 @@ import {
   ShoppingCart,
   Truck,
 } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 
 interface Props {
   orders: CateringOrderListItem[];
@@ -135,34 +134,12 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
         </Table>
       </div>
 
-      {meta && meta.totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-neutral-500 dark:text-neutral-400">
-          <span>
-            Strona <strong className="text-neutral-800 dark:text-neutral-200">{meta.page}</strong> z {meta.totalPages}
-            <span className="ml-2 text-xs">({meta.total} wyników)</span>
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={meta.page <= 1}
-              onClick={() => onPageChange(meta.page - 1)}
-              className="rounded-xl"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={meta.page >= meta.totalPages}
-              onClick={() => onPageChange(meta.page + 1)}
-              className="rounded-xl"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={meta?.page ?? 1}
+        totalPages={meta?.totalPages ?? 1}
+        total={meta?.total}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 }

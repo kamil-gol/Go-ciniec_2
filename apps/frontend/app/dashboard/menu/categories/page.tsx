@@ -153,7 +153,7 @@ export default function DishCategoriesPage() {
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
-        <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingCategory ? 'Edytuj Kategorię' : 'Nowa Kategoria'}</DialogTitle>
           </DialogHeader>

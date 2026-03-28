@@ -8,7 +8,8 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useReservations, useArchiveReservation, useUnarchiveReservation } from '@/lib/api/reservations'
 import type { ReservationStatus } from '@/types'
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
+import { Calendar } from 'lucide-react'
+import { Pagination } from '@/components/shared/Pagination'
 import { toast } from 'sonner'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { apiClient } from '@/lib/api-client'
@@ -322,36 +323,13 @@ export function ReservationsList() {
         </div>
       )}
 
-      {/* Pagination — responsive */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Strona <strong className="text-neutral-900 dark:text-neutral-100">{page}</strong> z <strong className="text-neutral-900 dark:text-neutral-100">{totalPages}</strong>
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded-xl border-neutral-200 dark:border-neutral-700"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Poprzednia
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="rounded-xl border-neutral-200 dark:border-neutral-700"
-            >
-              Następna
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Pagination */}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        className="pt-4"
+      />
       {ConfirmDialog}
     </div>
   )

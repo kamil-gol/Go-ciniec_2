@@ -18,30 +18,13 @@ import { moduleAccents } from '@/lib/design-tokens'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ErrorState } from '@/components/shared/ErrorState'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { LoadingState } from '@/components/shared/LoadingState'
 import {
   useCateringOrdersByDate,
   CATERING_DELIVERY_LABELS,
   formatCateringCurrency,
   type CateringOrderListItem,
 } from '@/lib/api/catering-orders'
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function SkeletonRow() {
-  return (
-    <div className="rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 border border-neutral-100 dark:border-neutral-700/50 animate-pulse space-y-2">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
-        <div className="flex-1 space-y-1.5">
-          <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-neutral-700" />
-          <div className="h-3 w-64 rounded bg-neutral-200 dark:bg-neutral-700" />
-        </div>
-        <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-700" />
-      </div>
-      <div className="h-3 w-48 rounded bg-neutral-200 dark:bg-neutral-700 ml-13" />
-    </div>
-  )
-}
 
 // ─── Single order row ──────────────────────────────────────────────────────
 
@@ -277,7 +260,7 @@ export default function CateringDailyWidget({ date }: CateringDailyWidgetProps) 
       {/* Content */}
       <div className="space-y-2">
         {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
+          <LoadingState variant="skeleton" count={3} />
         ) : error ? (
           <ErrorState
             message="Nie udało się pobrać zamówień"
