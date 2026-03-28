@@ -18,6 +18,9 @@ if [ -z "$password" ]; then
   exit 1
 fi
 
+# Wyczyść cached auth state (wymusi fresh login)
+rm -f e2e/.auth-state.json
+
 echo "🚀 Uruchamiam testy audytu UI/UX #3..."
 echo "   Base URL: ${PLAYWRIGHT_TEST_BASE_URL:-http://localhost:4000}"
 echo ""

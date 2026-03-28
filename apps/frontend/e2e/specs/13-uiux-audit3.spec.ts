@@ -18,8 +18,12 @@ import { manualLogin as login } from '../fixtures/auth.fixture';
  *   ... --update-snapshots
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
+
 const ADMIN_EMAIL = 'admin@gosciniecrodzinny.pl';
 const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || '';
+const AUTH_STATE_PATH = path.join(__dirname, '..', '.auth-state.json');
 
 if (!ADMIN_PASSWORD) {
   throw new Error(
@@ -30,6 +34,19 @@ if (!ADMIN_PASSWORD) {
 
 // Zwiększony timeout dla dev serwera (Turbopack cold start ~15s)
 test.setTimeout(90_000);
+
+// ── Global setup: zaloguj RAZ, zapisz cookies ──
+test.beforeAll(async ({ browser }) => {
+  if (fs.existsSync(AUTH_STATE_PATH)) return; // already cached
+  const page = await browser.newPage();
+  page.setDefaultNavigationTimeout(60_000);
+  await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
+  await page.context().storageState({ path: AUTH_STATE_PATH });
+  await page.close();
+});
+
+// Każdy test używa zapisanego stanu auth (bez logowania)
+test.use({ storageState: AUTH_STATE_PATH });
 
 async function waitForPageStable(page: import('@playwright/test').Page) {
   await page.waitForLoadState('domcontentloaded');
@@ -66,7 +83,6 @@ test.describe('DT-01: Em-dash w tabeli Zaliczek (#369)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   });
 
   test('kolumna METODA nie zawiera literalnego \\u2014', async ({ page }) => {
@@ -137,7 +153,6 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   });
 
   test('NIP ma czerwoną gwiazdkę (*) w trybie firma', async ({ page }) => {
@@ -234,7 +249,6 @@ test.describe('Dark Mode — wszystkie moduły (#371-#374)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   });
 
   const modules = [
@@ -393,7 +407,6 @@ test.describe('Mobile responsywność (#377)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   });
 
   test('screenshot: dashboard mobile 375px', async ({ page }) => {
@@ -449,7 +462,6 @@ test.describe('Light mode baseline screenshots', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   });
 
   const pages = [
