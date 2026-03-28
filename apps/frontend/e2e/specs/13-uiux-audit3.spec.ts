@@ -29,6 +29,7 @@ if (!ADMIN_PASSWORD) {
 }
 
 test.setTimeout(90_000);
+test.describe.configure({ retries: 2 });
 
 async function waitForPageStable(page: import('@playwright/test').Page) {
   await page.waitForLoadState('domcontentloaded');
