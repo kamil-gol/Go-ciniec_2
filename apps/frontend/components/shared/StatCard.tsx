@@ -102,52 +102,54 @@ export function StatCard({
         )}
       />
 
-      <div className="relative">
-        {/* Icon — absolute top-right, nie zabiera miejsca tekstowi */}
-        <div
-          className={cn(
-            'absolute top-0 right-0 flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-xl',
-            'bg-gradient-to-br shadow-lg',
-            'group-hover:scale-110 group-hover:shadow-xl transition-all duration-300',
-            iconGradient
-          )}
-        >
-          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-        </div>
-
-        {/* Text content — pełna szerokość, z padding-right na ikonę */}
-        <div className="pr-12 sm:pr-14">
-          <p className="text-xs sm:text-sm font-medium text-neutral-500 dark:text-neutral-300 leading-snug" title={label}>
+      <div className="relative flex flex-col h-full">
+        {/* Row 1: Icon + Label */}
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <p className="text-xs sm:text-sm font-medium text-neutral-500 dark:text-neutral-300 leading-snug flex-1 min-w-0" title={label}>
             {label}
           </p>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100 truncate">
-            {value}
-          </p>
-          {(change || subtitle) && (
-            <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-              {change && (
-                <>
-                  {changeType === 'positive' && <TrendingUp className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />}
-                  {changeType === 'negative' && <TrendingDown className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />}
-                  {changeType === 'neutral' && <Minus className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />}
-                  <span
-                    className={cn(
-                      'text-xs sm:text-sm font-medium',
-                      changeType === 'positive' && 'text-emerald-700 dark:text-emerald-400',
-                      changeType === 'negative' && 'text-red-600 dark:text-red-400',
-                      changeType === 'neutral' && 'text-neutral-500 dark:text-neutral-300'
-                    )}
-                  >
-                    {change}
-                  </span>
-                </>
-              )}
-              {subtitle && !change && (
-                <span className="text-xs text-neutral-500 dark:text-neutral-300">{subtitle}</span>
-              )}
-            </div>
-          )}
+          <div
+            className={cn(
+              'flex h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 items-center justify-center rounded-xl',
+              'bg-gradient-to-br shadow-lg',
+              'group-hover:scale-110 group-hover:shadow-xl transition-all duration-300',
+              iconGradient
+            )}
+          >
+            <Icon className="h-5 w-5 text-white" />
+          </div>
         </div>
+
+        {/* Row 2: Value */}
+        <p className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+          {value}
+        </p>
+
+        {/* Row 3: Change indicator */}
+        {(change || subtitle) && (
+          <div className="mt-auto pt-2 flex items-center gap-1.5 flex-wrap">
+            {change && (
+              <>
+                {changeType === 'positive' && <TrendingUp className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />}
+                {changeType === 'negative' && <TrendingDown className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />}
+                {changeType === 'neutral' && <Minus className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />}
+                <span
+                  className={cn(
+                    'text-xs font-medium',
+                    changeType === 'positive' && 'text-emerald-700 dark:text-emerald-400',
+                    changeType === 'negative' && 'text-red-600 dark:text-red-400',
+                    changeType === 'neutral' && 'text-neutral-500 dark:text-neutral-300'
+                  )}
+                >
+                  {change}
+                </span>
+              </>
+            )}
+            {subtitle && !change && (
+              <span className="text-xs text-neutral-500 dark:text-neutral-300">{subtitle}</span>
+            )}
+          </div>
+        )}
       </div>
     </motion.div>
   )

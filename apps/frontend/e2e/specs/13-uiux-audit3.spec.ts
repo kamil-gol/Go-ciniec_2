@@ -738,16 +738,22 @@ test.describe('#398: StatCard — line-clamp-2, responsive font, spacing', () =>
     await ensureLoggedIn(page);
   });
 
-  test('StatCard ikona jest absolute (nie zabiera miejsca tekstu)', async ({ page }) => {
+  test('StatCard label i ikona w jednym wierszu (flex justify-between)', async ({ page }) => {
     await page.goto('/dashboard');
     await waitForPageStable(page);
 
-    const hasAbsoluteIcon = await page.evaluate(() => {
-      const icons = document.querySelectorAll('[class*="absolute"][class*="rounded-xl"][class*="bg-gradient"]');
-      return icons.length > 0;
+    const hasFlexLayout = await page.evaluate(() => {
+      const containers = document.querySelectorAll('[class*="justify-between"][class*="items-center"]');
+      for (const el of containers) {
+        // StatCard ma ikonę z gradient + label w tym samym wierszu
+        if (el.querySelector('[class*="bg-gradient"][class*="rounded-xl"]') && el.querySelector('p[title]')) {
+          return true;
+        }
+      }
+      return false;
     });
 
-    expect(hasAbsoluteIcon, 'StatCard ikona powinna być absolute positioned').toBe(true);
+    expect(hasFlexLayout, 'StatCard powinien mieć label+ikona w flex justify-between').toBe(true);
   });
 
   test('StatCard label NIE jest ucięty (brak truncate na label)', async ({ page }) => {
