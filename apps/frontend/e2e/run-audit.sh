@@ -19,10 +19,12 @@ if [ -z "$password" ]; then
 fi
 
 echo "🚀 Uruchamiam testy audytu UI/UX #3..."
-echo "   Base URL: ${PLAYWRIGHT_TEST_BASE_URL:-https://dev.gosciniec.online}"
+echo "   Base URL: ${PLAYWRIGHT_TEST_BASE_URL:-http://localhost:4000}"
 echo ""
 
-export PLAYWRIGHT_TEST_BASE_URL="${PLAYWRIGHT_TEST_BASE_URL:-https://dev.gosciniec.online}"
+# Domyślnie localhost:4000 (dev frontend w Docker na tym samym serwerze)
+# Aby testować publiczny URL: PLAYWRIGHT_TEST_BASE_URL=https://dev.gosciniec.online ./e2e/run-audit.sh
+export PLAYWRIGHT_TEST_BASE_URL="${PLAYWRIGHT_TEST_BASE_URL:-http://localhost:4000}"
 export TEST_ADMIN_PASSWORD="$password"
 
 npx playwright test specs/13-uiux-audit3.spec.ts \
