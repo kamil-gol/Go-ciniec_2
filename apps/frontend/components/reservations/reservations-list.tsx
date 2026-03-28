@@ -242,7 +242,7 @@ export function ReservationsList() {
             checked={showArchived}
             onCheckedChange={setShowArchived}
           />
-          <Label htmlFor="show-archived" className="cursor-pointer font-medium text-sm">
+          <Label htmlFor="show-archived" className="cursor-pointer font-medium text-sm text-neutral-700 dark:text-neutral-300">
             <span className="hidden sm:inline">Pokaż zarchiwizowane</span>
             <span className="sm:hidden">Archiwum</span>
           </Label>
@@ -281,10 +281,10 @@ export function ReservationsList() {
                 )}>
                   <Calendar className="h-4 w-4" />
                   <div>
-                    <div className="font-semibold">
+                    <div className={cn('font-semibold', !isToday && 'text-neutral-800 dark:text-neutral-100')}>
                       {format(date, 'EEEE', { locale: pl })}
                     </div>
-                    <div className="text-sm opacity-90">
+                    <div className={cn('text-sm opacity-90', !isToday && 'text-neutral-600 dark:text-neutral-300')}>
                       {format(date, 'd MMMM yyyy', { locale: pl })}
                     </div>
                   </div>

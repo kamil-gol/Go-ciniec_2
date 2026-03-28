@@ -48,6 +48,11 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
       return
     }
 
+    if (isCompany && !formData.nip) {
+      toast.error('NIP jest wymagany dla klienta firmowego')
+      return
+    }
+
     try {
       setLoading(true)
 
@@ -170,7 +175,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
             <div className="space-y-2">
               <Label htmlFor="nip" className="text-base font-semibold flex items-center gap-2">
                 <Hash className="h-4 w-4" />
-                NIP
+                NIP <span className="text-destructive ml-0.5" aria-hidden="true">*</span>
               </Label>
               <Input
                 id="nip"
@@ -178,6 +183,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
                 value={formData.nip}
                 onChange={handleChange}
                 placeholder="1234567890"
+                aria-required="true"
                 className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
               />
             </div>
