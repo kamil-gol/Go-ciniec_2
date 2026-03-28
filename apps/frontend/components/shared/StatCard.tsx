@@ -110,7 +110,7 @@ export function StatCard({
           </p>
           <div
             className={cn(
-              'flex h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 items-center justify-center rounded-xl',
+              'flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-xl',
               'bg-gradient-to-br shadow-lg',
               'group-hover:scale-110 group-hover:shadow-xl transition-all duration-300',
               iconGradient

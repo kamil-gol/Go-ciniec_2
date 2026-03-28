@@ -168,7 +168,7 @@ export const layout = {
   sectionGap: 'space-y-6 sm:space-y-8',
   statGrid: 'grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6',
   statGrid3: 'grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6',
-  statGrid6: 'grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-5',
+  statGrid6: 'grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-5',
   cardPadding: 'p-4 sm:p-6',
   detailGrid: 'grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4',
 } as const
