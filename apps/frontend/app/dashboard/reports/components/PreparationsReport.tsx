@@ -61,10 +61,10 @@ export function PreparationsTab({ query, view }: {
                       </colgroup>
                       <thead className="bg-neutral-50 dark:bg-neutral-800">
                         <tr>
-                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase truncate">{"Usługa"}</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Ilość"}</th>
-                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Rezerwacja</th>
-                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden lg:table-cell">Uwagi</th>
+                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground truncate">{"Usługa"}</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">{"Ilość"}</th>
+                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Rezerwacja</th>
+                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Uwagi</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -123,11 +123,11 @@ export function PreparationsTab({ query, view }: {
                   </colgroup>
                   <thead className="bg-neutral-50 dark:bg-neutral-800">
                     <tr>
-                      <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Usługa"}</th>
-                      <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Kategoria</th>
-                      <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Łącznie szt."}</th>
-                      <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Rezerwacji</th>
-                      <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden lg:table-column">Klienci</th>
+                      <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">{"Usługa"}</th>
+                      <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Kategoria</th>
+                      <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">{"Łącznie szt."}</th>
+                      <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Rezerwacji</th>
+                      <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden lg:table-column">Klienci</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">

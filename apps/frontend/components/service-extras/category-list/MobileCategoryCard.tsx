@@ -1,5 +1,6 @@
 'use client';
 
+import { formatCurrency } from '@/lib/utils';
 import {
   ChevronDown,
   ChevronRight,
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PRICE_LABELS, priceSuffix, type CategoryRowProps } from './category-list-config';
+import type { KeyboardEvent } from 'react';
 
 export function MobileCategoryCard({
   category,
@@ -23,10 +25,25 @@ export function MobileCategoryCard({
 }: CategoryRowProps) {
   const itemCount = category._count?.items ?? category.items?.length ?? 0;
 
+  const handleHeaderKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onToggleExpand(category.id);
+    }
+  };
+
   return (
     <div className={`${!category.isActive ? 'opacity-60' : ''}`}>
       {/* Category header */}
-      <div className="p-4 flex items-center justify-between" onClick={() => onToggleExpand(category.id)}>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        aria-label={`${category.name}, ${itemCount} pozycji${isExpanded ? ' (rozwinięte)' : ' (zwinięte)'}`}
+        className="p-4 flex items-center justify-between cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
+        onClick={() => onToggleExpand(category.id)}
+        onKeyDown={handleHeaderKeyDown}
+      >
         <div className="flex items-center gap-3 min-w-0">
           {isExpanded ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />}
           <span
@@ -69,7 +86,7 @@ export function MobileCategoryCard({
               <p className="text-sm font-medium truncate">{item.name}</p>
               <p className="text-xs text-neutral-500">
                 {PRICE_LABELS[item.priceType]}
-                {item.priceType !== 'FREE' && ` · ${Number(item.basePrice).toLocaleString('pl-PL')} zł${priceSuffix(item.priceType)}`}
+                {item.priceType !== 'FREE' && ` · ${formatCurrency(item.basePrice)}${priceSuffix(item.priceType)}`}
               </p>
             </div>
           </div>

@@ -1,4 +1,5 @@
 'use client'
+import { formatDateLong } from '@/lib/utils'
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
@@ -116,11 +117,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                         ? new Date(r.date + 'T00:00:00')
                         : null
                     const dateStr = dateObj
-                      ? dateObj.toLocaleDateString('pl-PL', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })
+                      ? formatDateLong(dateObj)
                       : null
                     const status = statusLabels[r.status] || r.status
 

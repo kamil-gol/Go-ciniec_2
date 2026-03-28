@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { formatCurrency } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { depositsApi } from '@/lib/api/deposits'
@@ -101,7 +102,7 @@ export function UpdateDepositStatusModal({
             <div>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">Kwota zaliczki</p>
               <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                {deposit.amount.toFixed(2)} zł
+                {formatCurrency(deposit.amount)}
               </p>
             </div>
           </div>

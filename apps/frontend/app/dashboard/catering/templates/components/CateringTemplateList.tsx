@@ -1,4 +1,5 @@
 // apps/frontend/app/dashboard/catering/templates/components/CateringTemplateList.tsx
+import { formatCurrency } from '@/lib/utils'
 'use client';
 
 import { useState } from 'react';
@@ -133,7 +134,7 @@ export function CateringTemplateList({ templates, onEdit }: Props) {
                           )}
                         </div>
                         <span className="font-semibold text-primary shrink-0 ml-2">
-                          {Number(pkg.basePrice).toFixed(2)} zł
+                          {formatCurrency(pkg.basePrice)}
                           <span className="text-muted-foreground font-normal ml-1">
                             / {CATERING_PRICE_TYPE_LABELS[pkg.priceType]}
                           </span>

@@ -1,4 +1,5 @@
 'use client'
+import { formatCurrency } from '@/lib/utils'
 
 import Link from 'next/link'
 import { Calendar, Clock, CheckCircle2, XCircle, Building2 } from 'lucide-react'
@@ -88,7 +89,7 @@ export function ClientReservationsHistory({ reservations, clientId, isDeleted }:
                     </div>
                   </div>
                   <div className="text-right shrink-0 ml-4">
-                    <p className="text-2xl font-bold">{Number(reservation.totalPrice || 0).toLocaleString('pl-PL')} zł</p>
+                    <p className="text-2xl font-bold">{formatCurrency(reservation.totalPrice || 0)}</p>
                   </div>
                 </div>
               </CardContent>

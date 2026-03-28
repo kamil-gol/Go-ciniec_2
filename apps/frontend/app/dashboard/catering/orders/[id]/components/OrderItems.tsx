@@ -40,10 +40,10 @@ export function OrderItems({ order }: OrderItemsProps) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-neutral-50 dark:bg-neutral-800/50 border-y border-neutral-200 dark:border-neutral-700">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Danie</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Ilość</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Cena jedn.</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Razem</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Danie</th>
+                  <th className="text-center px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Ilość</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Cena jedn.</th>
+                  <th className="text-right px-5 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Razem</th>
                 </tr>
               </thead>
               <tbody>
@@ -84,10 +84,10 @@ export function OrderItems({ order }: OrderItemsProps) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-neutral-50 dark:bg-neutral-800/50 border-y border-neutral-200 dark:border-neutral-700">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Usługa</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Ilość</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Cena jedn.</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Razem</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Usługa</th>
+                  <th className="text-center px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Ilość</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Cena jedn.</th>
+                  <th className="text-right px-5 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Razem</th>
                 </tr>
               </thead>
               <tbody>

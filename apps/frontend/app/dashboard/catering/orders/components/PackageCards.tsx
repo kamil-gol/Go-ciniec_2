@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { Check } from 'lucide-react';
 
 interface Package {
@@ -39,7 +39,7 @@ export function PackageCards({ packages, selectedId, onSelect }: PackageCardsPro
             )}
             <span className="text-sm font-medium leading-tight pr-5">{pkg.name}</span>
             <span className="text-xs text-muted-foreground">
-              {new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(pkg.basePrice)}
+              {formatCurrency(pkg.basePrice)}
             </span>
           </button>
         );

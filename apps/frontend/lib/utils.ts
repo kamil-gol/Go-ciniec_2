@@ -51,14 +51,61 @@ export function formatTime(time: string): string {
 }
 
 /**
- * Format currency (PLN)
+ * Format currency (PLN) - always "X XXX,XX zl" with 2 decimal places
+ * Standard formatter for all price display across the app.
  */
-export function formatCurrency(amount: number | string): string {
+export function formatCurrency(amount: number | string | null | undefined): string {
+  if (amount == null || amount === '') return '\u2014'
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+  if (isNaN(numAmount)) return '\u2014'
   return new Intl.NumberFormat('pl-PL', {
     style: 'currency',
     currency: 'PLN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(numAmount)
+}
+
+/**
+ * Format date as "DD MMMM YYYY" - e.g. "3 marca 2026"
+ * Standard long date format for detail views.
+ */
+export function formatDateLong(date: string | Date | null | undefined): string {
+  if (!date) return '\u2014'
+  try {
+    const dateObj = typeof date === 'string'
+      ? (date.includes('T') ? new Date(date) : new Date(date + 'T00:00:00'))
+      : date
+    if (isNaN(dateObj.getTime())) return '\u2014'
+    return new Intl.DateTimeFormat('pl-PL', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(dateObj)
+  } catch {
+    return '\u2014'
+  }
+}
+
+/**
+ * Format date as "DD.MM.YYYY" - e.g. "03.03.2026"
+ * Standard short date format for tables and compact views.
+ */
+export function formatDateShort(date: string | Date | null | undefined): string {
+  if (!date) return '\u2014'
+  try {
+    const dateObj = typeof date === 'string'
+      ? (date.includes('T') ? new Date(date) : new Date(date + 'T00:00:00'))
+      : date
+    if (isNaN(dateObj.getTime())) return '\u2014'
+    return new Intl.DateTimeFormat('pl-PL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(dateObj)
+  } catch {
+    return '\u2014'
+  }
 }
 
 /**

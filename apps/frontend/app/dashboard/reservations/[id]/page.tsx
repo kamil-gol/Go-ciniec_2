@@ -27,6 +27,8 @@ import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTim
 import { toast } from 'sonner'
 import { ReservationHero } from './components/ReservationHero'
 import { QuickActionsCard } from './components/QuickActionsCard'
+import { ReservationTimeline } from '@/components/reservations/ReservationTimeline'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 type TabType = 'details' | 'history'
 
@@ -117,10 +119,24 @@ export default function ReservationDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Wczytywanie...</p>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="container mx-auto py-6 sm:py-8 px-4 space-y-6">
+          {/* Hero skeleton */}
+          <div className="h-48 rounded-2xl bg-muted animate-pulse" />
+          {/* Timeline skeleton */}
+          <div className="h-20 rounded-xl bg-muted animate-pulse" />
+          {/* Content skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
+            <div className="space-y-6">
+              <div className="h-48 rounded-2xl bg-muted animate-pulse" />
+              <div className="h-32 rounded-2xl bg-muted animate-pulse" />
+              <div className="h-40 rounded-2xl bg-muted animate-pulse" />
+            </div>
+            <div className="space-y-6">
+              <div className="h-36 rounded-2xl bg-muted animate-pulse" />
+              <div className="h-64 rounded-2xl bg-muted animate-pulse" />
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -176,6 +192,9 @@ export default function ReservationDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto py-6 sm:py-8 px-4 space-y-6 sm:space-y-8">
+        {/* Breadcrumb */}
+        <Breadcrumb />
+
         {/* Read-only info banner */}
         {isReadOnly && readOnlyBannerMessage && (
           <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
@@ -194,6 +213,9 @@ export default function ReservationDetailsPage() {
           onDownloadPDF={handleDownloadPDF}
           onRefetch={handleRefetch}
         />
+
+        {/* Status Timeline */}
+        <ReservationTimeline status={reservation.status} />
 
         {/* US-9.8: Tab bar */}
         <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
@@ -223,9 +245,9 @@ export default function ReservationDetailsPage() {
 
         {/* Tab: Szczegóły */}
         {activeTab === 'details' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
             {/* Left Column - Main Info */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6">
               {/* Client Info (read-only) */}
               <Card className="border-0 shadow-xl">
                 <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-5 sm:p-6">

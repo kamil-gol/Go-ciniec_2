@@ -4,6 +4,7 @@ import type {
   CreateOrderItemInput,
   CreateOrderExtraInput,
 } from '@/types/catering-order.types';
+import { formatCurrency } from '@/lib/utils';
 
 export interface FormState {
   eventName: string;
@@ -65,9 +66,4 @@ export function computeTotals(
   };
 }
 
-export function fmt(v: number) {
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-  }).format(v);
-}
+export const fmt = formatCurrency;

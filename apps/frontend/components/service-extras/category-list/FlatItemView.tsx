@@ -1,5 +1,6 @@
 'use client';
 
+import { formatCurrency } from '@/lib/utils';
 import {
   Edit,
   Trash2,
@@ -54,7 +55,7 @@ export function FlatItemView({ categories, onEditItem, onDeleteItem }: FlatItemV
               <div className="text-right flex-shrink-0">
                 {item.priceType !== 'FREE' ? (
                   <p className="font-bold text-sm tabular-nums">
-                    {Number(item.basePrice).toLocaleString('pl-PL')} zł{priceSuffix(item.priceType)}
+                    {formatCurrency(item.basePrice)}{priceSuffix(item.priceType)}
                   </p>
                 ) : (
                   <p className="text-sm text-emerald-600 font-medium">Gratis</p>
@@ -86,11 +87,11 @@ export function FlatItemView({ categories, onEditItem, onDeleteItem }: FlatItemV
         <Table>
           <TableHeader>
             <TableRow className="bg-neutral-50/50 dark:bg-neutral-800/50">
-              <TableHead className="font-semibold text-purple-600 dark:text-purple-400">Pozycja</TableHead>
-              <TableHead className="font-semibold text-purple-600 dark:text-purple-400">Kategoria</TableHead>
-              <TableHead className="font-semibold text-purple-600 dark:text-purple-400">Typ ceny</TableHead>
-              <TableHead className="font-semibold text-purple-600 dark:text-purple-400 text-right">Cena</TableHead>
-              <TableHead className="font-semibold text-purple-600 dark:text-purple-400">Status</TableHead>
+              <TableHead>Pozycja</TableHead>
+              <TableHead>Kategoria</TableHead>
+              <TableHead>Typ ceny</TableHead>
+              <TableHead className="text-right">Cena</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
@@ -125,7 +126,7 @@ export function FlatItemView({ categories, onEditItem, onDeleteItem }: FlatItemV
                 <TableCell className="text-right">
                   {item.priceType !== 'FREE' ? (
                     <span className="font-semibold tabular-nums text-sm">
-                      {Number(item.basePrice).toLocaleString('pl-PL')} zł
+                      {formatCurrency(item.basePrice)}
                       {priceSuffix(item.priceType) && <span className="text-xs text-neutral-400 ml-0.5">{priceSuffix(item.priceType)}</span>}
                     </span>
                   ) : (

@@ -2,7 +2,7 @@
 
 import { Controller } from 'react-hook-form'
 import { DatePicker } from '@/components/ui/date-picker'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatDateLong } from '@/lib/utils'
 import {
   Sparkles, Building2, Users, User, DollarSign,
   FileText, AlertCircle, Tag, Package, ChevronRight,

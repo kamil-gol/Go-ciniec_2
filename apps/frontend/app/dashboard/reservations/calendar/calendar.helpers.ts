@@ -1,4 +1,5 @@
 import type { CalendarReservation } from '@/lib/api/calendar-api'
+import { formatCurrency } from '@/lib/utils'
 
 export function getMonthGrid(year: number, month: number) {
   const firstDay = new Date(year, month - 1, 1)
@@ -28,15 +29,7 @@ export function dateKey(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
-export function formatCurrency(amount: number | string): string {
-  const n = typeof amount === 'string' ? parseFloat(amount) : amount
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n)
-}
+export { formatCurrency }
 
 export function isToday(date: Date): boolean {
   const now = new Date()

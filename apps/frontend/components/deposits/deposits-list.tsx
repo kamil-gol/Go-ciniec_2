@@ -13,6 +13,7 @@ import { DepositStatusBadge } from './deposit-status-badge'
 import { DepositActions } from './deposit-actions'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import Link from 'next/link'
+import { formatCurrency, formatDateLong } from '@/lib/utils'
 
 interface DepositsListProps {
   deposits: Deposit[]
@@ -92,11 +93,11 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                 </Link>
                 <div className="text-right flex-shrink-0">
                   <p className="font-bold text-sm tabular-nums text-neutral-900 dark:text-neutral-100">
-                    {amount.toLocaleString('pl-PL')} zł
+                    {formatCurrency(amount)}
                   </p>
                   {paidAmount > 0 && paidAmount < amount && (
                     <p className="text-xs tabular-nums text-emerald-600 dark:text-emerald-400">
-                      wpłacono {paidAmount.toLocaleString('pl-PL')} zł
+                      wpłacono {formatCurrency(paidAmount)}
                     </p>
                   )}
                 </div>
@@ -125,7 +126,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
               <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  <span>Termin: {new Date(deposit.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}</span>
+                  <span>Termin: {formatDateLong(deposit.dueDate)}</span>
                   {daysInfo && (
                     <span className={`font-medium ${daysInfo.className}`}>({daysInfo.text})</span>
                   )}
@@ -133,7 +134,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                 {eventDate && (
                   <div className="flex items-center gap-1">
                     <CalendarDays className="h-3 w-3" />
-                    <span>{new Date(eventDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}</span>
+                    <span>{formatDateLong(eventDate)}</span>
                   </div>
                 )}
               </div>
@@ -147,14 +148,14 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
         <Table>
           <TableHeader>
             <TableRow className="bg-neutral-50/50 dark:bg-neutral-800/50">
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Klient</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Wydarzenie</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Sala</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-right">Kwota</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-right">Wpłacono</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Termin</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Status</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Metoda</TableHead>
+              <TableHead>Klient</TableHead>
+              <TableHead>Wydarzenie</TableHead>
+              <TableHead>Sala</TableHead>
+              <TableHead className="text-right">Kwota</TableHead>
+              <TableHead className="text-right">Wpłacono</TableHead>
+              <TableHead>Termin</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Metoda</TableHead>
               <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
@@ -215,7 +216,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                         {eventDate && (
                           <p className="text-xs text-neutral-500 flex items-center gap-1">
                             <CalendarDays className="h-3 w-3" />
-                            {new Date(eventDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {formatDateLong(eventDate)}
                           </p>
                         )}
                       </div>
@@ -233,14 +234,14 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                   {/* Amount */}
                   <TableCell className="text-right">
                     <span className="font-semibold tabular-nums text-sm">
-                      {Number(deposit.amount).toLocaleString('pl-PL')} zł
+                      {formatCurrency(deposit.amount)}
                     </span>
                   </TableCell>
 
                   {/* Paid */}
                   <TableCell className="text-right">
                     <span className={`font-semibold tabular-nums text-sm ${paidAmount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
-                      {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} zł` : `0 zł`}
+                      {paidAmount > 0 ? formatCurrency(paidAmount) : formatCurrency(0)}
                     </span>
                   </TableCell>
 
@@ -248,7 +249,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                   <TableCell>
                     <div>
                       <p className={`text-sm tabular-nums ${daysInfo && deposit.status === 'OVERDUE' ? 'text-red-600 dark:text-red-400 font-medium' : ''}`}>
-                        {new Date(deposit.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {formatDateLong(deposit.dueDate)}
                       </p>
                       {daysInfo && (
                         <p className={`text-xs ${daysInfo.className}`}>{daysInfo.text}</p>

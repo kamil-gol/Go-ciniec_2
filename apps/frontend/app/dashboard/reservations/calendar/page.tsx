@@ -18,9 +18,17 @@ import {
   Plus,
   CheckCircle2,
   TrendingUp,
+  ArrowRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { PageLayout, PageHero, StatCard } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { getReservations } from '@/lib/api/reservations'
@@ -78,6 +86,129 @@ function MobileDots({ reservations }: { reservations: CalendarReservation[] }) {
       {extra > 0 && (
         <span className="text-[8px] text-neutral-400 font-medium leading-none">+{extra}</span>
       )}
+    </div>
+  )
+}
+
+/** #309: Mobile agenda view — shown on small screens instead of the grid */
+function MobileAgendaView({
+  currentYear,
+  currentMonth,
+  reservationsByDate,
+  selectedDate,
+  onSelectDate,
+  onReservationClick,
+}: {
+  currentYear: number
+  currentMonth: number
+  reservationsByDate: Map<string, CalendarReservation[]>
+  selectedDate: Date | null
+  onSelectDate: (date: Date) => void
+  onReservationClick: (id: string) => void
+}) {
+  // Get all days of the current month that have reservations
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate()
+  const allDays = useMemo(() => {
+    const days: Array<{ date: Date; key: string; reservations: CalendarReservation[] }> = []
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(currentYear, currentMonth - 1, d)
+      const key = dateKey(date)
+      const reservations = reservationsByDate.get(key) || []
+      days.push({ date, key, reservations })
+    }
+    return days
+  }, [currentYear, currentMonth, daysInMonth, reservationsByDate])
+
+  const daysWithEvents = allDays.filter(d => d.reservations.length > 0)
+
+  if (daysWithEvents.length === 0) {
+    return (
+      <div className="text-center py-8 text-neutral-400 dark:text-neutral-500">
+        <CalendarIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+        <p className="text-sm">Brak rezerwacji w tym miesiącu</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {daysWithEvents.map(({ date, key, reservations }) => {
+        const dayName = date.toLocaleDateString('pl-PL', { weekday: 'short' })
+        const dayNum = date.getDate()
+        const isTodayCell = isToday(date)
+        const isSelected = selectedDate && dateKey(selectedDate) === key
+
+        return (
+          <div
+            key={key}
+            className={cn(
+              'rounded-xl bg-white dark:bg-neutral-800/80 border border-neutral-100 dark:border-neutral-700/50 overflow-hidden transition-all',
+              isSelected && 'ring-2 ring-indigo-500'
+            )}
+          >
+            {/* Day header */}
+            <button
+              onClick={() => onSelectDate(date)}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors min-h-[48px]"
+            >
+              <div className={cn(
+                'w-10 h-10 rounded-xl flex flex-col items-center justify-center flex-shrink-0',
+                isTodayCell
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
+              )}>
+                <span className="text-[10px] uppercase leading-none font-medium">{dayName}</span>
+                <span className="text-sm font-bold leading-tight">{dayNum}</span>
+              </div>
+              <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                {reservations.length} {reservations.length === 1 ? 'rezerwacja' : reservations.length < 5 ? 'rezerwacje' : 'rezerwacji'}
+              </span>
+            </button>
+
+            {/* Reservation list */}
+            <div className="border-t border-neutral-100 dark:border-neutral-700/50">
+              {reservations.map((r) => {
+                const color = r.eventType?.color || '#6366f1'
+                const status = STATUS_CONFIG[r.status]
+                const name = r.client
+                  ? `${r.client.firstName} ${r.client.lastName}`
+                  : 'Klient'
+
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => onReservationClick(r.id)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors border-b border-neutral-50 dark:border-neutral-700/30 last:border-b-0 min-h-[48px]"
+                  >
+                    <div
+                      className="w-1 h-8 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: color }}
+                    />
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
+                          {name}
+                        </span>
+                        {status && (
+                          <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] font-semibold flex-shrink-0', status.bgClass)}>
+                            {status.label}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                        {r.startTime && <span>{r.startTime}{r.endTime ? ` - ${r.endTime}` : ''}</span>}
+                        {r.hall && <span>- {r.hall.name}</span>}
+                        {r.guests && <span>- {r.guests} os.</span>}
+                      </div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -285,12 +416,17 @@ export default function CalendarPage() {
         {halls && halls.length > 0 && (
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-neutral-400 flex-shrink-0" />
-            <select value={hallFilter} onChange={(e) => setHallFilter(e.target.value)}
-              className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1.5 text-sm text-neutral-700 dark:text-neutral-300 focus:ring-2 focus:ring-ring focus:border-transparent w-full sm:w-auto"
-            >
-              <option value="all">Wszystkie sale</option>
-              {halls.filter((h) => h.isActive).map((h) => (<option key={h.id} value={h.id}>{h.name}</option>))}
-            </select>
+            <Select value={hallFilter} onValueChange={setHallFilter}>
+              <SelectTrigger className="rounded-lg h-auto px-3 py-1.5 text-sm w-full sm:w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie sale</SelectItem>
+                {halls.filter((h) => h.isActive).map((h) => (
+                  <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
@@ -302,10 +438,25 @@ export default function CalendarPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* #309: Mobile agenda view (< md) */}
+      <div className="md:hidden">
+        {isLoading ? <SkeletonGrid /> : (
+          <MobileAgendaView
+            currentYear={currentYear}
+            currentMonth={currentMonth}
+            reservationsByDate={reservationsByDate}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            onReservationClick={(id) => router.push(`/dashboard/reservations/${id}`)}
+          />
+        )}
+      </div>
+
+      {/* #309: Desktop calendar grid (md+) */}
+      <div className="hidden md:grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className={cn('lg:col-span-2', selectedDate ? '' : 'lg:col-span-3')}>
           {isLoading ? <SkeletonGrid /> : (
-            <div className="rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 overflow-hidden">
+            <div className="rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 overflow-hidden overflow-x-auto">
               <div className="grid grid-cols-7 bg-neutral-50 dark:bg-neutral-800">
                 {DAYS_PL.map((day, i) => (
                   <div key={day} className={cn('py-2 sm:py-2.5 text-center text-[10px] sm:text-xs font-semibold uppercase tracking-wider',
@@ -323,29 +474,25 @@ export default function CalendarPage() {
                   return (
                     <div key={idx} onClick={() => setSelectedDate(dayInfo.date)}
                       className={cn(
-                        'min-h-[68px] sm:min-h-[90px] md:min-h-[110px] p-1 sm:p-1.5 cursor-pointer transition-colors',
+                        'min-h-[90px] md:min-h-[110px] p-1.5 cursor-pointer transition-colors',
                         dayInfo.isCurrentMonth ? 'bg-white dark:bg-neutral-800/80' : 'bg-neutral-50/70 dark:bg-neutral-900/40',
                         isSelected && 'ring-2 ring-indigo-500 ring-inset',
                         !isSelected && 'hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10'
                       )}
                     >
-                      <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+                      <div className="flex items-center justify-between mb-1">
                         <span className={cn(
-                          'text-[10px] sm:text-xs font-medium w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full',
+                          'text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full',
                           !dayInfo.isCurrentMonth && 'text-neutral-300 dark:text-neutral-600',
                           dayInfo.isCurrentMonth && !isTodayCell && (isWeekend ? 'text-rose-400 dark:text-rose-500' : 'text-neutral-700 dark:text-neutral-300'),
                           isTodayCell && 'bg-indigo-600 text-white font-bold'
                         )}>{dayInfo.day}</span>
                         {dayReservations.length > 0 && (
-                          <span className="text-[9px] sm:text-[10px] font-medium text-neutral-400 dark:text-neutral-500">{dayReservations.length}</span>
+                          <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500">{dayReservations.length}</span>
                         )}
                       </div>
 
-                      <div className="sm:hidden">
-                        <MobileDots reservations={dayReservations} />
-                      </div>
-
-                      <div className="hidden sm:block space-y-0.5">
+                      <div className="space-y-0.5">
                         {dayReservations.slice(0, MAX_PILLS).map((r) => (
                           <ReservationPill
                             key={r.id}

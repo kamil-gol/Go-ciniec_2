@@ -16,7 +16,7 @@ import { PriceBreakdown } from './PriceBreakdown';
 import { MenuDishesPreview } from './MenuDishesPreview';
 import { Package, Users, Check, Edit, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 
 interface DishSelection {
   dishId: string;
@@ -59,15 +59,7 @@ export function MenuSummary({
   onConfirm,
   className
 }: MenuSummaryProps) {
-  const formatPrice = (price: number | string) => {
-    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-    return new Intl.NumberFormat('pl-PL', {
-      style: 'currency',
-      currency: 'PLN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(numPrice);
-  };
+  const formatPrice = formatCurrency;
 
   const totalGuests = guestCounts.adults + guestCounts.childrenCount + guestCounts.toddlers;
 

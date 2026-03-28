@@ -1,3 +1,4 @@
+import { formatDateLong } from '@/lib/utils'
 import {
   Clock,
   CheckCircle2,
@@ -93,11 +94,7 @@ export function getDaysLabel(dateStr: string): { text: string; className: string
 }
 
 export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('pl-PL', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
+  return formatDateLong(dateStr)
 }
 
 export function suggestDueDate(daysFromNow: number = 14): string {

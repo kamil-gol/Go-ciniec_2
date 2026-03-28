@@ -9,7 +9,7 @@
 import { PriceBreakdown as PriceBreakdownType } from '@/types/menu.types';
 import { Users, Package, Plus, Calculator, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { useState } from 'react';
 
 interface PriceBreakdownProps {
@@ -26,14 +26,7 @@ export function PriceBreakdown({
   const [isPackageExpanded, setIsPackageExpanded] = useState(true);
   const [isOptionsExpanded, setIsOptionsExpanded] = useState(true);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pl-PL', {
-      style: 'currency',
-      currency: 'PLN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
+  const formatPrice = formatCurrency;
 
   return (
     <div className={cn('rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900', className)}>

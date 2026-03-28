@@ -233,6 +233,7 @@ export const typography = {
   heroSubtitle: 'text-white/85 text-sm sm:text-lg',
   statValue: 'text-xl sm:text-2xl font-bold text-foreground',
   statLabel: 'text-xs sm:text-sm text-muted-foreground',
+  tableHeader: 'text-xs font-medium uppercase tracking-wider text-muted-foreground',
 } as const
 
 export const buttonTokens = {

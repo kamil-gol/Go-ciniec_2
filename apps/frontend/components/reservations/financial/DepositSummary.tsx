@@ -10,7 +10,7 @@ import Link from 'next/link'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { statusConfig, paymentMethodIcons } from './types'
 import type { Financials } from './types'
-import { getDaysLabel, formatDate } from './utils'
+import { getDaysLabel, formatDate, formatPLN } from './utils'
 
 interface DepositSummaryProps {
   deposits: Deposit[]
@@ -106,7 +106,7 @@ export function DepositSummary({
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2">
                         <span className="text-base font-bold tabular-nums">
-                          {Number(deposit.amount).toLocaleString('pl-PL')} zł
+                          {formatPLN(deposit.amount)}
                         </span>
                         {deposit.title && (
                           <span className="text-xs text-muted-foreground truncate max-w-[100px]">

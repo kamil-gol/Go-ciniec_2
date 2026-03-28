@@ -1,4 +1,5 @@
 import { CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
 import type { ExtraStatus, ReservationExtra } from '@/types/service-extra.types'
 
 export const STATUS_CONFIG: Record<
@@ -44,8 +45,8 @@ export function quantityLabel(priceType: string): string {
 export function formatExtraPriceDetails(extra: ReservationExtra): string {
   const pt = extra.priceType;
   const qty = extra.quantity;
-  const unit = Number(extra.unitPrice).toLocaleString('pl-PL');
-  const total = Number(extra.totalPrice).toLocaleString('pl-PL');
+  const unit = formatCurrency(extra.unitPrice);
+  const total = formatCurrency(extra.totalPrice);
 
   if (pt === 'FREE') return 'Gratis';
 

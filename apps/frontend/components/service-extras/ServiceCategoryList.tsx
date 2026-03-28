@@ -153,9 +153,9 @@ export function ServiceCategoryList({
             <TableHeader>
               <TableRow className="bg-neutral-50/50 dark:bg-neutral-800/50">
                 <TableHead className="w-10"></TableHead>
-                <TableHead className="font-semibold text-purple-600 dark:text-purple-400">Kategoria</TableHead>
-                <TableHead className="font-semibold text-purple-600 dark:text-purple-400 text-center">Pozycji</TableHead>
-                <TableHead className="font-semibold text-purple-600 dark:text-purple-400">Status</TableHead>
+                <TableHead>Kategoria</TableHead>
+                <TableHead className="text-center">Pozycji</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="w-36"></TableHead>
               </TableRow>
             </TableHeader>

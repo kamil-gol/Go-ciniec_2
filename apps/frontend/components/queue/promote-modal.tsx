@@ -1,4 +1,5 @@
 'use client'
+import { formatDateLong } from '@/lib/utils'
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { QueueItem } from '@/types'
@@ -50,7 +51,7 @@ export function PromoteModal({ open, onClose, queueItem, onPromote }: PromoteMod
           </DialogTitle>
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              Kolejka na: {new Date(queueItem.queueDate).toLocaleDateString('pl-PL')}
+              Kolejka na: {formatDateLong(queueItem.queueDate)}
               {' | '}
               Pozycja #{queueItem.position}
               {' | '}

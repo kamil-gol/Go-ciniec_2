@@ -47,14 +47,7 @@ const statusLabels: Record<string, { label: string; emoji: string; classes: stri
   },
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
+
 
 function formatDate(dateStr: string | null): { day: string; month: string; full: string } {
   if (!dateStr) return { day: '?', month: '?', full: 'Brak daty' }

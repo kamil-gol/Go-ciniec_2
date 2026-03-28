@@ -1,4 +1,5 @@
 // apps/frontend/components/audit-log/timeline/timeline.utils.tsx
+import { formatCurrency } from '@/lib/utils'
 // Extracted from EntityActivityTimeline.tsx — utility functions
 
 import {
@@ -93,7 +94,7 @@ export function formatFieldValue(field: string, value: any): string | null {
      field === 'totalPrice' || field === 'priceBeforeDiscount') &&
     !isNaN(Number(value))
   ) {
-    return `${Number(value).toLocaleString('pl-PL')} zł`
+    return formatCurrency(value)
   }
 
   // Obiekty

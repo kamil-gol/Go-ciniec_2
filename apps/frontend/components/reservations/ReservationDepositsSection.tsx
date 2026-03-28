@@ -33,6 +33,7 @@ import {
 import { DeletePaidDepositDialog } from './deposits-section/DeletePaidDepositDialog'
 import { CreateDepositDialog } from './deposits-section/CreateDepositDialog'
 import { MarkAsPaidDialog } from './deposits-section/MarkAsPaidDialog'
+import { formatCurrency } from '@/lib/utils'
 
 export function ReservationDepositsSection({ reservationId, totalPrice }: ReservationDepositsSectionProps) {
   const queryClient = useQueryClient()
@@ -250,7 +251,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Wpłacono</span>
                 <span className="text-sm font-semibold">
-                  {totalPaidAmount.toLocaleString('pl-PL')} / {totalPrice.toLocaleString('pl-PL')} zł
+                  {formatCurrency(totalPaidAmount)} / {formatCurrency(totalPrice)}
                 </span>
               </div>
               {/* Progress bar */}
@@ -316,7 +317,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-bold tabular-nums">
-                          {Number(deposit.amount).toLocaleString('pl-PL')} zł
+                          {formatCurrency(deposit.amount)}
                         </span>
                         {deposit.title && (
                           <span className="text-xs text-muted-foreground truncate max-w-[120px]">

@@ -164,12 +164,12 @@ export function AuditLogTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
-              <TableHead className="w-[160px] font-semibold text-neutral-700 dark:text-neutral-300">Data</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Użytkownik</TableHead>
-              <TableHead className="w-[150px] font-semibold text-neutral-700 dark:text-neutral-300">Akcja</TableHead>
-              <TableHead className="w-[130px] font-semibold text-neutral-700 dark:text-neutral-300">Typ</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Opis</TableHead>
-              <TableHead className="w-[70px] font-semibold text-neutral-700 dark:text-neutral-300"></TableHead>
+              <TableHead className="w-[160px]">Data</TableHead>
+              <TableHead>Użytkownik</TableHead>
+              <TableHead className="w-[150px]">Akcja</TableHead>
+              <TableHead className="w-[130px]">Typ</TableHead>
+              <TableHead>Opis</TableHead>
+              <TableHead className="w-[70px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

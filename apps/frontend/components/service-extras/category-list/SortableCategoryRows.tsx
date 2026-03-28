@@ -1,6 +1,7 @@
 'use client';
 
 import { useSortable } from '@dnd-kit/sortable';
+import { formatCurrency } from '@/lib/utils'
 import { CSS } from '@dnd-kit/utilities';
 import {
   ChevronDown,
@@ -161,7 +162,7 @@ export function SortableCategoryRows({
                   </span>
                   {item.priceType !== 'FREE' && (
                     <span className="font-medium tabular-nums">
-                      {Number(item.basePrice).toLocaleString('pl-PL')} zł{priceSuffix(item.priceType)}
+                      {formatCurrency(item.basePrice)}{priceSuffix(item.priceType)}
                     </span>
                   )}
                 </p>

@@ -211,13 +211,6 @@ export const CATERING_DELIVERY_LABELS: Record<CateringDeliveryType, string> = {
   ON_SITE: '🏠 Na miejscu',
 }
 
-export function formatCateringCurrency(amount: string | number | null | undefined): string {
-  const n = Number(amount)
-  if (isNaN(n)) return '—'
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n)
-}
+import { formatCurrency } from '@/lib/utils'
+
+export const formatCateringCurrency = formatCurrency;

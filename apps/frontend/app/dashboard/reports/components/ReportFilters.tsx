@@ -2,6 +2,13 @@
 
 import type { GroupByPeriod } from '@/types/reports.types';
 import type { ReportFiltersProps } from './types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export function ReportFilters({
   presets,
@@ -54,13 +61,17 @@ export function ReportFilters({
           {activeTab === 'revenue' && (
             <div>
               <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Grupuj po</label>
-              <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupByPeriod)}
-                className="w-full sm:w-auto px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-blue-500">
-                <option value="day">{"Dzień"}</option>
-                <option value="week">{"Tydzień"}</option>
-                <option value="month">{"Miesiąc"}</option>
-                <option value="year">Rok</option>
-              </select>
+              <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupByPeriod)}>
+                <SelectTrigger className="w-full sm:w-auto h-auto px-3 py-1.5 rounded-lg text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Dzień</SelectItem>
+                  <SelectItem value="week">Tydzień</SelectItem>
+                  <SelectItem value="month">Miesiąc</SelectItem>
+                  <SelectItem value="year">Rok</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
           {showViewToggle && (

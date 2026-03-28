@@ -14,7 +14,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
-import { cn } from '@/lib/utils';
+import { cn, formatDateLong } from '@/lib/utils';
 
 import {
   EditorHeader,
@@ -361,13 +361,7 @@ export function TemplateEditor({ slug, open, onClose }: TemplateEditorProps) {
               <div className="flex-shrink-0 border-t bg-muted/20 px-6 py-3 flex items-center justify-between">
                 <span className="text-[11px] text-muted-foreground">
                   Ostatnia zmiana:{' '}
-                  {new Date(template.updatedAt).toLocaleDateString('pl-PL', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {formatDateLong(template.updatedAt)}
                 </span>
                 <p className="text-[11px] text-muted-foreground">
                   Używaj <code className="font-mono bg-muted px-1 py-0.5 rounded">{`{{zmienna}}`}</code> do wstawiania dynamicznych wartości

@@ -30,6 +30,7 @@ import {
   ShoppingCart,
   Truck,
 } from 'lucide-react';
+import { formatCurrency, formatDateLong } from '@/lib/utils';
 
 interface Props {
   orders: CateringOrderListItem[];
@@ -50,13 +51,8 @@ const DELIVERY_BADGE_COLOR: Record<CateringDeliveryType, string> = {
   ON_SITE:  'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300',
 };
 
-function formatPrice(value: number | string) {
-  return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(Number(value));
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
-}
+const formatPrice = formatCurrency;
+const formatDate = formatDateLong;
 
 function clientName(order: CateringOrderListItem) {
   if (order.client.clientType === 'COMPANY' && order.client.companyName)
@@ -79,17 +75,81 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      {/* ===== MOBILE CARD VIEW (<md) ===== */}
+      <div className="md:hidden divide-y divide-neutral-200/80 dark:divide-neutral-700/50 rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+        {orders.map(order => (
+          <div
+            key={order.id}
+            className="p-4 space-y-2.5 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-orange-900/10 active:scale-[0.98] transition-all duration-150"
+            onClick={() => onRowClick(order.id)}
+          >
+            {/* Row 1: Client + Amount */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  order.client.clientType === 'COMPANY'
+                    ? 'bg-purple-100 dark:bg-purple-900/30'
+                    : 'bg-blue-100 dark:bg-blue-900/30'
+                }`}>
+                  {order.client.clientType === 'COMPANY'
+                    ? <Building2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                    : <User className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
+                    {clientName(order)}
+                  </p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono tracking-tight">
+                    {order.orderNumber}
+                  </p>
+                </div>
+              </div>
+              <p className="font-bold text-sm tabular-nums text-neutral-900 dark:text-neutral-100 flex-shrink-0">
+                {formatPrice(order.totalPrice)}
+              </p>
+            </div>
+
+            {/* Row 2: Status + Delivery Type */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge
+                  className={`text-xs font-medium ${ORDER_STATUS_COLOR[order.status as CateringOrderStatus]}`}
+                  variant="outline"
+                >
+                  {ORDER_STATUS_LABEL[order.status as CateringOrderStatus]}
+                </Badge>
+                <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${DELIVERY_BADGE_COLOR[order.deliveryType]}`}>
+                  {DELIVERY_ICON[order.deliveryType]}
+                  {DELIVERY_TYPE_LABEL[order.deliveryType]}
+                </span>
+              </div>
+            </div>
+
+            {/* Row 3: Event + Date */}
+            <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
+              {order.eventName && (
+                <span className="truncate">{order.eventName}</span>
+              )}
+              {order.eventDate && (
+                <span className="flex-shrink-0">{formatDate(order.eventDate)}</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ===== DESKTOP TABLE VIEW (md+) ===== */}
+      <div className="hidden md:block rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-neutral-50 dark:bg-neutral-900/50 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300 w-auto min-w-[6rem]">Numer</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Klient</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Wydarzenie</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Data</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Typ</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Status</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300 text-right">Kwota</TableHead>
+              <TableHead className="w-auto min-w-[6rem]">Numer</TableHead>
+              <TableHead>Klient</TableHead>
+              <TableHead className="hidden lg:table-cell">Wydarzenie</TableHead>
+              <TableHead>Data</TableHead>
+              <TableHead className="hidden lg:table-cell">Typ</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Kwota</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -116,13 +176,13 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
                     <span className="font-medium text-neutral-900 dark:text-neutral-100 text-sm">{clientName(order)}</span>
                   </div>
                 </TableCell>
-                <TableCell className="max-w-[180px] truncate text-sm text-neutral-700 dark:text-neutral-300">
+                <TableCell className="hidden lg:table-cell max-w-[180px] truncate text-sm text-neutral-700 dark:text-neutral-300">
                   {order.eventName ?? <span className="text-neutral-400 dark:text-neutral-600">—</span>}
                 </TableCell>
                 <TableCell className="text-sm text-neutral-600 dark:text-neutral-400">
                   {order.eventDate ? formatDate(order.eventDate) : <span className="text-neutral-400 dark:text-neutral-600">—</span>}
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden lg:table-cell">
                   <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${DELIVERY_BADGE_COLOR[order.deliveryType]}`}>
                     {DELIVERY_ICON[order.deliveryType]}
                     {DELIVERY_TYPE_LABEL[order.deliveryType]}

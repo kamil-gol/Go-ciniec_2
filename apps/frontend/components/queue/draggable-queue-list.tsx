@@ -130,6 +130,47 @@ export function DraggableQueueList({
     setActiveId(null)
   }
 
+  /** #310: Keyboard alternative — move item up/down without drag */
+  const handleMoveUp = async (itemId: string) => {
+    const idx = localItems.findIndex((i) => i.id === itemId)
+    if (idx <= 0 || isLoading) return
+    const reordered = [...localItems]
+    ;[reordered[idx - 1], reordered[idx]] = [reordered[idx], reordered[idx - 1]]
+    const withPositions = reordered.map((item, i) => ({ ...item, position: i + 1 }))
+    setLocalItems(withPositions)
+    setIsLoading(true)
+    setError(null)
+    try {
+      await onReorder(withPositions)
+    } catch (err: any) {
+      setLocalItems(items)
+      setError(err.message || 'Nie udalo sie zmienic kolejnosci.')
+      setTimeout(() => setError(null), 5000)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleMoveDown = async (itemId: string) => {
+    const idx = localItems.findIndex((i) => i.id === itemId)
+    if (idx < 0 || idx >= localItems.length - 1 || isLoading) return
+    const reordered = [...localItems]
+    ;[reordered[idx], reordered[idx + 1]] = [reordered[idx + 1], reordered[idx]]
+    const withPositions = reordered.map((item, i) => ({ ...item, position: i + 1 }))
+    setLocalItems(withPositions)
+    setIsLoading(true)
+    setError(null)
+    try {
+      await onReorder(withPositions)
+    } catch (err: any) {
+      setLocalItems(items)
+      setError(err.message || 'Nie udalo sie zmienic kolejnosci.')
+      setTimeout(() => setError(null), 5000)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const activeItem = activeId ? localItems.find((item) => item.id === activeId) : null
 
   if (localItems.length === 0) {
@@ -189,7 +230,9 @@ export function DraggableQueueList({
         onDragCancel={handleDragCancel}
       >
         <SortableContext items={localItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
-          <div 
+          <div
+            role="list"
+            aria-label="Kolejka rezerwacji - przeciągnij lub użyj przycisków strzałek aby zmienić kolejność"
             className={`space-y-3 transition-opacity ${
               isLoading ? 'opacity-50 pointer-events-none' : ''
             }`}
@@ -200,8 +243,11 @@ export function DraggableQueueList({
                 item={item}
                 isFirst={index === 0}
                 isLast={index === localItems.length - 1}
+                totalItems={localItems.length}
                 onPromote={showPromoteButton && onPromote && !isLoading ? () => onPromote(item.id) : undefined}
                 onEdit={onEdit && !isLoading ? () => onEdit(item.id) : undefined}
+                onMoveUp={!isLoading ? () => handleMoveUp(item.id) : undefined}
+                onMoveDown={!isLoading ? () => handleMoveDown(item.id) : undefined}
                 disabled={isLoading}
               />
             ))}

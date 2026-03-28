@@ -1,4 +1,5 @@
 'use client'
+import { formatCurrency } from '@/lib/utils'
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
@@ -17,6 +18,7 @@ import { DeleteClientModal } from '@/components/clients/delete-client-modal'
 import { ContactsManager } from '@/components/clients/contacts-manager'
 import { toast } from 'sonner'
 
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 import { ClientHeroSection } from './components/ClientHeroSection'
 import { CompanyInfoCard, ContactInfoCard } from './components/ClientInfoCards'
 import { ClientReservationsHistory } from './components/ClientReservationsHistory'
@@ -99,6 +101,9 @@ export default function ClientDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto py-8 px-4 space-y-8">
+        {/* Breadcrumb */}
+        <Breadcrumb />
+
         {/* Soft-deleted banner */}
         {isDeleted && (
           <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400">
@@ -171,7 +176,7 @@ export default function ClientDetailsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Wydano</p>
-                  <p className="text-3xl font-bold">{stats.totalSpent.toLocaleString('pl-PL')} zł</p>
+                  <p className="text-3xl font-bold">{formatCurrency(stats.totalSpent)}</p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg">
                   <DollarSign className="h-6 w-6 text-white" />

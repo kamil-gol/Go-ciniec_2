@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { depositsApi } from '@/lib/api/deposits'
+import { formatCurrency, formatDateLong } from '@/lib/utils'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
 import { Loader2, Save, X } from 'lucide-react'
@@ -106,13 +107,7 @@ export function CreateDepositForm({ onSuccess, onCancel }: CreateDepositFormProp
     }
   }
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('pl-PL', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    })
-  }
+  const formatDate = formatDateLong;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -137,7 +132,7 @@ export function CreateDepositForm({ onSuccess, onCancel }: CreateDepositFormProp
               <option value="">Wybierz rezerwację...</option>
               {reservations.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {formatDate(r.date)} — {r.client.firstName} {r.client.lastName} — {r.hall.name} ({r.eventType.name}) — {Number(r.totalPrice).toLocaleString('pl-PL')} zł
+                  {formatDate(r.date)} — {r.client.firstName} {r.client.lastName} — {r.hall.name} ({r.eventType.name}) — {formatCurrency(r.totalPrice)}
                 </option>
               ))}
             </select>
@@ -149,7 +144,7 @@ export function CreateDepositForm({ onSuccess, onCancel }: CreateDepositFormProp
                 {selectedReservation.hall.name}, {formatDate(selectedReservation.date)},{' '}
                 {selectedReservation.startTime}–{selectedReservation.endTime},{' '}
                 {selectedReservation.guests} gości,{' '}
-                cena: {Number(selectedReservation.totalPrice).toLocaleString('pl-PL')} zł
+                cena: {formatCurrency(selectedReservation.totalPrice)}
               </p>
             </div>
           )}

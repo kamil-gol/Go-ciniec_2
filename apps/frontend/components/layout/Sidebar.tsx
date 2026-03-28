@@ -151,7 +151,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                   type="button"
                   onClick={() => toggleGroup(item.href)}
                   className={cn(
-                    'w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200',
+                    'w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 min-h-[44px]',
                     isGroupActive
                       ? `${s.activeBg} ${s.text} border-l-[3px] ${s.border} pl-[9px]`
                       : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100/80 dark:hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-neutral-100'
@@ -178,7 +178,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                             href={child.href}
                             onClick={onNavigate}
                             className={cn(
-                              'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
+                              'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 min-h-[40px]',
                               childActive
                                 ? `${s.text} ${s.activeBg}`
                                 : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100/80 dark:hover:bg-neutral-800/60 hover:text-neutral-800 dark:hover:text-neutral-100'
@@ -210,7 +210,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                   onClick={onNavigate}
                   title={item.name}
                   className={cn(
-                    'flex items-center justify-center rounded-xl p-2 transition-all duration-200',
+                    'flex items-center justify-center rounded-xl p-2 transition-all duration-200 min-h-[44px]',
                     isGroupActive
                       ? `${s.activeBg} border-l-[3px] ${s.border}`
                       : 'hover:bg-neutral-100/80 dark:hover:bg-neutral-800/60'
@@ -235,7 +235,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                 onClick={onNavigate}
                 title={collapsed ? item.name : undefined}
                 className={cn(
-                  'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200',
+                  'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 min-h-[44px]',
                   collapsed && 'justify-center px-2',
                   isGroupActive
                     ? `${s.activeBg} ${s.text} border-l-[3px] ${s.border} pl-[9px]`

@@ -4,7 +4,7 @@ import { Client } from '@/types'
 import { Users, UserPlus, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useMemo } from 'react'
-import { cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
 
 
 interface ClientStatsProps {
@@ -103,7 +103,7 @@ export default function ClientStats({ clients, isLoading = false }: ClientStatsP
 
             {/* Value */}
             <p className={cn('text-3xl font-bold', stat.valueColor)}>
-              {stat.value.toLocaleString('pl-PL')}
+              {typeof stat.value === 'number' ? formatCurrency(stat.value) : stat.value}
             </p>
           </motion.div>
         )

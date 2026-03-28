@@ -1,4 +1,5 @@
 // apps/frontend/components/audit-log/details/formatters.ts
+import { formatCurrency } from '@/lib/utils'
 
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -49,10 +50,10 @@ export function formatArraySummary(arr: any[]): string {
     if (item.orderNumber) return `#${item.orderNumber}`;
     // For extras-like objects with quantity/price
     if (item.quantity != null && item.pricePerItem != null) {
-      return `${item.quantity} × ${Number(item.pricePerItem).toLocaleString('pl-PL')} zł`;
+      return `${item.quantity} × ${formatCurrency(item.pricePerItem)}`;
     }
     if (item.quantity != null && item.totalPrice != null) {
-      return `${item.quantity} szt. (${Number(item.totalPrice).toLocaleString('pl-PL')} zł)`;
+      return `${item.quantity} szt. (${formatCurrency(item.totalPrice)})`;
     }
     // Fallback: try to get a meaningful summary
     return formatObjectSummary(item);
@@ -76,7 +77,7 @@ export function formatValue(value: any, fieldName?: string): string {
 
   // Currency amounts (numeric fields with money-related names)
   if (typeof value === 'number' && /amount|price|Price|Rate/.test(fieldName || '')) {
-    return `${value.toLocaleString('pl-PL')} zł`;
+    return formatCurrency(value);
   }
 
   // Percentage

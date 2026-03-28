@@ -46,14 +46,7 @@ const STATUS_LABELS: Record<string, { label: string; emoji: string; classes: str
   },
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
+
 
 function toLocalTime(iso: string | null | undefined): string | null {
   if (!iso) return null

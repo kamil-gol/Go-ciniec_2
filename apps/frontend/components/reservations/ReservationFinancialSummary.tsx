@@ -283,12 +283,12 @@ export function ReservationFinancialSummary({
 
   return (
     <>
-      <Card className="border-0 shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/30 dark:to-cyan-950/30">
+      <Card className="bg-card border shadow-xl overflow-hidden">
+        <div>
           {/* HEADER */}
           <div className="p-6 pb-4">
             <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg shadow-lg">
+              <div className="p-2 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg shadow-lg">
                 <Receipt className="h-5 w-5 text-white" />
               </div>
               <h2 className="text-xl font-bold">Podsumowanie finansowe</h2>
@@ -302,7 +302,7 @@ export function ReservationFinancialSummary({
               className="w-full flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-xl mb-3 hover:bg-white/80 dark:hover:bg-black/30 transition-colors"
             >
               <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-emerald-600" />
+                <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 <span className="text-sm font-semibold">Koszty usług</span>
               </div>
               <div className="flex items-center gap-2">

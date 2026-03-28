@@ -16,6 +16,7 @@ import { useUpdateReservation } from '@/lib/api/reservations'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
+import { formatCurrency } from '@/lib/utils'
 
 // Returns HH:MM in local (Warsaw) time — NOT UTC
 function localTime(iso: string): string {
@@ -260,7 +261,7 @@ export function EditableHallCard({
                 <div className="text-sm">
                   <span className={surchargeWillChange ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'}>
                     Cały obiekt \u2014 dopłata:{' '}
-                    <strong>{surchargePreview.toLocaleString('pl-PL')} zł</strong>
+                    <strong>{formatCurrency(surchargePreview)}</strong>
                     {totalGuests < 30
                       ? ' (poniżej 30 gości)'
                       : ' (30+ gości)'}
@@ -268,8 +269,8 @@ export function EditableHallCard({
                   {surchargeWillChange && (
                     <span className="block text-xs text-amber-600 dark:text-amber-400 mt-1">
                       {currentSurcharge > 0
-                        ? `Zmiana z ${currentSurcharge.toLocaleString('pl-PL')} zł \u2192 ${surchargePreview.toLocaleString('pl-PL')} zł po zapisaniu`
-                        : `Nowa dopłata ${surchargePreview.toLocaleString('pl-PL')} zł zostanie naliczona po zapisaniu`}
+                        ? `Zmiana z ${formatCurrency(currentSurcharge)} \u2192 ${formatCurrency(surchargePreview)} po zapisaniu`
+                        : `Nowa dopłata ${formatCurrency(surchargePreview)} zostanie naliczona po zapisaniu`}
                     </span>
                   )}
                 </div>
@@ -284,7 +285,7 @@ export function EditableHallCard({
               >
                 <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                 <span className="text-sm text-green-800 dark:text-green-200">
-                  Dopłata za cały obiekt ({currentSurcharge.toLocaleString('pl-PL')} zł) zostanie usunięta po zmianie sali
+                  Dopłata za cały obiekt ({formatCurrency(currentSurcharge)}) zostanie usunięta po zmianie sali
                 </span>
               </motion.div>
             )}

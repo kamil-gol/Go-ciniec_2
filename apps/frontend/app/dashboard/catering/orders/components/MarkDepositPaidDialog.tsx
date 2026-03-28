@@ -26,6 +26,7 @@ import {
   Smartphone,
   ArrowLeftRight,
 } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 const PAYMENT_METHODS: {
   value: NonNullable<MarkDepositPaidInput['paymentMethod']>;
@@ -38,12 +39,7 @@ const PAYMENT_METHODS: {
   { value: 'CARD',     label: 'Karta',   icon: CreditCard },
 ];
 
-function formatPrice(v: number) {
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-  }).format(v);
-}
+const formatPrice = formatCurrency;
 
 interface Props {
   orderId: string;

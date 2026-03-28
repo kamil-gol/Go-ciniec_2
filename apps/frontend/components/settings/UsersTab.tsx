@@ -97,16 +97,114 @@ export function UsersTab() {
         </Button>
       </div>
 
-      {/* Table */}
-      <div className="rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 overflow-hidden">
+      {/* ===== MOBILE CARD VIEW (<md) ===== */}
+      <div className="md:hidden rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 overflow-hidden divide-y divide-neutral-200/80 dark:divide-neutral-700/50">
+        {filteredUsers.length === 0 ? (
+          <div className="text-center py-8 text-neutral-500">
+            {search ? 'Brak wyników wyszukiwania' : 'Brak użytkowników'}
+          </div>
+        ) : (
+          filteredUsers.map(user => (
+            <div key={user.id} className="p-4 space-y-3">
+              {/* Row 1: Avatar + Name + Status */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-10 w-10 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center text-sm font-semibold text-neutral-600 dark:text-neutral-300 flex-shrink-0">
+                    {(user.firstName?.[0] || '')}{(user.lastName?.[0] || '')}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+                <Badge variant={user.isActive ? 'default' : 'secondary'} className="flex-shrink-0">
+                  {user.isActive ? 'Aktywny' : 'Nieaktywny'}
+                </Badge>
+              </div>
+
+              {/* Row 2: Role + Last login */}
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  {user.role ? (
+                    <Badge
+                      className="font-semibold border-transparent text-white shadow-sm"
+                      style={{ backgroundColor: user.role.color }}
+                    >
+                      {user.role.name}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">Brak roli</Badge>
+                  )}
+                </div>
+                <span className="text-xs text-neutral-400 dark:text-neutral-500">
+                  {user.lastLoginAt
+                    ? new Date(user.lastLoginAt).toLocaleString('pl-PL')
+                    : 'Nigdy nie logowano'}
+                </span>
+              </div>
+
+              {/* Row 3: Actions */}
+              <div className="flex items-center gap-1 pt-1 border-t border-neutral-100 dark:border-neutral-700/50">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5"
+                  onClick={() => { setEditingUser(user); setFormOpen(true) }}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edytuj
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5"
+                  onClick={() => setPasswordTarget(user)}
+                >
+                  <KeyRound className="h-3.5 w-3.5" />
+                  Hasło
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 ml-auto"
+                  title={user.isActive ? 'Dezaktywuj' : 'Aktywuj'}
+                  aria-label={user.isActive ? 'Dezaktywuj użytkownika' : 'Aktywuj użytkownika'}
+                  onClick={() => handleToggleActive(user)}
+                >
+                  {user.isActive
+                    ? <ToggleRight className="h-4 w-4 text-green-600" />
+                    : <ToggleLeft className="h-4 w-4 text-neutral-400" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-red-500 hover:text-red-700"
+                  title="Usuń"
+                  aria-label="Usuń użytkownika"
+                  onClick={() => setDeleteTarget(user)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ===== DESKTOP TABLE VIEW (md+) ===== */}
+      <div className="hidden md:block rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Użytkownik</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead className="hidden lg:table-cell">Email</TableHead>
               <TableHead>Rola</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Ostatnie logowanie</TableHead>
+              <TableHead className="hidden lg:table-cell">Ostatnie logowanie</TableHead>
               <TableHead className="text-right">Akcje</TableHead>
             </TableRow>
           </TableHeader>
@@ -125,10 +223,13 @@ export function UsersTab() {
                       <div className="h-9 w-9 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center text-sm font-semibold text-neutral-600 dark:text-neutral-300">
                         {(user.firstName?.[0] || '')}{(user.lastName?.[0] || '')}
                       </div>
-                      <span>{user.firstName} {user.lastName}</span>
+                      <div className="min-w-0">
+                        <span className="block truncate">{user.firstName} {user.lastName}</span>
+                        <span className="block lg:hidden text-xs text-neutral-500 truncate">{user.email}</span>
+                      </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-neutral-500">{user.email}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-neutral-500">{user.email}</TableCell>
                   <TableCell>
                     {user.role ? (
                       <Badge
@@ -146,7 +247,7 @@ export function UsersTab() {
                       {user.isActive ? 'Aktywny' : 'Nieaktywny'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-neutral-500 text-sm">
+                  <TableCell className="hidden lg:table-cell text-neutral-500 text-sm">
                     {user.lastLoginAt
                       ? new Date(user.lastLoginAt).toLocaleString('pl-PL')
                       : 'Nigdy'}

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, CheckCheck, Calendar, CreditCard, ArrowUpFromLine, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { cn } from '@/lib/utils'
+import { cn, formatDateLong } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { PageHero, LoadingState, EmptyState } from '@/components/shared'
 import { FilterTabs } from '@/components/shared/FilterTabs'
@@ -59,7 +59,7 @@ function formatDate(dateStr: string): string {
 
   if (diffDays === 0) return 'Dzisiaj'
   if (diffDays === 1) return 'Wczoraj'
-  return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
+  return formatDateLong(date)
 }
 
 function formatTime(dateStr: string): string {

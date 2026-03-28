@@ -2,6 +2,7 @@
 
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { formatCurrency } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -58,7 +59,7 @@ export function MarkAsPaidDialog({
             <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 p-4 border border-emerald-200 dark:border-emerald-800">
               <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Kwota</p>
               <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                {Number(selectedDeposit.amount).toLocaleString('pl-PL')} zł
+                {formatCurrency(selectedDeposit.amount)}
               </p>
             </div>
 

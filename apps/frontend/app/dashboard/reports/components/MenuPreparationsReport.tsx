@@ -176,12 +176,12 @@ export function MenuPreparationsTab({ query, view }: {
                       </colgroup>
                       <thead className="bg-neutral-50 dark:bg-neutral-800">
                         <tr>
-                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase truncate">Danie</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Porcje</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">{"Dorosłe"}</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Dziecięce</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Maluchy</th>
-                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden lg:table-cell">Klienci</th>
+                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground truncate">Danie</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Porcje</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">{"Dorosłe"}</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Dziecięce</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Maluchy</th>
+                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Klienci</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">

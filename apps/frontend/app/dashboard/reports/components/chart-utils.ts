@@ -1,13 +1,9 @@
 import type { DatePreset } from './types';
+import { formatCurrency } from '@/lib/utils';
 
-export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
+export { formatCurrency };
+
+
 
 export const formatPercent = (value: number): string => {
   return `${value > 0 ? '+' : ''}${value}%`;

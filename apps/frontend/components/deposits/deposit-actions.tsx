@@ -56,6 +56,7 @@ import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { toast } from 'sonner'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
+import { formatCurrency } from '@/lib/utils'
 
 interface DepositActionsProps {
   deposit: Deposit
@@ -286,7 +287,7 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
             <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 p-4 border border-emerald-200 dark:border-emerald-800">
               <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Kwota do zapłaty</p>
               <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                {Number(deposit.amount).toLocaleString('pl-PL')} zł
+                {formatCurrency(deposit.amount)}
               </p>
               {clientName && (
                 <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-1">
@@ -361,8 +362,8 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
             </SheetTitle>
             <SheetDescription>
               {clientName
-                ? `${clientName} — ${Number(deposit.amount).toLocaleString('pl-PL')} zł`
-                : `Zaliczka ${Number(deposit.amount).toLocaleString('pl-PL')} zł`}
+                ? `${clientName} — ${formatCurrency(deposit.amount)}`
+                : `Zaliczka ${formatCurrency(deposit.amount)}`}
             </SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-2 pb-2">
@@ -398,7 +399,7 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
                 <p>
                   Ta operacja jest nieodwracalna. Zaliczka na kwotę{' '}
                   <strong className="text-neutral-900 dark:text-neutral-100">
-                    {Number(deposit.amount).toLocaleString('pl-PL')} zł
+                    {formatCurrency(deposit.amount)}
                   </strong>{' '}
                   zostanie trwale usunięta z systemu.
                 </p>

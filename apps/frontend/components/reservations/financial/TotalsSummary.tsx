@@ -34,40 +34,40 @@ export function TotalsSummary({
   return (
     <>
       {/* TOTAL */}
-      <div className="p-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl text-white mb-4 shadow-lg">
+      <div className="p-4 bg-card rounded-xl mb-4 border border-border shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 opacity-80" />
-            <span className="font-bold">Razem do zapłaty</span>
+            <DollarSign className="h-5 w-5 text-muted-foreground" />
+            <span className="font-bold text-foreground">Razem do zapłaty</span>
           </div>
-          <span className="text-2xl font-bold">{formatPLN(finalTotalPrice)} zł</span>
+          <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">{formatPLN(finalTotalPrice)} zł</span>
         </div>
         {hasActiveDiscount && (
-          <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+          <div className="flex items-center justify-between mt-1 text-muted-foreground text-xs">
             <span>w tym rabat</span>
             <span>-{formatPLN(activeDiscountAmount)} zł</span>
           </div>
         )}
         {hasVenueSurcharge && (
-          <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+          <div className="flex items-center justify-between mt-1 text-muted-foreground text-xs">
             <span>w tym dopłata za cały obiekt</span>
             <span>+{formatPLN(effectiveVenueSurcharge)} zł</span>
           </div>
         )}
         {extrasTotalPrice > 0 && (
-          <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+          <div className="flex items-center justify-between mt-1 text-muted-foreground text-xs">
             <span>w tym usługi dodatkowe ({activeExtrasCount})</span>
             <span>+{formatPLN(extrasTotalPrice)} zł</span>
           </div>
         )}
         {effectiveCategoryExtrasTotal > 0 && (
-          <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+          <div className="flex items-center justify-between mt-1 text-muted-foreground text-xs">
             <span>w tym dodatkowo płatne porcje ({activeCategoryExtrasCount})</span>
             <span>+{formatPLN(effectiveCategoryExtrasTotal)} zł</span>
           </div>
         )}
         {extraHoursInfo && extraHoursInfo.extraCost > 0 && (
-          <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+          <div className="flex items-center justify-between mt-1 text-muted-foreground text-xs">
             <span>w tym dopłata za {extraHoursInfo.extraHours} dodatkow{extraHoursInfo.extraHours === 1 ? 'ą godzinę' : extraHoursInfo.extraHours < 5 ? 'e godziny' : 'ych godzin'}</span>
             <span>+{formatPLN(extraHoursInfo.extraCost)} zł</span>
           </div>
@@ -78,7 +78,7 @@ export function TotalsSummary({
       <div className="p-4 bg-white dark:bg-black/20 rounded-xl mb-3">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-emerald-600" />
+            <TrendingUp className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             <span className="text-sm font-semibold">Stan rozliczeń</span>
           </div>
           <span className="text-sm font-bold">
@@ -92,7 +92,7 @@ export function TotalsSummary({
             style={{ width: `${financials.percentCommitted}%` }}
           />
           <div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-700"
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full transition-all duration-700"
             style={{ width: `${financials.percentPaid}%` }}
           />
         </div>

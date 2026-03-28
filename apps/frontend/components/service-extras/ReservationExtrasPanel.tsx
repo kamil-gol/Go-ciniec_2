@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatCurrency } from '@/lib/utils'
 import {
   Gift,
   Plus,
@@ -146,7 +147,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
                       {extras.length} {extras.length === 1 ? 'pozycja' : extras.length < 5 ? 'pozycje' : 'pozycji'}
                       {totalPrice > 0 && (
                         <span className="font-semibold text-violet-700 dark:text-violet-300 ml-1">
-                          — {totalPrice.toLocaleString('pl-PL')} zł
+                          — {formatCurrency(totalPrice)}
                         </span>
                       )}
                     </p>
@@ -349,7 +350,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
                 <div className="flex items-center justify-between p-3 mt-2 bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl text-white shadow-lg">
                   <span className="text-sm font-bold">Razem usługi dodatkowe</span>
                   <span className="text-lg font-bold">
-                    {totalPrice.toLocaleString('pl-PL')} zł
+                    {formatCurrency(totalPrice)}
                   </span>
                 </div>
               </div>

@@ -1,4 +1,5 @@
 // apps/frontend/app/dashboard/catering/templates/[id]/packages/components/PackageCard.tsx
+import { formatCurrency } from '@/lib/utils'
 'use client';
 
 import { useState } from 'react';
@@ -78,7 +79,7 @@ export function PackageCard({ pkg, templateId, onEdit }: Props) {
 
           <div className="hidden sm:flex items-center gap-3 text-sm shrink-0">
             <span className="text-xs text-muted-foreground">{CATERING_PRICE_TYPE_LABELS[pkg.priceType]}</span>
-            <span className="font-bold text-primary text-base">{basePrice.toFixed(2)} zł</span>
+            <span className="font-bold text-primary text-base">{formatCurrency(basePrice)}</span>
             {(pkg.minGuests != null || pkg.maxGuests != null) && (
               <span className="text-xs text-muted-foreground">
                 {pkg.minGuests ?? '–'}–{pkg.maxGuests ?? '∞'} os.
@@ -106,7 +107,7 @@ export function PackageCard({ pkg, templateId, onEdit }: Props) {
         {/* Mobile row */}
         <div className="sm:hidden flex items-center gap-3 px-4 pb-3 text-sm">
           <span className="text-xs text-muted-foreground">{CATERING_PRICE_TYPE_LABELS[pkg.priceType]}</span>
-          <span className="font-bold text-primary">{basePrice.toFixed(2)} zł</span>
+          <span className="font-bold text-primary">{formatCurrency(basePrice)}</span>
           <span className="text-xs text-muted-foreground">{pkg.sections?.length ?? 0} sekcji</span>
         </div>
 

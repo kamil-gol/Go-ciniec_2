@@ -40,7 +40,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
+import { cn, formatDateLong } from '@/lib/utils';
 import type { DocumentTemplateHistory } from '@/types/document-template.types';
 
 // ── Props ───────────────────────────────────────────

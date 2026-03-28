@@ -2,6 +2,7 @@
 
 import { Trash2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { formatCurrency } from '@/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -42,7 +43,7 @@ export function DeletePaidDepositDialog({ deposit, open, onClose, onConfirm, loa
           <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 space-y-1.5">
             <div className="flex items-center justify-between text-sm">
               <span className="text-neutral-500">Kwota</span>
-              <span className="font-bold text-red-700 dark:text-red-300">{Number(deposit.amount).toLocaleString('pl-PL')} zł</span>
+              <span className="font-bold text-red-700 dark:text-red-300">{formatCurrency(deposit.amount)}</span>
             </div>
             {deposit.paymentMethod && (
               <div className="flex items-center justify-between text-sm">

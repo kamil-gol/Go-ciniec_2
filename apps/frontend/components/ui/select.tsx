@@ -145,6 +145,82 @@ const SelectSeparator = React.forwardRef<
 ))
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName
 
+/**
+ * SelectField — convenience wrapper for react-hook-form integration.
+ *
+ * Usage:
+ *   <SelectField
+ *     value={field.value}
+ *     onValueChange={field.onChange}
+ *     placeholder="Wybierz..."
+ *     options={[{ value: 'a', label: 'A' }]}
+ *   />
+ *
+ * For fully custom item rendering, pass children instead of options.
+ */
+interface SelectFieldOption {
+  value: string
+  label: string
+  disabled?: boolean
+}
+
+interface SelectFieldProps {
+  value: string
+  onValueChange: (value: string) => void
+  options?: SelectFieldOption[]
+  placeholder?: string
+  label?: string
+  error?: string
+  disabled?: boolean
+  className?: string
+  triggerClassName?: string
+  children?: React.ReactNode
+  'aria-label'?: string
+  'aria-required'?: boolean
+}
+
+function SelectField({
+  value,
+  onValueChange,
+  options,
+  placeholder,
+  label,
+  error,
+  disabled,
+  className,
+  triggerClassName,
+  children,
+  ...ariaProps
+}: SelectFieldProps) {
+  return (
+    <div className={cn("w-full", className)}>
+      {label && (
+        <label className="block text-sm font-medium text-foreground/80 mb-1">
+          {label}
+        </label>
+      )}
+      <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+        <SelectTrigger
+          className={cn(error && "border-destructive focus:ring-destructive", triggerClassName)}
+          aria-label={ariaProps['aria-label']}
+          aria-required={ariaProps['aria-required']}
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {children ??
+            options?.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
+                {opt.label}
+              </SelectItem>
+            ))}
+        </SelectContent>
+      </Select>
+      {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
+    </div>
+  )
+}
+
 export {
   Select,
   SelectGroup,
@@ -156,4 +232,7 @@ export {
   SelectSeparator,
   SelectScrollUpButton,
   SelectScrollDownButton,
+  SelectField,
 }
+
+export type { SelectFieldOption, SelectFieldProps }

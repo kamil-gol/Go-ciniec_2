@@ -11,16 +11,14 @@ export function getDaysLabel(dateStr: string): { text: string; className: string
   return null
 }
 
+import { formatCurrency as _fc, formatDateLong as _fdl } from '@/lib/utils'
+
 export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('pl-PL', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
+  return _fdl(dateStr)
 }
 
 export function formatPLN(amount: number): string {
-  return amount.toLocaleString('pl-PL', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+  return _fc(amount)
 }
 
 export function suggestDueDate(daysFromNow: number = 14): string {

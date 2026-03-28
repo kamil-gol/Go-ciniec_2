@@ -10,7 +10,7 @@ import {
   MapPin,
   ArrowRight,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, formatDateLong } from '@/lib/utils'
 import type { CalendarReservation } from '@/lib/api/calendar-api'
 import { STATUS_CONFIG } from './calendar.constants'
 import { formatCurrency } from './calendar.helpers'
@@ -20,7 +20,7 @@ export default function DayDetailPanel({ date, reservations, onClose, onReservat
   date: Date; reservations: CalendarReservation[]; onClose: () => void; onReservationClick: (id: string) => void
 }) {
   const dayName = date.toLocaleDateString('pl-PL', { weekday: 'long' })
-  const fullDate = date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
+  const fullDate = formatDateLong(date)
 
   const hallGroups = useMemo(() => {
     const groups = new Map<string, { hall: CalendarReservation['hall']; reservations: CalendarReservation[] }>()

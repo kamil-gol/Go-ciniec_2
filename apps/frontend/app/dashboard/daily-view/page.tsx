@@ -1,4 +1,5 @@
 'use client'
+import { formatDateLong } from '@/lib/utils'
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -31,7 +32,7 @@ function formatDisplayDate(dateStr: string, isToday: boolean, isTomorrow: boolea
   const [y, m, d] = dateStr.split('-').map(Number)
   const date = new Date(y, m - 1, d)
   const weekday = date.toLocaleDateString('pl-PL', { weekday: 'long' })
-  const dayMonth = date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
+  const dayMonth = formatDateLong(date)
   const capitalized = weekday.charAt(0).toUpperCase() + weekday.slice(1)
 
   if (isToday) return `Dzisiaj — ${capitalized}, ${dayMonth}`

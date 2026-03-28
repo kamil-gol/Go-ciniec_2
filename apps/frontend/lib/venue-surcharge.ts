@@ -1,3 +1,5 @@
+import { formatCurrency } from '@/lib/utils'
+
 /**
  * Venue Surcharge Preview Utility
  * Mirrors backend calculateVenueSurcharge() logic for live preview in edit forms.
@@ -42,5 +44,5 @@ export function calculateVenueSurchargePreview(
  * Format surcharge amount in PLN.
  */
 export function formatSurchargePLN(amount: number): string {
-  return `${amount.toLocaleString('pl-PL')} zł`
+  return formatCurrency(amount)
 }

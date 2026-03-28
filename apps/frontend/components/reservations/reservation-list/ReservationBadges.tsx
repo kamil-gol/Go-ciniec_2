@@ -3,6 +3,7 @@ import {
   ShieldCheck, ShieldAlert, Sparkles
 } from 'lucide-react'
 import type { Deposit } from '@/lib/api/deposits'
+import { formatCurrency } from '@/lib/utils'
 
 // Deposit Badge Helper
 export function DepositBadge({ deposits }: { deposits: Deposit[] }) {
@@ -27,7 +28,7 @@ export function DepositBadge({ deposits }: { deposits: Deposit[] }) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800 animate-pulse">
         <AlertTriangle className="h-3 w-3" />
-        Zaległa: {totalAmount.toLocaleString('pl-PL')} zł
+        Zaległa: {formatCurrency(totalAmount)}
       </span>
     )
   }
@@ -35,7 +36,7 @@ export function DepositBadge({ deposits }: { deposits: Deposit[] }) {
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800">
       <Clock className="h-3 w-3" />
-      Zaliczka: {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} / ` : ''}{totalAmount.toLocaleString('pl-PL')} zł
+      Zaliczka: {paidAmount > 0 ? `${formatCurrency(paidAmount)} / ` : ''}{formatCurrency(totalAmount)}
     </span>
   )
 }
@@ -45,7 +46,7 @@ export function ExtrasBadge({ extrasCount, extrasTotalPrice }: { extrasCount?: n
   if (!extrasCount || extrasCount === 0) return null
 
   const priceLabel = extrasTotalPrice && extrasTotalPrice > 0
-    ? ` · ${extrasTotalPrice.toLocaleString('pl-PL')} zł`
+    ? ` · ${formatCurrency(extrasTotalPrice)}`
     : ''
 
   return (

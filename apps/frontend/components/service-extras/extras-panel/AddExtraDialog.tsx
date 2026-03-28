@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatCurrency } from '@/lib/utils'
 import { Gift, Plus, Minus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -154,7 +155,7 @@ export function AddExtraDialog({
                         <span>{item.name}</span>
                         {item.priceType !== 'FREE' && (
                           <span className="text-muted-foreground">
-                            — {Number(item.basePrice).toLocaleString('pl-PL')} zł{priceSuffix(item.priceType)}
+                            — {formatCurrency(item.basePrice)}{priceSuffix(item.priceType)}
                           </span>
                         )}
                         {item.priceType === 'FREE' && (
@@ -206,7 +207,7 @@ export function AddExtraDialog({
                 </div>
                 {quantity > 1 && (
                   <span className="text-sm text-muted-foreground">
-                    = <span className="font-bold text-violet-600 dark:text-violet-400">{previewPrice.toLocaleString('pl-PL')} zł</span>
+                    = <span className="font-bold text-violet-600 dark:text-violet-400">{formatCurrency(previewPrice)}</span>
                   </span>
                 )}
               </div>
@@ -247,7 +248,7 @@ export function AddExtraDialog({
                 step="0.01"
                 value={customPrice}
                 onChange={(e) => setCustomPrice(e.target.value)}
-                placeholder={`Domyślna: ${Number(selectedItem.basePrice).toLocaleString('pl-PL')} zł${priceSuffix(selectedItem.priceType)}`}
+                placeholder={`Domyślna: ${formatCurrency(selectedItem.basePrice)}${priceSuffix(selectedItem.priceType)}`}
               />
               <p className="text-xs text-muted-foreground">
                 Pozostaw puste, aby użyć ceny domyślnej

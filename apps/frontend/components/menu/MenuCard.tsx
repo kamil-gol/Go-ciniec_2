@@ -15,6 +15,7 @@ import { pl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { moduleAccents } from '@/lib/design-tokens';
+import type { KeyboardEvent } from 'react';
 
 const accent = moduleAccents.menu;
 
@@ -29,6 +30,13 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
   const isActive = template.isActive;
   const packageCount = template.packages?.length ?? (template as any)._count?.packages;
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect?.(template);
+    }
+  };
+
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -36,14 +44,19 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
       transition={{ duration: 0.2 }}
     >
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={`Menu: ${template.name}${isSelected ? ' (wybrane)' : ''}${isActive ? '' : ' (nieaktywne)'}`}
+        aria-pressed={isSelected}
         className={cn(
-          'group rounded-2xl bg-white dark:bg-neutral-800/80 border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden',
+          'group rounded-2xl bg-white dark:bg-neutral-800/80 border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           isSelected
             ? 'border-green-500 ring-2 ring-green-500/50 shadow-green-100 dark:shadow-green-900/20'
             : 'border-neutral-200/80 dark:border-neutral-700/50',
           className
         )}
         onClick={() => onSelect?.(template)}
+        onKeyDown={handleKeyDown}
       >
         <div className="p-6 space-y-4">
           {/* Header */}

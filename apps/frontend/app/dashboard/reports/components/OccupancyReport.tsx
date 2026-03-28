@@ -27,10 +27,10 @@ export function OccupancyTab({ query }: { query: OccupancyQueryResult }) {
             <table className="w-full text-sm">
               <thead className="bg-neutral-50 dark:bg-neutral-800">
                 <tr>
-                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Sala</th>
-                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Zajętość"}</th>
-                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Rez.</th>
-                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">{"Śr. gości"}</th>
+                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Sala</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">{"Zajętość"}</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Rez.</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">{"Śr. gości"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">

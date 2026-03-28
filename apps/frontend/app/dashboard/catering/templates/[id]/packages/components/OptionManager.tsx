@@ -1,4 +1,5 @@
 // apps/frontend/app/dashboard/catering/templates/[id]/packages/components/OptionManager.tsx
+import { formatCurrency } from '@/lib/utils'
 'use client';
 
 import { useState } from 'react';
@@ -63,8 +64,7 @@ function SortableOptionRow({ opt, onToggleDefault, onRemove }: SortableOptionRow
   };
 
   const dish = (opt as any).dish;
-  const formatPrice = (val: unknown) =>
-    val != null ? `${Number(val).toFixed(2)} zł` : null;
+  const formatPrice = (val: unknown) => val != null ? formatCurrency(val as number) : null;
   const priceDisplay =
     formatPrice(opt.customPrice) ??
     formatPrice(dish?.price) ??
@@ -301,7 +301,7 @@ export function OptionManager({ section, templateId }: Props) {
                 <span>{dish.name}</span>
                 {(dish as any).price != null && (
                   <span className="ml-1.5 text-muted-foreground text-xs">
-                    {Number((dish as any).price).toFixed(2)} zł
+                    {formatCurrency((dish as any).price)}
                   </span>
                 )}
               </SelectItem>

@@ -129,7 +129,7 @@ export function PayDepositModal({
             <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 p-4 border border-emerald-200 dark:border-emerald-800">
               <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Kwota</p>
               <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                {Number(selectedDeposit.amount).toLocaleString('pl-PL')} zł
+                {formatPLN(selectedDeposit.amount)}
               </p>
             </div>
             <div className="space-y-2">
@@ -202,7 +202,7 @@ export function DeleteDepositModal({
             <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
               <p className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Zaliczka do usunięcia</p>
               <p className="text-xl font-bold text-red-700 dark:text-red-300">
-                {Number(depositToDelete.amount).toLocaleString('pl-PL')} zł
+                {formatPLN(depositToDelete.amount)}
               </p>
               {depositToDelete.title && (
                 <p className="text-sm text-red-600/80 dark:text-red-400/80 mt-1">{depositToDelete.title}</p>

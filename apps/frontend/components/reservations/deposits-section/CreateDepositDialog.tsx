@@ -2,6 +2,7 @@
 
 import { DollarSign, Plus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { formatCurrency } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -51,7 +52,7 @@ export function CreateDepositDialog({
             Nowa zaliczka
           </DialogTitle>
           <DialogDescription>
-            Dodaj zaliczkę do tej rezerwacji. Sugerowana kwota to 30% ceny ({Math.round(totalPrice * 0.3).toLocaleString('pl-PL')} zł).
+            Dodaj zaliczkę do tej rezerwacji. Sugerowana kwota to 30% ceny ({formatCurrency(Math.round(totalPrice * 0.3))}).
           </DialogDescription>
         </DialogHeader>
 

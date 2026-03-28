@@ -75,12 +75,50 @@ export function formatTime(time: string): string {
   return time.substring(0, 5);
 }
 
-export function formatCurrency(amount: number | string): string {
+export function formatCurrency(amount: number | string | null | undefined): string {
+  if (amount == null || amount === '') return '—';
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(numAmount)) return '—';
   return new Intl.NumberFormat('pl-PL', {
     style: 'currency',
     currency: 'PLN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(numAmount);
+}
+
+export function formatDateLong(date: string | Date | null | undefined): string {
+  if (!date) return '—';
+  try {
+    const dateObj = typeof date === 'string'
+      ? (date.includes('T') ? new Date(date) : new Date(date + 'T00:00:00'))
+      : date;
+    if (isNaN(dateObj.getTime())) return '—';
+    return new Intl.DateTimeFormat('pl-PL', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(dateObj);
+  } catch {
+    return '—';
+  }
+}
+
+export function formatDateShort(date: string | Date | null | undefined): string {
+  if (!date) return '—';
+  try {
+    const dateObj = typeof date === 'string'
+      ? (date.includes('T') ? new Date(date) : new Date(date + 'T00:00:00'))
+      : date;
+    if (isNaN(dateObj.getTime())) return '—';
+    return new Intl.DateTimeFormat('pl-PL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(dateObj);
+  } catch {
+    return '—';
+  }
 }
 
 export function calculateTotalPrice(guests: number, pricePerPerson: number | string): number {

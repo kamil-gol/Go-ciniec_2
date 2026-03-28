@@ -1,4 +1,5 @@
 'use client'
+import { formatDateLong } from '@/lib/utils'
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
@@ -78,16 +79,8 @@ export default function EventTypeDetailPage() {
   const color = eventType.color || '#9CA3AF'
   const reservationCount = eventType._count.reservations
   const templateCount = eventType._count.menuTemplates
-  const createdDate = new Date(eventType.createdAt).toLocaleDateString('pl-PL', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-  const updatedDate = new Date(eventType.updatedAt).toLocaleDateString('pl-PL', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+  const createdDate = formatDateLong(eventType.createdAt)
+  const updatedDate = formatDateLong(eventType.updatedAt)
 
   const effectiveStandardHours = eventType.standardHours ?? 6
   const effectiveExtraHourRate = eventType.extraHourRate ?? 500

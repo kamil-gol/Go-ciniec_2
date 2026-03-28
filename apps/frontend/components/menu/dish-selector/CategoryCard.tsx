@@ -68,9 +68,13 @@ export function CategoryCard({
   const guestCount = getGuestCountForTarget(category.portionTarget, adults, childrenCount, toddlers);
 
   return (
-    <Card className={`border shadow-sm ${
-      inactive ? 'opacity-50 grayscale' : ''
-    }`}>
+    <Card
+      role="region"
+      aria-label={`Kategoria: ${category.customLabel || category.categoryName}${inactive ? ' (nieaktywna)' : ''}`}
+      className={`border shadow-sm ${
+        inactive ? 'opacity-50 grayscale' : ''
+      }`}
+    >
       <CardContent className="p-4">
         {/* Category Header */}
         <div className={inactive ? 'mb-1' : 'mb-3'}>

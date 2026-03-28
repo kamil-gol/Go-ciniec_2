@@ -22,6 +22,7 @@ import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/comp
 import { FilterTabs } from '@/components/shared/FilterTabs'
 import { moduleAccents } from '@/lib/design-tokens'
 import { toast } from 'sonner'
+import { formatCurrency } from '@/lib/utils'
 
 type FilterStatus = 'ALL' | DepositStatus
 
@@ -118,7 +119,7 @@ export default function DepositsPage() {
           <StatCard
             label="Oczekujące"
             value={stats.counts.pending}
-            subtitle={`${stats.amounts.pending.toLocaleString('pl-PL')} zł do zapłaty`}
+            subtitle={`${formatCurrency(stats.amounts.pending)} do zapłaty`}
             icon={Clock}
             iconGradient="from-amber-500 to-orange-500"
             delay={0.1}
@@ -126,7 +127,7 @@ export default function DepositsPage() {
           <StatCard
             label="Opłacone"
             value={stats.counts.paid}
-            subtitle={`${stats.amounts.paid.toLocaleString('pl-PL')} zł wpłacono`}
+            subtitle={`${formatCurrency(stats.amounts.paid)} wpłacono`}
             icon={CheckCircle2}
             iconGradient="from-emerald-500 to-teal-500"
             delay={0.2}
@@ -134,7 +135,7 @@ export default function DepositsPage() {
           <StatCard
             label="Przetermin."
             value={stats.counts.overdue}
-            subtitle={`${stats.amounts.overdue.toLocaleString('pl-PL')} zł zaległości`}
+            subtitle={`${formatCurrency(stats.amounts.overdue)} zaległości`}
             icon={AlertTriangle}
             iconGradient="from-red-500 to-rose-500"
             delay={0.3}
@@ -143,7 +144,7 @@ export default function DepositsPage() {
           {/* matches the actual "Wszystkie" filter row count. */}
           <StatCard
             label="Łącznie"
-            value={`${stats.amounts.total.toLocaleString('pl-PL')} zł`}
+            value={formatCurrency(stats.amounts.total)}
             subtitle={`${percentPaid}% wpłacono \u00b7 ${totalAllCount} zaliczek`}
             icon={TrendingUp}
             iconGradient="from-rose-500 to-pink-500"

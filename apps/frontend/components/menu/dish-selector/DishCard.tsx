@@ -2,6 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Check, CheckCircle2, Lock } from 'lucide-react';
+import type { KeyboardEvent } from 'react';
 
 interface DishCardProps {
   dish: any;
@@ -24,9 +25,21 @@ export function DishCard({
   onToggle,
   onQuantityChange,
 }: DishCardProps) {
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (!isDisabled) onToggle();
+    }
+  };
+
   return (
     <div
-      className={`group relative p-3 border rounded-lg transition-all duration-200 ${
+      role="button"
+      tabIndex={isDisabled ? -1 : 0}
+      aria-label={`${dish.name}${isSelected ? ' (wybrane)' : ''}${isDisabled ? ' (niedostępne)' : ''}`}
+      aria-pressed={isSelected}
+      aria-disabled={isDisabled}
+      className={`group relative p-3 border rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
         isDisabled
           ? 'opacity-50 cursor-not-allowed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900'
           : isSelected
@@ -34,6 +47,7 @@ export function DishCard({
             : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 hover:border-blue-300 hover:shadow-sm cursor-pointer'
       }`}
       onClick={() => !isDisabled && onToggle()}
+      onKeyDown={handleKeyDown}
     >
       {isDisabled && (
         <div className="absolute top-2 right-2 w-5 h-5 bg-neutral-400 rounded-full flex items-center justify-center">
