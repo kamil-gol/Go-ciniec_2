@@ -18,14 +18,13 @@ import { manualLogin as login } from '../fixtures/auth.fixture';
  *   ... --update-snapshots
  */
 
-const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl';
+const ADMIN_EMAIL = 'admin@gosciniecrodzinny.pl';
 const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || '';
 
-// Fail fast if password not provided
 if (!ADMIN_PASSWORD) {
   throw new Error(
-    'TEST_ADMIN_PASSWORD is required.\n' +
-    'Usage: TEST_ADMIN_PASSWORD=xxx npx playwright test specs/13-uiux-audit3.spec.ts'
+    'TEST_ADMIN_PASSWORD is required. Use the wrapper script:\n' +
+    '  ./e2e/run-audit.sh'
   );
 }
 
