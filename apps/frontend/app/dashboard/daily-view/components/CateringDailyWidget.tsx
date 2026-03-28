@@ -105,7 +105,7 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
             </div>
 
             {/* Linia 2: sposób dostawy + godzina + goście + liczba dań */}
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+            <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 truncate">
               {CATERING_DELIVERY_LABELS[order.deliveryType]}
               {order.deliveryTime && (
                 <> <Clock className="inline h-3 w-3 mb-0.5" /> {order.deliveryTime}</>
@@ -121,7 +121,7 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
 
             {/* Linia 3: adres dostawy (tylko DELIVERY) */}
             {hasAddress && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1">
+              <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 flex items-center gap-1">
                 <MapPin className="h-3 w-3 flex-shrink-0 text-orange-500" />
                 <span className="break-all">{order.deliveryAddress}</span>
               </p>
@@ -129,14 +129,14 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
 
             {/* Linia 4: nazwa wydarzenia */}
             {order.eventName && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+              <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 truncate">
                 🎉 {order.eventName}
               </p>
             )}
 
             {/* Linia 5: kontakt — osobna linia, bez truncate żeby numer nie był ucinany */}
             {hasContact && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1 flex-wrap">
+              <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 flex items-center gap-1 flex-wrap">
                 <Phone className="h-3 w-3 flex-shrink-0" />
                 <span className="font-medium">{contactDisplay}</span>
                 {order.contactPhone && (
@@ -198,7 +198,7 @@ function SummaryFooter({ orders }: { orders: CateringOrderListItem[] }) {
       )}
     >
       <div className="flex items-center gap-3 text-sm flex-wrap">
-        <span className="text-neutral-600 dark:text-neutral-400">
+        <span className="text-neutral-600 dark:text-neutral-300">
           <span className="font-bold text-neutral-900 dark:text-neutral-100">{orders.length}</span>
           {' '}zamówień
         </span>
@@ -253,7 +253,7 @@ export default function CateringDailyWidget({ date }: CateringDailyWidgetProps) 
             <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
               🍱 Catering
             </h3>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-neutral-500 dark:text-neutral-300">
               Zamówienia na ten dzień
             </p>
           </div>
@@ -308,7 +308,7 @@ export default function CateringDailyWidget({ date }: CateringDailyWidgetProps) 
             >
               <UtensilsCrossed className="h-7 w-7 text-white" />
             </div>
-            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
               Brak zamówień cateringowych
             </p>
             <Link

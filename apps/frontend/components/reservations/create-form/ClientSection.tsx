@@ -29,7 +29,7 @@ export function ClientSection({
           <User className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Kto rezerwuje?</h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Wyszukaj istniejącego klienta lub dodaj nowego</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-1">Wyszukaj istniejącego klienta lub dodaj nowego</p>
       </div>
 
       {isPromotingFromQueue ? (

@@ -82,7 +82,7 @@ export const depositStatusColors: Record<string, StatusColorConfig> = {
   CANCELLED: {
     label: 'Anulowana',
     bg: 'bg-neutral-50 dark:bg-neutral-800',
-    text: 'text-neutral-500 dark:text-neutral-400',
+    text: 'text-neutral-500 dark:text-neutral-300',
     border: 'border-neutral-200 dark:border-neutral-700',
     dot: 'bg-neutral-400',
   },
@@ -109,7 +109,7 @@ export const queueStatusColors: Record<string, StatusColorConfig> = {
   EXPIRED: {
     label: 'Wygasła',
     bg: 'bg-neutral-50 dark:bg-neutral-800',
-    text: 'text-neutral-500 dark:text-neutral-400',
+    text: 'text-neutral-500 dark:text-neutral-300',
     border: 'border-neutral-200 dark:border-neutral-700',
     dot: 'bg-neutral-400',
   },
@@ -155,7 +155,7 @@ export const semanticColors = {
   },
   neutral: {
     bg: 'bg-neutral-50 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-400',
+    text: 'text-neutral-600 dark:text-neutral-300',
     border: 'border-neutral-200 dark:border-neutral-700',
   },
 } as const

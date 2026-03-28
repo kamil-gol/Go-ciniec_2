@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { LoadingState } from '@/components/shared'
+import { Skeleton } from '@/components/ui/skeleton'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { UserFormDialog } from './UserFormDialog'
 import { ChangePasswordDialog } from './ChangePasswordDialog'
@@ -76,7 +76,21 @@ export function UsersTab() {
     fetchData()
   }
 
-  if (loading) return <LoadingState message="Ładowanie użytkowników..." />
+  if (loading) return (
+    <div className="space-y-4">
+      {/* Search bar skeleton */}
+      <div className="flex items-center justify-between gap-4">
+        <Skeleton className="h-10 w-80 rounded-lg" />
+        <Skeleton className="h-10 w-40 rounded-lg" />
+      </div>
+      {/* Table header skeleton */}
+      <Skeleton className="h-10 w-full rounded-lg" />
+      {/* Table rows skeleton */}
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Skeleton key={i} className="h-14 w-full rounded-lg" />
+      ))}
+    </div>
+  )
 
   return (
     <div className="space-y-4">
@@ -97,8 +111,106 @@ export function UsersTab() {
         </Button>
       </div>
 
-      {/* Table */}
-      <div className="rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 overflow-hidden">
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {filteredUsers.length === 0 ? (
+          <div className="text-center py-8 text-neutral-500">
+            {search ? 'Brak wyników wyszukiwania' : 'Brak użytkowników'}
+          </div>
+        ) : (
+          filteredUsers.map(user => (
+            <div key={user.id} className="rounded-xl border border-neutral-200 dark:border-neutral-700/50 bg-white dark:bg-neutral-800/80 p-4 space-y-3">
+              {/* Row 1: User + Status */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center text-sm font-semibold text-neutral-600 dark:text-neutral-300 flex-shrink-0">
+                    {(user.firstName?.[0] || '')}{(user.lastName?.[0] || '')}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-300 truncate">
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+                <Badge variant={user.isActive ? 'default' : 'secondary'} className="flex-shrink-0">
+                  {user.isActive ? 'Aktywny' : 'Nieaktywny'}
+                </Badge>
+              </div>
+
+              {/* Row 2: Role + Last Login */}
+              <div className="flex items-center justify-between gap-2 text-xs text-neutral-500 dark:text-neutral-300">
+                <div className="flex items-center gap-2">
+                  <span className="text-neutral-400">Rola:</span>
+                  {user.role ? (
+                    <Badge
+                      className="font-semibold border-transparent text-white shadow-sm text-[10px] px-2 py-0.5"
+                      style={{ backgroundColor: user.role.color }}
+                    >
+                      {user.role.name}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-[10px] px-2 py-0.5">Brak roli</Badge>
+                  )}
+                </div>
+                <span>
+                  {user.lastLoginAt
+                    ? new Date(user.lastLoginAt).toLocaleString('pl-PL')
+                    : 'Nigdy'}
+                </span>
+              </div>
+
+              {/* Row 3: Actions */}
+              <div className="flex items-center justify-end gap-1 border-t border-neutral-100 dark:border-neutral-700/50 pt-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Edytuj"
+                  aria-label="Edytuj użytkownika"
+                  onClick={() => { setEditingUser(user); setFormOpen(true) }}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Zmień hasło"
+                  aria-label="Zmień hasło"
+                  onClick={() => setPasswordTarget(user)}
+                >
+                  <KeyRound className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title={user.isActive ? 'Dezaktywuj' : 'Aktywuj'}
+                  aria-label={user.isActive ? 'Dezaktywuj użytkownika' : 'Aktywuj użytkownika'}
+                  onClick={() => handleToggleActive(user)}
+                >
+                  {user.isActive
+                    ? <ToggleRight className="h-4 w-4 text-green-600" />
+                    : <ToggleLeft className="h-4 w-4 text-neutral-400" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Usuń"
+                  aria-label="Usuń użytkownika"
+                  className="text-red-500 hover:text-red-700"
+                  onClick={() => setDeleteTarget(user)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

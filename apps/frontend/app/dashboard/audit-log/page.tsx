@@ -9,7 +9,8 @@ import { AuditLogFilters } from '@/components/audit-log/AuditLogFilters';
 import { AuditLogTable } from '@/components/audit-log/AuditLogTable';
 import { useAuditLogs, useAuditLogStatistics } from '@/hooks/use-audit-log';
 import type { AuditLogFilters as Filters } from '@/types/audit-log.types';
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
+import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared';
+import { Skeleton } from '@/components/ui/skeleton';
 import { moduleAccents } from '@/lib/design-tokens';
 
 const actionLabelsGenitive: Record<string, string> = {
@@ -143,10 +144,8 @@ export default function AuditLogPage() {
 
       {statsLoading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="p-4 sm:p-6">
-              <LoadingState variant="skeleton" rows={2} />
-            </Card>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
         </div>
       )}
@@ -206,15 +205,21 @@ export default function AuditLogPage() {
 
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-4 sm:p-6">
-              <LoadingState variant="skeleton" rows={8} message="Ładowanie dziennika audytu..." />
+            <div className="p-4 sm:p-6 space-y-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 rounded-xl" />
+              ))}
             </div>
           ) : !data || data.data.length === 0 ? (
             <div className="p-4 sm:p-6">
               <EmptyState
                 icon={FileText}
                 title="Brak wpisów w dzienniku"
-                description={hasActiveFilters ? 'Spróbuj zmienić kryteria filtrowania' : 'System jeszcze nie zarejestrował żadnych zmian'}
+                description={hasActiveFilters
+                  ? 'Żaden wpis nie pasuje do wybranych filtrów. Spróbuj zmienić kryteria filtrowania lub wyczyść filtry.'
+                  : 'System jeszcze nie zarejestrował żadnych zmian. Wpisy pojawią się automatycznie po wykonaniu operacji w systemie.'}
+                actionLabel={hasActiveFilters ? 'Wyczyść filtry' : undefined}
+                onAction={hasActiveFilters ? handleResetFilters : undefined}
               />
             </div>
           ) : (

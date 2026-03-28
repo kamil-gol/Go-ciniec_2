@@ -399,7 +399,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
                         <button
                           onClick={() => handleCancel(deposit)}
                           disabled={isActioning}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700 dark:hover:bg-neutral-700 transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700 dark:hover:bg-neutral-700 transition-colors"
                         >
                           <XCircle className="h-3 w-3" />
                           Anuluj

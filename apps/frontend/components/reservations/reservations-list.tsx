@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useReservations, useArchiveReservation, useUnarchiveReservation } from '@/lib/api/reservations'
 import type { ReservationStatus } from '@/types'
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { apiClient } from '@/lib/api-client'
@@ -16,7 +16,7 @@ import { format, parseISO, isSameDay } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
-import { LoadingState } from '@/components/shared'
+import { LoadingState, EmptyState } from '@/components/shared'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit } from '@/lib/api/deposits'
 import { batchCheckContract, batchCheckRodo } from '@/lib/api/attachments'
@@ -248,23 +248,20 @@ export function ReservationsList() {
         </div>
 
         <div className="flex-1" />
-        <div className="text-sm text-neutral-500 dark:text-neutral-400 w-full sm:w-auto">
+        <div className="text-sm text-neutral-500 dark:text-neutral-300 w-full sm:w-auto">
           Znaleziono <strong className="text-neutral-900 dark:text-neutral-100">{reservations.length}</strong> rezerwacji
         </div>
       </div>
 
       {/* Reservations List */}
       {reservations.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 py-16 text-center">
-          <div className={cn(
-            'w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center mx-auto mb-4 shadow-md',
-            accent.iconBg
-          )}>
-            <Calendar className="h-8 w-8 text-white" />
-          </div>
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Brak rezerwacji</h3>
-          <p className="text-neutral-500 dark:text-neutral-400">Nie znaleziono rezerwacji spełniających kryteria</p>
-        </div>
+        <EmptyState
+          icon={Calendar}
+          title="Brak rezerwacji"
+          description="Nie znaleziono rezerwacji spełniających wybrane kryteria. Zmień filtry lub utwórz nową rezerwację."
+          actionLabel="Nowa rezerwacja"
+          actionHref="/dashboard/reservations/list?create=true"
+        />
       ) : (
         <div className="space-y-6">
           {dates.map((dateKey) => {
@@ -325,7 +322,7 @@ export function ReservationsList() {
       {/* Pagination — responsive */}
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-neutral-500 dark:text-neutral-300">
             Strona <strong className="text-neutral-900 dark:text-neutral-100">{page}</strong> z <strong className="text-neutral-900 dark:text-neutral-100">{totalPages}</strong>
           </p>
           <div className="flex gap-2">

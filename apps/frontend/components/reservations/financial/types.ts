@@ -116,7 +116,7 @@ export const statusConfig: Record<DepositStatus, {
   CANCELLED: {
     label: 'Anulowana',
     icon: XCircle,
-    className: 'bg-neutral-50 text-neutral-500 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700',
+    className: 'bg-neutral-50 text-neutral-500 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700',
     dotColor: 'bg-neutral-400',
   },
 }

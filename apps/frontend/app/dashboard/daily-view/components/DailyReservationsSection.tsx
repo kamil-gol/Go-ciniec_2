@@ -37,7 +37,7 @@ const STATUS_LABELS: Record<string, { label: string; emoji: string; classes: str
   COMPLETED: {
     label: 'Zakończone',
     emoji: '🏁',
-    classes: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400',
+    classes: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
   },
   CANCELLED: {
     label: 'Anulowane',
@@ -109,7 +109,91 @@ function SkeletonRow() {
   )
 }
 
-// ─── Reservation row ─────────────────────────────────────────────────────────
+// ─── Mobile agenda card ─────────────────────────────────────────────────────
+
+function MobileAgendaCard({ reservation, index }: { reservation: Reservation; index: number }) {
+  const r = reservation as any
+  const statusInfo = STATUS_LABELS[r.status] ?? STATUS_LABELS.PENDING
+  const clientName = `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim()
+
+  const startTime = getStartTime(r)
+  const endTime = getEndTime(r)
+
+  const adults: number = r.adults ?? 0
+  const childrenCount: number = r.children ?? 0
+  const toddlers: number = r.toddlers ?? 0
+  const totalGuests: number = r.guests ?? adults + childrenCount + toddlers
+
+  const deadlineInfo = getDeadlineInfo(r.confirmationDeadline)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.04 + index * 0.04 }}
+    >
+      <Link
+        href={`/dashboard/reservations/${r.id}`}
+        className="flex gap-3 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700/50 bg-white dark:bg-neutral-800/80 active:scale-[0.98] transition-transform"
+      >
+        {/* Time column */}
+        <div className="text-center min-w-[56px] py-1 flex-shrink-0">
+          {startTime ? (
+            <>
+              <div className="text-base font-bold text-neutral-900 dark:text-neutral-100">{startTime}</div>
+              {endTime && (
+                <div className="text-[10px] text-neutral-500 dark:text-neutral-400">{endTime}</div>
+              )}
+            </>
+          ) : (
+            <div className="text-base font-bold text-neutral-900 dark:text-neutral-100">--:--</div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Hall name */}
+          <div className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
+            {r.hall?.name ?? r.eventType?.name ?? 'Wydarzenie'}
+          </div>
+
+          {/* Client + guest count */}
+          <div className="text-xs text-neutral-600 dark:text-neutral-300 truncate mt-0.5">
+            {clientName || 'Brak klienta'}
+            {totalGuests > 0 && <> &bull; {totalGuests} os.</>}
+          </div>
+
+          {/* Status badge + alerts */}
+          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+            <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', statusInfo.classes)}>
+              {statusInfo.emoji} {statusInfo.label}
+            </span>
+            {deadlineInfo && (
+              <span className={cn(
+                'inline-flex items-center gap-0.5 text-[10px] font-medium',
+                deadlineInfo.urgent ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'
+              )}>
+                <AlertTriangle className="h-2.5 w-2.5" />
+                {deadlineInfo.daysLeft === 0 ? 'Dziś!' : `${deadlineInfo.daysLeft}d`}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Price */}
+        {Number(r.totalPrice) > 0 && (
+          <div className="text-right flex-shrink-0 self-center">
+            <p className="text-xs font-bold text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
+              {formatCurrency(Number(r.totalPrice))}
+            </p>
+          </div>
+        )}
+      </Link>
+    </motion.div>
+  )
+}
+
+// ─── Reservation row (desktop) ──────────────────────────────────────────────
 
 function ReservationRow({ reservation, index }: { reservation: Reservation; index: number }) {
   const r = reservation as any
@@ -178,7 +262,7 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
           </div>
 
           {/* Linia 2: klient + sala */}
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+          <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 truncate">
             {clientName}
             {r.hall && (
               <> • <Building2 className="inline h-3 w-3 mb-0.5" /> {r.hall.name}</>
@@ -187,7 +271,7 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
 
           {/* Linia 3: goście z rozbiciem */}
           {totalGuests > 0 && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1">
+            <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 flex items-center gap-1">
               <Users className="h-3 w-3 flex-shrink-0" />
               {(r.adults != null && r.children != null && r.toddlers != null) ? (
                 <span>
@@ -258,7 +342,7 @@ function SummaryFooter({ reservations }: { reservations: any[] }) {
       )}
     >
       <div className="flex items-center gap-3 text-sm flex-wrap">
-        <span className="text-neutral-600 dark:text-neutral-400">
+        <span className="text-neutral-600 dark:text-neutral-300">
           <span className="font-bold text-neutral-900 dark:text-neutral-100">{reservations.length}</span>
           {' '}rezerwacji
         </span>
@@ -319,7 +403,7 @@ export default function DailyReservationsSection({ date }: DailyReservationsSect
             <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
               📅 Rezerwacje
             </h3>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-neutral-500 dark:text-neutral-300">
               Zaplanowane na ten dzień
             </p>
           </div>
@@ -374,7 +458,7 @@ export default function DailyReservationsSection({ date }: DailyReservationsSect
             >
               <Calendar className="h-7 w-7 text-white" />
             </div>
-            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
               Brak rezerwacji na ten dzień
             </p>
             <Link
@@ -390,9 +474,26 @@ export default function DailyReservationsSection({ date }: DailyReservationsSect
           </div>
         ) : (
           <>
-            {reservations.map((reservation, index) => (
-              <ReservationRow key={reservation.id} reservation={reservation} index={index} />
-            ))}
+            {/* Desktop: full reservation rows */}
+            <div className="hidden md:block space-y-2">
+              {reservations.map((reservation, index) => (
+                <ReservationRow key={reservation.id} reservation={reservation} index={index} />
+              ))}
+            </div>
+
+            {/* Mobile: compact agenda-style cards */}
+            <div className="md:hidden space-y-2">
+              {[...reservations]
+                .sort((a, b) => {
+                  const timeA = getStartTime(a) ?? '99:99'
+                  const timeB = getStartTime(b) ?? '99:99'
+                  return timeA.localeCompare(timeB)
+                })
+                .map((reservation, index) => (
+                  <MobileAgendaCard key={reservation.id} reservation={reservation} index={index} />
+                ))}
+            </div>
+
             <SummaryFooter reservations={reservations} />
           </>
         )}

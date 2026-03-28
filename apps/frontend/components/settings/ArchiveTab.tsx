@@ -20,6 +20,7 @@ import {
   useRunArchiveNow,
 } from '../../src/hooks/use-archive-settings';
 import type { ArchiveRunResult } from '../../src/hooks/use-archive-settings';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function ArchiveTab() {
   const { data: settings, isLoading, error, refetch } = useArchiveSettings();
@@ -67,8 +68,25 @@ export function ArchiveTab() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        {/* Settings card skeleton */}
+        <div className="rounded-2xl border p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-48 rounded-lg" />
+              <Skeleton className="h-4 w-72 rounded-lg" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-full rounded-lg" />
+          <Skeleton className="h-10 w-40 rounded-lg" />
+        </div>
+        {/* Action card skeleton */}
+        <div className="rounded-2xl border p-6 space-y-4">
+          <Skeleton className="h-5 w-56 rounded-lg" />
+          <Skeleton className="h-4 w-96 rounded-lg" />
+          <Skeleton className="h-10 w-48 rounded-lg" />
+        </div>
       </div>
     );
   }

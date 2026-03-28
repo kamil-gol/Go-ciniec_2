@@ -46,7 +46,7 @@ export function VenueSection({
           <Building2 className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Wybierz salę i termin</h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Sprawdzimy dostępność automatycznie</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-1">Sprawdzimy dostępność automatycznie</p>
       </div>
 
       <div className="space-y-1.5">
@@ -73,7 +73,7 @@ export function VenueSection({
       </div>
 
       {selectedHallCapacity > 0 && (
-        <p className="-mt-4 text-sm text-neutral-600 dark:text-neutral-400">Maksymalna pojemność: {selectedHallCapacity} osób</p>
+        <p className="-mt-4 text-sm text-neutral-600 dark:text-neutral-300">Maksymalna pojemność: {selectedHallCapacity} osób</p>
       )}
 
       {selectedHall && (selectedHall as any).isWholeVenue && (
@@ -137,7 +137,7 @@ export function VenueSection({
           {availabilityLoading ? (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">Sprawdzanie dostępności...</span>
+              <span className="text-sm text-neutral-600 dark:text-neutral-300">Sprawdzanie dostępności...</span>
             </div>
           ) : availability?.available ? (
             <div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ export function VenueSection({
           {capacityLoading ? (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">Sprawdzanie pojemności...</span>
+              <span className="text-sm text-neutral-600 dark:text-neutral-300">Sprawdzanie pojemności...</span>
             </div>
           ) : availableCapacity ? (
             <div className="space-y-2">

@@ -99,7 +99,7 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
                 className="cursor-pointer hover:bg-orange-50/60 dark:hover:bg-orange-900/10 transition-colors border-l-2 border-l-transparent hover:border-l-orange-400 dark:hover:border-l-orange-500"
                 onClick={() => onRowClick(order.id)}
               >
-                <TableCell className="font-mono text-xs font-semibold text-neutral-600 dark:text-neutral-400 tracking-tight">
+                <TableCell className="font-mono text-xs font-semibold text-neutral-600 dark:text-neutral-300 tracking-tight">
                   {order.orderNumber}
                 </TableCell>
                 <TableCell>
@@ -119,7 +119,7 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
                 <TableCell className="max-w-[180px] truncate text-sm text-neutral-700 dark:text-neutral-300">
                   {order.eventName ?? <span className="text-neutral-400 dark:text-neutral-600">—</span>}
                 </TableCell>
-                <TableCell className="text-sm text-neutral-600 dark:text-neutral-400">
+                <TableCell className="text-sm text-neutral-600 dark:text-neutral-300">
                   {order.eventDate ? formatDate(order.eventDate) : <span className="text-neutral-400 dark:text-neutral-600">—</span>}
                 </TableCell>
                 <TableCell>
@@ -146,7 +146,7 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
       </div>
 
       {meta && meta.totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-neutral-500 dark:text-neutral-400">
+        <div className="flex items-center justify-between text-sm text-neutral-500 dark:text-neutral-300">
           <span>
             Strona <strong className="text-neutral-800 dark:text-neutral-200">{meta.page}</strong> z {meta.totalPages}
             <span className="ml-2 text-xs">({meta.total} wyników)</span>

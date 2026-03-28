@@ -63,7 +63,7 @@ export function LoadingState({
           <div className="relative h-12 w-12 rounded-full border-[3px] border-neutral-200 dark:border-neutral-700 border-t-primary-500 animate-spin" />
         </div>
         {message && (
-          <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
             {message}
           </p>
         )}

@@ -17,6 +17,7 @@ import { DeleteClientModal } from '@/components/clients/delete-client-modal'
 import { ContactsManager } from '@/components/clients/contacts-manager'
 import { toast } from 'sonner'
 
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 import { ClientHeroSection } from './components/ClientHeroSection'
 import { CompanyInfoCard, ContactInfoCard } from './components/ClientInfoCards'
 import { ClientReservationsHistory } from './components/ClientReservationsHistory'
@@ -99,6 +100,8 @@ export default function ClientDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto py-8 px-4 space-y-8">
+        <Breadcrumb />
+
         {/* Soft-deleted banner */}
         {isDeleted && (
           <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400">
@@ -188,7 +191,7 @@ export default function ClientDetailsPage() {
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'details'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
             {isCompany ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
@@ -199,7 +202,7 @@ export default function ClientDetailsPage() {
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'history'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
             <History className="h-4 w-4" />

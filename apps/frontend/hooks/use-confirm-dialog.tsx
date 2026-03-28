@@ -99,7 +99,7 @@ export function useConfirmDialog() {
               <AlertDialogTitle className="dark:text-neutral-100">
                 {options.title}
               </AlertDialogTitle>
-              <AlertDialogDescription className="mt-1 dark:text-neutral-400">
+              <AlertDialogDescription className="mt-1 dark:text-neutral-300">
                 {options.description}
               </AlertDialogDescription>
             </div>

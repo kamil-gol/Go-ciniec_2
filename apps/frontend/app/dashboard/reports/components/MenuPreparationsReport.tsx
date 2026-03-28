@@ -86,7 +86,7 @@ export function MenuPreparationsTab({ query, view }: {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
+                    <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-300">
                       {res.startTime && (
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
@@ -101,7 +101,7 @@ export function MenuPreparationsTab({ query, view }: {
                   </div>
                   {/* Package info */}
                   <div className="px-4 py-2 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-100 dark:border-neutral-800">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300">
                       <ChefHat className="h-3 w-3" />
                       Pakiet: <span className="text-neutral-900 dark:text-neutral-100 font-semibold">{res.package.name}</span>
                     </span>
@@ -176,12 +176,12 @@ export function MenuPreparationsTab({ query, view }: {
                       </colgroup>
                       <thead className="bg-neutral-50 dark:bg-neutral-800">
                         <tr>
-                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase truncate">Danie</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Porcje</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">{"Dorosłe"}</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Dziecięce</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Maluchy</th>
-                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden lg:table-cell">Klienci</th>
+                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase truncate">Danie</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase">Porcje</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden sm:table-cell">{"Dorosłe"}</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden sm:table-cell">Dziecięce</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden sm:table-cell">Maluchy</th>
+                          <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden lg:table-cell">Klienci</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -189,9 +189,9 @@ export function MenuPreparationsTab({ query, view }: {
                           <tr key={di} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                             <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 truncate">{dish.dishName}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{dish.totalPortions}</td>
-                            <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{dish.adultPortions}</td>
-                            <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{dish.childrenPortions}</td>
-                            <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{dish.toddlerPortions}</td>
+                            <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-300 hidden sm:table-cell">{dish.adultPortions}</td>
+                            <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-300 hidden sm:table-cell">{dish.childrenPortions}</td>
+                            <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-300 hidden sm:table-cell">{dish.toddlerPortions}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell truncate">
                               {dish.reservations.map((r: any) => `${r.clientName} (${r.guests})`).join(', ')}
                             </td>

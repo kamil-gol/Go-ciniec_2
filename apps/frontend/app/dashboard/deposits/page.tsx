@@ -18,7 +18,8 @@ import { DepositsList } from '@/components/deposits/deposits-list'
 import { CreateDepositForm } from '@/components/deposits/create-deposit-form'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, DepositStats, DepositStatus } from '@/lib/api/deposits'
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
+import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared'
+import { Skeleton } from '@/components/ui/skeleton'
 import { FilterTabs } from '@/components/shared/FilterTabs'
 import { moduleAccents } from '@/lib/design-tokens'
 import { toast } from 'sonner'
@@ -112,6 +113,14 @@ export default function DepositsPage() {
           </Button>
         }
       />
+
+      {loading && !stats && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" />
+          ))}
+        </div>
+      )}
 
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -207,15 +216,17 @@ export default function DepositsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-4 sm:p-6">
-              <LoadingState variant="skeleton" rows={5} message="Ładowanie zaliczek..." />
+            <div className="p-4 sm:p-6 space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-xl" />
+              ))}
             </div>
           ) : filteredDeposits.length === 0 && (searchQuery || statusFilter !== 'ALL') ? (
             <div className="p-4 sm:p-6">
               <EmptyState
                 icon={DollarSign}
                 title="Nie znaleziono zaliczek"
-                description="Spróbuj innych kryteriów wyszukiwania lub filtru"
+                description="Żadna zaliczka nie pasuje do wybranych kryteriów. Spróbuj zmienić filtr statusu lub wyszukiwanie."
               />
             </div>
           ) : filteredDeposits.length === 0 ? (
@@ -223,7 +234,7 @@ export default function DepositsPage() {
               <EmptyState
                 icon={DollarSign}
                 title="Brak zaliczek"
-                description="Utwórz pierwszą zaliczkę aby zacząć śledzić płatności"
+                description="Nie masz jeszcze żadnych zaliczek. Utwórz pierwszą zaliczkę, aby rozpocząć śledzenie płatności za rezerwacje."
                 actionLabel="Nowa Zaliczka"
                 onAction={() => setShowCreateForm(true)}
               />

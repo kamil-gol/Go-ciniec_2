@@ -46,7 +46,7 @@ export function SortableQueueItem({
   }
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} role="listitem" aria-label={`Pozycja ${item.position}: ${item.client.firstName} ${item.client.lastName}`}>
       <div className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 p-5">
         <div className="flex items-start gap-4">
           {/* Drag Handle */}
@@ -57,6 +57,7 @@ export function SortableQueueItem({
                 ? 'cursor-not-allowed opacity-50'
                 : 'cursor-grab active:cursor-grabbing'
             )}
+            aria-label="Przeciągnij aby zmienić kolejność"
             {...attributes}
             {...listeners}
           >
@@ -77,7 +78,7 @@ export function SortableQueueItem({
               <h3 className="font-semibold text-lg text-neutral-900 dark:text-neutral-100">
                 {item.client.firstName} {item.client.lastName}
               </h3>
-              <div className="flex flex-wrap gap-3 mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              <div className="flex flex-wrap gap-3 mt-1 text-sm text-neutral-500 dark:text-neutral-300">
                 <div className="flex items-center gap-1">
                   <Phone className="h-3.5 w-3.5" />
                   {item.client.phone}
@@ -92,20 +93,20 @@ export function SortableQueueItem({
             </div>
 
             <div className="flex flex-wrap gap-4 text-sm">
-              <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+              <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-300">
                 <Calendar className="h-3.5 w-3.5" />
                 <span>
                   {format(new Date(item.queueDate), 'd MMMM yyyy', { locale: pl })}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+              <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-300">
                 <Users className="h-3.5 w-3.5" />
                 <span>{item.guests} osób</span>
               </div>
             </div>
 
             {item.notes && (
-              <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400 italic">
+              <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-300 italic">
                 {item.notes}
               </p>
             )}
@@ -124,6 +125,7 @@ export function SortableQueueItem({
                 size="sm"
                 onClick={onPromote}
                 disabled={disabled}
+                aria-label="Awansuj do rezerwacji"
                 className={cn(
                   'whitespace-nowrap bg-gradient-to-r text-white shadow-md hover:shadow-lg rounded-xl',
                   accent.gradient

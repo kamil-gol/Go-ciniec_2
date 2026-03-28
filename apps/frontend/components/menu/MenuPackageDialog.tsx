@@ -62,6 +62,7 @@ export function MenuPackageDialog({
     watch,
     formState: { errors },
   } = useForm<FormData>({
+    mode: 'onBlur',
     defaultValues: {
       name: '',
       description: '',

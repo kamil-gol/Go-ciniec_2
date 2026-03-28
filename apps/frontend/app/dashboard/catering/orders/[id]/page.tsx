@@ -92,7 +92,7 @@ export default function CateringOrderDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary-500" />
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">Wczytywanie zamówienia…</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-300">Wczytywanie zamówienia…</p>
       </div>
     );
   }
@@ -101,7 +101,7 @@ export default function CateringOrderDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <AlertCircle className="h-12 w-12 text-neutral-300" />
-        <p className="font-semibold text-neutral-600 dark:text-neutral-400">Zamówienie nie istnieje</p>
+        <p className="font-semibold text-neutral-600 dark:text-neutral-300">Zamówienie nie istnieje</p>
         <Button variant="outline" onClick={() => router.push('/dashboard/catering/orders')}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Powrót do listy
         </Button>

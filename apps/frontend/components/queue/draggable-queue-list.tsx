@@ -146,7 +146,7 @@ export function DraggableQueueList({
   // If disabled, show simple list without drag and drop
   if (isDisabled && !isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3" role="list" aria-label="Kolejka oczekujących">
         {localItems.map((item, index) => (
           <QueueItemCard
             key={item.id}
@@ -189,7 +189,9 @@ export function DraggableQueueList({
         onDragCancel={handleDragCancel}
       >
         <SortableContext items={localItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
-          <div 
+          <div
+            role="list"
+            aria-label="Kolejka oczekujących"
             className={`space-y-3 transition-opacity ${
               isLoading ? 'opacity-50 pointer-events-none' : ''
             }`}

@@ -23,7 +23,7 @@ export const STATUS_CONFIG: Record<string, { label: string; dotClass: string; bg
   COMPLETED: {
     label: 'Zakończone',
     dotClass: 'bg-neutral-400',
-    bgClass: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-400',
+    bgClass: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-300',
   },
   CANCELLED: {
     label: 'Anulowane',

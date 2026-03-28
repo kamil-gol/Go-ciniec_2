@@ -141,7 +141,7 @@ export function CategoryCard({
           {inactive && (
             <Alert className="mt-2 py-2 bg-neutral-100 border-neutral-300 dark:bg-neutral-900 dark:border-neutral-700">
               <Ban className="h-3.5 w-3.5 text-neutral-500" />
-              <AlertDescription className="text-xs text-neutral-600 dark:text-neutral-400">
+              <AlertDescription className="text-xs text-neutral-600 dark:text-neutral-300">
                 {getInactiveReason(portionTarget)}
               </AlertDescription>
             </Alert>

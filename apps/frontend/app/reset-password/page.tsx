@@ -147,7 +147,7 @@ function ResetPasswordContent() {
                 <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-3">
                   Hasło zmienione!
                 </h2>
-                <p className="text-neutral-600 dark:text-neutral-400 mb-2">
+                <p className="text-neutral-600 dark:text-neutral-300 mb-2">
                   Twoje hasło zostało pomyślnie zaktualizowane.
                 </p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-500 mb-6">
@@ -156,7 +156,7 @@ function ResetPasswordContent() {
 
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="inline-flex items-center gap-2 h-10 px-8 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Zaloguj się
@@ -175,7 +175,7 @@ function ResetPasswordContent() {
                     <KeyRound className="h-6 w-6 text-violet-600" />
                     Nowe hasło
                   </h2>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                  <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">
                     Ustaw nowe hasło do swojego konta
                   </p>
                 </div>
@@ -248,7 +248,7 @@ function ResetPasswordContent() {
                           <span className={`text-xs ${
                             check.passed
                               ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-neutral-500 dark:text-neutral-400'
+                              : 'text-neutral-500 dark:text-neutral-300'
                           }`}>
                             {check.label}
                           </span>
@@ -359,7 +359,7 @@ function ResetPasswordContent() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-400"
+          className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-300"
         >
           <p>&copy; 2026 Gościniec Rodzinny. Wszystkie prawa zastrzeżone.</p>
         </motion.div>

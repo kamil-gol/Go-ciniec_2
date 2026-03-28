@@ -5,6 +5,7 @@ import { Users, UserPlus, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
+import { moduleAccents } from '@/lib/design-tokens'
 
 
 interface ClientStatsProps {
@@ -41,9 +42,9 @@ export default function ClientStats({ clients, isLoading = false }: ClientStatsP
       label: 'Wszyscy klienci',
       value: stats.totalClients,
       icon: Users,
-      iconBg: 'bg-violet-100 dark:bg-violet-900/30',
-      iconColor: 'text-violet-600 dark:text-violet-400',
-      valueColor: 'text-violet-600 dark:text-violet-400',
+      iconBg: moduleAccents.clients.badge,
+      iconColor: `${moduleAccents.clients.text} ${moduleAccents.clients.textDark}`,
+      valueColor: `${moduleAccents.clients.text} ${moduleAccents.clients.textDark}`,
     },
     {
       label: 'Nowi (30 dni)',
@@ -97,7 +98,7 @@ export default function ClientStats({ clients, isLoading = false }: ClientStatsP
             </div>
 
             {/* Label */}
-            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-300 mb-1">
               {stat.label}
             </p>
 

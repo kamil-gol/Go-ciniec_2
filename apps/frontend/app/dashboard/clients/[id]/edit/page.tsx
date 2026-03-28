@@ -197,7 +197,7 @@ export default function EditClientPage() {
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 rounded-xl border-2 font-semibold text-lg transition-all ${
                     clientType === 'INDIVIDUAL'
                       ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-500'
-                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
                   }`}
                 >
                   <User className="h-6 w-6" />
@@ -209,7 +209,7 @@ export default function EditClientPage() {
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 rounded-xl border-2 font-semibold text-lg transition-all ${
                     clientType === 'COMPANY'
                       ? 'border-purple-500 bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-500'
-                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
                   }`}
                 >
                   <Building2 className="h-6 w-6" />

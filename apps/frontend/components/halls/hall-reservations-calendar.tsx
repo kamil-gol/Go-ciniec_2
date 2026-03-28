@@ -101,7 +101,7 @@ export function HallReservationsCalendar({
       case 'PENDING': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-400'
       case 'COMPLETED': return 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-400'
       case 'CANCELLED': return 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-400'
-      default: return 'bg-neutral-100 text-neutral-800 dark:bg-neutral-950/50 dark:text-neutral-400'
+      default: return 'bg-neutral-100 text-neutral-800 dark:bg-neutral-950/50 dark:text-neutral-300'
     }
   }
 

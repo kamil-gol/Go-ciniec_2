@@ -51,6 +51,7 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
     formState: { errors },
   } = useForm<ClientFormData>({
     resolver: zodResolver(clientSchema),
+    mode: 'onBlur',
     defaultValues: {
       clientType: 'INDIVIDUAL',
     },
@@ -130,7 +131,7 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border-2 text-sm font-medium transition-all ${
                 !isCompany
                   ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                  : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                  : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
               }`}
             >
               <User className="w-4 h-4" />
@@ -143,7 +144,7 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border-2 text-sm font-medium transition-all ${
                 isCompany
                   ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
-                  : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                  : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
               }`}
             >
               <Building2 className="w-4 h-4" />
@@ -193,7 +194,7 @@ export function CreateClientModal({ open, onClose, onSuccess }: CreateClientModa
           {/* ═══ Person Fields ═══ */}
           <div>
             {isCompany && (
-              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">Osoba reprezentująca</p>
+              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase tracking-wider mb-2">Osoba reprezentująca</p>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">

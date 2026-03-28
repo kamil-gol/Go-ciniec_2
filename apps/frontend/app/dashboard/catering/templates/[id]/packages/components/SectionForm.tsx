@@ -57,6 +57,7 @@ export function SectionForm({ packageId, templateId, section, onClose }: Props) 
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
+    mode: 'onBlur',
     defaultValues: {
       categoryId: '', name: '', description: '',
       minSelect: 1, maxSelect: 1, isRequired: true, displayOrder: 0,

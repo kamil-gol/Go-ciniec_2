@@ -17,7 +17,7 @@ export const STATUS_CONFIG: Record<
   },
   CANCELLED: {
     label: 'Anulowane',
-    className: 'bg-neutral-50 text-neutral-500 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700',
+    className: 'bg-neutral-50 text-neutral-500 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700',
     icon: XCircle,
   },
 }

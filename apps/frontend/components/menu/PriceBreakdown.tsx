@@ -83,7 +83,7 @@ export function PriceBreakdown({
                     {/* Adults */}
                     {breakdown.packageCost.adults.count > 0 && (
                       <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
                           <Users className="h-4 w-4" />
                           <span>
                             {breakdown.packageCost.adults.count} × Dorośli ({formatPrice(breakdown.packageCost.adults.priceEach)})
@@ -98,7 +98,7 @@ export function PriceBreakdown({
                     {/* Children */}
                     {breakdown.packageCost.children.count > 0 && (
                       <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
                           <Users className="h-4 w-4" />
                           <span>
                             {breakdown.packageCost.children.count} × Dzieci ({formatPrice(breakdown.packageCost.children.priceEach)})
@@ -113,7 +113,7 @@ export function PriceBreakdown({
                     {/* Toddlers */}
                     {breakdown.packageCost.toddlers.count > 0 && (
                       <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
                           <Users className="h-4 w-4" />
                           <span>
                             {breakdown.packageCost.toddlers.count} × Maluchy 

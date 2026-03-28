@@ -255,6 +255,12 @@ export function NewOrderWizard({ onSuccess }: Props) {
           </CardHeader>
           <CardContent className="pt-6">
             <Stepper steps={STEPS} currentStep={step} completedSteps={completedSteps} onStepClick={goToStep} className="mb-8" />
+            {/* Mobile step indicator */}
+            <div className="md:hidden text-center mb-4">
+              <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                Krok {step + 1} z {STEPS.length}: {STEPS[step].title}
+              </span>
+            </div>
             <AnimatePresence mode="wait">
               <motion.div
                 key={`step-${step}`}
@@ -267,17 +273,19 @@ export function NewOrderWizard({ onSuccess }: Props) {
                 {stepRenderers[step]()}
               </motion.div>
             </AnimatePresence>
-            <StepNavigation
-              currentStep={step}
-              totalSteps={STEPS.length}
-              onNext={goToNextStep}
-              onPrev={goToPrevStep}
-              onSubmit={handleSubmit}
-              isNextDisabled={isNextDisabled}
-              isSubmitting={createOrder.isPending}
-              submitLabel="Utwórz zamówienie"
-              className="mt-8"
-            />
+            <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t border-neutral-200 dark:border-neutral-700 p-4 -mx-4 mt-6 md:relative md:border-0 md:p-0 md:mx-0 md:mt-0 md:bg-transparent md:backdrop-blur-none">
+              <StepNavigation
+                currentStep={step}
+                totalSteps={STEPS.length}
+                onNext={goToNextStep}
+                onPrev={goToPrevStep}
+                onSubmit={handleSubmit}
+                isNextDisabled={isNextDisabled}
+                isSubmitting={createOrder.isPending}
+                submitLabel="Utwórz zamówienie"
+                className="mt-8"
+              />
+            </div>
           </CardContent>
         </Card>
       </motion.div>

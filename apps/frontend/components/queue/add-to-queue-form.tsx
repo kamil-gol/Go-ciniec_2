@@ -66,6 +66,7 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onBlur',
     defaultValues: {
       clientId: '',
       reservationQueueDate: '',
@@ -77,6 +78,7 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
 
   const newClientForm = useForm<z.infer<typeof newClientSchema>>({
     resolver: zodResolver(newClientSchema),
+    mode: 'onBlur',
     defaultValues: {
       firstName: '',
       lastName: '',

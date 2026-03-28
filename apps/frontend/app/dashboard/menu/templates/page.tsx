@@ -174,7 +174,9 @@ export default function MenuTemplatesPage() {
         <EmptyState
           icon={FileText}
           title="Brak szablonów"
-          description={selectedEventType !== 'all' ? 'Brak szablonów dla wybranego typu wydarzenia' : 'Zacznij od stworzenia pierwszego szablonu menu'}
+          description={selectedEventType !== 'all'
+            ? 'Nie znaleziono szablonów menu dla wybranego typu wydarzenia. Zmień filtr lub utwórz nowy szablon.'
+            : 'Nie masz jeszcze żadnych szablonów menu. Utwórz pierwszy szablon, aby zdefiniować ofertę menu dla swoich wydarzeń.'}
           actionLabel="Utwórz szablon"
           onAction={handleCreate}
         />
@@ -198,7 +200,7 @@ export default function MenuTemplatesPage() {
                     )}
                   </div>
                   {!template.isActive && (
-                    <Badge className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 ml-2 flex-shrink-0">Nieaktywny</Badge>
+                    <Badge className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 ml-2 flex-shrink-0">Nieaktywny</Badge>
                   )}
                 </div>
 

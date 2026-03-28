@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { BarChart3, FileSpreadsheet, FileText, DollarSign, Building2, ClipboardList, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   useRevenueReport,
   useOccupancyReport,
@@ -31,10 +33,37 @@ import { toast } from 'sonner';
 import type { ReportTab } from './components/types';
 import { getDatePresets } from './components/chart-utils';
 import { ReportFilters } from './components/ReportFilters';
-import { RevenueTab } from './components/RevenueReport';
-import { OccupancyTab } from './components/OccupancyReport';
-import { PreparationsTab } from './components/PreparationsReport';
-import { MenuPreparationsTab } from './components/MenuPreparationsReport';
+
+const ReportTabSkeleton = () => (
+  <div className="space-y-4 sm:space-y-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="h-24 w-full rounded-xl" />
+      ))}
+    </div>
+    <Skeleton className="h-64 w-full rounded-xl" />
+  </div>
+);
+
+const RevenueTab = dynamic(
+  () => import('./components/RevenueReport').then((m) => ({ default: m.RevenueTab })),
+  { loading: () => <ReportTabSkeleton />, ssr: false }
+);
+
+const OccupancyTab = dynamic(
+  () => import('./components/OccupancyReport').then((m) => ({ default: m.OccupancyTab })),
+  { loading: () => <ReportTabSkeleton />, ssr: false }
+);
+
+const PreparationsTab = dynamic(
+  () => import('./components/PreparationsReport').then((m) => ({ default: m.PreparationsTab })),
+  { loading: () => <ReportTabSkeleton />, ssr: false }
+);
+
+const MenuPreparationsTab = dynamic(
+  () => import('./components/MenuPreparationsReport').then((m) => ({ default: m.MenuPreparationsTab })),
+  { loading: () => <ReportTabSkeleton />, ssr: false }
+);
 
 export default function ReportsPage() {
   const accent = moduleAccents.reports || moduleAccents.calendar;
@@ -102,7 +131,7 @@ export default function ReportsPage() {
     `py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-1.5 ${
       isActive
         ? `border-${color}-500 text-${color}-600 dark:text-${color}-400`
-        : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300'
+        : 'border-transparent text-neutral-500 dark:text-neutral-300 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300'
     }`;
 
   return (

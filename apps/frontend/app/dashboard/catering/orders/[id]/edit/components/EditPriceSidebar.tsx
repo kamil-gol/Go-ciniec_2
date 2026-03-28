@@ -43,13 +43,13 @@ export function EditPriceSidebar({
           {totals && (
             <>
               <div className="flex justify-between items-center">
-                <span className="text-neutral-500 dark:text-neutral-400">
+                <span className="text-neutral-500 dark:text-neutral-300">
                   Dania ({form.items.length} poz.)
                 </span>
                 <span className="font-mono font-medium">{fmt(totals.subtotal)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-neutral-500 dark:text-neutral-400">
+                <span className="text-neutral-500 dark:text-neutral-300">
                   Usługi ({form.extras.length} poz.)
                 </span>
                 <span className="font-mono font-medium">{fmt(totals.extrasTotalPrice)}</span>

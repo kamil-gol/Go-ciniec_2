@@ -161,7 +161,7 @@ export function CreateReservationExtrasSection({
         </div>
         <div className="space-y-1">
           {selectedExtras.map(extra => (
-            <div key={extra.serviceItemId} className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-400">
+            <div key={extra.serviceItemId} className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-300">
               <span>
                 {CATEGORY_ICONS[extra.serviceItem.category?.slug || ''] || '📦'}{' '}
                 {extra.serviceItem.name}
@@ -192,7 +192,7 @@ export function CreateReservationExtrasSection({
           </div>
           <div className="text-left">
             <span className="font-medium text-neutral-800 dark:text-neutral-200">Usługi dodatkowe</span>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-neutral-500 dark:text-neutral-300">
               {selectedExtras.length > 0
                 ? `Wybrano ${selectedExtras.length} — łącznie ${formatCurrency(extrasTotal)}`
                 : 'Opcjonalnie: DJ, fotograf, torty, dekoracje...'}

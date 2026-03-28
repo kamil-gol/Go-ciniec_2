@@ -181,7 +181,7 @@ export const CATERING_STATUS_LABELS: Record<
   DRAFT: {
     label: 'Szkic',
     emoji: '📝',
-    classes: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400',
+    classes: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
   },
   CONFIRMED: {
     label: 'Potwierdzone',

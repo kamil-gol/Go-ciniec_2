@@ -101,7 +101,7 @@ export default function ForgotPasswordPage() {
                 <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-3">
                   Sprawdź swoją skrzynkę
                 </h2>
-                <p className="text-neutral-600 dark:text-neutral-400 mb-2">
+                <p className="text-neutral-600 dark:text-neutral-300 mb-2">
                   Jeśli konto z adresem <strong className="text-neutral-900 dark:text-neutral-100">{email}</strong> istnieje w naszym systemie, wysłaliśmy link do resetowania hasła.
                 </p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-500 mb-6">
@@ -110,7 +110,7 @@ export default function ForgotPasswordPage() {
 
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="inline-flex items-center gap-2 h-10 px-8 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Wróć do logowania
@@ -129,7 +129,7 @@ export default function ForgotPasswordPage() {
                     <Mail className="h-6 w-6 text-violet-600" />
                     Resetuj hasło
                   </h2>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                  <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">
                     Podaj adres email powiązany z Twoim kontem
                   </p>
                 </div>
@@ -223,7 +223,7 @@ export default function ForgotPasswordPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-400"
+          className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-300"
         >
           <p>&copy; 2026 Gościniec Rodzinny. Wszystkie prawa zastrzeżone.</p>
         </motion.div>
