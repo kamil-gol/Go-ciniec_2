@@ -184,7 +184,7 @@ describe('AuditLogTable', () => {
     it('should show total count', () => {
       render(<AuditLogTable {...defaultProps} />)
       expect(screen.getByText(/50/)).toBeInTheDocument()
-      expect(screen.getByText(/wpisów łącznie/)).toBeInTheDocument()
+      expect(screen.getByText(/50 wyników/)).toBeInTheDocument()
     })
 
     it('should disable "Poprzednia" on first page', () => {
