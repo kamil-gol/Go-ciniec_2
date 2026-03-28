@@ -153,8 +153,11 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
     await waitForPageStable(page);
 
     // Kliknij "Dodaj klienta"
-    // Przycisk w PageHero — szukamy po tekście wewnątrz
-    const addBtn = page.getByRole('button', { name: /Dodaj klienta/i });
+    // Przycisk w PageHero — szukamy po tekście widocznym na stronie
+    await page.goto('/dashboard/clients');
+    await waitForPageStable(page);
+    const addBtn = page.locator('button', { hasText: 'Dodaj klienta' });
+    await addBtn.waitFor({ state: 'visible', timeout: 30_000 });
     await addBtn.click();
     await waitForPageStable(page);
 
@@ -174,8 +177,11 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
     await waitForPageStable(page);
 
     // Dodaj klienta
-    // Przycisk w PageHero — szukamy po tekście wewnątrz
-    const addBtn = page.getByRole('button', { name: /Dodaj klienta/i });
+    // Przycisk w PageHero — szukamy po tekście widocznym na stronie
+    await page.goto('/dashboard/clients');
+    await waitForPageStable(page);
+    const addBtn = page.locator('button', { hasText: 'Dodaj klienta' });
+    await addBtn.waitFor({ state: 'visible', timeout: 30_000 });
     await addBtn.click();
     await waitForPageStable(page);
 
@@ -210,8 +216,11 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
     await page.goto('/dashboard/clients');
     await waitForPageStable(page);
 
-    // Przycisk w PageHero — szukamy po tekście wewnątrz
-    const addBtn = page.getByRole('button', { name: /Dodaj klienta/i });
+    // Przycisk w PageHero — szukamy po tekście widocznym na stronie
+    await page.goto('/dashboard/clients');
+    await waitForPageStable(page);
+    const addBtn = page.locator('button', { hasText: 'Dodaj klienta' });
+    await addBtn.waitFor({ state: 'visible', timeout: 30_000 });
     await addBtn.click();
     await waitForPageStable(page);
 
