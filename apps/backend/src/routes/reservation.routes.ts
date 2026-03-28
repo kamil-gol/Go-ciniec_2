@@ -11,6 +11,8 @@ import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin, requireStaff } from '../middlewares/roles';
 import { asyncHandler } from '../middlewares/asyncHandler';
 import { validateUUID } from '../middlewares/validateUUID';
+import { validateBody } from '../middlewares/validateBody';
+import { createReservationSchema, updateReservationSchema, updateStatusSchema, selectMenuSchema } from '../validation/reservation.validation';
 
 const router = Router();
 
@@ -23,6 +25,7 @@ router.post(
   '/',
   authMiddleware,
   requireStaff,
+  validateBody(createReservationSchema),
   asyncHandler(async (req, res) => {
     await reservationController.createReservation(req, res);
   })
@@ -98,6 +101,7 @@ router.put(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
+  validateBody(updateReservationSchema),
   asyncHandler(async (req, res) => {
     await reservationController.updateReservation(req, res);
   })
@@ -113,6 +117,7 @@ router.patch(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
+  validateBody(updateStatusSchema),
   asyncHandler(async (req, res) => {
     await reservationController.updateStatus(req, res);
   })

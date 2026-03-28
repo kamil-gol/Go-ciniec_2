@@ -10,6 +10,8 @@ import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin } from '../middlewares/roles';
 import { asyncHandler } from '../middlewares/asyncHandler';
 import { validateUUID } from '../middlewares/validateUUID';
+import { validateBody } from '../middlewares/validateBody';
+import { createHallSchema, updateHallSchema } from '../validation/hall.validation';
 
 const router = Router();
 
@@ -17,6 +19,7 @@ router.post(
   '/',
   authMiddleware,
   requireAdmin,
+  validateBody(createHallSchema),
   asyncHandler(async (req, res, next) => {
     await hallController.createHall(req, res, next);
   })
@@ -54,6 +57,7 @@ router.put(
   authMiddleware,
   requireAdmin,
   validateUUID('id'),
+  validateBody(updateHallSchema),
   asyncHandler(async (req, res, next) => {
     await hallController.updateHall(req, res, next);
   })

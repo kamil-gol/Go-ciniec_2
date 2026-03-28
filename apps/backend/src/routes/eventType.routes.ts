@@ -9,6 +9,8 @@ import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin } from '../middlewares/roles';
 import { asyncHandler } from '../middlewares/asyncHandler';
 import { validateUUID } from '../middlewares/validateUUID';
+import { validateBody } from '../middlewares/validateBody';
+import { createEventTypeSchema, updateEventTypeSchema } from '../validation/eventType.validation';
 
 const router = Router();
 
@@ -33,6 +35,7 @@ router.post(
   '/',
   authMiddleware,
   requireAdmin,
+  validateBody(createEventTypeSchema),
   asyncHandler(async (req, res) => {
     await eventTypeController.createEventType(req, res);
   })
@@ -58,6 +61,7 @@ router.put(
   authMiddleware,
   requireAdmin,
   validateUUID('id'),
+  validateBody(updateEventTypeSchema),
   asyncHandler(async (req, res) => {
     await eventTypeController.updateEventType(req, res);
   })

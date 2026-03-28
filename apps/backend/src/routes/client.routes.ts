@@ -10,6 +10,8 @@ import { authMiddleware } from '../middlewares/auth';
 import { requireAdmin, requireStaff } from '../middlewares/roles';
 import { asyncHandler } from '../middlewares/asyncHandler';
 import { validateUUID } from '../middlewares/validateUUID';
+import { validateBody } from '../middlewares/validateBody';
+import { createClientSchema, updateClientSchema, addContactSchema, updateContactSchema } from '../validation/client.validation';
 
 const router = Router();
 
@@ -19,6 +21,7 @@ router.post(
   '/',
   authMiddleware,
   requireStaff,
+  validateBody(createClientSchema),
   asyncHandler(async (req, res) => {
     await clientController.createClient(req, res);
   })
@@ -59,6 +62,7 @@ router.put(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
+  validateBody(updateClientSchema),
   asyncHandler(async (req, res) => {
     await clientController.updateClient(req, res);
   })
@@ -81,6 +85,7 @@ router.post(
   authMiddleware,
   requireStaff,
   validateUUID('id'),
+  validateBody(addContactSchema),
   asyncHandler(async (req, res) => {
     await clientController.addContact(req, res);
   })
@@ -92,6 +97,7 @@ router.put(
   requireStaff,
   validateUUID('id'),
   validateUUID('contactId'),
+  validateBody(updateContactSchema),
   asyncHandler(async (req, res) => {
     await clientController.updateContact(req, res);
   })
