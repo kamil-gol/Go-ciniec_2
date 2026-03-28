@@ -174,7 +174,7 @@ export function ReservationCard({
             <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
               <DollarSign className="h-3 w-3" /> Wartosc
             </div>
-            <div className="font-bold text-lg text-green-600 dark:text-green-400">
+            <div className="font-bold text-sm sm:text-lg text-green-600 dark:text-green-400 truncate">
               {reservation.totalPrice ? formatCurrency(reservation.totalPrice) : 'N/A'}
             </div>
             {reservation.extrasTotalPrice > 0 && (

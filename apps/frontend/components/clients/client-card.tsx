@@ -99,7 +99,7 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
             onClick={(e) => e.stopPropagation()}
           >
             <Mail className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">{client.email}</span>
+            <span className="truncate" title={client.email}>{client.email}</span>
           </a>
         )}
 

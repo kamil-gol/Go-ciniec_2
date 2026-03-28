@@ -303,16 +303,16 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.6 + index * 0.08 }}
                   onClick={() => handleEventClick(event.id)}
-                  className="group flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-all duration-200 hover:-translate-y-0.5 border border-neutral-100 dark:border-neutral-700/50 cursor-pointer"
+                  className="group flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-all duration-200 hover:-translate-y-0.5 border border-neutral-100 dark:border-neutral-700/50 cursor-pointer"
                 >
                   <div
                     className={cn(
-                      'flex h-16 w-16 flex-col items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg flex-shrink-0',
+                      'flex h-10 w-10 sm:h-16 sm:w-16 flex-col items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg flex-shrink-0',
                       accent.iconBg
                     )}
                   >
-                    <span className="text-xs font-semibold">{dateInfo.month}</span>
-                    <span className="text-2xl font-bold">{dateInfo.day}</span>
+                    <span className="text-[10px] sm:text-xs font-semibold">{dateInfo.month}</span>
+                    <span className="text-base sm:text-2xl font-bold">{dateInfo.day}</span>
                   </div>
 
                   <div className="flex-1 min-w-0">
