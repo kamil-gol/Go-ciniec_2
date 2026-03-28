@@ -1,6 +1,6 @@
 import { Truck, MapPin, Clock } from 'lucide-react';
 import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
-import { SectionCard, Field } from './SectionCard';
+import { SectionCard, Field } from '@/components/shared/SectionCard';
 import { formatDatePl } from './types';
 import type { CateringOrder } from './types';
 
