@@ -129,7 +129,7 @@ export function FlatItemView({ categories, onEditItem, onDeleteItem }: FlatItemV
                       {priceSuffix(item.priceType) && <span className="text-xs text-neutral-400 ml-0.5">{priceSuffix(item.priceType)}</span>}
                     </span>
                   ) : (
-                    <span className="text-sm text-neutral-300 dark:text-neutral-600">—</span>
+                    <span className="text-sm text-neutral-300 dark:text-neutral-400">—</span>
                   )}
                 </TableCell>
                 <TableCell>

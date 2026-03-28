@@ -19,9 +19,6 @@ export function formatDate(dateStr: string): string {
   })
 }
 
-export function formatPLN(amount: number): string {
-  return amount.toLocaleString('pl-PL', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
-}
 
 export function suggestDueDate(daysFromNow: number = 14): string {
   const d = new Date()

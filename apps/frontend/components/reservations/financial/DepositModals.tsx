@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { paymentMethodOptions } from './types'
-import { formatPLN } from './utils'
+import { formatCurrency } from '@/lib/utils'
 
 interface CreateDepositModalProps {
   open: boolean
@@ -54,7 +54,7 @@ export function CreateDepositModal({
             Nowa zaliczka
           </DialogTitle>
           <DialogDescription>
-            Sugerowana kwota: 30% ({formatPLN(Math.round(finalTotalPrice * 0.3))} zł)
+            Sugerowana kwota: 30% ({formatCurrency(Math.round(finalTotalPrice * 0.3))})
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">

@@ -27,7 +27,7 @@ export const ORDER_STATUS_LABEL: Record<CateringOrderStatus, string> = {
 };
 
 export const ORDER_STATUS_COLOR: Record<CateringOrderStatus, string> = {
-  DRAFT: 'bg-gray-100 text-gray-700',
+  DRAFT: 'bg-neutral-100 text-neutral-700',
   INQUIRY: 'bg-blue-100 text-blue-700',
   QUOTED: 'bg-purple-100 text-purple-700',
   CONFIRMED: 'bg-green-100 text-green-700',

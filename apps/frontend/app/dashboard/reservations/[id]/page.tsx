@@ -27,7 +27,9 @@ import {
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
 import { toast } from 'sonner'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
+import { ReservationTimeline } from '@/components/reservations/ReservationTimeline'
 import { ReservationHero } from './components/ReservationHero'
 import { QuickActionsCard } from './components/QuickActionsCard'
 
@@ -121,7 +123,38 @@ export default function ReservationDetailsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-        <LoadingState message="Wczytywanie rezerwacji..." />
+        <div className="container mx-auto py-6 sm:py-8 px-4 space-y-6 sm:space-y-8">
+          {/* Breadcrumb skeleton */}
+          <Skeleton className="h-5 w-48" />
+          {/* Hero skeleton */}
+          <div className="rounded-2xl border p-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-14 w-14 rounded-xl" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-7 w-64" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+              <Skeleton className="h-10 w-32 rounded-lg" />
+            </div>
+          </div>
+          {/* Timeline skeleton */}
+          <Skeleton className="h-20 w-full rounded-xl" />
+          {/* Tab bar skeleton */}
+          <Skeleton className="h-11 w-56 rounded-xl" />
+          {/* 2-column grid skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <Skeleton className="h-48 w-full rounded-2xl" />
+              <Skeleton className="h-40 w-full rounded-2xl" />
+              <Skeleton className="h-56 w-full rounded-2xl" />
+            </div>
+            <div className="space-y-6">
+              <Skeleton className="h-40 w-full rounded-2xl" />
+              <Skeleton className="h-64 w-full rounded-2xl" />
+              <Skeleton className="h-36 w-full rounded-2xl" />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -197,6 +230,9 @@ export default function ReservationDetailsPage() {
           onDownloadPDF={handleDownloadPDF}
           onRefetch={handleRefetch}
         />
+
+        {/* Status Timeline */}
+        <ReservationTimeline status={reservation.status} />
 
         {/* US-9.8: Tab bar */}
         <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">

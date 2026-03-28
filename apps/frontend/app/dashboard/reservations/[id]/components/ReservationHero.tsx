@@ -36,10 +36,10 @@ export function ReservationHero({
     <DetailHero
       gradient="from-blue-600 via-cyan-600 to-teal-600"
       backHref="/dashboard/reservations"
-      backLabel="Powrot do listy"
+      backLabel="Powrót do listy"
       icon={Calendar}
       title={`Rezerwacja #${reservation.id.slice(0, 8)}`}
-      subtitle="Szczegoly rezerwacji"
+      subtitle="Szczegóły rezerwacji"
       badges={
         <>
           {isArchived && reservation.status !== 'ARCHIVED' && (

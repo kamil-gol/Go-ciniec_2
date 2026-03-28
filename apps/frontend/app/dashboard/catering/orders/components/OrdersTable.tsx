@@ -25,6 +25,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { Pagination } from '@/components/shared/Pagination';
+import { formatCurrency as formatPrice, formatDateShort as formatDate } from '@/lib/utils';
 
 interface Props {
   orders: CateringOrderListItem[];
@@ -44,14 +45,6 @@ const DELIVERY_BADGE_COLOR: Record<CateringDeliveryType, string> = {
   DELIVERY: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300',
   ON_SITE:  'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300',
 };
-
-function formatPrice(value: number | string) {
-  return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(Number(value));
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
-}
 
 function clientName(order: CateringOrderListItem) {
   if (order.client.clientType === 'COMPANY' && order.client.companyName)
@@ -73,7 +66,69 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {orders.map(order => {
+          const status = order.status;
+          return (
+            <div
+              key={order.id}
+              onClick={() => onRowClick(order.id)}
+              className="cursor-pointer rounded-xl border border-neutral-200 dark:border-neutral-700/50 bg-white dark:bg-neutral-800/80 p-4 space-y-3 hover:shadow-md transition-shadow active:scale-[0.99]"
+            >
+              {/* Row 1: Order number + Status */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-xs font-semibold text-neutral-600 dark:text-neutral-300">
+                  {order.orderNumber}
+                </span>
+                <StatusBadge type="catering" status={status} />
+              </div>
+
+              {/* Row 2: Client */}
+              <div className="flex items-center gap-2">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                  order.client.clientType === 'COMPANY'
+                    ? 'bg-purple-100 dark:bg-purple-900/30'
+                    : 'bg-blue-100 dark:bg-blue-900/30'
+                }`}>
+                  {order.client.clientType === 'COMPANY'
+                    ? <Building2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                    : <User className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                </div>
+                <span className="font-medium text-sm text-neutral-900 dark:text-neutral-100 truncate">
+                  {clientName(order)}
+                </span>
+              </div>
+
+              {/* Row 3: Event + Date + Type */}
+              <div className="flex items-center justify-between gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                <div className="flex items-center gap-2 min-w-0">
+                  {order.eventName && (
+                    <span className="truncate">{order.eventName}</span>
+                  )}
+                  {order.eventDate && (
+                    <span className="flex-shrink-0">{formatDate(order.eventDate)}</span>
+                  )}
+                </div>
+                <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${DELIVERY_BADGE_COLOR[order.deliveryType]}`}>
+                  {DELIVERY_ICON[order.deliveryType]}
+                  {DELIVERY_TYPE_LABEL[order.deliveryType]}
+                </span>
+              </div>
+
+              {/* Row 4: Price */}
+              <div className="flex items-center justify-end border-t border-neutral-100 dark:border-neutral-700/50 pt-2">
+                <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
+                  {formatPrice(order.totalPrice)}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-neutral-50 dark:bg-neutral-900/50 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
@@ -111,10 +166,10 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
                   </div>
                 </TableCell>
                 <TableCell className="max-w-[180px] truncate text-sm text-neutral-700 dark:text-neutral-300">
-                  {order.eventName ?? <span className="text-neutral-400 dark:text-neutral-600">—</span>}
+                  {order.eventName ?? <span className="text-neutral-400 dark:text-neutral-500">—</span>}
                 </TableCell>
                 <TableCell className="text-sm text-neutral-600 dark:text-neutral-300">
-                  {order.eventDate ? formatDate(order.eventDate) : <span className="text-neutral-400 dark:text-neutral-600">—</span>}
+                  {order.eventDate ? formatDate(order.eventDate) : <span className="text-neutral-400 dark:text-neutral-500">—</span>}
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${DELIVERY_BADGE_COLOR[order.deliveryType]}`}>

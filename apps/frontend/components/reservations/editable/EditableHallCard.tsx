@@ -226,7 +226,7 @@ export function EditableHallCard({
                   {hallsArray.map((hall: any) => (
                     <SelectItem key={hall.id} value={hall.id}>
                       {hall.name} (max {hall.capacity} osób)
-                      {hall.isWholeVenue ? ' \uD83C\uDFDB' : ''}
+                      {hall.isWholeVenue ? ' 🏛' : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>

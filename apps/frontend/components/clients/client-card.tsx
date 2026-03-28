@@ -160,7 +160,7 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
               className={cn(
                 'p-2 rounded-lg transition-colors',
                 hasReservations
-                  ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
+                  ? 'text-neutral-300 dark:text-neutral-400 cursor-not-allowed'
                   : 'text-neutral-500 dark:text-neutral-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500'
               )}
               title={hasReservations ? 'Nie można usunąć klienta z rezerwacjami' : 'Usuń klienta'}

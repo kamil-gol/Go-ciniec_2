@@ -357,7 +357,7 @@ export default function CalendarPage() {
                         <div className="flex items-center justify-between mb-0.5 sm:mb-1">
                           <span className={cn(
                             'text-[10px] sm:text-xs font-medium w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full',
-                            !dayInfo.isCurrentMonth && 'text-neutral-300 dark:text-neutral-600',
+                            !dayInfo.isCurrentMonth && 'text-neutral-300 dark:text-neutral-400',
                             dayInfo.isCurrentMonth && !isTodayCell && (isWeekend ? 'text-rose-400 dark:text-rose-500' : 'text-neutral-700 dark:text-neutral-300'),
                             isTodayCell && 'bg-indigo-600 text-white font-bold'
                           )}>{dayInfo.day}</span>
@@ -441,12 +441,12 @@ export default function CalendarPage() {
                                     <>
                                       <MapPin className="h-3 w-3 flex-shrink-0" />
                                       <span>{r.hall.name}</span>
-                                      <span className="text-neutral-300 dark:text-neutral-600">&#183;</span>
+                                      <span className="text-neutral-300 dark:text-neutral-400">&#183;</span>
                                     </>
                                   )}
                                   <Users className="h-3 w-3 flex-shrink-0" />
                                   <span>{clientName}</span>
-                                  <span className="text-neutral-300 dark:text-neutral-600">&#183;</span>
+                                  <span className="text-neutral-300 dark:text-neutral-400">&#183;</span>
                                   <span>{r.guests} os.</span>
                                 </div>
                               </Link>

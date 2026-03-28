@@ -1,7 +1,7 @@
 'use client'
 
 import { DollarSign, CheckCircle2, TrendingUp } from 'lucide-react'
-import { formatPLN } from './utils'
+import { formatCurrency } from '@/lib/utils'
 import type { ExtraHoursInfo, Financials } from './types'
 
 interface TotalsSummaryProps {
@@ -40,36 +40,36 @@ export function TotalsSummary({
             <DollarSign className="h-5 w-5 opacity-80" />
             <span className="font-bold">Razem do zapłaty</span>
           </div>
-          <span className="text-2xl font-bold">{formatPLN(finalTotalPrice)} zł</span>
+          <span className="text-2xl font-bold">{formatCurrency(finalTotalPrice)}</span>
         </div>
         {hasActiveDiscount && (
           <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
             <span>w tym rabat</span>
-            <span>-{formatPLN(activeDiscountAmount)} zł</span>
+            <span>-{formatCurrency(activeDiscountAmount)}</span>
           </div>
         )}
         {hasVenueSurcharge && (
           <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
             <span>w tym dopłata za cały obiekt</span>
-            <span>+{formatPLN(effectiveVenueSurcharge)} zł</span>
+            <span>+{formatCurrency(effectiveVenueSurcharge)}</span>
           </div>
         )}
         {extrasTotalPrice > 0 && (
           <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
             <span>w tym usługi dodatkowe ({activeExtrasCount})</span>
-            <span>+{formatPLN(extrasTotalPrice)} zł</span>
+            <span>+{formatCurrency(extrasTotalPrice)}</span>
           </div>
         )}
         {effectiveCategoryExtrasTotal > 0 && (
           <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
             <span>w tym dodatkowo płatne porcje ({activeCategoryExtrasCount})</span>
-            <span>+{formatPLN(effectiveCategoryExtrasTotal)} zł</span>
+            <span>+{formatCurrency(effectiveCategoryExtrasTotal)}</span>
           </div>
         )}
         {extraHoursInfo && extraHoursInfo.extraCost > 0 && (
           <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
             <span>w tym dopłata za {extraHoursInfo.extraHours} dodatkow{extraHoursInfo.extraHours === 1 ? 'ą godzinę' : extraHoursInfo.extraHours < 5 ? 'e godziny' : 'ych godzin'}</span>
-            <span>+{formatPLN(extraHoursInfo.extraCost)} zł</span>
+            <span>+{formatCurrency(extraHoursInfo.extraCost)}</span>
           </div>
         )}
       </div>
@@ -82,7 +82,7 @@ export function TotalsSummary({
             <span className="text-sm font-semibold">Stan rozliczeń</span>
           </div>
           <span className="text-sm font-bold">
-            {formatPLN(financials.totalPaid)} / {formatPLN(finalTotalPrice)} zł
+            {formatCurrency(financials.totalPaid)} / {formatCurrency(finalTotalPrice)}
           </span>
         </div>
 
@@ -119,7 +119,7 @@ export function TotalsSummary({
         {financials.remaining > 0 && (
           <div className="mt-3 flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
             <span className="text-sm font-medium text-amber-800 dark:text-amber-300">Pozostało do zapłaty</span>
-            <span className="text-lg font-bold text-amber-800 dark:text-amber-300">{formatPLN(financials.remaining)} zł</span>
+            <span className="text-lg font-bold text-amber-800 dark:text-amber-300">{formatCurrency(financials.remaining)}</span>
           </div>
         )}
         {financials.remaining === 0 && financials.totalPaid > 0 && (

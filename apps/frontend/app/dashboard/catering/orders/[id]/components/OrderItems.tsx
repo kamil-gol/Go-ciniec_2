@@ -13,7 +13,7 @@ export function OrderItems({ order }: OrderItemsProps) {
 
   return (
     <>
-      {/* Szczegoly cateringu */}
+      {/* Szczegóły cateringu */}
       <SectionCard
         icon={CalendarDays}
         iconBg="bg-orange-100 dark:bg-orange-900/30"

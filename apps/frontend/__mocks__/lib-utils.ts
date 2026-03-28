@@ -75,12 +75,32 @@ export function formatTime(time: string): string {
   return time.substring(0, 5);
 }
 
-export function formatCurrency(amount: number | string): string {
-  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+export function formatCurrency(amount: number | string | null | undefined): string {
+  if (amount == null || amount === '' || isNaN(Number(amount))) return '—';
   return new Intl.NumberFormat('pl-PL', {
     style: 'currency',
     currency: 'PLN',
-  }).format(numAmount);
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(amount));
+}
+
+export function formatDateLong(date: string | Date | null | undefined): string {
+  if (!date) return '—';
+  return new Intl.DateTimeFormat('pl-PL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(date));
+}
+
+export function formatDateShort(date: string | Date | null | undefined): string {
+  if (!date) return '—';
+  return new Intl.DateTimeFormat('pl-PL', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(date));
 }
 
 export function calculateTotalPrice(guests: number, pricePerPerson: number | string): number {

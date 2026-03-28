@@ -25,9 +25,9 @@ export function FormSection({ title, description, icon: Icon, children, classNam
           </div>
         )}
         <div>
-          <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
+          <h3 className="text-base font-semibold text-foreground">{title}</h3>
           {description && (
-            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
           )}
         </div>
       </div>

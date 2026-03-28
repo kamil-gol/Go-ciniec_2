@@ -128,7 +128,7 @@ export function TimePicker({
                       isSelected
                         ? 'bg-primary-600 text-white font-semibold hover:bg-primary-700 hover:text-white'
                         : isDimmed
-                          ? 'text-neutral-400 dark:text-neutral-600'
+                          ? 'text-neutral-400 dark:text-neutral-500'
                           : 'text-neutral-700 dark:text-neutral-300'
                     )}
                   >

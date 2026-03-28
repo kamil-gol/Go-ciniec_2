@@ -123,7 +123,7 @@ export default function AttachmentPanel({
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Paperclip className="w-10 h-10 text-neutral-300 dark:text-neutral-600 mb-2" />
+            <Paperclip className="w-10 h-10 text-neutral-300 dark:text-neutral-400 mb-2" />
             <p className="text-sm text-neutral-500 dark:text-neutral-300">
               {filter !== 'ALL' ? 'Brak załączników w tej kategorii' : 'Brak załączników'}
             </p>

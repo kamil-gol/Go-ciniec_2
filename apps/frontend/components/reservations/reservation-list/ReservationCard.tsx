@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/shared/StatusBadge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { formatCurrency } from '@/lib/utils'
 import {
   Trash2, Archive, ArchiveRestore, FileText, Eye,
@@ -144,14 +145,14 @@ export function ReservationCard({
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
-              <Users className="h-3 w-3" /> Goscie
+              <Users className="h-3 w-3" /> Goście
             </div>
             <div className="flex items-center gap-2">
               <div className="font-medium text-neutral-900 dark:text-neutral-100">{guestInfo.total}</div>
               {(guestInfo.adults > 0 || guestInfo.childrenCount > 0 || guestInfo.toddlers > 0) && (
                 <div className="flex gap-2 text-xs">
                   {guestInfo.adults > 0 && (
-                    <div className="flex items-center gap-0.5 text-neutral-500 dark:text-neutral-300" title="Dorosli">
+                    <div className="flex items-center gap-0.5 text-neutral-500 dark:text-neutral-300" title="Dorośli">
                       <Users className="w-3 h-3" />{guestInfo.adults}
                     </div>
                   )}
@@ -202,63 +203,86 @@ export function ReservationCard({
             </div>
           )}
 
-          <div className="flex gap-1 self-end sm:self-auto">
-            <Link href={`/dashboard/reservations/${reservation.id}`}>
-              <Button size="sm" variant="ghost" title="Zobacz szczegóły i edytuj" aria-label="Zobacz szczegóły i edytuj" className="rounded-lg">
-                <Eye className="w-4 h-4" />
-              </Button>
-            </Link>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => handlers.onPdf(reservation.id)}
-              title="Generuj PDF"
-              aria-label="Generuj PDF"
-              className="rounded-lg"
-              disabled={isPdfGenerating}
-            >
-              {isPdfGenerating ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+          <TooltipProvider delayDuration={300}>
+            <div className="flex gap-1 self-end sm:self-auto">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link href={`/dashboard/reservations/${reservation.id}`}>
+                    <Button size="sm" variant="ghost" aria-label="Podgląd szczegółów" className="rounded-lg">
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent><p>Podgląd szczegółów</p></TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handlers.onPdf(reservation.id)}
+                    aria-label="Generuj PDF"
+                    className="rounded-lg"
+                    disabled={isPdfGenerating}
+                  >
+                    {isPdfGenerating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FileText className="w-4 h-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>Generuj PDF</p></TooltipContent>
+              </Tooltip>
+              {!reservation.archivedAt ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handlers.onArchive(reservation.id)}
+                      aria-label="Zarchiwizuj"
+                      disabled={!['CANCELLED', 'COMPLETED'].includes(reservation.status)}
+                      className="rounded-lg"
+                    >
+                      <Archive className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Zarchiwizuj</p></TooltipContent>
+                </Tooltip>
               ) : (
-                <FileText className="w-4 h-4" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handlers.onUnarchive(reservation.id)}
+                      aria-label="Przywróć z archiwum"
+                      className="rounded-lg text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
+                    >
+                      <ArchiveRestore className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Przywróć z archiwum</p></TooltipContent>
+                </Tooltip>
               )}
-            </Button>
-            {!reservation.archivedAt ? (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handlers.onArchive(reservation.id)}
-                title="Zarchiwizuj"
-                aria-label="Zarchiwizuj"
-                disabled={!['CANCELLED', 'COMPLETED'].includes(reservation.status)}
-                className="rounded-lg"
-              >
-                <Archive className="w-4 h-4" />
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handlers.onUnarchive(reservation.id)}
-                title="Przywróć z archiwum"
-                aria-label="Przywróć z archiwum"
-                className="rounded-lg text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
-              >
-                <ArchiveRestore className="w-4 h-4" />
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => handlers.onDelete(reservation.id, reservation.status)}
-              title="Anuluj rezerwację"
-              aria-label="Anuluj rezerwację"
-              disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
-              className="rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handlers.onDelete(reservation.id, reservation.status)}
+                    aria-label="Anuluj rezerwację"
+                    disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
+                    className="rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>Anuluj rezerwację</p></TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         </div>
       </div>
     </div>

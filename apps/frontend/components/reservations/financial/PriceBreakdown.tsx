@@ -4,7 +4,7 @@ import {
   Users, ShoppingCart, Gift, Building2, Timer,
 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
-import { formatPLN } from './utils'
+import { formatCurrency } from '@/lib/utils'
 import type { CategoryExtra, ExtraHoursInfo } from './types'
 import { STANDARD_HOURS } from './types'
 
@@ -64,20 +64,20 @@ export function PriceBreakdown({
         <div className="space-y-2">
           {adults > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Dorośli ({adults} × {formatPLN(effectivePricePerAdult)} zł)</span>
-              <span className="font-semibold">{formatPLN(adults * effectivePricePerAdult)} zł</span>
+              <span className="text-muted-foreground">Dorośli ({adults} × {formatCurrency(effectivePricePerAdult)})</span>
+              <span className="font-semibold">{formatCurrency(adults * effectivePricePerAdult)}</span>
             </div>
           )}
           {childrenCount > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Dzieci ({childrenCount} × {formatPLN(effectivePricePerChild)} zł)</span>
-              <span className="font-semibold">{formatPLN(childrenCount * effectivePricePerChild)} zł</span>
+              <span className="text-muted-foreground">Dzieci ({childrenCount} × {formatCurrency(effectivePricePerChild)})</span>
+              <span className="font-semibold">{formatCurrency(childrenCount * effectivePricePerChild)}</span>
             </div>
           )}
           {toddlers > 0 && effectivePricePerToddler > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Maluchy ({toddlers} × {formatPLN(effectivePricePerToddler)} zł)</span>
-              <span className="font-semibold">{formatPLN(toddlers * effectivePricePerToddler)} zł</span>
+              <span className="text-muted-foreground">Maluchy ({toddlers} × {formatCurrency(effectivePricePerToddler)})</span>
+              <span className="font-semibold">{formatCurrency(toddlers * effectivePricePerToddler)}</span>
             </div>
           )}
           {toddlers > 0 && effectivePricePerToddler === 0 && (
@@ -89,7 +89,7 @@ export function PriceBreakdown({
           <Separator className="my-2" />
           <div className="flex justify-between text-sm font-semibold">
             <span>Suma podstawowa</span>
-            <span>{formatPLN(hasMenu && priceBreakdown ? priceBreakdown.packageCost.subtotal : (adults * effectivePricePerAdult + childrenCount * effectivePricePerChild + toddlers * effectivePricePerToddler))} zł</span>
+            <span>{formatCurrency(hasMenu && priceBreakdown ? priceBreakdown.packageCost.subtotal : (adults * effectivePricePerAdult + childrenCount * effectivePricePerChild + toddlers * effectivePricePerToddler))}</span>
           </div>
         </div>
       </div>
@@ -105,15 +105,15 @@ export function PriceBreakdown({
             {priceBreakdown.optionsCost.map((opt: any, idx: number) => (
               <div key={idx} className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${formatPLN(opt.priceEach)} zł` : 'stała kwota'})
+                  {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${formatCurrency(opt.priceEach)}` : 'stała kwota'})
                 </span>
-                <span className="font-semibold">{formatPLN(opt.total)} zł</span>
+                <span className="font-semibold">{formatCurrency(opt.total)}</span>
               </div>
             ))}
             <Separator className="my-2" />
             <div className="flex justify-between text-sm font-semibold">
               <span>Suma opcji</span>
-              <span>{formatPLN(priceBreakdown.optionsSubtotal)} zł</span>
+              <span>{formatCurrency(priceBreakdown.optionsSubtotal)}</span>
             </div>
           </div>
         </div>
@@ -136,13 +136,13 @@ export function PriceBreakdown({
                     {extra.quantity > 1 && ` (×${extra.quantity})`}
                   </span>
                 </span>
-                <span className="font-semibold shrink-0 text-right tabular-nums">{formatPLN(Number(extra.totalPrice))} zł</span>
+                <span className="font-semibold shrink-0 text-right tabular-nums">{formatCurrency(Number(extra.totalPrice))}</span>
               </div>
             ))}
             <Separator className="my-2" />
             <div className="flex justify-between text-sm font-semibold">
               <span>Suma usług dodatkowych</span>
-              <span>{formatPLN(extrasTotalPrice)} zł</span>
+              <span>{formatCurrency(extrasTotalPrice)}</span>
             </div>
           </div>
         </div>
@@ -166,17 +166,17 @@ export function PriceBreakdown({
                     <span className="shrink-0">{extra.packageCategory?.category?.icon || '🍽️'}</span>
                     <span className="truncate">
                       {extra.packageCategory?.category?.name || 'Kategoria'}
-                      {' '}({qtyLabel} × {formatPLN(Number(extra.pricePerItem))} zł × {guestCount} os.)
+                      {' '}({qtyLabel} × {formatCurrency(Number(extra.pricePerItem))} × {guestCount} os.)
                     </span>
                   </span>
-                  <span className="font-semibold shrink-0 text-right tabular-nums">{formatPLN(Number(extra.totalPrice))} zł</span>
+                  <span className="font-semibold shrink-0 text-right tabular-nums">{formatCurrency(Number(extra.totalPrice))}</span>
                 </div>
               );
             })}
             <Separator className="my-2" />
             <div className="flex justify-between text-sm font-semibold">
               <span>Suma dodatkowych pozycji</span>
-              <span>{formatPLN(effectiveCategoryExtrasTotal)} zł</span>
+              <span>{formatCurrency(effectiveCategoryExtrasTotal)}</span>
             </div>
           </div>
         </div>
@@ -194,7 +194,7 @@ export function PriceBreakdown({
               <span className="text-muted-foreground">
                 {venueSurchargeLabel || 'Dopłata za wynajem całego obiektu'}
               </span>
-              <span className="font-semibold text-orange-700 dark:text-orange-400">{formatPLN(effectiveVenueSurcharge)} zł</span>
+              <span className="font-semibold text-orange-700 dark:text-orange-400">{formatCurrency(effectiveVenueSurcharge)}</span>
             </div>
           </div>
         </div>
@@ -229,9 +229,9 @@ export function PriceBreakdown({
             ) : (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Dodatkowe godziny ({extraHoursInfo.extraHours} × {formatPLN(extraHourRate)} zł/h)
+                  Dodatkowe godziny ({extraHoursInfo.extraHours} × {formatCurrency(extraHourRate)}/h)
                 </span>
-                <span className="font-semibold text-blue-700">{formatPLN(extraHoursInfo.extraCost)} zł</span>
+                <span className="font-semibold text-blue-700">{formatCurrency(extraHoursInfo.extraCost)}</span>
               </div>
             )}
           </div>

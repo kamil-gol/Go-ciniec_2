@@ -271,7 +271,7 @@ export function OrderFinancials({
                     <div className="shrink-0">
                       {paid
                         ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        : <Circle className="w-4 h-4 text-neutral-300 dark:text-neutral-600" />}
+                        : <Circle className="w-4 h-4 text-neutral-300 dark:text-neutral-400" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-xs font-medium truncate ${paid ? 'text-emerald-700 dark:text-emerald-300' : 'text-neutral-600 dark:text-neutral-300'}`}>

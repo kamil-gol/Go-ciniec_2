@@ -46,8 +46,9 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
       <div
         role="button"
         tabIndex={0}
+        aria-label={template.name}
         className={cn(
-          'group rounded-2xl bg-white dark:bg-neutral-800/80 border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2',
+          'group rounded-2xl bg-white dark:bg-neutral-800/80 border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           isSelected
             ? 'border-green-500 ring-2 ring-green-500/50 shadow-green-100 dark:shadow-green-900/20'
             : 'border-neutral-200/80 dark:border-neutral-700/50',

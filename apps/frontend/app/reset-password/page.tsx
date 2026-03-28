@@ -243,7 +243,7 @@ function ResetPasswordContent() {
                           {check.passed ? (
                             <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
                           ) : (
-                            <XCircle className="h-4 w-4 text-neutral-300 dark:text-neutral-600 flex-shrink-0" />
+                            <XCircle className="h-4 w-4 text-neutral-300 dark:text-neutral-400 flex-shrink-0" />
                           )}
                           <span className={`text-xs ${
                             check.passed

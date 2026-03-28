@@ -249,7 +249,7 @@ export function EntityActivityTimeline({ entityType, entityId }: EntityActivityT
             <h2 className="text-xl font-bold">Historia zmian</h2>
           </div>
           <div className="text-center py-12">
-            <History className="h-16 w-16 text-neutral-300 dark:text-neutral-600 mx-auto mb-4" />
+            <History className="h-16 w-16 text-neutral-300 dark:text-neutral-400 mx-auto mb-4" />
             <p className="text-lg font-semibold text-neutral-500 dark:text-neutral-300">
               Brak historii zmian
             </p>

@@ -10,7 +10,7 @@ import {
   RefreshCw,
   AlertTriangle,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
 import { useReservations } from '@/lib/api/reservations'
 import { StatusBadge } from '@/components/shared/StatusBadge'
@@ -19,14 +19,6 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { LoadingState } from '@/components/shared/LoadingState'
 import type { Reservation } from '@/types'
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
 
 function toLocalTime(iso: string | null | undefined): string | null {
   if (!iso) return null

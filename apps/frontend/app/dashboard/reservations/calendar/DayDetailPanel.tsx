@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 import type { CalendarReservation } from '@/lib/api/calendar-api'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { formatCurrency } from './calendar.helpers'
+import { formatCurrency } from '@/lib/utils'
 
 /* #165: DayDetailPanel — groups reservations by hall with capacity bars */
 export default function DayDetailPanel({ date, reservations, onClose, onReservationClick }: {
@@ -117,7 +117,7 @@ export default function DayDetailPanel({ date, reservations, onClose, onReservat
                             </div>
                             <div className="flex items-center justify-between mt-1.5">
                               <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
-                                {r.guests} os. • {formatCurrency(r.totalPrice)}
+                                {r.guests} os. • {formatCurrency(Number(r.totalPrice))}
                                 {isMulti && hall?.capacity && (
                                   <span className="text-violet-500 ml-1">
                                     ({Math.round(((r.guests || 0) / hall.capacity) * 100)}% sali)

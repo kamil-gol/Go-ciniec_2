@@ -130,6 +130,24 @@ export function DraggableQueueList({
     setActiveId(null)
   }
 
+  const handleMoveItem = async (fromIndex: number, toIndex: number) => {
+    if (isLoading || disabled) return
+    const reordered = arrayMove(localItems, fromIndex, toIndex)
+    const withPositions = reordered.map((item, idx) => ({ ...item, position: idx + 1 }))
+    setLocalItems(withPositions)
+    setIsLoading(true)
+    setError(null)
+    try {
+      await onReorder(withPositions)
+    } catch (err: any) {
+      setLocalItems(items)
+      setError(err.message || 'Nie udało się zmienić kolejności. Spróbuj ponownie.')
+      setTimeout(() => setError(null), 5000)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const activeItem = activeId ? localItems.find((item) => item.id === activeId) : null
 
   if (localItems.length === 0) {
@@ -204,6 +222,8 @@ export function DraggableQueueList({
                 isLast={index === localItems.length - 1}
                 onPromote={showPromoteButton && onPromote && !isLoading ? () => onPromote(item.id) : undefined}
                 onEdit={onEdit && !isLoading ? () => onEdit(item.id) : undefined}
+                onMoveUp={index > 0 ? () => handleMoveItem(index, index - 1) : undefined}
+                onMoveDown={index < localItems.length - 1 ? () => handleMoveItem(index, index + 1) : undefined}
                 disabled={isLoading}
               />
             ))}

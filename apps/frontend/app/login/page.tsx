@@ -12,6 +12,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [errorCount, setErrorCount] = useState(0)
   const [fieldErrors, setFieldErrors] = useState({
     email: '',
     password: ''
@@ -62,6 +63,7 @@ export default function LoginPage() {
       console.error('Login error:', error)
       const errorMessage = error.response?.data?.error || 'Niepoprawny email lub hasło'
       setError(errorMessage)
+      setErrorCount((c) => c + 1)
       toast.error(errorMessage)
       
       // Security: Clear password field after failed login
@@ -115,12 +117,13 @@ export default function LoginPage() {
 
         {/* Login Card */}
         <motion.div
+          key={`login-card-${errorCount}`}
           initial={{ opacity: 0, y: 20 }}
           animate={error
             ? { opacity: 1, y: 0, x: [0, -8, 8, -4, 4, 0] }
             : { opacity: 1, y: 0 }
           }
-          transition={{ delay: 0.3, duration: error ? 0.4 : 0.5 }}
+          transition={{ delay: errorCount > 0 ? 0 : 0.3, duration: error ? 0.4 : 0.5 }}
           className="relative bg-white/80 dark:bg-neutral-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-8"
         >
           <div className="mb-6">

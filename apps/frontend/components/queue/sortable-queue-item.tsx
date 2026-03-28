@@ -4,7 +4,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { QueueItem } from '@/types'
 import { Button } from '@/components/ui/button'
-import { Calendar, Users, Phone, Mail, Check, Pencil, GripVertical } from 'lucide-react'
+import { Calendar, Users, Phone, Mail, Check, Pencil, GripVertical, ChevronUp, ChevronDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -18,13 +18,19 @@ interface SortableQueueItemProps {
   isLast: boolean
   onPromote?: () => void
   onEdit?: () => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
   disabled?: boolean
 }
 
 export function SortableQueueItem({
   item,
+  isFirst,
+  isLast,
   onPromote,
   onEdit,
+  onMoveUp,
+  onMoveDown,
   disabled = false,
 }: SortableQueueItemProps) {
   const {
@@ -46,8 +52,8 @@ export function SortableQueueItem({
   }
 
   return (
-    <div ref={setNodeRef} style={style} role="listitem" aria-label={`Pozycja ${item.position}: ${item.client.firstName} ${item.client.lastName}`}>
-      <div className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 p-5">
+    <div ref={setNodeRef} style={style} role="listitem" aria-roledescription="sortowalny element" aria-label={`Pozycja ${item.position}: ${item.client.firstName} ${item.client.lastName}`}>
+      <div className="group/queue-item rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 p-5">
         <div className="flex items-start gap-4">
           {/* Drag Handle */}
           <div
@@ -116,6 +122,34 @@ export function SortableQueueItem({
               {' przez '}
               {item.createdBy.firstName} {item.createdBy.lastName}
             </div>
+          </div>
+
+          {/* Move Up/Down Buttons (keyboard alternative to drag) */}
+          <div className="flex flex-col gap-0.5 opacity-0 group-hover/queue-item:opacity-100 focus-within:opacity-100 transition-opacity">
+            {onMoveUp && !isFirst && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-lg"
+                onClick={onMoveUp}
+                disabled={disabled}
+                aria-label="Przesuń w górę"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </Button>
+            )}
+            {onMoveDown && !isLast && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-lg"
+                onClick={onMoveDown}
+                disabled={disabled}
+                aria-label="Przesuń w dół"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            )}
           </div>
 
           {/* Actions */}

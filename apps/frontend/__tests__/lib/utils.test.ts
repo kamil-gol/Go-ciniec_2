@@ -4,6 +4,8 @@ import {
   formatDate,
   formatTime,
   formatCurrency,
+  formatDateLong,
+  formatDateShort,
   calculateTotalPrice,
   calculateDuration,
   debounce,
@@ -86,23 +88,58 @@ describe('formatTime()', () => {
 // formatCurrency()
 // ════════════════════════════════════════════════════════════
 describe('formatCurrency()', () => {
-  it('formats number to PLN', () => {
+  it('formats number to PLN with 2 decimal places', () => {
     const result = formatCurrency(1234.5)
-    // Polish locale uses different formatting
     expect(result).toContain('1')
     expect(result).toContain('234')
     expect(result).toMatch(/PLN|zł/)
+    // Should have 2 decimal places
+    expect(result).toMatch(/50/)
   })
 
-  it('handles string input', () => {
-    const result = formatCurrency('99.99')
-    expect(result).toContain('99')
-    expect(result).toMatch(/PLN|zł/)
+  it('returns dash for null/undefined', () => {
+    expect(formatCurrency(null)).toBe('—')
+    expect(formatCurrency(undefined)).toBe('—')
   })
 
   it('formats zero', () => {
     const result = formatCurrency(0)
     expect(result).toContain('0')
+    expect(result).toMatch(/PLN|zł/)
+  })
+})
+
+// ════════════════════════════════════════════════════════════
+// formatDateLong()
+// ════════════════════════════════════════════════════════════
+describe('formatDateLong()', () => {
+  it('formats date to Polish long format', () => {
+    const result = formatDateLong('2026-03-15')
+    expect(result).toMatch(/15/)
+    expect(result).toMatch(/marca|mar/i)
+    expect(result).toMatch(/2026/)
+  })
+
+  it('returns dash for null/undefined', () => {
+    expect(formatDateLong(null)).toBe('—')
+    expect(formatDateLong(undefined)).toBe('—')
+  })
+})
+
+// ════════════════════════════════════════════════════════════
+// formatDateShort()
+// ════════════════════════════════════════════════════════════
+describe('formatDateShort()', () => {
+  it('formats date to short format', () => {
+    const result = formatDateShort('2026-03-05')
+    expect(result).toMatch(/05/)
+    expect(result).toMatch(/03/)
+    expect(result).toMatch(/2026/)
+  })
+
+  it('returns dash for null/undefined', () => {
+    expect(formatDateShort(null)).toBe('—')
+    expect(formatDateShort(undefined)).toBe('—')
   })
 })
 

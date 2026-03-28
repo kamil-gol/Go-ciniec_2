@@ -27,11 +27,11 @@ vi.mock('next/link', () => ({
 vi.mock('@/lib/design-tokens', () => ({
   moduleAccents: {
     settings: {
-      iconBg: 'bg-gray-500',
-      text: 'text-gray-600',
-      textDark: 'text-gray-400',
-      gradient: 'from-gray-500 to-slate-500',
-      gradientSubtle: 'from-gray-50 to-slate-50',
+      iconBg: 'bg-neutral-500',
+      text: 'text-neutral-600',
+      textDark: 'text-neutral-400',
+      gradient: 'from-neutral-500 to-slate-500',
+      gradientSubtle: 'from-neutral-50 to-slate-50',
     },
   },
 }))

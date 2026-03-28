@@ -15,7 +15,7 @@ import {
   RefreshCw,
   AlertCircle,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
 import { PageLayout, PageHero, StatCard } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { useDashboardOverview, useDashboardUpcoming } from '@/lib/api/stats-api'
@@ -47,14 +47,6 @@ const statusLabels: Record<string, { label: string; emoji: string; classes: stri
   },
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
 
 function formatDate(dateStr: string | null): { day: string; month: string; full: string } {
   if (!dateStr) return { day: '?', month: '?', full: 'Brak daty' }

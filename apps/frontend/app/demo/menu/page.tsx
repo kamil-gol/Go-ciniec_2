@@ -50,7 +50,7 @@ export default function MenuDemoPage() {
       <div className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
-            \uD83C\uDFA8 Menu Components Demo
+            🎨 Menu Components Demo
           </h1>
           <p className="mt-2 text-neutral-600 dark:text-neutral-300">
             Interactive showcase of all menu system components
@@ -174,7 +174,7 @@ export default function MenuDemoPage() {
       <div className="border-t border-neutral-200 bg-white py-8 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="container mx-auto px-4 text-center text-sm text-neutral-600 dark:text-neutral-300">
           <p>
-            \uD83D\uDCDA Documentation:{' '}
+            📚 Documentation:{' '}
             <a
               href="https://github.com/kamil-gol/Go-ciniec_2/blob/main/apps/frontend/components/menu/README.md"
               target="_blank"
@@ -185,7 +185,7 @@ export default function MenuDemoPage() {
             </a>
           </p>
           <p className="mt-2">
-            \uD83D\uDE80 API Status: Connected to <code>http://localhost:3001/api</code>
+            🚀 API Status: Connected to <code>http://localhost:3001/api</code>
           </p>
         </div>
       </div>

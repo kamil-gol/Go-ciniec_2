@@ -35,11 +35,12 @@ export function DishCard({
 
   return (
     <div
-      role="checkbox"
+      role="button"
       aria-checked={isSelected}
       aria-disabled={isDisabled}
+      aria-label={dish.name}
       tabIndex={isDisabled ? -1 : 0}
-      className={`group relative p-3 border rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+      className={`group relative p-3 border rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
         isDisabled
           ? 'opacity-50 cursor-not-allowed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900'
           : isSelected
@@ -77,7 +78,7 @@ export function DishCard({
         <div className="flex-1 min-w-0">
           <h4 className={`font-semibold text-sm ${
             isDisabled
-              ? 'text-neutral-400 dark:text-neutral-600'
+              ? 'text-neutral-400 dark:text-neutral-500'
               : isSelected
                 ? 'text-blue-900 dark:text-blue-100'
                 : 'text-neutral-900 dark:text-neutral-100'

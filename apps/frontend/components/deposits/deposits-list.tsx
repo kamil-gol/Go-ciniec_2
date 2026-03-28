@@ -279,7 +279,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                   {/* Paid */}
                   <TableCell className="text-right">
                     <div className="space-y-1">
-                      <span className={`font-semibold tabular-nums text-sm ${paidAmount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
+                      <span className={`font-semibold tabular-nums text-sm ${paidAmount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-400'}`}>
                         {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} zł` : `0 zł`}
                       </span>
                       {/* Payment progress bar */}
@@ -330,7 +330,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                         </span>
                       )
                     })() : (
-                      <span className="text-sm text-neutral-300 dark:text-neutral-600">\u2014</span>
+                      <span className="text-sm text-neutral-300 dark:text-neutral-400">\u2014</span>
                     )}
                   </TableCell>
 
