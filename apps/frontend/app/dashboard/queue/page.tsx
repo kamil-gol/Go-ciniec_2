@@ -236,7 +236,7 @@ export default function QueuePage() {
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100">Dodaj do kolejki</h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 hidden sm:block">Dodaj klienta do kolejki oczekujących na dostępny termin</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-300 hidden sm:block">Dodaj klienta do kolejki oczekujących na dostępny termin</p>
               </div>
             </div>
             <AddToQueueForm
@@ -258,7 +258,7 @@ export default function QueuePage() {
             </div>
             <div className="flex-1">
               <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100">Kolejka</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 hidden sm:block">
+              <p className="text-sm text-neutral-500 dark:text-neutral-300 hidden sm:block">
                 {selectedDate === 'all'
                   ? 'Wybierz konkretną datę aby zarządzać kolejnością i awansować klientów'
                   : 'Przeciągnij karty aby zmienić kolejność lub kliknij "Awansuj" aby utworzyć rezerwację'
@@ -302,7 +302,7 @@ export default function QueuePage() {
             <EmptyState
               icon={Clock}
               title="Kolejka jest pusta"
-              description="Dodaj klientów do kolejki oczekujących"
+              description="Nie ma jeszcze żadnych klientów w kolejce oczekujących. Dodaj klienta, który czeka na wolny termin rezerwacji."
               actionLabel="Dodaj do kolejki"
               onAction={() => setShowAddForm(true)}
             />
@@ -346,7 +346,7 @@ export default function QueuePage() {
             </Alert>
             <div className="space-y-3">
               <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Co zostanie zrobione:</p>
-              <ul className="text-sm list-disc list-inside space-y-1.5 ml-2 text-neutral-500 dark:text-neutral-400">
+              <ul className="text-sm list-disc list-inside space-y-1.5 ml-2 text-neutral-500 dark:text-neutral-300">
                 <li>Wszystkie rezerwacje w kolejce zostaną ponumerowane od nowa</li>
                 <li>Każda data będzie miała numerację od 1</li>
                 <li>Sortowanie według daty dodania (starsze rezerwacje pierwsze)</li>
@@ -378,7 +378,7 @@ export default function QueuePage() {
                   <label htmlFor="rebuild-confirm" className="text-sm font-medium cursor-pointer text-neutral-900 dark:text-neutral-100">
                     Rozumiem konsekwencje i akceptuję ryzyko utraty ręcznych modyfikacji kolejności
                   </label>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-300">
                     Potwierdzam, że jestem świadomy nieodwracalności tej operacji
                   </p>
                 </div>

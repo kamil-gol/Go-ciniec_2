@@ -218,7 +218,7 @@ export default function ServiceExtrasPage() {
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
                     showInactive
                       ? 'bg-purple-100 text-purple-700 shadow-sm dark:bg-purple-900/30 dark:text-purple-300'
-                      : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
+                      : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700'
                   }`}
                 >
                   {showInactive ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -249,7 +249,7 @@ export default function ServiceExtrasPage() {
               <EmptyState
                 icon={Gift}
                 title="Nie znaleziono"
-                description="Spróbuj użyć innego wyszukiwania"
+                description="Żadna usługa ani kategoria nie pasuje do wyszukiwania. Spróbuj użyć innej frazy."
               />
             </div>
           ) : filteredCategories.length === 0 ? (
@@ -257,7 +257,7 @@ export default function ServiceExtrasPage() {
               <EmptyState
                 icon={Gift}
                 title="Brak kategorii"
-                description="Utwórz pierwszą kategorię usług dodatkowych"
+                description="Nie masz jeszcze żadnych kategorii usług dodatkowych. Utwórz pierwszą kategorię, aby zacząć dodawać usługi takie jak tort, muzyka czy dekoracje."
                 actionLabel="Nowa Kategoria"
                 onAction={handleCreateCategory}
               />

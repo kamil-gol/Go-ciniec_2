@@ -105,7 +105,7 @@ export function StatCard({
       <div className="relative">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 leading-tight">
+            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-300 leading-tight">
               {label}
             </p>
             <p className="mt-2 text-3xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -123,7 +123,7 @@ export function StatCard({
                         'text-sm font-medium',
                         changeType === 'positive' && 'text-emerald-700 dark:text-emerald-400',
                         changeType === 'negative' && 'text-red-600 dark:text-red-400',
-                        changeType === 'neutral' && 'text-neutral-500 dark:text-neutral-400'
+                        changeType === 'neutral' && 'text-neutral-500 dark:text-neutral-300'
                       )}
                     >
                       {change}
@@ -131,7 +131,7 @@ export function StatCard({
                   </>
                 )}
                 {subtitle && !change && (
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">{subtitle}</span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-300">{subtitle}</span>
                 )}
               </div>
             )}

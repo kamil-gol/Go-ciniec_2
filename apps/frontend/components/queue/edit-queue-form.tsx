@@ -52,6 +52,7 @@ export function EditQueueForm({ queueItem, clients, onSubmit, onCancel }: EditQu
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onBlur',
     defaultValues: {
       clientId: queueItem.client.id,
       reservationQueueDate: format(parseISO(queueItem.queueDate), 'yyyy-MM-dd'),

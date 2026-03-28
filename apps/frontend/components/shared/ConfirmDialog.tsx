@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode } from 'react'
+import React, { type ReactNode } from 'react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,26 +12,26 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
-import { AlertTriangle, Trash2, Info, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, Trash2, Info, Loader2, type LucideIcon } from 'lucide-react'
 
 const VARIANT_CONFIG = {
   destructive: {
     icon: Trash2,
     iconBg: 'bg-red-100 dark:bg-red-900/30',
     iconColor: 'text-red-600 dark:text-red-400',
-    actionClass: 'bg-red-600 hover:bg-red-700 text-white',
+    actionClass: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
   },
   warning: {
     icon: AlertTriangle,
     iconBg: 'bg-amber-100 dark:bg-amber-900/30',
     iconColor: 'text-amber-600 dark:text-amber-400',
-    actionClass: 'bg-amber-600 hover:bg-amber-700 text-white',
+    actionClass: 'bg-amber-600 hover:bg-amber-700 text-white focus:ring-amber-500',
   },
   info: {
     icon: Info,
     iconBg: 'bg-blue-100 dark:bg-blue-900/30',
     iconColor: 'text-blue-600 dark:text-blue-400',
-    actionClass: 'bg-blue-600 hover:bg-blue-700 text-white',
+    actionClass: 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500',
   },
 } as const
 
@@ -43,7 +43,7 @@ interface ConfirmDialogProps {
   variant?: 'destructive' | 'warning' | 'info'
   confirmLabel?: string
   cancelLabel?: string
-  onConfirm: () => void
+  onConfirm: () => void | Promise<void>
   isLoading?: boolean
   icon?: LucideIcon
   children?: ReactNode
@@ -69,6 +69,11 @@ export function ConfirmDialog({
   const cfg = VARIANT_CONFIG[variant]
   const Icon = icon ?? cfg.icon
 
+  const handleConfirm = async () => {
+    await onConfirm()
+    onOpenChange(false)
+  }
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -91,10 +96,11 @@ export function ConfirmDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={isLoading}
             className={cn(cfg.actionClass)}
           >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isLoading ? 'Przetwarzanie...' : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>

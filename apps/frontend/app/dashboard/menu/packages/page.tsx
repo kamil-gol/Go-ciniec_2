@@ -135,7 +135,7 @@ export default function PackagesListPage() {
                           {pkg.name}
                         </h3>
                         {pkg.shortDescription && (
-                          <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2">{pkg.shortDescription}</p>
+                          <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 line-clamp-2">{pkg.shortDescription}</p>
                         )}
                       </div>
                       {pkg.icon && (
@@ -171,7 +171,7 @@ export default function PackagesListPage() {
                           <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded sm:rounded-lg flex-shrink-0">
                             <Users className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
-                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400 truncate">Dorośli</span>
+                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-300 truncate">Dorośli</span>
                         </div>
                         <div className="flex items-baseline gap-0.5">
                           <span className="text-base sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{pkg.pricePerAdult}</span>
@@ -183,7 +183,7 @@ export default function PackagesListPage() {
                           <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded sm:rounded-lg flex-shrink-0">
                             <Users className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
-                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400 truncate">Dzieci</span>
+                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-300 truncate">Dzieci</span>
                         </div>
                         <div className="flex items-baseline gap-0.5">
                           <span className="text-base sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{pkg.pricePerChild}</span>
@@ -195,7 +195,7 @@ export default function PackagesListPage() {
                           <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-green-500 to-emerald-500 rounded sm:rounded-lg flex-shrink-0">
                             <Baby className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
-                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400 truncate">Maluchy</span>
+                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-300 truncate">Maluchy</span>
                         </div>
                         <div className="flex items-baseline gap-0.5">
                           <span className="text-base sm:text-2xl font-bold text-green-600 dark:text-green-400">{pkg.pricePerToddler}</span>
@@ -208,7 +208,7 @@ export default function PackagesListPage() {
                   {/* Details */}
                   <div className="px-4 sm:px-6 py-3 sm:py-5">
                     <div className="flex items-center justify-between text-sm mb-3 sm:mb-4">
-                      <span className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 font-medium">
+                      <span className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300 font-medium">
                         <Sparkles className="w-4 h-4 text-blue-500" />
                         {(pkg as any).categorySettings?.filter((cs: any) => cs.isEnabled).length || 0} kategorii
                       </span>
@@ -219,7 +219,7 @@ export default function PackagesListPage() {
                       )}
                     </div>
                     {pkg.description && (
-                      <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 line-clamp-3 leading-relaxed">{pkg.description}</p>
+                      <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 line-clamp-3 leading-relaxed">{pkg.description}</p>
                     )}
                   </div>
 

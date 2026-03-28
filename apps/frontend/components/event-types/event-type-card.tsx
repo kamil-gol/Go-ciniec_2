@@ -129,7 +129,7 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
 
         {/* Description */}
         {eventType.description && (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4 line-clamp-2">
+          <p className="text-sm text-neutral-500 dark:text-neutral-300 mb-4 line-clamp-2">
             {eventType.description}
           </p>
         )}

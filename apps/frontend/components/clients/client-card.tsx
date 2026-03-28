@@ -93,7 +93,7 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
           <a
             href={`mailto:${client.email}`}
             className={cn(
-              'flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 transition-colors',
+              'flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300 transition-colors',
               `hover:${accent.text} dark:hover:${accent.textDark}`
             )}
             onClick={(e) => e.stopPropagation()}
@@ -106,7 +106,10 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
         {client.phone && (
           <a
             href={`tel:${client.phone}`}
-            className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+            className={cn(
+              'flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300 transition-colors',
+              `hover:${accent.text} dark:hover:${accent.textDark}`
+            )}
             onClick={(e) => e.stopPropagation()}
           >
             <Phone className="w-4 h-4 flex-shrink-0" />
@@ -115,7 +118,7 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
         )}
 
         {client.address && (
-          <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
             <MapPin className="w-4 h-4 flex-shrink-0" />
             <span className="truncate">{client.address}</span>
           </div>
@@ -140,8 +143,12 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
           <Link
             href={`/dashboard/clients/${client.id}/edit`}
             onClick={(e) => e.stopPropagation()}
-            className="p-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+            className={cn(
+              'p-2 rounded-lg text-neutral-500 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors',
+              `hover:${accent.text} dark:hover:${accent.textDark}`
+            )}
             title="Edytuj klienta"
+            aria-label="Edytuj klienta"
           >
             <Edit className="w-4 h-4" />
           </Link>
@@ -154,9 +161,10 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
                 'p-2 rounded-lg transition-colors',
                 hasReservations
                   ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500'
+                  : 'text-neutral-500 dark:text-neutral-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500'
               )}
               title={hasReservations ? 'Nie można usunąć klienta z rezerwacjami' : 'Usuń klienta'}
+              aria-label={hasReservations ? 'Nie można usunąć klienta z rezerwacjami' : 'Usuń klienta'}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -164,8 +172,12 @@ export default function ClientCard({ client, onDelete, canDelete = false }: Clie
 
           <Link
             href={`/dashboard/clients/${client.id}`}
-            className="p-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+            className={cn(
+              'p-2 rounded-lg text-neutral-500 dark:text-neutral-300 transition-colors',
+              `hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:${accent.text} dark:hover:${accent.textDark}`
+            )}
             title="Szczegóły klienta"
+            aria-label="Szczegóły klienta"
           >
             <ChevronRight className="w-4 h-4" />
           </Link>

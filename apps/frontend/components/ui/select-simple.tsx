@@ -14,13 +14,13 @@ const SelectSimple = React.forwardRef<HTMLSelectElement, SelectSimpleProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-foreground/80 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             {label}
           </label>
         )}
         <select
           className={cn(
-            'flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2',
+            'flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 shadow-sm',
             'text-sm text-foreground',
             'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent',
             'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-neutral-100 dark:disabled:bg-neutral-800',

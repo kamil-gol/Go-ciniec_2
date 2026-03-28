@@ -15,6 +15,7 @@ import { pl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { moduleAccents } from '@/lib/design-tokens';
+import { useCallback } from 'react';
 
 const accent = moduleAccents.menu;
 
@@ -29,6 +30,13 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
   const isActive = template.isActive;
   const packageCount = template.packages?.length ?? (template as any)._count?.packages;
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect?.(template);
+    }
+  }, [onSelect, template]);
+
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -36,14 +44,17 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
       transition={{ duration: 0.2 }}
     >
       <div
+        role="button"
+        tabIndex={0}
         className={cn(
-          'group rounded-2xl bg-white dark:bg-neutral-800/80 border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden',
+          'group rounded-2xl bg-white dark:bg-neutral-800/80 border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2',
           isSelected
             ? 'border-green-500 ring-2 ring-green-500/50 shadow-green-100 dark:shadow-green-900/20'
             : 'border-neutral-200/80 dark:border-neutral-700/50',
           className
         )}
         onClick={() => onSelect?.(template)}
+        onKeyDown={handleKeyDown}
       >
         <div className="p-6 space-y-4">
           {/* Header */}
@@ -66,7 +77,7 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
                   'border-0 shadow-none',
                   isActive
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
+                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
                 )}
               >
                 {isActive ? (
@@ -131,7 +142,7 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
               'border-rose-200/50 dark:border-rose-800/50'
             )}>
               <Calendar className={cn('h-4 w-4', accent.text, accent.textDark)} />
-              <span className="text-neutral-600 dark:text-neutral-400">
+              <span className="text-neutral-600 dark:text-neutral-300">
                 {format(new Date(template.validFrom), 'dd.MM.yyyy', { locale: pl })} -{' '}
                 {format(new Date(template.validTo), 'dd.MM.yyyy', { locale: pl })}
               </span>

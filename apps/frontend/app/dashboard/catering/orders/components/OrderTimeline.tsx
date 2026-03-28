@@ -135,7 +135,7 @@ function getEntryConfig(changeType: string) {
     default:
       return {
         iconBg: 'bg-neutral-100 dark:bg-neutral-800',
-        iconColor: 'text-neutral-500 dark:text-neutral-400',
+        iconColor: 'text-neutral-500 dark:text-neutral-300',
         Icon: Circle,
       };
   }
@@ -185,7 +185,7 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
                   {CHANGE_TYPE_LABEL[entry.changeType] ?? entry.changeType}
                 </p>
 
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-0.5">
                   {entryLabel(entry)}
                 </p>
 
@@ -208,7 +208,7 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
                       >
                         {getAuthorInitials(entry.changedBy)}
                       </div>
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      <span className="text-xs text-neutral-500 dark:text-neutral-300">
                         {entry.changedBy.firstName} {entry.changedBy.lastName}
                       </span>
                     </div>

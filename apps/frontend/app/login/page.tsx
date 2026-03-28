@@ -107,7 +107,7 @@ export default function LoginPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-neutral-600 dark:text-neutral-400"
+            className="text-neutral-600 dark:text-neutral-300"
           >
             System zarządzania rezerwacjami
           </motion.p>
@@ -116,8 +116,11 @@ export default function LoginPage() {
         {/* Login Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
+          animate={error
+            ? { opacity: 1, y: 0, x: [0, -8, 8, -4, 4, 0] }
+            : { opacity: 1, y: 0 }
+          }
+          transition={{ delay: 0.3, duration: error ? 0.4 : 0.5 }}
           className="relative bg-white/80 dark:bg-neutral-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-8"
         >
           <div className="mb-6">
@@ -125,7 +128,7 @@ export default function LoginPage() {
               <LogIn className="h-6 w-6 text-violet-600" />
               Zaloguj się
             </h2>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+            <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">
               Wprowadź swoje dane logowania
             </p>
           </div>
@@ -292,7 +295,7 @@ export default function LoginPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-400"
+          className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-300"
         >
           <p>&copy; 2026 Gościniec Rodzinny. Wszystkie prawa zastrzeżone.</p>
         </motion.div>

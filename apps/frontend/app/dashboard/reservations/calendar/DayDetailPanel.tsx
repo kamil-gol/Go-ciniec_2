@@ -41,7 +41,7 @@ export default function DayDetailPanel({ date, reservations, onClose, onReservat
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-neutral-100 capitalize">{dayName}</h3>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">{fullDate}</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-300">{fullDate}</p>
         </div>
         <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
           <X className="h-4 w-4 text-neutral-500" />
@@ -108,7 +108,7 @@ export default function DayDetailPanel({ date, reservations, onClose, onReservat
                               </span>
                               <StatusBadge type="reservation" status={r.status} className="text-[10px]" />
                             </div>
-                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-300">
                               <span className="flex items-center gap-1"><Users className="h-3 w-3" />{r.client?.firstName} {r.client?.lastName}</span>
                               {r.startTime && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{r.startTime}{r.endTime ? ` - ${r.endTime}` : ''}</span>}
                               {hallGroups.length <= 1 && r.hall && (

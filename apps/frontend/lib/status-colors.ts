@@ -136,7 +136,7 @@ export const depositStatusColors: Record<string, StatusColorConfig> = {
     label: 'Anulowana',
     icon: XCircle,
     bg: 'bg-neutral-50 dark:bg-neutral-800',
-    text: 'text-neutral-500 dark:text-neutral-400',
+    text: 'text-neutral-500 dark:text-neutral-300',
     border: 'border-neutral-200 dark:border-neutral-700',
     dot: 'bg-neutral-400',
     solid: 'bg-neutral-500 text-white',
@@ -169,7 +169,7 @@ export const queueStatusColors: Record<string, StatusColorConfig> = {
     label: 'Wygasła',
     icon: Timer,
     bg: 'bg-neutral-50 dark:bg-neutral-800',
-    text: 'text-neutral-500 dark:text-neutral-400',
+    text: 'text-neutral-500 dark:text-neutral-300',
     border: 'border-neutral-200 dark:border-neutral-700',
     dot: 'bg-neutral-400',
     solid: 'bg-neutral-500 text-white',
@@ -367,7 +367,7 @@ export const semanticColors = {
   },
   neutral: {
     bg: 'bg-neutral-50 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-400',
+    text: 'text-neutral-600 dark:text-neutral-300',
     border: 'border-neutral-200 dark:border-neutral-700',
   },
 } as const

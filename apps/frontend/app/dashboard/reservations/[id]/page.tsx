@@ -27,6 +27,7 @@ import {
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
 import { toast } from 'sonner'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 import { ReservationHero } from './components/ReservationHero'
 import { QuickActionsCard } from './components/QuickActionsCard'
 
@@ -176,6 +177,8 @@ export default function ReservationDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto py-6 sm:py-8 px-4 space-y-6 sm:space-y-8">
+        <Breadcrumb />
+
         {/* Read-only info banner */}
         {isReadOnly && readOnlyBannerMessage && (
           <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
@@ -202,7 +205,7 @@ export default function ReservationDetailsPage() {
             className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'details'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
             <Calendar className="h-4 w-4" />
@@ -213,7 +216,7 @@ export default function ReservationDetailsPage() {
             className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'history'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
             <History className="h-4 w-4" />

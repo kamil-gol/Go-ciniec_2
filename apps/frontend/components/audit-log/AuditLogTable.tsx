@@ -94,7 +94,7 @@ export function AuditLogTable({
               >
                 {/* Row 1: Date + Action Badge */}
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-300">
                     <Clock className="h-3.5 w-3.5 flex-shrink-0" />
                     <span className="font-medium text-neutral-900 dark:text-neutral-100">
                       {format(new Date(log.createdAt), 'dd.MM.yyyy', { locale: pl })}
@@ -120,14 +120,14 @@ export function AuditLogTable({
                       ? `${log.user.firstName} ${log.user.lastName}`
                       : 'System'}
                   </p>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 flex-shrink-0">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-300 flex-shrink-0">
                     {entityLabels[log.entityType] || log.entityType}
                   </span>
                 </div>
 
                 {/* Row 3: Description */}
                 {(log.details?.description || log.details?.reason) && (
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-300 line-clamp-2">
                     {log.details?.description || log.details?.reason}
                   </p>
                 )}
@@ -273,12 +273,12 @@ function DesktopGroupRows({
           </div>
         </TableCell>
         <TableCell>
-          <span className="text-sm text-neutral-600 dark:text-neutral-400">
+          <span className="text-sm text-neutral-600 dark:text-neutral-300">
             {entityLabels[log.entityType] || log.entityType}
           </span>
         </TableCell>
         <TableCell className="max-w-md">
-          <p className="truncate text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="truncate text-sm text-neutral-600 dark:text-neutral-300">
             {log.details?.description || log.details?.reason || '\u2014'}
           </p>
         </TableCell>

@@ -39,10 +39,10 @@ export function Breadcrumb() {
   })
 
   return (
-    <nav className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400 mb-2">
+    <nav className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-300 mb-2">
       <Link
         href="/dashboard"
-        className="flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+        className="flex items-center gap-1 hover:text-primary dark:hover:text-primary transition-colors"
       >
         <Home className="h-3.5 w-3.5" />
       </Link>
@@ -57,7 +57,7 @@ export function Breadcrumb() {
           ) : (
             <Link
               href={crumb.href}
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              className="hover:text-primary dark:hover:text-primary transition-colors"
             >
               {crumb.label}
             </Link>

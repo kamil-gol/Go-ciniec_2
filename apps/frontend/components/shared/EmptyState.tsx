@@ -99,7 +99,7 @@ export function EmptyState({
       </h3>
       {description && (
         <p className={cn(
-          'text-neutral-500 dark:text-neutral-400 max-w-sm',
+          'text-neutral-500 dark:text-neutral-300 max-w-sm',
           isCompact ? 'text-xs mb-3' : 'mb-6'
         )}>
           {description}

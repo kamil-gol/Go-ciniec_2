@@ -93,7 +93,7 @@ export default function AttachmentPanel({
                 'px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
                 filter === opt
                   ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                  : 'text-neutral-500 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
               )}
             >
               {opt === 'ALL' ? 'Wszystkie' : getCategoryLabel(opt)}
@@ -124,7 +124,7 @@ export default function AttachmentPanel({
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Paperclip className="w-10 h-10 text-neutral-300 dark:text-neutral-600 mb-2" />
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-neutral-500 dark:text-neutral-300">
               {filter !== 'ALL' ? 'Brak załączników w tej kategorii' : 'Brak załączników'}
             </p>
             {!readOnly && (

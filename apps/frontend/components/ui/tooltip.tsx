@@ -51,8 +51,8 @@ const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
         ref={ref}
         className={[
           'absolute z-50 hidden group-hover:block',
-          'rounded-md bg-popover-foreground dark:bg-popover px-2.5 py-1.5',
-          'text-xs text-popover dark:text-popover-foreground whitespace-nowrap',
+          'rounded-md bg-neutral-900 dark:bg-neutral-700 dark:border dark:border-neutral-600 px-2.5 py-1.5',
+          'text-xs text-white dark:text-neutral-100 whitespace-nowrap',
           'shadow-md pointer-events-none',
           positionClasses[side],
           className,

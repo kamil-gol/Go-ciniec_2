@@ -135,11 +135,11 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-medium truncate">{clientName}</span>
-                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 flex-shrink-0">
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 flex-shrink-0">
                               {status}
                             </span>
                           </div>
-                          <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                          <div className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5">
                             {[dateStr, r.hall?.name, r.eventType?.name].filter(Boolean).join(' • ')}
                           </div>
                         </div>
@@ -173,7 +173,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                         <div className="flex-1 min-w-0">
                           <span className="font-medium truncate">{name}</span>
                           {subtitle && (
-                            <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+                            <div className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 truncate">
                               {subtitle}
                             </div>
                           )}
@@ -201,7 +201,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                       <div className="flex-1 min-w-0">
                         <span className="font-medium">{h.name}</span>
                         {h.capacity && (
-                          <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-2">
+                          <span className="text-xs text-neutral-500 dark:text-neutral-300 ml-2">
                             do {h.capacity} osób
                           </span>
                         )}

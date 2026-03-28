@@ -7,7 +7,7 @@ import { settingsApi, Role, PermissionGroup } from '@/lib/api/settings'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { LoadingState } from '@/components/shared'
+import { Skeleton } from '@/components/ui/skeleton'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { RoleFormDialog } from './RoleFormDialog'
 
@@ -106,7 +106,19 @@ export function RolesTab() {
     fetchData()
   }
 
-  if (loading) return <LoadingState message="Ładowanie ról i uprawnień..." />
+  if (loading) return (
+    <div data-testid="loading-state" className="space-y-6">
+      {/* Header skeleton */}
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-5 w-64 rounded-lg" />
+        <Skeleton className="h-10 w-32 rounded-lg" />
+      </div>
+      {/* Role card skeletons */}
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="h-20 w-full rounded-xl" />
+      ))}
+    </div>
+  )
 
   return (
     <div className="space-y-6">

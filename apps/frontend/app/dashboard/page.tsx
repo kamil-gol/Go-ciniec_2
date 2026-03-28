@@ -43,7 +43,7 @@ const statusLabels: Record<string, { label: string; emoji: string; classes: stri
   COMPLETED: {
     label: 'Zakończone',
     emoji: '🏁',
-    classes: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
+    classes: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-300',
   },
 }
 
@@ -290,7 +290,7 @@ export default function DashboardPage() {
           {isLoadingUpcoming ? (
             Array.from({ length: 3 }).map((_, i) => <SkeletonEvent key={i} />)
           ) : upcomingError ? (
-            <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
+            <div className="text-center py-8 text-neutral-500 dark:text-neutral-300">
               <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">Nie udało się pobrać nadchodzących wydarzeń</p>
             </div>
@@ -337,14 +337,14 @@ export default function DashboardPage() {
                         {statusInfo.emoji} {statusInfo.label}
                       </span>
                     </div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-300">
                       {clientName}
                       {event.startTime && ` • ${event.startTime}`}
                       {event.hall && ` • ${event.hall.name}`}
                       {event.guests > 0 && ` • ${event.guests} os.`}
                     </p>
                     {Number(event.totalPrice) > 0 && (
-                      <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+                      <p className="text-xs text-neutral-600 dark:text-neutral-300 mt-1">
                         💰 Wartość: {formatCurrency(Number(event.totalPrice))}
                       </p>
                     )}
@@ -365,7 +365,7 @@ export default function DashboardPage() {
               )
             })
           ) : (
-            <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
+            <div className="text-center py-8 text-neutral-500 dark:text-neutral-300">
               <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">Brak nadchodzących wydarzeń</p>
               <Link

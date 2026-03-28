@@ -77,9 +77,9 @@ describe('CreateClientForm', () => {
       expect(screen.getByText('Dodaj klienta')).toBeInTheDocument()
     })
 
-    it('should show section heading "Dane osobowe" for individual', () => {
+    it('should show section heading "Dane podstawowe" for individual', () => {
       render(<CreateClientForm />)
-      expect(screen.getByText('Dane osobowe')).toBeInTheDocument()
+      expect(screen.getByText('Dane podstawowe')).toBeInTheDocument()
     })
   })
 

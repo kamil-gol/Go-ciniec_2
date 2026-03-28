@@ -60,7 +60,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             className="h-12 w-12 rounded-full border-4 border-indigo-500 dark:border-indigo-400 border-t-transparent mx-auto"
           />
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">Ładowanie...</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-300 font-medium">Ładowanie...</p>
         </div>
       </div>
     )
@@ -84,9 +84,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Page Content */}
         <main className="min-h-[calc(100vh-4rem)]">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
           >
             {children}
           </motion.div>

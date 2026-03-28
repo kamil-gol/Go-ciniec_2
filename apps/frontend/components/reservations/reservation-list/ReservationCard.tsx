@@ -5,8 +5,9 @@ import { formatCurrency } from '@/lib/utils'
 import {
   Trash2, Archive, ArchiveRestore, FileText, Eye,
   Users, Baby, Smile, Clock, DollarSign, Building2, User,
-  Phone, Mail, Loader2,
+  Phone, Mail, Loader2, XCircle,
 } from 'lucide-react'
+import React from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -66,7 +67,7 @@ export function ReservationCard({
               <div className="font-semibold text-lg text-neutral-900 dark:text-neutral-100">
                 {getFormattedTimeRange(reservation)}
               </div>
-              <div className="text-sm text-neutral-500 dark:text-neutral-400">
+              <div className="text-sm text-neutral-500 dark:text-neutral-300">
                 {reservation.eventType?.name || 'Inne wydarzenie'}
                 {reservation.customEventType && ` - ${reservation.customEventType}`}
               </div>
@@ -87,18 +88,52 @@ export function ReservationCard({
           </div>
         </div>
 
+        {/* Mini status progress */}
+        {reservation.status === 'CANCELLED' ? (
+          <div className="flex items-center gap-1 mt-2">
+            <XCircle className="h-3.5 w-3.5 text-red-500" />
+            <span className="text-xs text-red-500">Anulowana</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-0.5 mt-2">
+            {[
+              { done: true, label: 'Utworzona' },
+              { done: ['CONFIRMED', 'COMPLETED'].includes(reservation.status), label: 'Potwierdzona' },
+              { done: reservation.status === 'COMPLETED', label: 'Zrealizowana' },
+            ].map((step, i, arr) => (
+              <React.Fragment key={i}>
+                <div
+                  className={cn(
+                    'h-2 w-2 rounded-full transition-colors',
+                    step.done ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-600'
+                  )}
+                  title={step.label}
+                />
+                {i < arr.length - 1 && (
+                  <div
+                    className={cn(
+                      'h-0.5 w-4 transition-colors',
+                      step.done && arr[i + 1].done ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-600'
+                    )}
+                  />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+
         <div className="my-4 border-t border-neutral-200/50 dark:border-neutral-700/30" />
 
         {/* Details Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
               <Building2 className="h-3 w-3" /> Sala
             </div>
             <div className="font-medium text-neutral-900 dark:text-neutral-100">{reservation.hall?.name || 'N/A'}</div>
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
               <User className="h-3 w-3" /> Klient
             </div>
             <div className="font-medium text-neutral-900 dark:text-neutral-100">
@@ -108,7 +143,7 @@ export function ReservationCard({
             </div>
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
               <Users className="h-3 w-3" /> Goscie
             </div>
             <div className="flex items-center gap-2">
@@ -116,7 +151,7 @@ export function ReservationCard({
               {(guestInfo.adults > 0 || guestInfo.childrenCount > 0 || guestInfo.toddlers > 0) && (
                 <div className="flex gap-2 text-xs">
                   {guestInfo.adults > 0 && (
-                    <div className="flex items-center gap-0.5 text-neutral-500 dark:text-neutral-400" title="Dorosli">
+                    <div className="flex items-center gap-0.5 text-neutral-500 dark:text-neutral-300" title="Dorosli">
                       <Users className="w-3 h-3" />{guestInfo.adults}
                     </div>
                   )}
@@ -135,7 +170,7 @@ export function ReservationCard({
             </div>
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
               <DollarSign className="h-3 w-3" /> Wartosc
             </div>
             <div className="font-bold text-lg text-green-600 dark:text-green-400">
@@ -152,7 +187,7 @@ export function ReservationCard({
         {/* Actions Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-3 border-t border-neutral-200/50 dark:border-neutral-700/30">
           {reservation.client && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-300">
               {reservation.client.phone && (
                 <div className="flex items-center gap-1">
                   <Phone className="h-3 w-3" />{reservation.client.phone}
@@ -169,7 +204,7 @@ export function ReservationCard({
 
           <div className="flex gap-1 self-end sm:self-auto">
             <Link href={`/dashboard/reservations/${reservation.id}`}>
-              <Button size="sm" variant="ghost" title="Zobacz szczegóły i edytuj" className="rounded-lg">
+              <Button size="sm" variant="ghost" title="Zobacz szczegóły i edytuj" aria-label="Zobacz szczegóły i edytuj" className="rounded-lg">
                 <Eye className="w-4 h-4" />
               </Button>
             </Link>
@@ -178,6 +213,7 @@ export function ReservationCard({
               variant="ghost"
               onClick={() => handlers.onPdf(reservation.id)}
               title="Generuj PDF"
+              aria-label="Generuj PDF"
               className="rounded-lg"
               disabled={isPdfGenerating}
             >
@@ -193,6 +229,7 @@ export function ReservationCard({
                 variant="ghost"
                 onClick={() => handlers.onArchive(reservation.id)}
                 title="Zarchiwizuj"
+                aria-label="Zarchiwizuj"
                 disabled={!['CANCELLED', 'COMPLETED'].includes(reservation.status)}
                 className="rounded-lg"
               >
@@ -204,6 +241,7 @@ export function ReservationCard({
                 variant="ghost"
                 onClick={() => handlers.onUnarchive(reservation.id)}
                 title="Przywróć z archiwum"
+                aria-label="Przywróć z archiwum"
                 className="rounded-lg text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
               >
                 <ArchiveRestore className="w-4 h-4" />
@@ -214,6 +252,7 @@ export function ReservationCard({
               variant="ghost"
               onClick={() => handlers.onDelete(reservation.id, reservation.status)}
               title="Anuluj rezerwację"
+              aria-label="Anuluj rezerwację"
               disabled={reservation.status === 'CANCELLED' || reservation.status === 'COMPLETED'}
               className="rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
             >

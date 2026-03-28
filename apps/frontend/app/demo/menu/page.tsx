@@ -52,7 +52,7 @@ export default function MenuDemoPage() {
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
             \uD83C\uDFA8 Menu Components Demo
           </h1>
-          <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+          <p className="mt-2 text-neutral-600 dark:text-neutral-300">
             Interactive showcase of all menu system components
           </p>
 
@@ -92,7 +92,7 @@ export default function MenuDemoPage() {
                 <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
                   1. MenuCard
                 </h2>
-                <p className="text-neutral-600 dark:text-neutral-400">
+                <p className="text-neutral-600 dark:text-neutral-300">
                   Display menu templates with event type and validity
                 </p>
               </div>
@@ -121,7 +121,7 @@ export default function MenuDemoPage() {
                   <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
                     2. PackageCard
                   </h2>
-                  <p className="text-neutral-600 dark:text-neutral-400">
+                  <p className="text-neutral-600 dark:text-neutral-300">
                     Display pricing packages with included items
                   </p>
                 </div>
@@ -143,7 +143,7 @@ export default function MenuDemoPage() {
                 <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
                   3. PriceBreakdown
                 </h2>
-                <p className="text-neutral-600 dark:text-neutral-400">
+                <p className="text-neutral-600 dark:text-neutral-300">
                   Display detailed price calculation
                 </p>
               </div>
@@ -172,7 +172,7 @@ export default function MenuDemoPage() {
 
       {/* Footer Info */}
       <div className="border-t border-neutral-200 bg-white py-8 dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="container mx-auto px-4 text-center text-sm text-neutral-600 dark:text-neutral-400">
+        <div className="container mx-auto px-4 text-center text-sm text-neutral-600 dark:text-neutral-300">
           <p>
             \uD83D\uDCDA Documentation:{' '}
             <a

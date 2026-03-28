@@ -59,7 +59,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Dania</h3>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-neutral-500 dark:text-neutral-300">
               {state.items.length > 0
                 ? `${state.items.length} ${state.items.length === 1 ? 'pozycja' : state.items.length < 5 ? 'pozycje' : 'pozycji'} · ${formatPln(totalDishes)}`
                 : 'Dodaj pozycje menu do zamówienia'}
@@ -80,7 +80,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
               <div className="w-16 h-16 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-3">
                 <Utensils className="w-7 h-7 text-green-400 dark:text-green-500" />
               </div>
-              <p className="font-semibold text-neutral-500 dark:text-neutral-400">Brak dań</p>
+              <p className="font-semibold text-neutral-500 dark:text-neutral-300">Brak dań</p>
               <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-1">
                 Możesz dodać je teraz lub uzupełnić później
               </p>
@@ -168,7 +168,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Usługi dodatkowe</h3>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-neutral-500 dark:text-neutral-300">
               {state.extras.length > 0
                 ? `${state.extras.length} ${state.extras.length === 1 ? 'pozycja' : state.extras.length < 5 ? 'pozycje' : 'pozycji'} · ${formatPln(totalExtras)}`
                 : 'Obsługa kelnerska, wynajem sprzętu, dekoracje…'}
@@ -189,7 +189,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
               <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-3">
                 <Star className="w-7 h-7 text-amber-400 dark:text-amber-500" />
               </div>
-              <p className="font-semibold text-neutral-500 dark:text-neutral-400">Brak usług dodatkowych</p>
+              <p className="font-semibold text-neutral-500 dark:text-neutral-300">Brak usług dodatkowych</p>
               <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-1">
                 Kelnerzy, wynajem sprzętu, dekoracje…
               </p>

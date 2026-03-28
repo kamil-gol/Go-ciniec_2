@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { User, Building2, Mail, Phone, Calendar, ChevronRight, ShieldCheck, ShieldAlert, Trash2, Star } from 'lucide-react'
+import { User, Building2, Mail, Phone, Calendar, ChevronRight, ShieldCheck, ShieldAlert, Trash2, Star, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
+import { EmptyState } from '@/components/shared'
 import type { ClientType, ClientContact } from '@/types'
 
 const accent = moduleAccents.clients
@@ -47,22 +48,15 @@ export function ClientsList({ clients, searchQuery, rodoMap = {} }: ClientsListP
 
   if (filteredClients.length === 0) {
     return (
-      <div className="text-center py-16">
-        <div className={cn(
-          'w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center mx-auto mb-4 shadow-md',
-          accent.iconBg
-        )}>
-          <User className="h-8 w-8 text-white" />
-        </div>
-        <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-          {searchQuery ? 'Nie znaleziono klientów' : 'Brak klientów'}
-        </h3>
-        <p className="text-neutral-500 dark:text-neutral-400">
-          {searchQuery
-            ? 'Spróbuj zmienić kryteria wyszukiwania'
-            : 'Dodaj pierwszego klienta, aby rozpocząć'}
-        </p>
-      </div>
+      <EmptyState
+        icon={searchQuery ? User : UserPlus}
+        title={searchQuery ? 'Nie znaleziono klientów' : 'Brak klientów'}
+        description={searchQuery
+          ? 'Spróbuj zmienić kryteria wyszukiwania lub wyczyść filtr, aby zobaczyć wszystkich klientów.'
+          : 'Nie masz jeszcze żadnych klientów w bazie. Dodaj pierwszego klienta, aby rozpocząć zarządzanie kontaktami.'}
+        actionLabel={searchQuery ? undefined : 'Dodaj klienta'}
+        actionHref={searchQuery ? undefined : '/dashboard/clients?create=true'}
+      />
     )
   }
 
@@ -149,7 +143,7 @@ export function ClientsList({ clients, searchQuery, rodoMap = {} }: ClientsListP
 
                     {/* Company: show contact person name */}
                     {!isDeleted && isCompany && (
-                      <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400">
+                      <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-300">
                         <User className="h-3 w-3" />
                         <span>{client.firstName} {client.lastName}</span>
                         {primaryContact && (
@@ -163,7 +157,7 @@ export function ClientsList({ clients, searchQuery, rodoMap = {} }: ClientsListP
                     )}
 
                     {/* Contact details */}
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500 dark:text-neutral-400">
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500 dark:text-neutral-300">
                       {client.email && !isDeleted && (
                         <span
                           role="link"

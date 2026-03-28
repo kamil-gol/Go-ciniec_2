@@ -171,14 +171,16 @@ export default function EventTypesPage() {
         <EmptyState
           icon={Theater}
           title={search ? 'Nie znaleziono typów' : 'Brak typów wydarzeń'}
-          description={search ? 'Spróbuj użyć innego wyszukiwania' : 'Dodaj pierwszy typ wydarzenia, aby zacząć'}
+          description={search
+            ? 'Żaden typ wydarzenia nie pasuje do wyszukiwania. Spróbuj użyć innej frazy.'
+            : 'Nie masz jeszcze żadnych typów wydarzeń. Dodaj pierwszy typ, aby móc kategoryzować rezerwacje (np. wesele, komunia, chrzciny).'}
           actionLabel={search ? undefined : 'Dodaj Pierwszy Typ'}
           onAction={search ? undefined : handleCreate}
         />
       ) : (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-neutral-500 dark:text-neutral-300">
               Znaleziono <span className="font-bold text-neutral-900 dark:text-neutral-100">{filteredTypes.length}</span>{' '}
               {filteredTypes.length === 1 ? 'typ' : filteredTypes.length < 5 ? 'typy' : 'typów'}
             </p>

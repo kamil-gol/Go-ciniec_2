@@ -7,7 +7,7 @@ import { settingsApi, CompanySettings, UpdateCompanyInput } from '@/lib/api/sett
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { LoadingState } from '@/components/shared'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function CompanyTab() {
   const [, setSettings] = useState<CompanySettings | null>(null)
@@ -50,7 +50,29 @@ export function CompanyTab() {
     }
   }
 
-  if (loading) return <LoadingState message="Ładowanie ustawień firmy..." />
+  if (loading) return (
+    <div data-testid="loading" className="rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 p-6 lg:p-8 space-y-6">
+      {/* Header skeleton */}
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-10 w-10 rounded-xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-32 rounded-lg" />
+          <Skeleton className="h-4 w-64 rounded-lg" />
+        </div>
+      </div>
+      {/* Form fields skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-4 w-24 rounded" />
+            <Skeleton className="h-10 w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
+      {/* Save button skeleton */}
+      <Skeleton className="h-10 w-32 rounded-lg" />
+    </div>
+  )
 
   return (
     <div className="rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 p-6 lg:p-8">

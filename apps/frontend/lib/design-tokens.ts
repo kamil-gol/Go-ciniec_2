@@ -101,7 +101,7 @@ export const moduleAccents: Record<string, ModuleAccent> = {
     gradientSubtle: 'from-neutral-500/5 via-neutral-500/5 to-neutral-500/5',
     iconBg: 'from-neutral-500 to-neutral-500',
     text: 'text-neutral-600',
-    textDark: 'dark:text-neutral-400',
+    textDark: 'dark:text-neutral-300',
     ring: 'ring-neutral-500/20',
     badge: 'bg-neutral-100 dark:bg-neutral-900/30',
     badgeText: 'text-neutral-700 dark:text-neutral-300',
@@ -167,7 +167,7 @@ export const moduleAccents: Record<string, ModuleAccent> = {
     gradientSubtle: 'from-neutral-500/5 via-neutral-500/5 to-neutral-500/5',
     iconBg: 'from-neutral-500 to-neutral-600',
     text: 'text-neutral-600',
-    textDark: 'dark:text-neutral-400',
+    textDark: 'dark:text-neutral-300',
     ring: 'ring-neutral-500/20',
     badge: 'bg-neutral-100 dark:bg-neutral-900/30',
     badgeText: 'text-neutral-700 dark:text-neutral-300',
@@ -261,4 +261,21 @@ export const shadows = {
   cardHover: 'hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/30',
   modal: 'shadow-lg dark:shadow-2xl dark:shadow-black/40',
   hero: 'shadow-none',
+} as const
+
+export const motionTokens = {
+  duration: {
+    instant: 0.1,
+    fast: 0.2,
+    normal: 0.3,
+    slow: 0.5,
+  },
+  ease: {
+    default: 'easeOut' as const,
+    smooth: [0.4, 0, 0.2, 1] as const,
+  },
+  stagger: {
+    cards: 0.06,
+    list: 0.04,
+  },
 } as const

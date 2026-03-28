@@ -211,7 +211,7 @@ export default function DishCategoriesPage() {
         <EmptyState
           icon={Tags}
           title="Brak kategorii"
-          description="Dodaj pierwszą kategorię dań"
+          description="Nie masz jeszcze żadnych kategorii dań. Dodaj pierwszą kategorię, aby móc organizować dania w menu (np. zupy, przystawki, dania główne)."
           actionLabel="Dodaj kategorię"
           onAction={handleCreate}
         />

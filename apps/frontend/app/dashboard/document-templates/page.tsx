@@ -278,13 +278,15 @@ export default function DocumentTemplatesPage() {
             <EmptyState
               icon={ScrollText}
               title="Brak szablonów"
-              description="Uruchom seed aby utworzyć domyślne szablony lub dodaj nowy szablon"
+              description="Nie ma jeszcze żadnych szablonów dokumentów. Dodaj nowy szablon, aby rozpocząć tworzenie dokumentów PDF, e-mail i regulaminów."
+              actionLabel="Dodaj nowy szablon"
+              onAction={openCreateDialog}
             />
           ) : filteredCategories.length === 0 ? (
             <EmptyState
               icon={Search}
               title="Nie znaleziono"
-              description="Spróbuj użyć innego wyszukiwania"
+              description="Żaden szablon nie pasuje do wyszukiwania. Spróbuj użyć innej frazy lub zmień filtr kategorii."
             />
           ) : (
             <div className="space-y-8">

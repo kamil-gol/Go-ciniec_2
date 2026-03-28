@@ -3,6 +3,8 @@
 import { Client } from '@/types'
 import { Users, UserPlus, Calendar } from 'lucide-react'
 import { useMemo } from 'react'
+import { cn } from '@/lib/utils'
+import { moduleAccents } from '@/lib/design-tokens'
 import { StatCard } from '@/components/shared/StatCard'
 
 interface ClientStatsProps {
@@ -39,6 +41,9 @@ export default function ClientStats({ clients, isLoading = false }: ClientStatsP
       label: 'Wszyscy klienci',
       value: stats.totalClients,
       icon: Users,
+      iconBg: moduleAccents.clients.badge,
+      iconColor: `${moduleAccents.clients.text} ${moduleAccents.clients.textDark}`,
+      valueColor: `${moduleAccents.clients.text} ${moduleAccents.clients.textDark}`,
       iconGradient: 'from-violet-500 to-purple-500',
     },
     {

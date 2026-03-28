@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { FormSection } from '@/components/shared/FormSection'
 import { createClient } from '@/lib/api/clients'
 import type { ClientType } from '@/types'
 import { toast } from 'sonner'
@@ -121,7 +122,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold transition-all ${
               clientType === 'INDIVIDUAL'
                 ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-500'
-                : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
             }`}
           >
             <User className="h-5 w-5" />
@@ -133,7 +134,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold transition-all ${
               clientType === 'COMPANY'
                 ? 'border-purple-500 bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-500'
-                : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
             }`}
           >
             <Building2 className="h-5 w-5" />
@@ -245,12 +246,11 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
       )}
 
       {/* Personal Info */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-lg font-semibold">
-          <User className="h-5 w-5 text-orange-600" />
-          <span>{isCompany ? 'Osoba reprezentująca' : 'Dane osobowe'}</span>
-        </div>
-        
+      <FormSection
+        title={isCompany ? 'Osoba reprezentująca' : 'Dane podstawowe'}
+        description="Imię i nazwisko klienta"
+        icon={User}
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="firstName" className="text-base font-semibold">
@@ -284,15 +284,14 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
             />
           </div>
         </div>
-      </div>
+      </FormSection>
 
       {/* Contact Info */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-lg font-semibold">
-          <Phone className="h-5 w-5 text-blue-600" />
-          <span>Dane kontaktowe</span>
-        </div>
-        
+      <FormSection
+        title="Kontakt"
+        description="Email i numer telefonu"
+        icon={Phone}
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-base font-semibold flex items-center gap-2">
@@ -328,15 +327,14 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
             />
           </div>
         </div>
-      </div>
+      </FormSection>
 
       {/* Notes */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-lg font-semibold">
-          <FileText className="h-5 w-5 text-purple-600" />
-          <span>Notatki</span>
-        </div>
-        
+      <FormSection
+        title="Dodatkowe"
+        description="Notatki i inne informacje"
+        icon={FileText}
+      >
         <div className="space-y-2">
           <Label htmlFor="notes" className="text-base font-semibold">
             Dodatkowe informacje
@@ -351,7 +349,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
             className="text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 resize-none"
           />
         </div>
-      </div>
+      </FormSection>
 
       {/* Actions */}
       <div className="flex gap-3 pt-4">

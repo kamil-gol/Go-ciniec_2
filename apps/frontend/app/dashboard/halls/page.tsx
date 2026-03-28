@@ -113,14 +113,16 @@ export default function HallsPage() {
         <EmptyState
           icon={Building2}
           title={search ? 'Nie znaleziono sal' : 'Brak sal'}
-          description={search ? 'Spróbuj użyć innego wyszukiwania' : 'Dodaj pierwszą salę, aby zacząć'}
+          description={search
+            ? 'Żadna sala nie pasuje do wyszukiwania. Spróbuj użyć innej frazy.'
+            : 'Nie masz jeszcze żadnych sal w systemie. Dodaj pierwszą salę, aby rozpocząć zarządzanie rezerwacjami.'}
           actionLabel={search ? undefined : 'Dodaj Pierwszą Salę'}
-          onAction={search ? undefined : () => window.location.href = '/dashboard/halls/new'}
+          actionHref={search ? undefined : '/dashboard/halls/new'}
         />
       ) : (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-neutral-500 dark:text-neutral-300">
               Znaleziono <span className="font-bold text-neutral-900 dark:text-neutral-100">{filteredHalls.length}</span> {filteredHalls.length === 1 ? 'salę' : 'sal'}
             </p>
           </div>
