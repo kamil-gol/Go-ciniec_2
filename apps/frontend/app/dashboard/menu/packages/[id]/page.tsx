@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PackageForm from '@/components/menu/PackageForm';
 import { getPackageById, type MenuPackage } from '@/lib/api/menu-packages-api';
+import { LoadingState } from '@/components/shared/LoadingState';
 
 export default function EditPackagePage() {
   const params = useParams();
@@ -35,10 +36,7 @@ export default function EditPackagePage() {
   if (loading) {
     return (
       <div className="p-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-neutral-200 rounded w-1/4"></div>
-          <div className="h-64 bg-neutral-200 rounded"></div>
-        </div>
+        <LoadingState variant="skeleton" count={2} />
       </div>
     );
   }

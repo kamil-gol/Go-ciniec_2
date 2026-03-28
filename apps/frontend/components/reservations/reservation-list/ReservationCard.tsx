@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
+import { StatusBadge } from '@/components/shared/StatusBadge'
+import { formatCurrency } from '@/lib/utils'
 import {
   Trash2, Archive, ArchiveRestore, FileText, Eye,
   Users, Baby, Smile, Clock, DollarSign, Building2, User,
@@ -82,9 +83,7 @@ export function ReservationCard({
             <ContractBadge hasContract={hasContract} />
             <ExtrasBadge extrasCount={reservation.extrasCount} extrasTotalPrice={reservation.extrasTotalPrice} />
             <DepositBadge deposits={resDeposits} />
-            <Badge className={getStatusColor(reservation.status)}>
-              {getStatusLabel(reservation.status)}
-            </Badge>
+            <StatusBadge type="reservation" status={reservation.status} />
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import { ArrowLeft, Edit, Trash2, Calendar, FileText, Theater, CheckCircle2, Clo
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { LoadingState } from '@/components/shared/LoadingState'
 import { Switch } from '@/components/ui/switch'
 import {
   getEventTypeById,
@@ -64,11 +65,8 @@ export default function EventTypeDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-fuchsia-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Wczytywanie...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <LoadingState message="Wczytywanie typu wydarzenia..." />
       </div>
     )
   }
