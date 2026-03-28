@@ -533,20 +533,22 @@ test.describe('SV-04: Przycisk "Zobacz Kalendarz" — spójny gradient (#394)', 
     await page.goto('/dashboard/halls');
     await waitForPageStable(page);
 
+    // Szukaj tylko przycisków "Zobacz Kalendarz" na kartach (z bg-gradient-to-r)
     const gradients = await page.evaluate(() => {
-      const buttons = document.querySelectorAll('a[href*="/dashboard/halls/"] button');
-      return Array.from(buttons).map(btn => {
-        const classes = btn.className;
-        // Wyciągnij klasy gradientu
-        const gradientMatch = classes.match(/from-[\w-]+ to-[\w-]+/);
-        return gradientMatch ? gradientMatch[0] : classes;
-      });
+      const buttons = document.querySelectorAll('button');
+      const ctaGradients: string[] = [];
+      for (const btn of buttons) {
+        if (btn.textContent?.includes('Zobacz Kalendarz') && btn.className.includes('bg-gradient')) {
+          const match = btn.className.match(/from-\[#[\da-f]+\].*?to-\[#[\da-f]+\]/);
+          ctaGradients.push(match ? match[0] : 'gradient');
+        }
+      }
+      return ctaGradients;
     });
 
     if (gradients.length >= 2) {
-      // Wszystkie przyciski powinny mieć ten sam gradient
       const uniqueGradients = [...new Set(gradients)];
-      expect(uniqueGradients.length, `Znaleziono różne gradienty: ${JSON.stringify(uniqueGradients)}`).toBe(1);
+      expect(uniqueGradients.length, `Różne gradienty na kartach sal: ${JSON.stringify(uniqueGradients)}`).toBe(1);
     }
   });
 });
