@@ -37,12 +37,20 @@ async function waitForPageStable(page: import('@playwright/test').Page) {
 }
 
 async function toggleDarkMode(page: import('@playwright/test').Page) {
+  // next-themes toggle — aria-label zmienia się w zależności od stanu
   const themeToggle = page.locator(
-    'button[aria-label*="ciemny"], button[aria-label*="jasny"], button[aria-label*="motyw"]'
+    'button[aria-label="Przełącz na ciemny motyw"], button[aria-label="Przełącz na jasny motyw"]'
   );
-  if (await themeToggle.isVisible({ timeout: 3000 }).catch(() => false)) {
+  if (await themeToggle.isVisible({ timeout: 5000 }).catch(() => false)) {
     await themeToggle.click();
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1000);
+  } else {
+    // Fallback: wymuś dark mode przez JS
+    await page.evaluate(() => {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    });
+    await page.waitForTimeout(500);
   }
 }
 
@@ -137,8 +145,9 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
     await waitForPageStable(page);
 
     // Kliknij "Dodaj klienta"
-    const addBtn = page.locator('button:has-text("Dodaj klienta"), a:has-text("Dodaj klienta")');
-    await addBtn.first().click();
+    // Przycisk w PageHero — szukamy po tekście wewnątrz
+    const addBtn = page.getByRole('button', { name: /Dodaj klienta/i });
+    await addBtn.click();
     await waitForPageStable(page);
 
     // Przełącz na firmę
@@ -157,8 +166,9 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
     await waitForPageStable(page);
 
     // Dodaj klienta
-    const addBtn = page.locator('button:has-text("Dodaj klienta"), a:has-text("Dodaj klienta")');
-    await addBtn.first().click();
+    // Przycisk w PageHero — szukamy po tekście wewnątrz
+    const addBtn = page.getByRole('button', { name: /Dodaj klienta/i });
+    await addBtn.click();
     await waitForPageStable(page);
 
     // Przełącz na firmę
@@ -192,8 +202,9 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
     await page.goto('/dashboard/clients');
     await waitForPageStable(page);
 
-    const addBtn = page.locator('button:has-text("Dodaj klienta"), a:has-text("Dodaj klienta")');
-    await addBtn.first().click();
+    // Przycisk w PageHero — szukamy po tekście wewnątrz
+    const addBtn = page.getByRole('button', { name: /Dodaj klienta/i });
+    await addBtn.click();
     await waitForPageStable(page);
 
     await page.locator('button:has-text("Firma")').click();
