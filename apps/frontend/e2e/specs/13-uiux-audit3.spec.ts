@@ -42,17 +42,23 @@ async function ensureLoggedIn(page: import('@playwright/test').Page) {
   // Jeśli już zalogowany (przekierowanie na dashboard)
   if (!page.url().includes('/login')) return;
 
-  // Wyczyść pola i wpisz dane — type() triggeruje onChange (fill() nie zawsze)
-  const emailInput = page.locator('input[name="email"]');
-  await emailInput.click();
-  await emailInput.fill('');
-  await emailInput.type(ADMIN_EMAIL, { delay: 10 });
+  // Set values via React's internal mechanism (dispatchEvent with input event)
+  await page.evaluate(({ email, password }) => {
+    function setNativeValue(element: HTMLInputElement, value: string) {
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype, 'value'
+      )!.set!;
+      nativeInputValueSetter.call(element, value);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement;
+    const passInput = document.querySelector('input[name="password"]') as HTMLInputElement;
+    if (emailInput) setNativeValue(emailInput, email);
+    if (passInput) setNativeValue(passInput, password);
+  }, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
 
-  const passInput = page.locator('input[name="password"]');
-  await passInput.click();
-  await passInput.fill('');
-  await passInput.type(ADMIN_PASSWORD, { delay: 10 });
-
+  await page.waitForTimeout(500);
   await page.click('button[type="submit"]');
 
   // Czekaj na redirect do dashboard
