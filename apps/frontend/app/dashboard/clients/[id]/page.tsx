@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { LoadingState } from '@/components/shared/LoadingState'
 import { getClientById, deleteClient } from '@/lib/api/clients'
 import Link from 'next/link'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
@@ -68,11 +69,8 @@ export default function ClientDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Wczytywanie...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <LoadingState message="Wczytywanie klienta..." />
       </div>
     )
   }

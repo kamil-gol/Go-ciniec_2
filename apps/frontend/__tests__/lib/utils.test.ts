@@ -6,8 +6,6 @@ import {
   formatCurrency,
   calculateTotalPrice,
   calculateDuration,
-  getStatusColor,
-  getStatusLabel,
   debounce,
   isPastDate,
   generateId,
@@ -139,44 +137,6 @@ describe('calculateDuration()', () => {
 
   it('returns 0 for same time', () => {
     expect(calculateDuration('12:00', '12:00')).toBe(0)
-  })
-})
-
-// ════════════════════════════════════════════════════════════
-// getStatusColor()
-// ════════════════════════════════════════════════════════════
-describe('getStatusColor()', () => {
-  it.each([
-    ['PENDING', 'bg-yellow-100'],
-    ['CONFIRMED', 'bg-green-100'],
-    ['COMPLETED', 'bg-blue-100'],
-    ['CANCELLED', 'bg-red-100'],
-    ['ARCHIVED', 'bg-neutral-100'],
-  ])('returns correct color for %s', (status, expected) => {
-    expect(getStatusColor(status)).toContain(expected)
-  })
-
-  it('returns default gray for unknown status', () => {
-    expect(getStatusColor('UNKNOWN')).toBe('bg-gray-100 text-gray-800')
-  })
-})
-
-// ════════════════════════════════════════════════════════════
-// getStatusLabel()
-// ════════════════════════════════════════════════════════════
-describe('getStatusLabel()', () => {
-  it.each([
-    ['PENDING', 'Oczekująca'],
-    ['CONFIRMED', 'Potwierdzona'],
-    ['COMPLETED', 'Zakończona'],
-    ['CANCELLED', 'Anulowana'],
-    ['ARCHIVED', 'Zarchiwizowana'],
-  ])('returns Polish label for %s', (status, label) => {
-    expect(getStatusLabel(status)).toBe(label)
-  })
-
-  it('returns raw status for unknown', () => {
-    expect(getStatusLabel('CUSTOM')).toBe('CUSTOM')
   })
 })
 

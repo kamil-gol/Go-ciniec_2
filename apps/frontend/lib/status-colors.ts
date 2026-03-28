@@ -273,16 +273,50 @@ export const cateringStatusColors: Record<string, StatusColorConfig> = {
 }
 
 // ============================================
+// SERVICE EXTRAS STATUSES
+// ============================================
+export const extrasStatusColors: Record<string, StatusColorConfig> = {
+  PENDING: {
+    label: 'Oczekuje',
+    icon: Clock,
+    bg: 'bg-amber-50 dark:bg-amber-900/30',
+    text: 'text-amber-700 dark:text-amber-300',
+    border: 'border-amber-200 dark:border-amber-800',
+    dot: 'bg-amber-500',
+    solid: 'bg-amber-500 text-white',
+  },
+  CONFIRMED: {
+    label: 'Potwierdzone',
+    icon: CheckCircle2,
+    bg: 'bg-emerald-50 dark:bg-emerald-900/30',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-200 dark:border-emerald-800',
+    dot: 'bg-emerald-500',
+    solid: 'bg-emerald-500 text-white',
+  },
+  CANCELLED: {
+    label: 'Anulowane',
+    icon: XCircle,
+    bg: 'bg-neutral-50 dark:bg-neutral-800',
+    text: 'text-neutral-500 dark:text-neutral-400',
+    border: 'border-neutral-200 dark:border-neutral-700',
+    dot: 'bg-neutral-400',
+    solid: 'bg-neutral-500 text-white',
+  },
+}
+
+// ============================================
 // UNIFIED LOOKUP
 // ============================================
 
-export type StatusType = 'reservation' | 'deposit' | 'queue' | 'catering'
+export type StatusType = 'reservation' | 'deposit' | 'queue' | 'catering' | 'extras'
 
 const STATUS_MAPS: Record<StatusType, Record<string, StatusColorConfig>> = {
   reservation: reservationStatusColors,
   deposit: depositStatusColors,
   queue: queueStatusColors,
   catering: cateringStatusColors,
+  extras: extrasStatusColors,
 }
 
 const FALLBACK: StatusColorConfig = {

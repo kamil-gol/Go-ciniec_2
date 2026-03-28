@@ -29,7 +29,8 @@ import {
 } from '@/hooks/use-service-extras';
 import type { ExtraStatus } from '@/types/service-extra.types';
 import { toast } from 'sonner';
-import { STATUS_CONFIG, formatExtraPriceDetails } from './extras-panel/extras-panel.config';
+import { formatExtraPriceDetails } from './extras-panel/extras-panel.config';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 import { AddExtraDialog } from './extras-panel/AddExtraDialog';
 
 interface ReservationExtrasPanelProps {
@@ -183,8 +184,6 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
             ) : (
               <div className="space-y-2">
                 {extras.map((extra) => {
-                  const statusCfg = STATUS_CONFIG[extra.status as ExtraStatus] || STATUS_CONFIG.PENDING;
-                  const StatusIcon = statusCfg.icon;
                   const canEditQuantity = !readOnly && extra.priceType !== 'FREE' && extra.status !== 'CANCELLED' && !extra.serviceItem?.category?.isExclusive;
                   const isEditingThisNote = editingNoteId === extra.id;
                   const isSavingThisNote = savingNoteId === extra.id;
@@ -209,10 +208,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
                               <span className="text-sm font-semibold truncate">
                                 {extra.serviceItem?.name || 'Nieznana pozycja'}
                               </span>
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${statusCfg.className}`}>
-                                <StatusIcon className="h-2.5 w-2.5" />
-                                {statusCfg.label}
-                              </span>
+                              <StatusBadge type="extras" status={extra.status} />
                             </div>
                             <div className="text-xs text-muted-foreground mt-0.5">
                               <span className="font-semibold">{formatExtraPriceDetails(extra)}</span>

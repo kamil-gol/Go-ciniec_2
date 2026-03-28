@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { ErrorState } from '@/components/shared/ErrorState'
+import { LoadingState } from '@/components/shared/LoadingState'
 import { useClient, useUpdateClient } from '@/lib/api/clients'
 import type { ClientType } from '@/types'
 import Link from 'next/link'
@@ -117,11 +118,8 @@ export default function EditClientPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Wczytywanie...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <LoadingState message="Wczytywanie klienta..." />
       </div>
     )
   }

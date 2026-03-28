@@ -23,13 +23,13 @@ import { toast } from 'sonner'
 import Link from 'next/link'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  statusConfig,
   paymentMethodIcons,
   getDaysLabel,
   formatDate,
   suggestDueDate,
   type ReservationDepositsSectionProps,
 } from './deposits-section/deposits-config'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import { DeletePaidDepositDialog } from './deposits-section/DeletePaidDepositDialog'
 import { CreateDepositDialog } from './deposits-section/CreateDepositDialog'
 import { MarkAsPaidDialog } from './deposits-section/MarkAsPaidDialog'
@@ -293,8 +293,6 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
           {!loading && deposits.length > 0 && (
             <div className="space-y-3">
               {deposits.map((deposit) => {
-                const status = statusConfig[deposit.status]
-                const StatusIcon = status?.icon || Clock
                 const isPending = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
                 const isPaid = deposit.status === 'PAID'
                 const isCancelled = deposit.status === 'CANCELLED'
@@ -324,10 +322,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
                           </span>
                         )}
                       </div>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${status?.className || ''}`}>
-                        <StatusIcon className="h-3 w-3" />
-                        {status?.label || deposit.status}
-                      </span>
+                      <StatusBadge type="deposit" status={deposit.status} />
                     </div>
 
                     {/* Row 2: Due date + Payment method */}

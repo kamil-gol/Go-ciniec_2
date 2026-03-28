@@ -18,7 +18,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useReservations, useUnarchiveReservation } from '@/lib/api/reservations'
-import { formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
@@ -198,11 +199,7 @@ export default function ArchivePage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap justify-end flex-shrink-0">
-                          <Badge
-                            className={getStatusColor(reservation.status)}
-                          >
-                            {getStatusLabel(reservation.status)}
-                          </Badge>
+                          <StatusBadge type="reservation" status={reservation.status} />
                           {reservation.archivedAt && (
                             <span className="text-xs text-neutral-400 dark:text-neutral-500 hidden sm:inline">
                               Zarchiwizowano:{' '}

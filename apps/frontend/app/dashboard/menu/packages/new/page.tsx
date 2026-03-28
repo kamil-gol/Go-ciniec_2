@@ -7,7 +7,7 @@ import { getMenuTemplates, type MenuTemplate } from '@/lib/api/menu-templates-ap
 import { Package, Calendar, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { PageLayout } from '@/components/shared';
+import { PageLayout, LoadingState } from '@/components/shared';
 import { Breadcrumb } from '@/components/shared/Breadcrumb';
 
 export default function NewPackagePage() {
@@ -83,14 +83,7 @@ export default function NewPackagePage() {
   if (loading) {
     return (
       <PageLayout narrowContent>
-        <div className="animate-pulse space-y-6">
-          <div className="h-12 bg-neutral-200 dark:bg-neutral-800 rounded-xl w-1/3"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2].map((i) => (
-              <div key={i} className="h-48 bg-neutral-200 dark:bg-neutral-800 rounded-2xl"></div>
-            ))}
-          </div>
-        </div>
+        <LoadingState variant="skeleton" count={2} />
       </PageLayout>
     );
   }
