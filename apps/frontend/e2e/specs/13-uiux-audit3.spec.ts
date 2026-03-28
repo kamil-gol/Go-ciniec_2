@@ -18,7 +18,7 @@ import { manualLogin as login } from '../fixtures/auth.fixture';
  *   ... --update-snapshots
  */
 
-const ADMIN_EMAIL = 'admin@gosciniecrodzinny.pl';
+const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl';
 const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || '';
 
 if (!ADMIN_PASSWORD) {
@@ -36,11 +36,17 @@ async function waitForPageStable(page: import('@playwright/test').Page) {
 }
 
 async function ensureLoggedIn(page: import('@playwright/test').Page) {
-  // Sprawdź czy już zalogowany (cookies z poprzedniego testu)
   await page.goto('/dashboard', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  await page.waitForTimeout(2000);
+  // Czekaj na ewentualny redirect do /login
+  await page.waitForTimeout(3000);
   if (page.url().includes('/login')) {
-    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
+    // Zaloguj się
+    await page.fill('input[name="email"]', ADMIN_EMAIL);
+    await page.fill('input[name="password"]', ADMIN_PASSWORD);
+    await page.click('button[type="submit"]');
+    // Czekaj na dashboard
+    await page.waitForURL(/\/dashboard/, { timeout: 30_000, waitUntil: 'domcontentloaded' }).catch(() => {});
+    await page.waitForTimeout(2000);
   }
 }
 
