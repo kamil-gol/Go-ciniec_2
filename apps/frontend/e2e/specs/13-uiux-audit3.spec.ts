@@ -37,16 +37,26 @@ async function waitForPageStable(page: import('@playwright/test').Page) {
 
 async function ensureLoggedIn(page: import('@playwright/test').Page) {
   await page.goto('/dashboard', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  // Czekaj na ewentualny redirect do /login
   await page.waitForTimeout(3000);
-  if (page.url().includes('/login')) {
-    // Zaloguj się
+
+  // Retry login up to 2 times
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (!page.url().includes('/login')) break;
     await page.fill('input[name="email"]', ADMIN_EMAIL);
     await page.fill('input[name="password"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
-    // Czekaj na dashboard
-    await page.waitForURL(/\/dashboard/, { timeout: 30_000, waitUntil: 'domcontentloaded' }).catch(() => {});
-    await page.waitForTimeout(2000);
+    try {
+      await page.waitForURL(/\/dashboard/, { timeout: 30_000, waitUntil: 'domcontentloaded' });
+      break;
+    } catch {
+      // Retry
+      await page.waitForTimeout(2000);
+    }
+  }
+
+  // Final check
+  if (page.url().includes('/login')) {
+    throw new Error(`Login failed for ${ADMIN_EMAIL} — still on login page`);
   }
 }
 
@@ -155,13 +165,10 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
   });
 
   test('NIP ma czerwoną gwiazdkę (*) w trybie firma', async ({ page }) => {
-    await page.goto('/dashboard/clients');
+    await page.goto('/dashboard/clients', { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await waitForPageStable(page);
 
-    // Kliknij "Dodaj klienta"
-    // Przycisk w PageHero — szukamy po tekście widocznym na stronie
-    await page.goto('/dashboard/clients');
-    await waitForPageStable(page);
+    // Przycisk w PageHero
     const addBtn = page.locator('button', { hasText: 'Dodaj klienta' });
     await addBtn.waitFor({ state: 'visible', timeout: 30_000 });
     await addBtn.click();
@@ -179,13 +186,9 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
   });
 
   test('submit bez NIP pokazuje błąd walidacji', async ({ page }) => {
-    await page.goto('/dashboard/clients');
+    await page.goto('/dashboard/clients', { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await waitForPageStable(page);
 
-    // Dodaj klienta
-    // Przycisk w PageHero — szukamy po tekście widocznym na stronie
-    await page.goto('/dashboard/clients');
-    await waitForPageStable(page);
     const addBtn = page.locator('button', { hasText: 'Dodaj klienta' });
     await addBtn.waitFor({ state: 'visible', timeout: 30_000 });
     await addBtn.click();
@@ -219,12 +222,9 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
   });
 
   test('screenshot: formularz firma z błędem walidacji', async ({ page }) => {
-    await page.goto('/dashboard/clients');
+    await page.goto('/dashboard/clients', { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await waitForPageStable(page);
 
-    // Przycisk w PageHero — szukamy po tekście widocznym na stronie
-    await page.goto('/dashboard/clients');
-    await waitForPageStable(page);
     const addBtn = page.locator('button', { hasText: 'Dodaj klienta' });
     await addBtn.waitFor({ state: 'visible', timeout: 30_000 });
     await addBtn.click();
