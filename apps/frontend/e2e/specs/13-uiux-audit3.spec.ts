@@ -610,21 +610,21 @@ test.describe('SP-01/MB-02: StatCard responsive na mobile (#377, #383)', () => {
     expect(statCardClasses, 'StatCard value powinien mieć text-2xl sm:text-3xl').not.toBeNull();
   });
 
-  test('StatCard label ma line-clamp-2 + title', async ({ page }) => {
+  test('StatCard label ma title tooltip', async ({ page }) => {
     await page.goto('/dashboard');
     await waitForPageStable(page);
 
-    const hasLineClamp = await page.evaluate(() => {
-      const labels = document.querySelectorAll('p');
+    const hasTitle = await page.evaluate(() => {
+      const labels = document.querySelectorAll('p[title]');
       for (const label of labels) {
-        if (label.className.includes('line-clamp-2') && label.getAttribute('title') && label.className.includes('font-medium')) {
+        if (label.className.includes('font-medium') && label.getAttribute('title')) {
           return true;
         }
       }
       return false;
     });
 
-    expect(hasLineClamp, 'StatCard label powinien mieć line-clamp-2 + title').toBe(true);
+    expect(hasTitle, 'StatCard label powinien mieć title tooltip').toBe(true);
   });
 
   test('StatCard ikona ma responsive rozmiar', async ({ page }) => {
@@ -738,32 +738,27 @@ test.describe('#398: StatCard — line-clamp-2, responsive font, spacing', () =>
     await ensureLoggedIn(page);
   });
 
-  test('StatCard label ma line-clamp-2 zamiast truncate', async ({ page }) => {
+  test('StatCard ikona jest absolute (nie zabiera miejsca tekstu)', async ({ page }) => {
     await page.goto('/dashboard');
     await waitForPageStable(page);
 
-    const hasLineClamp = await page.evaluate(() => {
-      const labels = document.querySelectorAll('p');
-      for (const p of labels) {
-        if (p.className.includes('line-clamp-2') && p.className.includes('font-medium')) {
-          return true;
-        }
-      }
-      return false;
+    const hasAbsoluteIcon = await page.evaluate(() => {
+      const icons = document.querySelectorAll('[class*="absolute"][class*="rounded-xl"][class*="bg-gradient"]');
+      return icons.length > 0;
     });
 
-    expect(hasLineClamp, 'StatCard label powinien mieć line-clamp-2').toBe(true);
+    expect(hasAbsoluteIcon, 'StatCard ikona powinna być absolute positioned').toBe(true);
   });
 
-  test('StatCard label NIE ma truncate', async ({ page }) => {
+  test('StatCard label NIE jest ucięty (brak truncate na label)', async ({ page }) => {
     await page.goto('/dashboard');
     await waitForPageStable(page);
 
     const hasTruncateOnLabel = await page.evaluate(() => {
-      const labels = document.querySelectorAll('p.truncate');
+      const labels = document.querySelectorAll('p');
       for (const p of labels) {
-        if (p.className.includes('font-medium') && p.className.includes('text-neutral-500')) {
-          return true; // BAD — truncate still present on stat label
+        if (p.className.includes('truncate') && p.className.includes('font-medium') && p.className.includes('text-neutral-500')) {
+          return true; // BAD — truncate on stat label
         }
       }
       return false;
