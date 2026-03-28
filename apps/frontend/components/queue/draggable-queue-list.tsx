@@ -45,6 +45,7 @@ export function DraggableQueueList({
   // ✨ BUG #6 FIX: Add loading state
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [announcement, setAnnouncement] = useState('')
 
   // Sync with parent when items change
   if (items !== localItems && !activeId && !isLoading) {
@@ -105,6 +106,10 @@ export function DraggableQueueList({
       setIsLoading(true)
       setError(null)
 
+      // Announce position change for screen readers
+      const movedItem = itemsWithNewPositions[newIndex]
+      setAnnouncement(`${movedItem.client.firstName} ${movedItem.client.lastName} przeniesiony na pozycję ${movedItem.position}`)
+
       try {
         await onReorder(itemsWithNewPositions)
         // Success - keep optimistic update
@@ -137,6 +142,10 @@ export function DraggableQueueList({
     setLocalItems(withPositions)
     setIsLoading(true)
     setError(null)
+
+    // Announce for screen readers
+    const movedItem = withPositions[toIndex]
+    setAnnouncement(`${movedItem.client.firstName} ${movedItem.client.lastName} przeniesiony na pozycję ${movedItem.position}`)
     try {
       await onReorder(withPositions)
     } catch (err: any) {
@@ -181,6 +190,11 @@ export function DraggableQueueList({
 
   return (
     <div className="relative">
+      {/* Screen reader announcement for position changes */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {announcement}
+      </div>
+
       {/* ✨ BUG #6 FIX: Loading overlay */}
       {isLoading && (
         <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">

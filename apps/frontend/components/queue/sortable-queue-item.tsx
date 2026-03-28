@@ -125,7 +125,7 @@ export function SortableQueueItem({
           </div>
 
           {/* Move Up/Down Buttons (keyboard alternative to drag) */}
-          <div className="flex flex-col gap-0.5 opacity-0 group-hover/queue-item:opacity-100 focus-within:opacity-100 transition-opacity">
+          <div className="flex flex-col gap-0.5 opacity-100 sm:opacity-0 sm:group-hover/queue-item:opacity-100 focus-within:opacity-100 transition-opacity">
             {onMoveUp && !isFirst && (
               <Button
                 variant="ghost"
