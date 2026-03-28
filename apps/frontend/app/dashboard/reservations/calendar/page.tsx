@@ -411,7 +411,7 @@ export default function CalendarPage() {
                         </div>
                         <div className="space-y-2 mt-2">
                           {dayReservations.map((r) => {
-                            const status = STATUS_CONFIG[r.status]
+                            const status = reservationStatusColors[r.status]
                             const clientName = r.client
                               ? `${r.client.firstName} ${r.client.lastName}`
                               : 'Klient'
@@ -428,7 +428,7 @@ export default function CalendarPage() {
                                     {r.startTime} - {r.endTime}
                                   </span>
                                   {status && (
-                                    <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full', status.bgClass)}>
+                                    <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full', status.bg, status.text)}>
                                       {status.label}
                                     </span>
                                   )}
