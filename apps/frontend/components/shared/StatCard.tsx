@@ -105,14 +105,14 @@ export function StatCard({
       <div className="relative">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-300 leading-tight truncate" title={label}>
+            <p className="text-xs sm:text-sm font-medium text-neutral-500 dark:text-neutral-300 leading-tight line-clamp-2" title={label}>
               {label}
             </p>
-            <p className="mt-2 text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+            <p className="mt-1.5 text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">
               {value}
             </p>
             {(change || subtitle) && (
-              <div className="mt-2 flex items-center gap-1.5">
+              <div className="mt-2.5 flex items-center gap-1.5">
                 {change && (
                   <>
                     {changeType === 'positive' && <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />}

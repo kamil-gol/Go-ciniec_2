@@ -60,7 +60,7 @@ export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, b
       <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
       <div className="absolute -bottom-12 -left-12 w-56 h-56 bg-white/5 rounded-full blur-3xl" />
 
-      <div className="relative z-10 p-4 sm:p-8">
+      <div className="relative z-10 p-4 sm:p-6 lg:p-8">
         {/* Back navigation */}
         {backHref && (
           <Link
@@ -75,7 +75,7 @@ export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, b
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
           {/* Left: Icon + Title */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-5">
               <div className="p-2.5 sm:p-3.5 bg-white/15 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg">
                 <Icon className="h-7 w-7 sm:h-9 sm:w-9" />
               </div>
@@ -95,7 +95,7 @@ export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, b
                   return (
                     <div
                       key={stat.label}
-                      className="flex items-center gap-2 sm:gap-3 bg-white/10 backdrop-blur-sm px-3 sm:px-5 py-2 sm:py-3 rounded-xl border border-white/15 hover:bg-white/15 transition-colors"
+                      className="flex items-center gap-2 sm:gap-3 bg-white/10 backdrop-blur-sm px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-white/15 hover:bg-white/15 transition-colors"
                     >
                       <StatIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white/80" />
                       <div>

@@ -120,7 +120,7 @@ export default function ClientDetailsPage() {
         />
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <Card className="relative overflow-hidden border-0 shadow-lg">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10" />
             <CardContent className="relative p-6">
@@ -183,7 +183,7 @@ export default function ClientDetailsPage() {
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
+        <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-full sm:w-fit">
           <button
             onClick={() => setActiveTab('details')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
@@ -247,14 +247,14 @@ export default function ClientDetailsPage() {
 
               <Card className="border-0 shadow-xl">
                 <CardHeader className="border-b">
-                  <CardTitle className="text-lg">Szybkie akcje</CardTitle>
+                  <CardTitle className="text-lg mb-3">Szybkie akcje</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 space-y-2">
+                <CardContent className="p-4 space-y-3">
                   {!isDeleted && (
                     <>
                       <Link href={`/dashboard/reservations/new?clientId=${client.id}`}>
                         <Button variant="outline" className="w-full justify-start" size="lg">
-                          <Calendar className="mr-2 h-4 w-4" />
+                          <Calendar className="mr-2 h-4 w-4 flex-shrink-0" />
                           Nowa rezerwacja
                         </Button>
                       </Link>
@@ -264,7 +264,7 @@ export default function ClientDetailsPage() {
                         size="lg"
                         onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
                       >
-                        <Edit className="mr-2 h-4 w-4" />
+                        <Edit className="mr-2 h-4 w-4 flex-shrink-0" />
                         Edytuj dane
                       </Button>
                     </>
@@ -277,7 +277,7 @@ export default function ClientDetailsPage() {
                       disabled={deleting}
                       onClick={() => setShowDeleteModal(true)}
                     >
-                      <Trash2 className="mr-2 h-4 w-4" />
+                      <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
                       Usuń klienta
                     </Button>
                   )}

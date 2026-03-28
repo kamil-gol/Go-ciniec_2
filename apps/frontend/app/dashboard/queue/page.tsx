@@ -252,7 +252,7 @@ export default function QueuePage() {
       {/* Queue List */}
       <Card>
         <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-4 sm:p-8`}>
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6">
             <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>
               <Clock className="h-5 w-5 text-white" />
             </div>
@@ -266,6 +266,7 @@ export default function QueuePage() {
               </p>
             </div>
           </div>
+
 
           {/* Date Tabs — horizontal scroll on mobile */}
           <div className="flex flex-nowrap sm:flex-wrap gap-2 mb-6 overflow-x-auto pb-2 sm:pb-0 -mx-1 px-1 scrollbar-thin">
@@ -290,7 +291,7 @@ export default function QueuePage() {
 
           {/* Info Alert */}
           {isDragDropDisabled && queues.length > 0 && (
-            <Alert className="mb-6 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
+            <Alert className="mb-4 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
               <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <AlertDescription className="text-blue-800 dark:text-blue-300 text-sm">
                 Zmiana kolejności dostępna tylko w widoku pojedynczej daty. Wybierz konkretną datę aby przeciągać karty.

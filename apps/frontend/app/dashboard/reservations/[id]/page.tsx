@@ -238,7 +238,7 @@ export default function ReservationDetailsPage() {
         <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
           <button
             onClick={() => setActiveTab('details')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'details'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
                 : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
@@ -249,7 +249,7 @@ export default function ReservationDetailsPage() {
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'history'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
                 : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
@@ -267,7 +267,7 @@ export default function ReservationDetailsPage() {
             <div className="lg:col-span-2 space-y-6">
               {/* Client Info (read-only) */}
               <Card className="shadow-sm border border-border">
-                <div className="bg-card p-5 sm:p-6">
+                <div className="bg-card p-4 sm:p-6 lg:p-8">
                   <div className="flex items-center gap-3 mb-5 sm:mb-6">
                     <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg shadow-sm">
                       <User className="h-5 w-5 text-white" />

@@ -162,7 +162,7 @@ export default function DepositsPage() {
       )}
 
       {showCreateForm && (
-        <Card className="overflow-hidden animate-in slide-in-from-top-4 duration-300">
+        <Card className="overflow-hidden mb-6 animate-in slide-in-from-top-4 duration-300">
           <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-4 sm:p-8`}>
             <div className="flex items-center gap-3 mb-6">
               <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>

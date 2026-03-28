@@ -34,8 +34,8 @@ export function QuickActionsCard({
   return (
     <Card className="border-0 shadow-xl">
       <div className="p-5 sm:p-6">
-        <h3 className="text-lg font-bold mb-4">Szybkie akcje</h3>
-        <div className="space-y-2">
+        <h3 className="text-lg font-bold mb-3">Szybkie akcje</h3>
+        <div className="space-y-3">
           <Button
             variant="outline"
             className="w-full justify-start"
@@ -43,7 +43,7 @@ export function QuickActionsCard({
             onClick={onDownloadPDF}
             disabled={downloading}
           >
-            <Download className="mr-2 h-4 w-4" />
+            <Download className="mr-2 h-4 w-4 flex-shrink-0" />
             {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
           </Button>
 
@@ -55,7 +55,7 @@ export function QuickActionsCard({
               disabled={archivePending || isReadOnly}
               onClick={onArchive}
             >
-              <Archive className="mr-2 h-4 w-4" />
+              <Archive className="mr-2 h-4 w-4 flex-shrink-0" />
               {archivePending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwacje'}
             </Button>
           ) : (
@@ -66,7 +66,7 @@ export function QuickActionsCard({
               disabled={unarchivePending}
               onClick={onUnarchive}
             >
-              <ArchiveRestore className="mr-2 h-4 w-4" />
+              <ArchiveRestore className="mr-2 h-4 w-4 flex-shrink-0" />
               {unarchivePending ? 'Przywracanie...' : 'Przywroc z archiwum'}
             </Button>
           )}
@@ -78,7 +78,7 @@ export function QuickActionsCard({
             disabled={!isCancellable || cancelPending || isReadOnly}
             onClick={onCancel}
           >
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
             {cancelPending ? 'Anulowanie...' : 'Anuluj rezerwacje'}
           </Button>
         </div>

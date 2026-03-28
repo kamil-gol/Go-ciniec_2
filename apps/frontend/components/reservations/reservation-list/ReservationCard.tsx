@@ -128,14 +128,14 @@ export function ReservationCard({
         {/* Details Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
-              <Building2 className="h-3 w-3" /> Sala
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
+              <Building2 className="h-3 w-3 flex-shrink-0" /> Sala
             </div>
             <div className="font-medium text-neutral-900 dark:text-neutral-100">{reservation.hall?.name || 'N/A'}</div>
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
-              <User className="h-3 w-3" /> Klient
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
+              <User className="h-3 w-3 flex-shrink-0" /> Klient
             </div>
             <div className="font-medium text-neutral-900 dark:text-neutral-100">
               {reservation.client
@@ -144,8 +144,8 @@ export function ReservationCard({
             </div>
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
-              <Users className="h-3 w-3" /> Goście
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
+              <Users className="h-3 w-3 flex-shrink-0" /> Goście
             </div>
             <div className="flex items-center gap-2">
               <div className="font-medium text-neutral-900 dark:text-neutral-100">{guestInfo.total}</div>
