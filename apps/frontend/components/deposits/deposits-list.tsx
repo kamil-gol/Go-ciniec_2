@@ -321,7 +321,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                   <TableCell>
                     {deposit.paymentMethod ? (() => {
                       const config = paymentMethodConfig[deposit.paymentMethod as PaymentMethod]
-                      if (!config) return <span className="text-sm text-neutral-400 dark:text-neutral-500">{'\u2014'}</span>
+                      if (!config) return <span className="text-sm text-neutral-400 dark:text-neutral-500">—</span>
                       const Icon = config.icon
                       return (
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`}>
@@ -330,7 +330,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                         </span>
                       )
                     })() : (
-                      <span className="text-sm text-neutral-300 dark:text-neutral-400">{'\u2014'}</span>
+                      <span className="text-sm text-neutral-300 dark:text-neutral-400">—</span>
                     )}
                   </TableCell>
 

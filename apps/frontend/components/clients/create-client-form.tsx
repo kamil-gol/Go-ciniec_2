@@ -19,6 +19,7 @@ interface CreateClientFormProps {
 export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps) {
   const [loading, setLoading] = useState(false)
   const [clientType, setClientType] = useState<ClientType>('INDIVIDUAL')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -38,20 +39,28 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.firstName || !formData.lastName || !formData.phone) {
-      toast.error('Wypełnij wszystkie wymagane pola')
-      return
-    }
+    const errors: Record<string, string> = {}
+
+    if (!formData.firstName) errors.firstName = 'Imię jest wymagane'
+    if (!formData.lastName) errors.lastName = 'Nazwisko jest wymagane'
+    if (!formData.phone) errors.phone = 'Telefon jest wymagany'
 
     if (isCompany && !formData.companyName) {
-      toast.error('Podaj nazwę firmy')
-      return
+      errors.companyName = 'Nazwa firmy jest wymagana'
     }
 
     if (isCompany && !formData.nip) {
-      toast.error('NIP jest wymagany dla klienta firmowego')
+      errors.nip = 'NIP jest wymagany dla klienta firmowego'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      const firstError = Object.values(errors)[0]
+      toast.error(firstError)
       return
     }
+
+    setFieldErrors({})
 
     try {
       setLoading(true)
@@ -113,6 +122,14 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const next = { ...prev }
+        delete next[name]
+        return next
+      })
+    }
   }
 
   return (
@@ -168,8 +185,12 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
                 onChange={handleChange}
                 placeholder="np. Budimex S.A."
                 aria-required="true"
-                className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
+                aria-invalid={!!fieldErrors.companyName}
+                className={`h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 ${fieldErrors.companyName ? 'border-red-500 dark:border-red-400' : ''}`}
               />
+              {fieldErrors.companyName && (
+                <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.companyName}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -184,8 +205,12 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
                 onChange={handleChange}
                 placeholder="1234567890"
                 aria-required="true"
-                className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
+                aria-invalid={!!fieldErrors.nip}
+                className={`h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 ${fieldErrors.nip ? 'border-red-500 dark:border-red-400' : ''}`}
               />
+              {fieldErrors.nip && (
+                <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.nip}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -270,8 +295,12 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
               placeholder="Jan"
               required
               aria-required="true"
-              className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500"
+              aria-invalid={!!fieldErrors.firstName}
+              className={`h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500 ${fieldErrors.firstName ? 'border-red-500 dark:border-red-400' : ''}`}
             />
+            {fieldErrors.firstName && (
+              <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.firstName}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -286,8 +315,12 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
               placeholder="Kowalski"
               required
               aria-required="true"
-              className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500"
+              aria-invalid={!!fieldErrors.lastName}
+              className={`h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500 ${fieldErrors.lastName ? 'border-red-500 dark:border-red-400' : ''}`}
             />
+            {fieldErrors.lastName && (
+              <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.lastName}</p>
+            )}
           </div>
         </div>
       </FormSection>
@@ -329,8 +362,12 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
               placeholder="+48 123 456 789"
               required
               aria-required="true"
-              className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-blue-500"
+              aria-invalid={!!fieldErrors.phone}
+              className={`h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-blue-500 ${fieldErrors.phone ? 'border-red-500 dark:border-red-400' : ''}`}
             />
+            {fieldErrors.phone && (
+              <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.phone}</p>
+            )}
           </div>
         </div>
       </FormSection>
