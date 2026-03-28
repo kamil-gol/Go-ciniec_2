@@ -5,7 +5,7 @@ import {
   Phone,
   ChevronRight,
 } from 'lucide-react';
-import { SectionCard } from './SectionCard';
+import { SectionCard } from '@/components/shared/SectionCard';
 import { getInitials } from './types';
 import type { CateringOrder } from './types';
 

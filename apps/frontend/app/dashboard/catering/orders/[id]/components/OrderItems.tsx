@@ -1,5 +1,5 @@
 import { Utensils, Star, CalendarDays } from 'lucide-react';
-import { SectionCard, CountBadge, Field } from './SectionCard';
+import { SectionCard, CountBadge, Field } from '@/components/shared/SectionCard';
 import { formatPrice } from './types';
 import type { CateringOrder } from './types';
 

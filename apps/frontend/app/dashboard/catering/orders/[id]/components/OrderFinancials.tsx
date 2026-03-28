@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import {
   useUpdateCateringDeposit,
 } from '@/hooks/use-catering-orders';
-import { SectionCard } from './SectionCard';
+import { SectionCard } from '@/components/shared/SectionCard';
 import { formatPrice, formatDatePl, iconBtnEdit, iconBtnDelete } from './types';
 import type { CateringOrder, CateringDeposit } from './types';
 

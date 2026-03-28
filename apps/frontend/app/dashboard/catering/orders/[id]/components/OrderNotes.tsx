@@ -1,6 +1,6 @@
 import { FileText, History } from 'lucide-react';
 import { OrderTimeline } from '../../components/OrderTimeline';
-import { SectionCard } from './SectionCard';
+import { SectionCard } from '@/components/shared/SectionCard';
 import type { CateringOrder } from './types';
 
 interface OrderNotesProps {
