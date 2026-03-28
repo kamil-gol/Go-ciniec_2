@@ -2,6 +2,7 @@
 // FIX: Cast doc as any for _fragment (pdfkit internal method not in @types/pdfkit).
 
 import type { MenuPreparationsReport } from '@/types/reports.types';
+import { COLORS } from './pdf/pdf.types';
 
 export interface PDFContext {
   doc: PDFKit.PDFDocument;
@@ -12,18 +13,11 @@ export interface PDFContext {
   restaurantEmail: string;
 }
 
-const COLORS = {
-  primary: '#1a2332',
-  primaryLight: '#2c3e50',
-  accent: '#8e44ad',
-  textDark: '#1a2332',
-  textMuted: '#7f8c8d',
-  textLight: '#bdc3c7',
-  border: '#dce1e8',
-  bgLight: '#f4f6f9',
-  bgWhite: '#ffffff',
-  reservationBg: '#EDE9FE',
-};
+/**
+ * Menu preparations uses purple as accent color (not gold).
+ * We alias COLORS.purple as the accent for this builder.
+ */
+const ACCENT = COLORS.purple;
 
 const PAGE_WIDTH = 595.28;
 const PAGE_HEIGHT = 841.89;
@@ -168,8 +162,8 @@ function renderReservationCard(
   for (const course of res.courses) {
     // #166: portionTarget label next to course name
     const ptLabel = portionTargetLabel((course as any).portionTarget);
-    doc.rect(x + innerPad, y, 2, 9).fill(COLORS.accent);
-    doc.font(ctx.boldFont).fontSize(7).fillColor(COLORS.accent);
+    doc.rect(x + innerPad, y, 2, 9).fill(ACCENT);
+    doc.font(ctx.boldFont).fontSize(7).fillColor(ACCENT);
     doc.text(`${course.courseName.toUpperCase()}${ptLabel}`, x + innerPad + 6, y + 1, { width: textWidth - 6 });
     y = doc.y + 2;
 
@@ -208,7 +202,7 @@ export function buildMenuPreparationsReportPDF(
   // HEADER BANNER
   const bannerHeight = 65;
   doc.rect(0, 0, PAGE_WIDTH, bannerHeight).fill(COLORS.primary);
-  doc.rect(0, bannerHeight - 3, PAGE_WIDTH, 3).fill(COLORS.accent);
+  doc.rect(0, bannerHeight - 3, PAGE_WIDTH, 3).fill(ACCENT);
 
   doc.fillColor('#ffffff').fontSize(18).font(ctx.boldFont);
   doc.text(ctx.restaurantName, LEFT, 14, { width: W - 150 });
@@ -225,7 +219,7 @@ export function buildMenuPreparationsReportPDF(
   const badgeHeight = 22;
   const badgeX = PAGE_WIDTH - badgeWidth - LEFT;
   const badgeY = 20;
-  doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 4).fill(COLORS.accent);
+  doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 4).fill(ACCENT);
   doc.fillColor('#ffffff').fontSize(9).font(ctx.boldFont);
   doc.text('MENU', badgeX, badgeY + 6, { width: badgeWidth, align: 'center' });
 
@@ -286,7 +280,7 @@ export function buildMenuPreparationsReportPDF(
       ensureSpace(doc, dayBlockHeight);
 
       doc.rect(LEFT, doc.y, W, 16).fill(COLORS.primaryLight);
-      doc.rect(LEFT, doc.y, 4, 16).fill(COLORS.accent);
+      doc.rect(LEFT, doc.y, 4, 16).fill(ACCENT);
       doc.font(ctx.boldFont).fontSize(9).fillColor('#ffffff');
       doc.text(day.dateLabel, LEFT + 12, doc.y + 4, { width: W - 24 });
       doc.y += 17;
@@ -335,7 +329,7 @@ export function buildMenuPreparationsReportPDF(
       ensureSpace(doc, minDayHeight);
 
       doc.rect(LEFT, doc.y, W, 16).fill(COLORS.primaryLight);
-      doc.rect(LEFT, doc.y, 4, 16).fill(COLORS.accent);
+      doc.rect(LEFT, doc.y, 4, 16).fill(ACCENT);
       doc.font(ctx.boldFont).fontSize(9).fillColor('#ffffff');
       doc.text(day.dateLabel, LEFT + 12, doc.y + 4, { width: W - 24 });
       doc.y += 17;
@@ -346,7 +340,7 @@ export function buildMenuPreparationsReportPDF(
         const ptLabel = (course as any).dishes?.length > 0 ? portionTargetLabel((course as any).dishes[0]?.portionTarget) : '';
 
         doc.rect(LEFT, doc.y, W, 11).fill(COLORS.bgLight);
-        doc.font(ctx.boldFont).fontSize(6.5).fillColor(COLORS.accent);
+        doc.font(ctx.boldFont).fontSize(6.5).fillColor(ACCENT);
         doc.text(`${course.courseName.toUpperCase()}${ptLabel}`, LEFT + 8, doc.y + 3);
         doc.y += 13;
 
