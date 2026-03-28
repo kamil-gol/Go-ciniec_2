@@ -24,6 +24,7 @@ import {
 import { PackageCard } from './components/PackageCard';
 import { PackageForm } from './components/PackageForm';
 import type { CateringPackage } from '@/types/catering.types';
+import { statGradients, layout } from '@/lib/design-tokens';
 import type { ModuleAccent } from '@/lib/design-tokens';
 
 const CATERING_ACCENT: ModuleAccent = {
@@ -85,13 +86,13 @@ export default function PackagesPage() {
       />
 
       {/* StatCards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
+      <div className={layout.statGrid3}>
         <StatCard
           label="Pakiety"
           value={stats.total}
           subtitle="Wszystkich pakietów"
           icon={Package}
-          iconGradient="from-orange-500 to-amber-500"
+          iconGradient={statGradients.count}
           delay={0.1}
         />
         <StatCard
@@ -99,7 +100,7 @@ export default function PackagesPage() {
           value={stats.active}
           subtitle="Gotowe do użycia"
           icon={BadgeCheck}
-          iconGradient="from-emerald-500 to-teal-500"
+          iconGradient={statGradients.success}
           delay={0.2}
         />
         <StatCard
@@ -107,7 +108,7 @@ export default function PackagesPage() {
           value={stats.sections}
           subtitle="Sekcji dań łącznie"
           icon={Layers}
-          iconGradient="from-violet-500 to-purple-500"
+          iconGradient={statGradients.info}
           delay={0.3}
         />
       </div>

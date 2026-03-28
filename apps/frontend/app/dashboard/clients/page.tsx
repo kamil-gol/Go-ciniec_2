@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { PageHero, StatCard, LoadingState } from '@/components/shared'
 import { FilterTabs } from '@/components/shared/FilterTabs'
 import { ClientsList } from '@/components/clients/clients-list'
@@ -73,11 +73,11 @@ export default function ClientsPage() {
       />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard label="Wszyscy" value={stats.all} icon={Users} iconGradient="from-violet-500 to-purple-500" />
-        <StatCard label="Osoby prywatne" value={stats.individuals} icon={User} iconGradient="from-blue-500 to-cyan-500" />
-        <StatCard label="Firmy" value={stats.companies} icon={Building2} iconGradient="from-purple-500 to-pink-500" />
-        <StatCard label="Rezerwacje" value={stats.totalReservations} icon={TrendingUp} iconGradient="from-green-500 to-emerald-500" />
+      <div className={layout.statGrid}>
+        <StatCard label="Wszyscy" value={stats.all} icon={Users} iconGradient={statGradients.count} />
+        <StatCard label="Osoby prywatne" value={stats.individuals} icon={User} iconGradient={statGradients.count} />
+        <StatCard label="Firmy" value={stats.companies} icon={Building2} iconGradient={statGradients.count} />
+        <StatCard label="Rezerwacje" value={stats.totalReservations} icon={TrendingUp} iconGradient={statGradients.count} />
       </div>
 
       {showCreateForm ? (

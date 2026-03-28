@@ -25,7 +25,7 @@ import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared'
 import { Skeleton } from '@/components/ui/skeleton'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 
 const accent = moduleAccents.archive
 
@@ -84,13 +84,13 @@ export default function ArchivePage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+      <div className={layout.statGrid3}>
         <StatCard
           label="Zarchiwizowane"
           value={stats.total}
           subtitle="Łącznie w archiwum"
           icon={Archive}
-          iconGradient="from-neutral-500 to-neutral-600"
+          iconGradient={statGradients.neutral}
           delay={0.1}
         />
         <StatCard
@@ -98,7 +98,7 @@ export default function ArchivePage() {
           value={stats.completed}
           subtitle="Pomyślnie zrealizowane"
           icon={Calendar}
-          iconGradient="from-emerald-500 to-teal-500"
+          iconGradient={statGradients.success}
           delay={0.2}
         />
         <StatCard
@@ -106,7 +106,7 @@ export default function ArchivePage() {
           value={stats.cancelled}
           subtitle="Anulowane rezerwacje"
           icon={Clock}
-          iconGradient="from-red-500 to-rose-500"
+          iconGradient={statGradients.alert}
           delay={0.3}
         />
       </div>

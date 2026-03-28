@@ -10,7 +10,7 @@ import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles } from '
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
-import { moduleAccents } from '@/lib/design-tokens';
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
 
 export default function PackagesListPage() {
@@ -85,10 +85,10 @@ export default function PackagesListPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
-        <StatCard label="Wszystkie" value={packages.length} subtitle="Pakiety w systemie" icon={Package} iconGradient="from-blue-500 to-indigo-500" delay={0.1} />
-        <StatCard label="Polecane" value={packages.filter(p => p.isRecommended).length} subtitle="Oznaczone gwiazdką" icon={Star} iconGradient="from-green-500 to-emerald-500" delay={0.2} />
-        <StatCard label="Popularne" value={packages.filter(p => p.isPopular).length} subtitle="Najczęściej wybierane" icon={TrendingUp} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+      <div className={layout.statGrid3}>
+        <StatCard label="Wszystkie" value={packages.length} subtitle="Pakiety w systemie" icon={Package} iconGradient={statGradients.count} delay={0.1} />
+        <StatCard label="Polecane" value={packages.filter(p => p.isRecommended).length} subtitle="Oznaczone gwiazdką" icon={Star} iconGradient={statGradients.success} delay={0.2} />
+        <StatCard label="Popularne" value={packages.filter(p => p.isPopular).length} subtitle="Najczęściej wybierane" icon={TrendingUp} iconGradient={statGradients.financial} delay={0.3} />
       </div>
 
       {/* Packages Grid */}

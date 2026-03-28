@@ -266,10 +266,10 @@ export default function ReservationDetailsPage() {
             {/* Left Column - Main Info */}
             <div className="lg:col-span-2 space-y-6">
               {/* Client Info (read-only) */}
-              <Card className="border-0 shadow-xl">
-                <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-5 sm:p-6">
+              <Card className="shadow-sm border border-border">
+                <div className="bg-card p-5 sm:p-6">
                   <div className="flex items-center gap-3 mb-5 sm:mb-6">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
+                    <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg shadow-sm">
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <h2 className="text-xl sm:text-2xl font-bold">Klient</h2>

@@ -1,44 +1,35 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Calendar, CheckCircle2, Clock, TrendingUp, CalendarDays, List } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ReservationsList } from '@/components/reservations/reservations-list'
-import { CreateReservationForm } from '@/components/reservations/create-reservation-form'
 import { getReservations } from '@/lib/api/reservations'
 import { PageLayout, PageHero, StatCard } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { toast } from 'sonner'
 
 export default function ReservationsListPage() {
   const searchParams = useSearchParams()
-  const [showCreateForm, setShowCreateForm] = useState(false)
+  const router = useRouter()
   const [reservations, setReservations] = useState<any[]>([])
   const [, setLoading] = useState(true)
   const accent = moduleAccents.reservations
-  const formRef = useRef<HTMLDivElement>(null)
 
   const defaultHallId = searchParams.get('hallId') || undefined
 
+  // Redirect ?create=true to the dedicated new-reservation page
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
-      setShowCreateForm(true)
+      const url = defaultHallId
+        ? `/dashboard/reservations/new?hallId=${defaultHallId}`
+        : '/dashboard/reservations/new'
+      router.replace(url)
     }
-  }, [searchParams])
-
-  // Auto-scroll to form when opened
-  useEffect(() => {
-    if (showCreateForm && formRef.current) {
-      // Small delay to let the animation start, then scroll
-      const timer = setTimeout(() => {
-        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 100)
-      return () => clearTimeout(timer)
-    }
-  }, [showCreateForm])
+  }, [searchParams, defaultHallId, router])
 
   const loadReservations = useCallback(async () => {
     try {
@@ -80,7 +71,12 @@ export default function ReservationsListPage() {
         action={
           <Button
             size="lg"
-            onClick={() => setShowCreateForm(!showCreateForm)}
+            onClick={() => {
+              const url = defaultHallId
+                ? `/dashboard/reservations/new?hallId=${defaultHallId}`
+                : '/dashboard/reservations/new'
+              router.push(url)
+            }}
             className="bg-white text-blue-600 hover:bg-white/90 shadow-xl"
           >
             <Plus className="mr-2 h-5 w-5" />
@@ -90,11 +86,11 @@ export default function ReservationsListPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={Calendar} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
-        <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
-        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+      <div className={layout.statGrid}>
+        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={Calendar} iconGradient={statGradients.count} delay={0.1} />
+        <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient={statGradients.success} delay={0.2} />
+        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient={statGradients.alert} delay={0.3} />
+        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient={statGradients.info} delay={0.4} />
       </div>
 
       {/* Controls bar */}
@@ -115,30 +111,6 @@ export default function ReservationsListPage() {
           </div>
         </div>
       </div>
-
-      {/* Create Form — with ref for auto-scroll */}
-      {showCreateForm && (
-        <div ref={formRef} className="scroll-mt-4">
-          <Card className="overflow-hidden animate-in slide-in-from-top-4 duration-300">
-            <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-4 sm:p-8`}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>
-                  <Plus className="h-5 w-5 text-white" />
-                </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100">Nowa Rezerwacja</h2>
-              </div>
-              <CreateReservationForm
-                onSuccess={() => {
-                  setShowCreateForm(false)
-                  loadReservations()
-                }}
-                onCancel={() => setShowCreateForm(false)}
-                defaultHallId={defaultHallId}
-              />
-            </div>
-          </Card>
-        </div>
-      )}
 
       {/* Reservations List */}
       <Card>

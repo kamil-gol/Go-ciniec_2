@@ -33,7 +33,7 @@ import {
   EmptyState,
 } from '@/components/shared';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { moduleAccents } from '@/lib/design-tokens';
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import type { ServiceCategory, ServiceItem } from '@/types/service-extra.types';
 
 type ViewMode = 'categories' | 'items';
@@ -155,13 +155,13 @@ export default function ServiceExtrasPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className={layout.statGrid}>
         <StatCard
           label="Kategorie"
           value={stats.total}
           subtitle="W systemie"
           icon={FolderOpen}
-          iconGradient="from-purple-500 to-fuchsia-500"
+          iconGradient={statGradients.info}
           delay={0.1}
         />
         <StatCard
@@ -169,7 +169,7 @@ export default function ServiceExtrasPage() {
           value={stats.items}
           subtitle="Łącznie usług"
           icon={Package}
-          iconGradient="from-violet-500 to-purple-500"
+          iconGradient={statGradients.count}
           delay={0.2}
         />
         <StatCard
@@ -177,7 +177,7 @@ export default function ServiceExtrasPage() {
           value={stats.active}
           subtitle="Dostępne do wyboru"
           icon={TrendingUp}
-          iconGradient="from-emerald-500 to-teal-500"
+          iconGradient={statGradients.success}
           delay={0.3}
         />
         <StatCard
@@ -185,7 +185,7 @@ export default function ServiceExtrasPage() {
           value={stats.free}
           subtitle="Bezpłatne pozycje"
           icon={Sparkles}
-          iconGradient="from-amber-500 to-orange-500"
+          iconGradient={statGradients.financial}
           delay={0.4}
         />
       </div>

@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 
 export default function QueuePage() {
   const [queues, setQueues] = useState<QueueItem[]>([])
@@ -218,11 +218,11 @@ export default function QueuePage() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
-          <StatCard label="W kolejce" value={stats.totalQueued} subtitle={`${stats.queuesByDate.length} ${stats.queuesByDate.length === 1 ? 'data' : 'różnych dat'}`} icon={CalendarDays} iconGradient="from-amber-500 to-orange-500" delay={0.1} />
-          <StatCard label="Najstarsza data" value={stats.oldestQueueDate ? format(parseISO(stats.oldestQueueDate), 'd MMM yyyy', { locale: pl }) : 'Brak'} subtitle="Najwcześniejszy termin" icon={TrendingUp} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-          <StatCard label="Ręczne kolejności" value={stats.manualOrderCount} subtitle="Zmodyfikowanych pozycji" icon={RefreshCw} iconGradient="from-rose-500 to-pink-500" delay={0.3} />
-          <StatCard label="Liczba dat" value={stats.queuesByDate.length} subtitle="Różnych terminów" icon={ListOrdered} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+        <div className={layout.statGrid}>
+          <StatCard label="W kolejce" value={stats.totalQueued} subtitle={`${stats.queuesByDate.length} ${stats.queuesByDate.length === 1 ? 'data' : 'różnych dat'}`} icon={CalendarDays} iconGradient={statGradients.alert} delay={0.1} />
+          <StatCard label="Najstarsza data" value={stats.oldestQueueDate ? format(parseISO(stats.oldestQueueDate), 'd MMM yyyy', { locale: pl }) : 'Brak'} subtitle="Najwcześniejszy termin" icon={TrendingUp} iconGradient={statGradients.info} delay={0.2} />
+          <StatCard label="Ręczne kolejności" value={stats.manualOrderCount} subtitle="Zmodyfikowanych pozycji" icon={RefreshCw} iconGradient={statGradients.count} delay={0.3} />
+          <StatCard label="Liczba dat" value={stats.queuesByDate.length} subtitle="Różnych terminów" icon={ListOrdered} iconGradient={statGradients.info} delay={0.4} />
         </div>
       )}
 

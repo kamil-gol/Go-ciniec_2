@@ -76,17 +76,20 @@ export function TotalsSummary({
 
       {/* Balance bar */}
       <div className="p-4 bg-white dark:bg-black/20 rounded-xl mb-3">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-emerald-600" />
             <span className="text-sm font-semibold">Stan rozliczeń</span>
           </div>
-          <span className="text-sm font-bold">
-            {formatCurrency(financials.totalPaid)} / {formatCurrency(finalTotalPrice)}
-          </span>
+          <div className="flex items-baseline gap-1">
+            <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+              {formatCurrency(financials.totalPaid)}
+            </span>
+            <span className="text-sm text-muted-foreground">/ {formatCurrency(finalTotalPrice)}</span>
+          </div>
         </div>
 
-        <div className="relative h-4 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+        <div className="relative h-5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden shadow-inner">
           <div
             className="absolute inset-y-0 left-0 bg-amber-300 dark:bg-amber-700 rounded-full transition-all duration-700"
             style={{ width: `${financials.percentCommitted}%` }}
@@ -97,29 +100,31 @@ export function TotalsSummary({
           />
         </div>
 
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
-              Wpłacono ({financials.percentPaid}%)
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center gap-4 text-xs font-medium">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+              <span className="text-emerald-700 dark:text-emerald-400">Wpłacono ({financials.percentPaid}%)</span>
             </span>
             {financials.totalPending > 0 && (
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-300 dark:bg-amber-700" />
-                Oczekuje
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-amber-400 dark:bg-amber-600" />
+                <span className="text-amber-700 dark:text-amber-400">Oczekuje ({formatCurrency(financials.totalPending)})</span>
               </span>
             )}
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-neutral-200 dark:bg-neutral-700" />
-              Brakuje
-            </span>
+            {financials.remaining > 0 && (
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-neutral-300 dark:bg-neutral-600" />
+                <span className="text-red-600 dark:text-red-400">Brakuje ({formatCurrency(financials.remaining)})</span>
+              </span>
+            )}
           </div>
         </div>
 
         {financials.remaining > 0 && (
-          <div className="mt-3 flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
-            <span className="text-sm font-medium text-amber-800 dark:text-amber-300">Pozostało do zapłaty</span>
-            <span className="text-lg font-bold text-amber-800 dark:text-amber-300">{formatCurrency(financials.remaining)}</span>
+          <div className="mt-3 flex items-center justify-between p-3 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-lg border border-red-200 dark:border-red-800">
+            <span className="text-sm font-semibold text-red-700 dark:text-red-300">Pozostało do zapłaty</span>
+            <span className="text-xl font-bold text-red-700 dark:text-red-300">{formatCurrency(financials.remaining)}</span>
           </div>
         )}
         {financials.remaining === 0 && financials.totalPaid > 0 && (

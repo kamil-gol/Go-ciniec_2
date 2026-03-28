@@ -252,7 +252,7 @@ export default function ClientDetailsPage() {
                 <CardContent className="p-4 space-y-2">
                   {!isDeleted && (
                     <>
-                      <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
+                      <Link href={`/dashboard/reservations/new?clientId=${client.id}`}>
                         <Button variant="outline" className="w-full justify-start" size="lg">
                           <Calendar className="mr-2 h-4 w-4" />
                           Nowa rezerwacja

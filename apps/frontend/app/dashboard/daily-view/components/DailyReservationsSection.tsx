@@ -384,7 +384,8 @@ export default function DailyReservationsSection({ date }: DailyReservationsSect
           <EmptyState
             icon={Calendar}
             title="Brak rezerwacji na ten dzień"
-            actionLabel="+ Nowa rezerwacja"
+            description="Nie zaplanowano jeszcze żadnych wydarzeń. Dodaj nową rezerwację, aby zapełnić kalendarz."
+            actionLabel="Dodaj rezerwację"
             actionHref="/dashboard/reservations/new"
             variant="compact"
           />

@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageLayout, PageHero, StatCard, ErrorState } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { getReservations } from '@/lib/api/reservations'
 import {
   useCalendarReservations,
@@ -253,7 +253,7 @@ export default function CalendarPage() {
         action={
           <Button
             size="lg"
-            onClick={() => router.push('/dashboard/reservations/list?create=true')}
+            onClick={() => router.push('/dashboard/reservations/new')}
             className="bg-white text-blue-600 hover:bg-white/90 shadow-xl"
           >
             <Plus className="h-5 w-5 sm:mr-2" />
@@ -263,11 +263,11 @@ export default function CalendarPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={CalendarIcon} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
-        <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
-        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+      <div className={layout.statGrid}>
+        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={CalendarIcon} iconGradient={statGradients.count} delay={0.1} />
+        <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient={statGradients.success} delay={0.2} />
+        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient={statGradients.alert} delay={0.3} />
+        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient={statGradients.info} delay={0.4} />
       </div>
 
       {/* Controls bar */}

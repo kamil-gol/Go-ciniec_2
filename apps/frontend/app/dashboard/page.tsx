@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import { PageLayout, PageHero, StatCard } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { useDashboardOverview, useDashboardUpcoming } from '@/lib/api/stats-api'
 
 // ===============================================================
@@ -132,7 +132,7 @@ export default function DashboardPage() {
           change: `${overview.reservationsThisWeek} w tym tygodniu`,
           changeType: 'neutral' as const,
           icon: Calendar,
-          gradient: 'from-blue-500 to-cyan-500',
+          gradient: statGradients.count,
         },
         {
           name: 'W Kolejce',
@@ -140,7 +140,7 @@ export default function DashboardPage() {
           change: `${overview.reservationsThisMonth} rezerwacji w miesiącu`,
           changeType: overview.queueCount > 0 ? ('neutral' as const) : ('positive' as const),
           icon: Clock,
-          gradient: 'from-amber-500 to-orange-500',
+          gradient: statGradients.alert,
         },
         {
           name: 'Potwierdzone',
@@ -148,7 +148,7 @@ export default function DashboardPage() {
           change: 'ten miesiąc',
           changeType: 'positive' as const,
           icon: CheckCircle2,
-          gradient: 'from-emerald-500 to-teal-500',
+          gradient: statGradients.success,
         },
         {
           name: 'Przychód miesiąc',
@@ -166,7 +166,7 @@ export default function DashboardPage() {
               ? ('negative' as const)
               : ('neutral' as const),
           icon: DollarSign,
-          gradient: 'from-violet-500 to-purple-500',
+          gradient: statGradients.financial,
         },
         {
           name: 'Klienci',
@@ -174,7 +174,7 @@ export default function DashboardPage() {
           change: `+${overview.newClientsThisMonth} nowych ten miesiąc`,
           changeType: overview.newClientsThisMonth > 0 ? ('positive' as const) : ('neutral' as const),
           icon: Users,
-          gradient: 'from-indigo-500 to-blue-500',
+          gradient: statGradients.count,
         },
         {
           name: 'Oczekujące Zaliczki',
@@ -185,7 +185,7 @@ export default function DashboardPage() {
               : 'wszystko opłacone',
           changeType: overview.pendingDepositsCount > 0 ? ('negative' as const) : ('positive' as const),
           icon: Wallet,
-          gradient: 'from-rose-500 to-pink-500',
+          gradient: statGradients.alert,
         },
       ]
     : []
@@ -236,7 +236,7 @@ export default function DashboardPage() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className={layout.statGrid6}>
         {isLoadingOverview
           ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
           : stats.map((stat, index) => (

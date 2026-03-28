@@ -9,7 +9,7 @@ import { getHalls, type Hall } from '@/lib/api/halls'
 import Link from 'next/link'
 import { HallCard } from '@/components/halls/hall-card'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { toast } from 'sonner'
 
 export default function HallsPage() {
@@ -67,11 +67,11 @@ export default function HallsPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard label="Wszystkie sale" value={halls.length} subtitle="W systemie" icon={Building2} iconGradient="from-sky-500 to-blue-500" delay={0.1} />
-        <StatCard label="Aktywne sale" value={activeHalls} subtitle="Dostępne do rezerwacji" icon={TrendingUp} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Całk. pojemność" value={totalCapacity} subtitle="Miejsc łącznie" icon={Users} iconGradient="from-violet-500 to-purple-500" delay={0.3} />
-        <StatCard label="Śr. pojemność" value={`${avgCapacity} osób`} subtitle="Średnio na salę" icon={Users} iconGradient="from-amber-500 to-orange-500" delay={0.4} />
+      <div className={layout.statGrid}>
+        <StatCard label="Wszystkie sale" value={halls.length} subtitle="W systemie" icon={Building2} iconGradient={statGradients.count} delay={0.1} />
+        <StatCard label="Aktywne sale" value={activeHalls} subtitle="Dostępne do rezerwacji" icon={TrendingUp} iconGradient={statGradients.success} delay={0.2} />
+        <StatCard label="Całk. pojemność" value={totalCapacity} subtitle="Miejsc łącznie" icon={Users} iconGradient={statGradients.count} delay={0.3} />
+        <StatCard label="Śr. pojemność" value={`${avgCapacity} osób`} subtitle="Średnio na salę" icon={Users} iconGradient={statGradients.info} delay={0.4} />
       </div>
 
       {/* Filters */}

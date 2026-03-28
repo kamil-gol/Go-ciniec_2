@@ -21,7 +21,7 @@ import type { Deposit, DepositStats, DepositStatus } from '@/lib/api/deposits'
 import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FilterTabs } from '@/components/shared/FilterTabs'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { toast } from 'sonner'
 
 type FilterStatus = 'ALL' | DepositStatus
@@ -115,7 +115,7 @@ export default function DepositsPage() {
       />
 
       {loading && !stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className={layout.statGrid}>
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
@@ -123,13 +123,13 @@ export default function DepositsPage() {
       )}
 
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className={layout.statGrid}>
           <StatCard
             label="Oczekujące"
             value={stats.counts.pending}
             subtitle={`${stats.amounts.pending.toLocaleString('pl-PL')} zł do zapłaty`}
             icon={Clock}
-            iconGradient="from-amber-500 to-orange-500"
+            iconGradient={statGradients.alert}
             delay={0.1}
           />
           <StatCard
@@ -137,7 +137,7 @@ export default function DepositsPage() {
             value={stats.counts.paid}
             subtitle={`${stats.amounts.paid.toLocaleString('pl-PL')} zł wpłacono`}
             icon={CheckCircle2}
-            iconGradient="from-emerald-500 to-teal-500"
+            iconGradient={statGradients.success}
             delay={0.2}
           />
           <StatCard
@@ -145,7 +145,7 @@ export default function DepositsPage() {
             value={stats.counts.overdue}
             subtitle={`${stats.amounts.overdue.toLocaleString('pl-PL')} zł zaległości`}
             icon={AlertTriangle}
-            iconGradient="from-red-500 to-rose-500"
+            iconGradient={statGradients.alert}
             delay={0.3}
           />
           {/* #deposits-fix (5/5): totalAllCount includes CANCELLED so the subtitle */}
@@ -155,7 +155,7 @@ export default function DepositsPage() {
             value={`${stats.amounts.total.toLocaleString('pl-PL')} zł`}
             subtitle={`${percentPaid}% wpłacono \u00b7 ${totalAllCount} zaliczek`}
             icon={TrendingUp}
-            iconGradient="from-rose-500 to-pink-500"
+            iconGradient={statGradients.financial}
             delay={0.4}
           />
         </div>

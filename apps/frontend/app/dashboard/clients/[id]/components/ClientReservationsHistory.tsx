@@ -22,7 +22,7 @@ export function ClientReservationsHistory({ reservations, clientId, isDeleted }:
         <p className="text-lg font-semibold text-muted-foreground">Brak rezerwacji</p>
         <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze żadnych rezerwacji</p>
         {!isDeleted && (
-          <Link href={`/dashboard/reservations/list?create=true&clientId=${clientId}`}>
+          <Link href={`/dashboard/reservations/new?clientId=${clientId}`}>
             <Button className="mt-4" size="lg">
               <Calendar className="mr-2 h-4 w-4" />
               Utwórz pierwszą rezerwację

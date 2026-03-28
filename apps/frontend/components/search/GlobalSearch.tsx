@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar, Users, Building2, Loader2 } from 'lucide-react'
+import { Calendar, Users, Building2, Loader2, Plus, UserPlus, CalendarDays } from 'lucide-react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import {
   Command,
@@ -28,6 +28,12 @@ const statusLabels: Record<string, string> = {
   COMPLETED: 'Zakończona',
   ARCHIVED: 'Zarchiwizowana',
 }
+
+const quickActions = [
+  { label: 'Nowa rezerwacja', href: '/dashboard/reservations/new', icon: Plus },
+  { label: 'Nowy klient', href: '/dashboard/clients/new', icon: UserPlus },
+  { label: 'Widok dzienny', href: '/dashboard/daily-view', icon: CalendarDays },
+]
 
 export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const router = useRouter()
@@ -85,6 +91,23 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
               onValueChange={setQuery}
             />
             <CommandList>
+              {/* Quick actions when input is empty */}
+              {!query && (
+                <CommandGroup heading="Szybkie akcje">
+                  {quickActions.map((action) => (
+                    <CommandItem
+                      key={action.href}
+                      value={action.label}
+                      onSelect={() => handleSelect(action.href)}
+                      className="cursor-pointer"
+                    >
+                      <action.icon className="mr-3 h-4 w-4 text-primary flex-shrink-0" />
+                      <span className="font-medium">{action.label}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
               {isFetching && (
                 <div className="flex items-center justify-center gap-2 py-6 text-sm text-neutral-500">
                   <Loader2 className="h-4 w-4 animate-spin" />
