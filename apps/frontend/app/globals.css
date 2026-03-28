@@ -69,10 +69,10 @@
     --foreground: 0 0% 98%;
 
     /* Card slightly lighter than background for visual separation */
-    --card: 0 0% 3.9%;
+    --card: 0 0% 7%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 3.9%;
+    --popover: 0 0% 9%;
     --popover-foreground: 0 0% 98%;
 
     --primary: 224 100% 85%;

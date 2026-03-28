@@ -179,6 +179,8 @@ export default function LoginPage() {
                   name="email"
                   type="email"
                   autoComplete="email"
+                  aria-invalid={!!fieldErrors.email}
+                  aria-describedby={fieldErrors.email ? 'email-error' : undefined}
                   className={`w-full pl-12 pr-4 py-3 bg-neutral-50 dark:bg-neutral-900/50 border-2 ${
                     fieldErrors.email
                       ? 'border-error-500 focus:border-error-600 focus:ring-error-500/20'
@@ -196,6 +198,8 @@ export default function LoginPage() {
               <AnimatePresence>
                 {fieldErrors.email && (
                   <motion.p
+                    id="email-error"
+                    role="alert"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
@@ -226,6 +230,8 @@ export default function LoginPage() {
                   name="password"
                   type="password"
                   autoComplete="current-password"
+                  aria-invalid={!!fieldErrors.password}
+                  aria-describedby={fieldErrors.password ? 'password-error' : undefined}
                   className={`w-full pl-12 pr-4 py-3 bg-neutral-50 dark:bg-neutral-900/50 border-2 ${
                     fieldErrors.password
                       ? 'border-error-500 focus:border-error-600 focus:ring-error-500/20'
@@ -243,6 +249,8 @@ export default function LoginPage() {
               <AnimatePresence>
                 {fieldErrors.password && (
                   <motion.p
+                    id="password-error"
+                    role="alert"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}

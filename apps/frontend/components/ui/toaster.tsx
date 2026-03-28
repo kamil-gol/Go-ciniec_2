@@ -14,12 +14,7 @@ export function Toaster() {
       closeButton
       duration={4000}
       toastOptions={{
-        style: {
-          padding: '16px',
-          borderRadius: '12px',
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-        },
-        className: 'backdrop-blur-sm z-[99999] text-sm',
+        className: 'backdrop-blur-sm z-[99999] text-sm p-4 rounded-xl shadow-hard',
       }}
     />
   )
