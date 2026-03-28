@@ -48,7 +48,7 @@ import {
 
 // ═══ Dish Category API ═══
 import { dishCategoriesApi } from '@/lib/api/dish-categories-api';
-import type { DishCategory, CreateDishCategoryInput, UpdateDishCategoryInput } from '@/types';
+import type { DishCategory, CreateDishCategoryInput, UpdateDishCategoryInput, MutationError } from '@/types';
 
 // ═══ Dishes & Courses API ═══
 import { dishesApi } from '@/lib/api/dishes-api';
@@ -67,7 +67,7 @@ const PACKAGES_KEY = 'menu-packages';
 export const dishCategoriesKeys = {
   all: ['dish-categories'] as const,
   lists: () => [...dishCategoriesKeys.all, 'list'] as const,
-  list: (filters?: any) => [...dishCategoriesKeys.lists(), filters] as const,
+  list: (filters?: Record<string, unknown>) => [...dishCategoriesKeys.lists(), filters] as const,
   details: () => [...dishCategoriesKeys.all, 'detail'] as const,
   detail: (id: string) => [...dishCategoriesKeys.details(), id] as const,
 };
@@ -113,7 +113,7 @@ export function useCreateMenuTemplate() {
   return useMutation({
     mutationFn: (input: CreateMenuTemplateInput) => createMenuTemplate(input),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: [TEMPLATES_KEY] }); toast.success('Szablon menu utworzony'); },
-    onError: (error: any) => { toast.error(error.response?.data?.error || 'Błąd podczas tworzenia szablonu'); },
+    onError: (error: MutationError) => { toast.error(error.response?.data?.error || 'Błąd podczas tworzenia szablonu'); },
   });
 }
 
@@ -126,7 +126,7 @@ export function useUpdateMenuTemplate() {
       queryClient.invalidateQueries({ queryKey: [TEMPLATES_KEY, 'detail', variables.id] });
       toast.success('Szablon menu zaktualizowany');
     },
-    onError: (error: any) => { toast.error(error.response?.data?.error || 'Błąd podczas aktualizacji szablonu'); },
+    onError: (error: MutationError) => { toast.error(error.response?.data?.error || 'Błąd podczas aktualizacji szablonu'); },
   });
 }
 
@@ -135,7 +135,7 @@ export function useDeleteMenuTemplate() {
   return useMutation({
     mutationFn: (id: string) => deleteMenuTemplate(id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: [TEMPLATES_KEY] }); toast.success('Szablon menu usunięty'); },
-    onError: (error: any) => { toast.error(error.response?.data?.error || 'Błąd podczas usuwania szablonu'); },
+    onError: (error: MutationError) => { toast.error(error.response?.data?.error || 'Błąd podczas usuwania szablonu'); },
   });
 }
 
@@ -144,7 +144,7 @@ export function useDuplicateMenuTemplate() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: DuplicateMenuTemplateInput }) => duplicateMenuTemplate(id, input),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: [TEMPLATES_KEY] }); toast.success('Szablon menu zduplikowany'); },
-    onError: (error: any) => { toast.error(error.response?.data?.error || 'Błąd podczas duplikacji szablonu'); },
+    onError: (error: MutationError) => { toast.error(error.response?.data?.error || 'Błąd podczas duplikacji szablonu'); },
   });
 }
 
@@ -192,7 +192,7 @@ export function useCreatePackage() {
       queryClient.invalidateQueries({ queryKey: [TEMPLATES_KEY] });
       toast.success('Pakiet utworzony');
     },
-    onError: (error: any) => { toast.error(error.response?.data?.error || 'Błąd podczas tworzenia pakietu'); },
+    onError: (error: MutationError) => { toast.error(error.response?.data?.error || 'Błąd podczas tworzenia pakietu'); },
   });
 }
 
@@ -206,7 +206,7 @@ export function useUpdatePackage() {
       queryClient.invalidateQueries({ queryKey: [TEMPLATES_KEY] });
       toast.success('Pakiet zaktualizowany');
     },
-    onError: (error: any) => { toast.error(error.response?.data?.error || 'Błąd podczas aktualizacji pakietu'); },
+    onError: (error: MutationError) => { toast.error(error.response?.data?.error || 'Błąd podczas aktualizacji pakietu'); },
   });
 }
 
@@ -219,7 +219,7 @@ export function useDeletePackage() {
       queryClient.invalidateQueries({ queryKey: [TEMPLATES_KEY] });
       toast.success('Pakiet usunięty');
     },
-    onError: (error: any) => { toast.error(error.response?.data?.error || 'Błąd podczas usuwania pakietu'); },
+    onError: (error: MutationError) => { toast.error(error.response?.data?.error || 'Błąd podczas usuwania pakietu'); },
   });
 }
 
@@ -228,7 +228,7 @@ export function useReorderPackages() {
   return useMutation({
     mutationFn: (input: ReorderPackagesInput) => reorderPackages(input),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: [PACKAGES_KEY] }); toast.success('Kolejność zaktualizowana'); },
-    onError: (error: any) => { toast.error(error.response?.data?.error || 'Błąd podczas zmiany kolejności'); },
+    onError: (error: MutationError) => { toast.error(error.response?.data?.error || 'Błąd podczas zmiany kolejności'); },
   });
 }
 
@@ -241,7 +241,7 @@ export function useAssignOptions() {
       queryClient.invalidateQueries({ queryKey: [PACKAGES_KEY, 'detail', variables.packageId] });
       toast.success('Opcje przypisane');
     },
-    onError: (error: any) => { toast.error(error.response?.data?.error || 'Błąd podczas przypisywania opcji'); },
+    onError: (error: MutationError) => { toast.error(error.response?.data?.error || 'Błąd podczas przypisywania opcji'); },
   });
 }
 
@@ -271,7 +271,7 @@ export function useCreateDishCategory() {
   return useMutation({
     mutationFn: (input: CreateDishCategoryInput) => dishCategoriesApi.createCategory(input),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: dishCategoriesKeys.lists() }); toast.success('Kategoria została dodana'); },
-    onError: (error: any) => { toast.error(error?.error || 'Nie udało się dodać kategorii'); },
+    onError: (error: MutationError) => { toast.error(error?.error || 'Nie udało się dodać kategorii'); },
   });
 }
 
@@ -284,7 +284,7 @@ export function useUpdateDishCategory() {
       queryClient.invalidateQueries({ queryKey: dishCategoriesKeys.detail(variables.id) });
       toast.success('Kategoria została zaktualizowana');
     },
-    onError: (error: any) => { toast.error(error?.error || 'Nie udało się zaktualizować kategorii'); },
+    onError: (error: MutationError) => { toast.error(error?.error || 'Nie udało się zaktualizować kategorii'); },
   });
 }
 
@@ -293,7 +293,7 @@ export function useDeleteDishCategory() {
   return useMutation({
     mutationFn: (id: string) => dishCategoriesApi.deleteCategory(id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: dishCategoriesKeys.lists() }); toast.success('Kategoria została usunięta'); },
-    onError: (error: any) => { toast.error(error?.error || 'Nie udało się usunąć kategorii'); },
+    onError: (error: MutationError) => { toast.error(error?.error || 'Nie udało się usunąć kategorii'); },
   });
 }
 

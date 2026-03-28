@@ -17,6 +17,7 @@ import type {
   UpdateTemplateInput,
   TemplateCategory,
 } from '@/types/document-template.types';
+import type { MutationError } from '@/types/common.types';
 
 // ── Query Keys ───────────────────────────────────────
 
@@ -115,7 +116,7 @@ export function useCreateTemplate(): UseMutationResult<
         refetchType: 'all',
       });
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const message =
         error?.response?.data?.error || 'Nie udało się utworzyć szablonu';
       toast.error('Błąd tworzenia', message);
@@ -148,7 +149,7 @@ export function useUpdateTemplate(): UseMutationResult<
         refetchType: 'all',
       });
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const message =
         error?.response?.data?.error || 'Nie udało się zapisać szablonu';
       toast.error('Błąd zapisu', message);
@@ -181,7 +182,7 @@ export function useDeleteTemplate(): UseMutationResult<
         refetchType: 'all',
       });
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const message =
         error?.response?.data?.error || 'Nie udało się usunąć szablonu';
       toast.error('Błąd usuwania', message);
@@ -214,7 +215,7 @@ export function useRestoreTemplate(): UseMutationResult<
         refetchType: 'all',
       });
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const message =
         error?.response?.data?.error || 'Nie udało się przywrócić wersji';
       toast.error('Błąd', message);
@@ -238,7 +239,7 @@ export function usePreviewTemplate(): UseMutationResult<
       );
       return response.data.data;
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const message =
         error?.response?.data?.error || 'Błąd podglądu szablonu';
       toast.error('Błąd', message);

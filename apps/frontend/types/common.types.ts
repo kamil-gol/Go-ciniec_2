@@ -29,3 +29,9 @@ export interface ApiError {
   statusCode: number
   errors?: Record<string, string[]>
 }
+
+/** Error shape from axios mutation callbacks (onError) */
+export type MutationError = Error & {
+  response?: { data?: { error?: string } }
+  error?: string
+}

@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dishesApi, type DishFilters, type DishCategory } from '@/lib/api/dishes-api';
-import type { Dish, CreateDishInput, UpdateDishInput } from '@/types';
+import type { Dish, CreateDishInput, UpdateDishInput , MutationError } from '@/types';
 import { toast } from 'sonner';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -89,7 +89,7 @@ export function useCreateDish() {
       queryClient.invalidateQueries({ queryKey: dishesKeys.lists() });
       toast.success('Danie zostało dodane');
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       toast.error(error?.error || 'Nie udało się dodać dania');
     },
   });
@@ -109,7 +109,7 @@ export function useUpdateDish() {
       queryClient.invalidateQueries({ queryKey: dishesKeys.detail(variables.id) });
       toast.success('Danie zostało zaktualizowane');
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       toast.error(error?.error || 'Nie udało się zaktualizować dania');
     },
   });
@@ -127,7 +127,7 @@ export function useDeleteDish() {
       queryClient.invalidateQueries({ queryKey: dishesKeys.lists() });
       toast.success('Danie zostało usunięte');
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       toast.error(error?.error || 'Nie udało się usunąć dania');
     },
   });

@@ -1,5 +1,5 @@
 import { apiClient } from '../api-client'
-import { Client, ClientContact, ClientType, CreateClientInput, CreateClientContactInput, Reservation } from '@/types'
+import { Client, ClientContact, ClientType, CreateClientInput, CreateClientContactInput, Reservation , MutationError } from '@/types'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -186,7 +186,7 @@ export const useCreateClient = () => {
       
       toast.success('Klient dodany pomyślnie!')
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 
                           'Błąd podczas dodawania klienta'
@@ -211,7 +211,7 @@ export const useUpdateClient = () => {
       
       toast.success('Klient zaktualizowany pomyślnie!')
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 
                           'Błąd podczas aktualizacji klienta'
@@ -235,7 +235,7 @@ export const useDeleteClient = () => {
       
       toast.success('Dane klienta zostały zanonimizowane')
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 
                           'Błąd podczas usuwania klienta'
@@ -256,7 +256,7 @@ export const useAddContact = () => {
       queryClient.invalidateQueries({ queryKey: clientsKeys.contacts(clientId) })
       toast.success('Kontakt dodany pomyślnie!')
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 
                           'Błąd podczas dodawania kontaktu'
@@ -277,7 +277,7 @@ export const useUpdateContact = () => {
       queryClient.invalidateQueries({ queryKey: clientsKeys.contacts(clientId) })
       toast.success('Kontakt zaktualizowany!')
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 
                           'Błąd podczas aktualizacji kontaktu'
@@ -298,7 +298,7 @@ export const useRemoveContact = () => {
       queryClient.invalidateQueries({ queryKey: clientsKeys.contacts(clientId) })
       toast.success('Kontakt usunięty!')
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message || 
                           'Błąd podczas usuwania kontaktu'

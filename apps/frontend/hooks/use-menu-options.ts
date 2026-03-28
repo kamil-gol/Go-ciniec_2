@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { MutationError } from '@/types/common.types'
 import {
   getMenuOptions,
   getMenuOptionById,
@@ -47,7 +48,7 @@ export function useCreateMenuOption() {
       queryClient.invalidateQueries({ queryKey: ['menu-options'] });
       toast.success('Opcja menu została utworzona');
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const message = error?.response?.data?.error || 'Nie udało się utworzyć opcji menu';
       toast.error(message);
     },
@@ -68,7 +69,7 @@ export function useUpdateMenuOption() {
       queryClient.invalidateQueries({ queryKey: ['menu-option', variables.id] });
       toast.success('Opcja menu została zaktualizowana');
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const message = error?.response?.data?.error || 'Nie udało się zaktualizować opcji menu';
       toast.error(message);
     },
@@ -87,7 +88,7 @@ export function useDeleteMenuOption() {
       queryClient.invalidateQueries({ queryKey: ['menu-options'] });
       toast.success('Opcja menu została usunięta');
     },
-    onError: (error: any) => {
+    onError: (error: MutationError) => {
       const message = error?.response?.data?.error || 'Nie udało się usunąć opcji menu';
       toast.error(message);
     },
