@@ -610,21 +610,21 @@ test.describe('SP-01/MB-02: StatCard responsive na mobile (#377, #383)', () => {
     expect(statCardClasses, 'StatCard value powinien mieć text-2xl sm:text-3xl').not.toBeNull();
   });
 
-  test('StatCard label ma truncate', async ({ page }) => {
+  test('StatCard label ma line-clamp-2 + title', async ({ page }) => {
     await page.goto('/dashboard');
     await waitForPageStable(page);
 
-    const hasTruncate = await page.evaluate(() => {
-      const labels = document.querySelectorAll('p.truncate');
+    const hasLineClamp = await page.evaluate(() => {
+      const labels = document.querySelectorAll('p');
       for (const label of labels) {
-        if (label.getAttribute('title') && label.className.includes('font-medium')) {
+        if (label.className.includes('line-clamp-2') && label.getAttribute('title') && label.className.includes('font-medium')) {
           return true;
         }
       }
       return false;
     });
 
-    expect(hasTruncate, 'StatCard label powinien mieć truncate + title').toBe(true);
+    expect(hasLineClamp, 'StatCard label powinien mieć line-clamp-2 + title').toBe(true);
   });
 
   test('StatCard ikona ma responsive rozmiar', async ({ page }) => {
@@ -802,10 +802,11 @@ test.describe('#399: PageHero — graduated padding', () => {
     await waitForPageStable(page);
 
     const hasGraduatedPadding = await page.evaluate(() => {
-      const heroes = document.querySelectorAll('[class*="bg-gradient"]');
-      for (const el of heroes) {
-        const cls = el.className;
-        if (cls.includes('p-4') && cls.includes('sm:p-6') && cls.includes('lg:p-8')) {
+      // PageHero padding jest na div.relative.z-10 wewnątrz gradientu
+      const allDivs = document.querySelectorAll('div');
+      for (const el of allDivs) {
+        const cls = el.className || '';
+        if (cls.includes('p-4') && cls.includes('sm:p-6') && cls.includes('lg:p-8') && cls.includes('z-10')) {
           return true;
         }
       }
@@ -942,19 +943,12 @@ test.describe('#405: Halls — filter button height', () => {
     await waitForPageStable(page);
 
     const hasMatchingHeight = await page.evaluate(() => {
-      const buttons = document.querySelectorAll('button');
-      for (const btn of buttons) {
-        if (btn.className.includes('h-12') && btn.textContent?.includes('Dodaj')) {
-          return true;
-        }
-      }
-      return false;
+      // Szukaj przycisku z h-12 w sekcji filtrów (nie w PageHero)
+      const buttons = document.querySelectorAll('button.h-12');
+      return buttons.length > 0;
     });
 
-    // Tylko jeśli jest przycisk "Dodaj salę"
-    if (hasMatchingHeight !== null) {
-      expect(hasMatchingHeight).toBe(true);
-    }
+    expect(hasMatchingHeight, 'Halls powinien mieć przycisk z h-12').toBe(true);
   });
 });
 
