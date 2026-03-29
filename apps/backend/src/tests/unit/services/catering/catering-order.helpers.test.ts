@@ -266,7 +266,8 @@ describe('computeTotals', () => {
       const items = [{ quantity: 1, unitPrice: 0.03 }];
       const result = computeTotals(items, [], 'PERCENTAGE', 33);
       expect(result.discountAmount).toBe(0.01);
-      expect(result.totalPrice).toBe(0.02);
+      // 0.03 - 0.01 has floating point imprecision
+      expect(result.totalPrice).toBeCloseTo(0.02, 10);
     });
   });
 });
