@@ -53,7 +53,7 @@ export function EditableInternalNotesCard({
   }
 
   return (
-    <Card className="border-0 shadow-xl">
+    <Card className="border-0 shadow-xl overflow-hidden">
       <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 dark:from-violet-950/30 dark:via-purple-950/30 dark:to-fuchsia-950/30 p-5 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">

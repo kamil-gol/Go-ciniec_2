@@ -63,6 +63,8 @@ export function EditableNotesCard({
       title="Notatki"
       icon={<FileText className="h-5 w-5 text-white" />}
       iconGradient="from-orange-500 to-amber-500"
+      gradientHeader
+      headerGradient="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30"
       onSave={handleSave}
       onCancel={handleCancel}
       disabled={disabled}

@@ -53,16 +53,16 @@ export default function AttachmentPanel({
   }
 
   return (
-    <div className={cn('rounded-2xl border border-neutral-200/80 dark:border-neutral-700/50 bg-white dark:bg-neutral-800/80', className)}>
+    <div className={cn('rounded-2xl border-0 shadow-xl overflow-hidden bg-white dark:bg-neutral-800/80', className)}>
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200/80 dark:border-neutral-700/50 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20">
+      <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-            <Paperclip className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+          <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg shadow-lg">
+            <Paperclip className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+          <h2 className="text-xl font-bold">
             {title}
-          </h3>
+          </h2>
           {totalActive > 0 && (
             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
               {totalActive}

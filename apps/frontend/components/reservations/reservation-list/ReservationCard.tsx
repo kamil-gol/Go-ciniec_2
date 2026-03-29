@@ -213,7 +213,7 @@ export function ReservationCard({
                     </Button>
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent><p>Podgląd szczegółów</p></TooltipContent>
+                <TooltipContent side="top"><p>Podgląd szczegółów</p></TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -232,7 +232,7 @@ export function ReservationCard({
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent><p>Generuj PDF</p></TooltipContent>
+                <TooltipContent side="top"><p>Generuj PDF</p></TooltipContent>
               </Tooltip>
               {!reservation.archivedAt ? (
                 <Tooltip>
@@ -248,7 +248,7 @@ export function ReservationCard({
                       <Archive className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Zarchiwizuj</p></TooltipContent>
+                  <TooltipContent side="top"><p>Zarchiwizuj</p></TooltipContent>
                 </Tooltip>
               ) : (
                 <Tooltip>
@@ -263,7 +263,7 @@ export function ReservationCard({
                       <ArchiveRestore className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Przywróć z archiwum</p></TooltipContent>
+                  <TooltipContent side="top"><p>Przywróć z archiwum</p></TooltipContent>
                 </Tooltip>
               )}
               <Tooltip>
@@ -279,7 +279,7 @@ export function ReservationCard({
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent><p>Anuluj rezerwację</p></TooltipContent>
+                <TooltipContent side="top"><p>Anuluj rezerwację</p></TooltipContent>
               </Tooltip>
             </div>
           </TooltipProvider>

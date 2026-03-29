@@ -91,28 +91,28 @@ export function EditableGuestsCard({
         if (!editing) {
           return (
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
+              <div className="flex items-center justify-between p-3">
                 <div>
                   <p className="text-sm text-muted-foreground">Dorośli</p>
                   <p className="text-2xl font-bold">{initialAdults}</p>
                 </div>
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500" />
               </div>
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
+              <div className="flex items-center justify-between p-3">
                 <div>
                   <p className="text-sm text-muted-foreground">Dzieci (4-12)</p>
                   <p className="text-2xl font-bold">{initialChildren}</p>
                 </div>
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
               </div>
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
+              <div className="flex items-center justify-between p-3">
                 <div>
                   <p className="text-sm text-muted-foreground">Maluchy (0-3)</p>
                   <p className="text-2xl font-bold">{initialToddlers}</p>
                 </div>
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500" />
               </div>
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+              <div className="flex items-center justify-between p-3 rounded-lg border border-purple-200/50 dark:border-purple-800/50">
                 <div>
                   <p className="text-sm font-semibold">Razem</p>
                   <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
