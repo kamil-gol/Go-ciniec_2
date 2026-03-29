@@ -100,11 +100,13 @@ export function ReservationFinancialSummary({
   const activeDiscountAmount = Number(discountAmount) || 0
   const hasActiveDiscount = !!discountType && activeDiscountAmount > 0
 
+  const perPersonBase = adults * pricePerAdult
+    + childrenCount * pricePerChild
+    + toddlers * pricePerToddler
+
   const baseTotalPrice = hasMenu && priceBreakdown?.totalMenuPrice != null
     ? priceBreakdown.totalMenuPrice
-    : (hasActiveDiscount && priceBeforeDiscount != null && Number(priceBeforeDiscount) > 0)
-      ? Number(priceBeforeDiscount)
-      : totalPrice
+    : perPersonBase
   const extraHoursCost = extraHoursInfo?.extraCost || 0
   const effectiveTotalPrice = baseTotalPrice + extraHoursCost + extrasTotalPrice + effectiveCategoryExtrasTotal + effectiveVenueSurcharge
 
