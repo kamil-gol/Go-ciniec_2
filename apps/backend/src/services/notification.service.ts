@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from '@/utils/AppError';
  * Notification Service
  * Issue #128: System powiadomień
  */
@@ -44,8 +45,8 @@ export class NotificationService {
       });
 
       return result.count;
-    } catch (error: any) {
-      logger.error('[NotificationService] createForAll failed:', error.message);
+    } catch (error: unknown) {
+      logger.error('[NotificationService] createForAll failed:', getErrorMessage(error));
       return 0;
     }
   }
@@ -68,8 +69,8 @@ export class NotificationService {
           entityId: data.entityId,
         },
       });
-    } catch (error: any) {
-      logger.error('[NotificationService] createForUser failed:', error.message);
+    } catch (error: unknown) {
+      logger.error('[NotificationService] createForUser failed:', getErrorMessage(error));
       return null;
     }
   }

@@ -36,7 +36,7 @@ class AuditLogController {
       });
 
       res.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[AuditLogController] Error fetching audit logs:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania logów',
@@ -56,7 +56,7 @@ class AuditLogController {
       const logs = await auditLogService.getEntityLogs(entityType, entityId);
 
       res.json(logs);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[AuditLogController] Error fetching entity logs:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania logów encji',
@@ -77,7 +77,7 @@ class AuditLogController {
       const logs = await auditLogService.getRecentActivity(limitNum);
 
       res.json(logs);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[AuditLogController] Error fetching recent activity:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania ostatniej aktywności',
@@ -94,7 +94,7 @@ class AuditLogController {
     try {
       const types = await auditLogService.getEntityTypes();
       res.json(types);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[AuditLogController] Error fetching entity types:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania typów encji',
@@ -111,7 +111,7 @@ class AuditLogController {
     try {
       const actions = await auditLogService.getActions();
       res.json(actions);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[AuditLogController] Error fetching actions:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania akcji',
@@ -134,7 +134,7 @@ class AuditLogController {
       );
 
       res.json(stats);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[AuditLogController] Error fetching statistics:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania statystyk',

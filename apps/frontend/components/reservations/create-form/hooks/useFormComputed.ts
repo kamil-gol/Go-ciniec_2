@@ -3,15 +3,18 @@ import type { ReservationFormData } from '../validation'
 import { DEFAULT_STANDARD_HOURS, DEFAULT_EXTRA_HOUR_RATE } from '../validation'
 import { toLocalISO } from '../utils'
 import type { SelectedExtra } from '@/components/service-extras/CreateReservationExtrasSection'
+import type { Hall, EventType } from '@/types/hall.types'
+import type { Client } from '@/types/client.types'
+import type { MenuTemplate, MenuPackage } from '@/types/menu.types'
 
 export interface FormComputedParams {
   watchAll: ReservationFormData
-  hallsArray: any[]
-  eventTypesArray: any[]
-  menuTemplatesArray: any[]
+  hallsArray: Hall[]
+  eventTypesArray: EventType[]
+  menuTemplatesArray: MenuTemplate[]
   menuTemplatesLoading: boolean
-  templatePackagesArray: any[]
-  clientsArray: any[]
+  templatePackagesArray: MenuPackage[]
+  clientsArray: Client[]
   selectedExtras: SelectedExtra[]
 }
 
@@ -49,11 +52,11 @@ export function useFormComputed({
   // ═══ EVENT TYPE ═══
   const selectedEventType = useMemo(() => {
     if (!selectedEventTypeId) return null
-    return (eventTypesArray as any[]).find((t) => t.id === selectedEventTypeId) || null
+    return eventTypesArray.find((t) => t.id === selectedEventTypeId) || null
   }, [selectedEventTypeId, eventTypesArray])
 
-  const standardHours = Number((selectedEventType as any)?.standardHours) || DEFAULT_STANDARD_HOURS
-  const extraHourRate = Number((selectedEventType as any)?.extraHourRate) || DEFAULT_EXTRA_HOUR_RATE
+  const standardHours = Number(selectedEventType?.standardHours) || DEFAULT_STANDARD_HOURS
+  const extraHourRate = Number(selectedEventType?.extraHourRate) || DEFAULT_EXTRA_HOUR_RATE
 
   const selectedEventTypeName = useMemo(() => {
     const t = eventTypesArray.find((t) => t.id === selectedEventTypeId)
@@ -67,7 +70,7 @@ export function useFormComputed({
   // ═══ HALL ═══
   const selectedHall = useMemo(() => hallsArray.find((h) => h.id === hallId), [hallsArray, hallId])
   const selectedHallCapacity = selectedHall?.capacity || 0
-  const isMultiBookingHall = !!(selectedHall as any)?.allowMultipleBookings
+  const isMultiBookingHall = !!selectedHall?.allowMultipleBookings
 
   // ═══ DATE/TIME ISO ═══
   const startDateTimeISO = useMemo(() => {
@@ -132,7 +135,7 @@ export function useFormComputed({
 
   // ═══ VENUE SURCHARGE ═══
   const venueSurcharge = useMemo(() => {
-    if (!selectedHall || !(selectedHall as any).isWholeVenue) {
+    if (!selectedHall || !selectedHall.isWholeVenue) {
       return { amount: 0, label: null as string | null }
     }
     if (totalGuests < 30) {
@@ -159,9 +162,9 @@ export function useFormComputed({
   // ═══ CLIENTS ═══
   const clientComboboxOptions = useMemo(() =>
     clientsArray.map((client) => {
-      const isCompany = (client as any).clientType === 'COMPANY'
-      const companyName = (client as any).companyName
-      const nip = (client as any).nip
+      const isCompany = client.clientType === 'COMPANY'
+      const companyName = client.companyName
+      const nip = client.nip
 
       if (isCompany && companyName) {
         return {

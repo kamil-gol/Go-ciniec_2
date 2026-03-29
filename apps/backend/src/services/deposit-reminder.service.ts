@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from '@/utils/AppError';
  * Deposit Reminder Service
  * Finds deposits that need reminders and sends emails
  *
@@ -38,8 +39,8 @@ const depositReminderService = {
       try {
         const count = await this.sendUpcomingReminders(daysLeft);
         upcomingSent += count;
-      } catch (error: any) {
-        logger.error(`[Reminder] Error sending ${daysLeft}-day reminders: ${error instanceof Error ? error.message : String(error)}`);
+      } catch (error: unknown) {
+        logger.error(`[Reminder] Error sending ${daysLeft}-day reminders: ${error instanceof Error ? getErrorMessage(error) : String(error)}`);
         errors++;
       }
     }
@@ -48,8 +49,8 @@ const depositReminderService = {
     try {
       const count = await this.sendOverdueNotices();
       overdueSent += count;
-    } catch (error: any) {
-      logger.error(`[Reminder] Error sending overdue notices: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (error: unknown) {
+      logger.error(`[Reminder] Error sending overdue notices: ${error instanceof Error ? getErrorMessage(error) : String(error)}`);
       errors++;
     }
 

@@ -88,3 +88,10 @@ export class AppError extends Error {
     return new AppError(message, 500, false);
   }
 }
+
+/** Extract message from unknown catch error — use instead of `(error: any).message` */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  return String(error);
+}
