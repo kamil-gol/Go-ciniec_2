@@ -385,13 +385,13 @@ export async function executeUpdateReservation(
   if (existing.status === ReservationStatus.ARCHIVED) throw new AppError(RESERVATION.CANNOT_UPDATE_ARCHIVED, 409);
 
   // 1. Hall & timing update processing
-  const hallTimingResult = await processHallAndTimingUpdates(data, existing, userId, updateReservationMenu);
+  const hallTimingResult = await processHallAndTimingUpdates(data, existing as any, userId, updateReservationMenu);
 
   // 2. Price recalculation
-  await recalculatePrices(existing, data, hallTimingResult, userId);
+  await recalculatePrices(existing as any, data, hallTimingResult, userId);
 
   // 3. Category extras upsert & final recalculation
-  const reservation = await upsertCategoryExtrasAndRecalculate(id, data, existing, hallTimingResult, userId);
+  const reservation = await upsertCategoryExtrasAndRecalculate(id, data, existing as any, hallTimingResult, userId);
 
   return reservation;
 }

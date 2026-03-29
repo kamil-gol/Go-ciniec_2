@@ -69,7 +69,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
   );
 
   const selectedClient = useMemo(
-    () => clientsArray.find((c: { id: string; isPrimary?: boolean }) => c.id === state.clientId) as { id: string } | undefined,
+    () => clientsArray.find((c: any) => c.id === state.clientId) as any | undefined,
     [clientsArray, state.clientId]
   );
 
@@ -77,8 +77,8 @@ export function NewOrderWizard({ onSuccess }: Props) {
     if (!selectedClient) return;
     const isCompany = selectedClient.clientType === 'COMPANY';
     if (isCompany) {
-      const primaryContact = (selectedClient.contacts as { id: string; isPrimary?: boolean }[])?.find((c: { id: string; isPrimary?: boolean }) => c.isPrimary);
-      const contact = primaryContact ?? (selectedClient.contacts as { id: string; isPrimary?: boolean }[])?.[0];
+      const primaryContact = (selectedClient.contacts as any[])?.find((c: any) => c.isPrimary);
+      const contact = primaryContact ?? (selectedClient.contacts as any[])?.[0];
       set({
         contactName: contact
           ? `${contact.firstName} ${contact.lastName}`
