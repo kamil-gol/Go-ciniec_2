@@ -14,6 +14,7 @@ import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import type { DishCategory } from '@/types'
 import { PageLayout, PageHero, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function DishCategoriesPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -127,6 +128,7 @@ export default function DishCategoriesPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {ConfirmDialog}
       <PageHero
         accent={accent}

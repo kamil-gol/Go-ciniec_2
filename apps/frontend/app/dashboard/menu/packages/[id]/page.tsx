@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import PackageForm from '@/components/menu/PackageForm';
 import { getPackageById, type MenuPackage } from '@/lib/api/menu-packages-api';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function EditPackagePage() {
   const params = useParams();
@@ -60,22 +60,7 @@ export default function EditPackagePage() {
 
   return (
     <div className="p-8">
-      {/* Breadcrumbs */}
-      <nav className="text-sm text-neutral-600 mb-6">
-        <Link href="/dashboard" className="hover:text-neutral-900">
-          Dashboard
-        </Link>
-        {' > '}
-        <Link href="/dashboard/menu" className="hover:text-neutral-900">
-          Menu
-        </Link>
-        {' > '}
-        <Link href="/dashboard/menu/packages" className="hover:text-neutral-900">
-          Pakiety
-        </Link>
-        {' > '}
-        <span className="text-neutral-900">{pkg.name}</span>
-      </nav>
+      <Breadcrumb />
 
       {/* Header */}
       <div className="mb-8">

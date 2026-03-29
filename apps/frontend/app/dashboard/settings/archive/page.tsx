@@ -22,6 +22,7 @@ import {
   useRunArchiveNow,
 } from '../../../../src/hooks/use-archive-settings';
 import type { ArchiveRunResult } from '../../../../src/hooks/use-archive-settings';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 // ═══════════════════════════════════════════════════════
 // 🗄️ Archive Settings Page — /dashboard/settings/archive
@@ -115,6 +116,7 @@ export default function ArchiveSettingsPage() {
 
   return (
     <div className="space-y-6 p-6">
+      <Breadcrumb />
       {/* Header */}
       <div>
         <a

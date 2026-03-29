@@ -11,6 +11,7 @@ import { HallCard } from '@/components/halls/hall-card'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { toast } from 'sonner'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function HallsPage() {
   const [halls, setHalls] = useState<Hall[]>([])
@@ -50,6 +51,7 @@ export default function HallsPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={accent}

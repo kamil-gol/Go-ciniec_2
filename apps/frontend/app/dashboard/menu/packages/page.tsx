@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function PackagesListPage() {
   const searchParams = useSearchParams();
@@ -66,6 +67,7 @@ export default function PackagesListPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {ConfirmDialog}
       <PageHero
         accent={accent}

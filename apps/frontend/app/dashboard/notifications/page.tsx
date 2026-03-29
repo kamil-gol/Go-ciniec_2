@@ -11,6 +11,7 @@ import { FilterTabs } from '@/components/shared/FilterTabs'
 import { moduleAccents } from '@/lib/design-tokens'
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useUnreadCount } from '@/hooks/use-notifications'
 import type { Notification } from '@/types/notification.types'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 const accent = moduleAccents.notifications
 
@@ -181,6 +182,7 @@ export default function NotificationsPage() {
                   )}
                 >
                   <div className={cn('flex-shrink-0 p-2.5 rounded-xl', colorClass)}>
+                    <Breadcrumb />
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">

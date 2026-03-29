@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared'
 import { Skeleton } from '@/components/ui/skeleton'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 const accent = moduleAccents.archive
 
@@ -64,6 +65,7 @@ export default function ArchivePage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={accent}

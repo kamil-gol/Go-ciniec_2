@@ -97,7 +97,7 @@ describe('DailyViewPage', () => {
 
   it('renders page hero with title', () => {
     render(<DailyViewPage />)
-    expect(screen.getByText('Widok Dzienny')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Widok Dzienny' })).toBeInTheDocument()
   })
 
   it('renders subtitle with today label', () => {

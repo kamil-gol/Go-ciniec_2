@@ -35,6 +35,7 @@ import {
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import type { ServiceCategory, ServiceItem } from '@/types/service-extra.types';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 type ViewMode = 'categories' | 'items';
 
@@ -126,6 +127,7 @@ export default function ServiceExtrasPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={accent}

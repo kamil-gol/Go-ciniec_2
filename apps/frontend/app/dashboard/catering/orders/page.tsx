@@ -18,6 +18,7 @@ import { NewOrderWizard } from './components/NewOrderWizard';
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import type { CateringOrdersFilter } from '@/types/catering-order.types';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 const CATERING_ACCENT = moduleAccents.catering;
 
@@ -67,6 +68,7 @@ export default function CateringOrdersPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={CATERING_ACCENT}

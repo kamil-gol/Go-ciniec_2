@@ -8,6 +8,7 @@ import { moduleAccents } from '@/lib/design-tokens'
 import { useReservations } from '@/lib/api/reservations'
 import DailyReservationsSection from './components/DailyReservationsSection'
 import CateringDailyWidget from './components/CateringDailyWidget'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
 
@@ -113,6 +114,7 @@ export default function DailyViewPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {/* Hero z nawigacją dat */}
       <PageHero
         accent={accent}

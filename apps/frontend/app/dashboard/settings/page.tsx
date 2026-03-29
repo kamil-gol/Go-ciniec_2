@@ -9,6 +9,7 @@ import { UsersTab } from '@/components/settings/UsersTab'
 import { RolesTab } from '@/components/settings/RolesTab'
 import { CompanyTab } from '@/components/settings/CompanyTab'
 import { ArchiveTab } from '@/components/settings/ArchiveTab'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function SettingsPage() {
   const accent = moduleAccents.settings
@@ -16,6 +17,7 @@ export default function SettingsPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       <PageHero
         accent={accent}
         title="Ustawienia"

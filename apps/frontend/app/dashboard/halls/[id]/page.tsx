@@ -11,6 +11,7 @@ import { HallReservationsCalendar } from '@/components/halls/hall-reservations-c
 import { DetailHero } from '@/components/shared/DetailHero'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function HallDetailsPage() {
   const params = useParams()
@@ -57,6 +58,7 @@ export default function HallDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <Breadcrumb />
       <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Premium Hero Section */}
         <DetailHero

@@ -33,6 +33,7 @@ import { toast } from 'sonner';
 import type { ReportTab } from './components/types';
 import { getDatePresets } from './components/chart-utils';
 import { ReportFilters } from './components/ReportFilters';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 const ReportTabSkeleton = () => (
   <div className="space-y-4 sm:space-y-6">
@@ -156,6 +157,7 @@ export default function ReportsPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       <PageHero
         accent={accent}
         title="Raporty"

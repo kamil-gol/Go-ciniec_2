@@ -26,6 +26,7 @@ import { PackageForm } from './components/PackageForm';
 import type { CateringPackage } from '@/types/catering.types';
 import { statGradients, layout } from '@/lib/design-tokens';
 import type { ModuleAccent } from '@/lib/design-tokens';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 const CATERING_ACCENT: ModuleAccent = {
   name: 'Catering',
@@ -64,6 +65,7 @@ export default function PackagesPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={CATERING_ACCENT}

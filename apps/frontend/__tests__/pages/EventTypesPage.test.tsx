@@ -142,7 +142,7 @@ describe('EventTypesPage', () => {
     mockGetEventTypeStats.mockResolvedValue(mockStats)
     render(<EventTypesPage />)
     await waitFor(() => {
-      expect(screen.getByText('Typy Wydarzeń')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Typy Wydarzeń' })).toBeInTheDocument()
     })
   })
 

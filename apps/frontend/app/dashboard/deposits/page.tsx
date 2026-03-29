@@ -23,6 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { FilterTabs } from '@/components/shared/FilterTabs'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { toast } from 'sonner'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 type FilterStatus = 'ALL' | DepositStatus
 
@@ -97,6 +98,7 @@ export default function DepositsPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       <PageHero
         accent={accent}
         title="Zaliczki"

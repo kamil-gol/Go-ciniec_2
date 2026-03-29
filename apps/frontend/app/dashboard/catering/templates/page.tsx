@@ -23,6 +23,7 @@ import { CateringTemplateList } from './components/CateringTemplateList';
 import { CateringTemplateForm } from './components/CateringTemplateForm';
 import type { CateringTemplate } from '@/types/catering.types';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 const CATERING_ACCENT = moduleAccents.catering;
 
@@ -55,6 +56,7 @@ export default function CateringTemplatesPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={CATERING_ACCENT}

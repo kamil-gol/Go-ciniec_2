@@ -149,7 +149,7 @@ describe('ReservationCalendarPage', () => {
     })
 
     render(<CalendarPage />)
-    expect(screen.getByText('Rezerwacje')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Rezerwacje' })).toBeInTheDocument()
   })
 
   it('renders "Nowa Rezerwacja" button in hero', () => {

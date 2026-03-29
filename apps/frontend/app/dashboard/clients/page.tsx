@@ -13,6 +13,7 @@ import { ClientsList } from '@/components/clients/clients-list'
 import { CreateClientForm } from '@/components/clients/create-client-form'
 import { clientsApi, clientsKeys } from '@/lib/api/clients'
 import { useQuery } from '@tanstack/react-query'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 const accent = moduleAccents.clients
 
@@ -51,6 +52,7 @@ export default function ClientsPage() {
 
   return (
     <div className="container mx-auto py-6 px-4 sm:py-8 sm:px-6 space-y-6 sm:space-y-8">
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={accent}

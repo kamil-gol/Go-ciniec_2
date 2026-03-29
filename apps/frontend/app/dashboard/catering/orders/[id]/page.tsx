@@ -25,6 +25,7 @@ import { OrderDelivery } from './components/OrderDelivery';
 import { OrderFinancials } from './components/OrderFinancials';
 import { OrderClientCard } from './components/OrderClientCard';
 import { OrderNotes } from './components/OrderNotes';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function CateringOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -114,6 +115,7 @@ export default function CateringOrderDetailPage() {
 
   return (
     <div className="min-h-0">
+      <Breadcrumb />
       {/* ═══ HERO ═══ */}
       <OrderHeader
         order={order}

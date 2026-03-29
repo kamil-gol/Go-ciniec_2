@@ -135,7 +135,7 @@ describe('AuditLogPage', () => {
     mockUseAuditLogStatistics.mockReturnValue({ data: mockStats, isLoading: false })
 
     render(<AuditLogPage />)
-    expect(screen.getByText('Dziennik Audytu')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Dziennik Audytu' })).toBeInTheDocument()
   })
 
   it('renders subtitle', () => {
