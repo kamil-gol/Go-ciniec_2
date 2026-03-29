@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/auth.fixture';
 import { manualLogin } from '../fixtures/auth.fixture';
-import { getFutureDate, getPastDate, getTodayDate } from '../fixtures/test-data';
+import { testData, getFutureDate, getPastDate, getTodayDate } from '../fixtures/test-data';
 
 test.describe('Bug #5 Regression - Race Conditions', () => {
   test('should handle concurrent drag operations without crashes', async ({ browser }) => {
@@ -8,7 +8,7 @@ test.describe('Bug #5 Regression - Race Conditions', () => {
 
     const context1 = await browser.newContext();
     const page1 = await context1.newPage();
-    await manualLogin(page1, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
+    await manualLogin(page1, testData.admin.email, testData.admin.password);
 
     if (!page1.url().includes('/dashboard')) {
       await context1.close();
@@ -20,7 +20,7 @@ test.describe('Bug #5 Regression - Race Conditions', () => {
 
     const context2 = await browser.newContext();
     const page2 = await context2.newPage();
-    await manualLogin(page2, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
+    await manualLogin(page2, testData.admin.email, testData.admin.password);
     await page2.goto('/dashboard/queue', { waitUntil: 'domcontentloaded' }).catch(() => {});
 
     const page1OK = await page1.locator('main').count().catch(() => 0) > 0;

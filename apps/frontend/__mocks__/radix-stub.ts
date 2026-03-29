@@ -47,5 +47,18 @@ export const Slot = React.forwardRef(({ children, ...props }: any, ref: any) => 
   return React.createElement('span', { ref, ...props }, children);
 });
 
+// DropdownMenu-specific
+export const Sub = fragment;
+export const SubTrigger = passthrough;
+SubTrigger.displayName = 'SubTrigger';
+export const SubContent = passthrough;
+SubContent.displayName = 'SubContent';
+export const RadioGroup = passthrough;
+RadioGroup.displayName = 'RadioGroup';
+export const RadioItem = passthrough;
+RadioItem.displayName = 'RadioItem';
+export const CheckboxItem = passthrough;
+CheckboxItem.displayName = 'CheckboxItem';
+
 // Default export
 export default { Root, Trigger, Portal, Content, Title, Description, Close };

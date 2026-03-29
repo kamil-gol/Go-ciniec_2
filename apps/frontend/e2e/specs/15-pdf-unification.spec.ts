@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { testData } from '../fixtures/test-data';
 
 /**
  * PDF UNIFICATION — Automated Verification Tests
@@ -10,18 +11,11 @@ import { test, expect } from '@playwright/test';
  * - Poprawność Content-Type (application/pdf)
  *
  * Uruchomienie:
- *   PLAYWRIGHT_TEST_BASE_URL=https://dev.gosciniec.online npx playwright test specs/15-pdf-unification.spec.ts --project=chromium
+ *   npx playwright test specs/15-pdf-unification.spec.ts --project=chromium
  */
 
-const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl';
-const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || '';
-
-if (!ADMIN_PASSWORD) {
-  throw new Error(
-    'TEST_ADMIN_PASSWORD is required. Use:\n' +
-    '  TEST_ADMIN_PASSWORD=xxx npx playwright test specs/15-pdf-unification.spec.ts --project=chromium'
-  );
-}
+const ADMIN_EMAIL = testData.admin.email;
+const ADMIN_PASSWORD = testData.admin.password;
 
 test.setTimeout(90_000);
 test.describe.configure({ retries: 2 });

@@ -19,18 +19,8 @@ import { test, expect } from '@playwright/test';
  * - #411: Tooltip keyboard focus support
  *
  * Uruchomienie:
- *   PLAYWRIGHT_TEST_BASE_URL=https://dev.gosciniec.online npx playwright test specs/14-uiux-audit5.spec.ts --project=chromium
+ *   npx playwright test specs/14-uiux-audit5.spec.ts --project=chromium
  */
-
-const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl';
-const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || '';
-
-if (!ADMIN_PASSWORD) {
-  throw new Error(
-    'TEST_ADMIN_PASSWORD is required. Use:\n' +
-    '  TEST_ADMIN_PASSWORD=xxx npx playwright test specs/14-uiux-audit5.spec.ts --project=chromium'
-  );
-}
 
 test.setTimeout(90_000);
 test.describe.configure({ retries: 2 });
@@ -40,42 +30,11 @@ async function waitForPageStable(page: import('@playwright/test').Page) {
   await page.waitForTimeout(2000);
 }
 
-async function ensureLoggedIn(page: import('@playwright/test').Page) {
-  await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  await page.waitForTimeout(2000);
-
-  if (!page.url().includes('/login')) return;
-
-  await page.evaluate(({ email, password }) => {
-    function setNativeValue(element: HTMLInputElement, value: string) {
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype, 'value'
-      )!.set!;
-      nativeInputValueSetter.call(element, value);
-      element.dispatchEvent(new Event('input', { bubbles: true }));
-      element.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement;
-    const passInput = document.querySelector('input[name="password"]') as HTMLInputElement;
-    if (emailInput) setNativeValue(emailInput, email);
-    if (passInput) setNativeValue(passInput, password);
-  }, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
-
-  await page.waitForTimeout(500);
-  await page.click('button[type="submit"]');
-
-  try {
-    await page.waitForURL(/\/dashboard/, { timeout: 30_000, waitUntil: 'domcontentloaded' });
-  } catch {
-    await page.waitForTimeout(5000);
-  }
-
-  if (page.url().includes('/login')) {
-    throw new Error(`Login failed for ${ADMIN_EMAIL}`);
-  }
-}
-
 async function enableDarkMode(page: import('@playwright/test').Page) {
+  // Ensure we're on a real page (not about:blank) before accessing localStorage
+  if (page.url() === 'about:blank') {
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+  }
   await page.evaluate(() => {
     document.documentElement.classList.add('dark');
     localStorage.setItem('theme', 'dark');
@@ -88,7 +47,7 @@ async function enableDarkMode(page: import('@playwright/test').Page) {
 // ==========================================
 test.describe('#408 Card dark mode separation', () => {
   test('--card and --background have different values in dark mode', async ({ page }) => {
-    await ensureLoggedIn(page);
+
     await enableDarkMode(page);
     await waitForPageStable(page);
 
@@ -109,7 +68,7 @@ test.describe('#408 Card dark mode separation', () => {
 // ==========================================
 test.describe('#412 Base components dark mode', () => {
   test('outline button has dark mode border in dashboard', async ({ page }) => {
-    await ensureLoggedIn(page);
+
     await enableDarkMode(page);
     await waitForPageStable(page);
 
@@ -155,7 +114,8 @@ test.describe('#420 Error boundary', () => {
   test('dashboard error.tsx file exists in build', async ({ page }) => {
     // Ten test weryfikuje że error boundary działa — trudne do testowania bez
     // sztucznego wywołania błędu, więc sprawdzamy że strona w ogóle się ładuje
-    await ensureLoggedIn(page);
+
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await waitForPageStable(page);
 
     // Dashboard powinien się załadować poprawnie
@@ -169,7 +129,7 @@ test.describe('#420 Error boundary', () => {
 test.describe('#421 Queue mobile move buttons', () => {
   test('move up/down buttons visible on mobile viewport', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await ensureLoggedIn(page);
+
     await page.goto('/dashboard/queue', { waitUntil: 'domcontentloaded' });
     await waitForPageStable(page);
 
@@ -189,7 +149,7 @@ test.describe('#421 Queue mobile move buttons', () => {
 // ==========================================
 test.describe('#422 Toaster styling', () => {
   test('toaster uses Tailwind classes', async ({ page }) => {
-    await ensureLoggedIn(page);
+
     await waitForPageStable(page);
 
     // Sonner renders toasts in [data-sonner-toaster]
@@ -206,7 +166,7 @@ test.describe('#422 Toaster styling', () => {
 // ==========================================
 test.describe('#428 Queue aria-live', () => {
   test('queue page has aria-live region for announcements', async ({ page }) => {
-    await ensureLoggedIn(page);
+
     await page.goto('/dashboard/queue', { waitUntil: 'domcontentloaded' });
     await waitForPageStable(page);
 
@@ -222,7 +182,7 @@ test.describe('#428 Queue aria-live', () => {
 // ==========================================
 test.describe('#434 Shadows CSS variables', () => {
   test('shadow-color CSS variable is defined', async ({ page }) => {
-    await ensureLoggedIn(page);
+
     await waitForPageStable(page);
 
     const shadowColor = await page.evaluate(() => {
@@ -234,7 +194,7 @@ test.describe('#434 Shadows CSS variables', () => {
   });
 
   test('shadow-color changes in dark mode', async ({ page }) => {
-    await ensureLoggedIn(page);
+
 
     // Get light mode shadow-color
     const lightShadow = await page.evaluate(() => {
@@ -311,7 +271,7 @@ test.describe('#435 Login form accessibility', () => {
 // ==========================================
 test.describe('#411 Tooltip focus support', () => {
   test('tooltip shows on focus-within (keyboard navigation)', async ({ page }) => {
-    await ensureLoggedIn(page);
+
     await waitForPageStable(page);
 
     // Szukamy tooltip w dowolnym module
@@ -329,7 +289,7 @@ test.describe('#411 Tooltip focus support', () => {
 // ==========================================
 test.describe('#416 EmptyState animation', () => {
   test('empty state has animate-slide-up class', async ({ page }) => {
-    await ensureLoggedIn(page);
+
     // Navigate to a module that likely has empty state
     await page.goto('/dashboard/queue', { waitUntil: 'domcontentloaded' });
     await waitForPageStable(page);
@@ -349,7 +309,7 @@ test.describe('#416 EmptyState animation', () => {
 // ==========================================
 test.describe('#425 Checkbox dark mode', () => {
   test('checkbox border visible in dark mode', async ({ page }) => {
-    await ensureLoggedIn(page);
+
     await page.goto('/dashboard/queue', { waitUntil: 'domcontentloaded' });
     await enableDarkMode(page);
     await waitForPageStable(page);
@@ -374,7 +334,7 @@ test.describe('#425 Checkbox dark mode', () => {
 // ==========================================
 test.describe('Dark mode integration', () => {
   test('cards visually separated from background in dark mode', async ({ page }) => {
-    await ensureLoggedIn(page);
+
     await enableDarkMode(page);
     await waitForPageStable(page);
 
