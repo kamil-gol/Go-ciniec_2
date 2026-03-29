@@ -52,8 +52,8 @@ interface ExistingReservation {
   endDateTime: Date | null;
   internalNotes: string | null;
   status: string;
-  hall: Record<string, any> | null;
-  eventType: Record<string, any> | null;
+  hall: any;
+  eventType: any;
   menuSnapshot: { id: string; totalMenuPrice: number | string | null; menuData?: unknown } | null;
   client: { id: string; firstName: string; lastName: string; companyName?: string | null; clientType?: string } | null;
   [key: string]: unknown;
@@ -63,7 +63,7 @@ interface ExistingReservation {
 
 export interface HallTimingResult {
   updateData: Prisma.ReservationUncheckedUpdateInput;
-  effectiveHall: Record<string, any> | null;
+  effectiveHall: any;
   hallChanged: boolean;
   guestsChanged: boolean;
   newAdults: number;
