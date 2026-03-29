@@ -12,7 +12,7 @@ import { isCategoryInactive, getInactiveReason, getGuestCountForTarget } from '.
 import { formatCurrency } from '@/lib/utils';
 
 interface CategoryCardProps {
-  category: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number; dishes: { id: string; name: string; description?: string | null }[] };
+  category: any;
   adults: number;
   childrenCount: number;
   toddlers: number;
@@ -21,11 +21,11 @@ interface CategoryCardProps {
   extrasEnabled: boolean;
   extrasWarning?: string;
   getCategoryTotal: (categoryId: string) => number;
-  getEffectiveMaxSelect: (category: { categoryId: string; portionTarget?: string; minSelect: number; maxSelect: number }) => number;
+  getEffectiveMaxSelect: (category: any) => number;
   getCategoryRemaining: (categoryId: string) => number;
   getAvailableQuantityOptions: (categoryId: string, dishId: string) => number[];
-  getExtraQuantity: (category: { categoryId: string; portionTarget?: string; minSelect: number; maxSelect: number }) => number;
-  getExtraCost: (category: { categoryId: string; portionTarget?: string; minSelect: number; maxSelect: number }) => number;
+  getExtraQuantity: (category: any) => number;
+  getExtraCost: (category: any) => number;
   onToggleDish: (categoryId: string, dishId: string) => void;
   onUpdateQuantity: (categoryId: string, dishId: string, quantity: number) => void;
   onToggleExtras: (categoryId: string) => void;
@@ -194,7 +194,7 @@ export function CategoryCard({
         {/* Dishes Grid — hidden for inactive categories */}
         {!inactive && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {category.dishes.map((dish: { id: string; name: string; description?: string | null }) => {
+            {category.dishes.map((dish: any) => {
               const isSelected = !!selections[dish.id];
               const quantity = selections[dish.id] || 1;
               const isDisabled = !isSelected && isAtMaxLimit;
