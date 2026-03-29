@@ -61,7 +61,7 @@ export function MenuPreparationsTab({ query, view }: {
       {/* DETAILED VIEW */}
       {view === 'detailed' && days && days.length > 0 && (
         <div className="space-y-4">
-          {days.map((day: any) => (
+          {days.map((day: Record<string, unknown>) => (
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -71,7 +71,7 @@ export function MenuPreparationsTab({ query, view }: {
                   {day.totalReservations} {day.totalReservations === 1 ? 'rezerwacja' : 'rezerwacji'} &middot; {day.totalGuests} gości
                 </span>
               </div>
-              {day.reservations.map((res: any) => (
+              {day.reservations.map((res: Record<string, unknown>) => (
                 <div key={res.reservationId} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
                   {/* Reservation header */}
                   <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
@@ -112,7 +112,7 @@ export function MenuPreparationsTab({ query, view }: {
                       <div key={ci} className="px-4 py-2">
                         <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-1 flex items-center">
                           {course.courseName}
-                          <PortionTargetBadge target={(course as any).portionTarget} />
+                          <PortionTargetBadge target={(course as Record<string, unknown>).portionTarget} />
                         </div>
                         <div className="space-y-0.5">
                           {course.dishes.map((dish: any, di: number) => (
@@ -146,7 +146,7 @@ export function MenuPreparationsTab({ query, view }: {
       {/* SUMMARY VIEW -- with Maluchy column + portionTarget badge */}
       {view === 'summary' && summaryDays && summaryDays.length > 0 && (
         <div className="space-y-4">
-          {summaryDays.map((day: any) => (
+          {summaryDays.map((day: Record<string, unknown>) => (
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -161,7 +161,7 @@ export function MenuPreparationsTab({ query, view }: {
                   <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/20">
                     <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide inline-flex items-center">
                       {course.courseName}
-                      <PortionTargetBadge target={(course as any).portionTarget} />
+                      <PortionTargetBadge target={(course as Record<string, unknown>).portionTarget} />
                     </span>
                   </div>
                   <div className="overflow-x-auto">
@@ -193,7 +193,7 @@ export function MenuPreparationsTab({ query, view }: {
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-300 hidden sm:table-cell">{dish.childrenPortions}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-300 hidden sm:table-cell">{dish.toddlerPortions}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-cell truncate">
-                              {dish.reservations.map((r: any) => `${r.clientName} (${r.guests})`).join(', ')}
+                              {dish.reservations.map((r: Record<string, unknown>) => `${r.clientName} (${r.guests})`).join(', ')}
                             </td>
                           </tr>
                         ))}

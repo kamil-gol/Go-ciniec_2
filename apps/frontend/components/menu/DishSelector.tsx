@@ -62,7 +62,7 @@ export function DishSelector({
     if (categoryData?.categories && !isInitialized) {
       const initialSelectionsData: Record<string, Record<string, number>> = {}
 
-      categoryData.categories.forEach((cat: any) => {
+      categoryData.categories.forEach((cat: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number }) => {
         initialSelectionsData[cat.categoryId] = {}
       })
 
@@ -103,7 +103,7 @@ export function DishSelector({
   const categories = categoryData.categories
 
   // #216: Get effective maxSelect for a category (base + maxExtra if extras enabled)
-  const getEffectiveMaxSelect = (category: any): number => {
+  const getEffectiveMaxSelect = (category: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number; dishes: { id: string; name: string }[] }): number => {
     const base = Number(category.maxSelect)
     if (extrasEnabled[category.categoryId] && category.extraItemPrice != null && category.maxExtra != null) {
       return base + Number(category.maxExtra)
@@ -117,7 +117,7 @@ export function DishSelector({
   }
 
   const getCategorySettings = (categoryId: string) => {
-    return categories.find((cat: any) => cat.categoryId === categoryId)
+    return categories.find((cat: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number }) => cat.categoryId === categoryId)
   }
 
   const getCategoryRemaining = (categoryId: string): number => {
@@ -235,7 +235,7 @@ export function DishSelector({
   }
 
   // #216: Calculate extra quantity for a category (portions beyond base maxSelect)
-  const getExtraQuantity = (category: any): number => {
+  const getExtraQuantity = (category: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number; dishes: { id: string; name: string }[] }): number => {
     if (!extrasEnabled[category.categoryId]) return 0
     const total = getCategoryTotal(category.categoryId)
     const baseMax = Number(category.maxSelect)
@@ -243,7 +243,7 @@ export function DishSelector({
   }
 
   // #216: Calculate extra cost for a single category (per-person)
-  const getExtraCost = (category: any): number => {
+  const getExtraCost = (category: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number; dishes: { id: string; name: string }[] }): number => {
     const extraQty = getExtraQuantity(category)
     if (extraQty <= 0 || category.extraItemPrice == null) return 0
     const price = Number(category.extraItemPrice)
@@ -255,7 +255,7 @@ export function DishSelector({
     const newErrors: Record<string, string> = {}
     let isValid = true
 
-    categories.forEach((category: any) => {
+    categories.forEach((category: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number; dishes: { id: string; name: string }[] }) => {
       // Skip validation for inactive categories
       if (isCategoryInactive(category.portionTarget, adults, childrenCount)) return;
 
@@ -289,8 +289,8 @@ export function DishSelector({
 
     // Exclude inactive categories from result
     const selectionsResult: CategorySelection[] = categories
-      .filter((category: any) => !isCategoryInactive(category.portionTarget, adults, childrenCount))
-      .map((category: any) => ({
+      .filter((category: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number; dishes: { id: string; name: string }[] }) => !isCategoryInactive(category.portionTarget, adults, childrenCount))
+      .map((category: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number; dishes: { id: string; name: string }[] }) => ({
         categoryId: category.categoryId,
         dishes: Object.entries(selections[category.categoryId] || {}).map(([dishId, quantity]) => ({
           dishId,
@@ -300,12 +300,12 @@ export function DishSelector({
 
     // #216: Build category extras from selections exceeding base maxSelect
     const categoryExtras: CategoryExtraResult[] = categories
-      .filter((category: any) => {
+      .filter((category: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number; dishes: { id: string; name: string }[] }) => {
         if (isCategoryInactive(category.portionTarget, adults, childrenCount)) return false
         if (!extrasEnabled[category.categoryId]) return false
         return getExtraQuantity(category) > 0
       })
-      .map((category: any) => ({
+      .map((category: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number; dishes: { id: string; name: string }[] }) => ({
         categoryId: category.categoryId,
         packageCategorySettingsId: category.id, // PackageCategorySettings.id
         extraQuantity: getExtraQuantity(category),
@@ -328,7 +328,7 @@ export function DishSelector({
 
       {/* Categories */}
       <div className="space-y-3">
-        {categories.map((category: any) => (
+        {categories.map((category: { categoryId: string; categoryName: string; portionTarget?: string; minSelect: number; maxSelect: number; dishes: { id: string; name: string }[] }) => (
           <CategoryCard
             key={category.categoryId}
             category={category}
