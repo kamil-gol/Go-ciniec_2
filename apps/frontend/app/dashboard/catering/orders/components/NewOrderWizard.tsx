@@ -96,7 +96,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.clientId]);
 
-  const handleClientCreated = useCallback(async (newClient: { id: string }) => {
+  const handleClientCreated = useCallback(async (newClient: any) => {
     await queryClient.invalidateQueries({ queryKey: ['clients'] });
     set({
       clientId: newClient.id,
@@ -108,7 +108,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
     setShowCreateClientModal(false);
   }, [queryClient, set]);
 
-  const selectedTemplate = templates?.find((t: { id: string }) => t.id === state.templateId);
+  const selectedTemplate = templates?.find((t: any) => t.id === state.templateId);
   const templatePackages =
     selectedTemplate &&
     Array.isArray(selectedTemplate.packages) &&
@@ -119,7 +119,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
   const dishesArray = useMemo(() => Array.isArray(dishes) ? dishes : [], [dishes]);
 
   const dishOptions = useMemo(() =>
-    dishesArray.map((d: { id: string; name: string }) => ({
+    dishesArray.map((d: any) => ({
       value: d.id,
       label: d.name,
       description: d.description || undefined,
