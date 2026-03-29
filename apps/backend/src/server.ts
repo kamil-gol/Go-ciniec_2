@@ -91,7 +91,7 @@ app.use(
 );
 
 /**
- * Rate Limiting — protect auth endpoints from brute-force (#436)
+ * Rate Limiting — protect auth endpoints from brute-force attacks (#436)
  */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
