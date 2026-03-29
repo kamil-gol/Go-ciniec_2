@@ -20,10 +20,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  
-  /* Opt out of parallel tests on CI */
-  workers: process.env.CI ? 1 : 4,
+  retries: process.env.CI ? 1 : 0,
+
+  /* Run 2 workers on CI for faster execution (~50% speedup) */
+  workers: process.env.CI ? 2 : 4,
   
   /* Reporter to use */
   reporter: [
