@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import cron from 'node-cron';
 import logger from '@utils/logger';
 import { validateEnv } from '@/config/env';
@@ -88,6 +89,32 @@ app.use(
     maxAge: 600,
   })
 );
+
+/**
+ * Rate Limiting — protect auth endpoints from brute-force attacks (#436)
+ */
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // max 10 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  message: { success: false, error: 'Zbyt wiele prób — spróbuj ponownie za 15 minut' },
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // max 20 uploads per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  message: { success: false, error: 'Zbyt wiele plików — spróbuj ponownie za chwilę' },
+});
+
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/attachments', uploadLimiter);
 
 /**
  * Body Parsing Middleware
@@ -247,6 +274,13 @@ if (process.env.NODE_ENV !== 'test') {
     server.close(() => {
       logger.info('HTTP server closed');
     });
+  });
+
+  /**
+   * Global Unhandled Rejection Handler (#436)
+   */
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error('[Process] Unhandled rejection at:', { promise, reason });
   });
 }
 

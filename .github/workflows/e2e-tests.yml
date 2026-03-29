@@ -35,7 +35,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U rezerwacje"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -81,6 +81,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
           NODE_ENV: development
+          SEED_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
         run: npm run db:seed
 
       - name: Start servers
@@ -99,6 +100,8 @@ jobs:
         working-directory: apps/frontend
         env:
           CI: true
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
         run: |
           npx playwright test 02-smoke.spec.ts --project=chromium --retries=1 --reporter=list
 
@@ -117,7 +120,7 @@ jobs:
   e2e-full:
     name: Full E2E Tests (informational)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     continue-on-error: true
     needs: smoke-tests
 
@@ -131,7 +134,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U rezerwacje"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -177,6 +180,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
           NODE_ENV: development
+          SEED_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
         run: npm run db:seed
 
       - name: Start backend server
@@ -202,8 +206,12 @@ jobs:
         working-directory: apps/frontend
         env:
           CI: true
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl' }}
+          E2E_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl' }}
         run: |
-          npx playwright test --project=chromium --retries=0 --reporter=html --grep-invert "Visual Regression"
+          npx playwright test --project=chromium --retries=0 --reporter=list,html --grep-invert "Visual Regression"
 
       - name: Upload test results
         if: always()

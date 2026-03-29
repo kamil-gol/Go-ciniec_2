@@ -14,7 +14,7 @@ export interface LogChangeParams {
     newValue?: any;
     description?: string;
     changes?: any; // Flexible: Record<string, { old, new }>, plain object, or string
-    [key: string]: any; // Dodatkowe dane kontekstowe
+    [key: string]: any; // Dodatkowe dane kontekstowe — Prisma JsonValue compatibility
   };
   ipAddress?: string;
   userAgent?: string;

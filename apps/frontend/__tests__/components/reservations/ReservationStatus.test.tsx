@@ -117,7 +117,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      const deleteBtn = screen.getByTitle('Anuluj rezerwację')
+      const deleteBtn = screen.getByLabelText('Anuluj rezerwację')
       expect(deleteBtn).toHaveProperty('disabled', true)
     })
 
@@ -131,7 +131,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      const deleteBtn = screen.getByTitle('Anuluj rezerwację')
+      const deleteBtn = screen.getByLabelText('Anuluj rezerwację')
       expect(deleteBtn).toHaveProperty('disabled', true)
     })
 
@@ -145,7 +145,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      const deleteBtn = screen.getByTitle('Anuluj rezerwację')
+      const deleteBtn = screen.getByLabelText('Anuluj rezerwację')
       expect(deleteBtn).toHaveProperty('disabled', false)
     })
 
@@ -159,7 +159,7 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      const archiveBtn = screen.getByTitle('Zarchiwizuj')
+      const archiveBtn = screen.getByLabelText('Zarchiwizuj')
       expect(archiveBtn).toHaveProperty('disabled', false)
     })
   })
@@ -198,8 +198,8 @@ describe('ReservationStatus (status badges & labels)', () => {
 
       render(<ReservationsList />)
 
-      expect(screen.getByTitle('Przywróć z archiwum')).toBeInTheDocument()
-      expect(screen.queryByTitle('Zarchiwizuj')).toBeNull()
+      expect(screen.getByLabelText('Przywróć z archiwum')).toBeInTheDocument()
+      expect(screen.queryByLabelText('Zarchiwizuj')).toBeNull()
     })
   })
 

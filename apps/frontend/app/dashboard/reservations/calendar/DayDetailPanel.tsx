@@ -12,8 +12,9 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { CalendarReservation } from '@/lib/api/calendar-api'
-import { STATUS_CONFIG } from './calendar.constants'
-import { formatCurrency } from './calendar.helpers'
+import { StatusBadge } from '@/components/shared/StatusBadge'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { formatCurrency } from '@/lib/utils'
 
 /* #165: DayDetailPanel — groups reservations by hall with capacity bars */
 export default function DayDetailPanel({ date, reservations, onClose, onReservationClick }: {
@@ -40,17 +41,18 @@ export default function DayDetailPanel({ date, reservations, onClose, onReservat
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-neutral-100 capitalize">{dayName}</h3>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">{fullDate}</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-300">{fullDate}</p>
         </div>
         <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
           <X className="h-4 w-4 text-neutral-500" />
         </button>
       </div>
       {reservations.length === 0 ? (
-        <div className="text-center py-6 text-neutral-400 dark:text-neutral-500">
-          <CalendarIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Brak rezerwacji</p>
-        </div>
+        <EmptyState
+          icon={CalendarIcon}
+          title="Brak rezerwacji"
+          variant="compact"
+        />
       ) : (
         <div className="space-y-4">
           {hallGroups.map(({ hall, reservations: hallReservations }) => {
@@ -93,7 +95,6 @@ export default function DayDetailPanel({ date, reservations, onClose, onReservat
                 <div className="space-y-2">
                   {hallReservations.map((r) => {
                     const color = r.eventType?.color || '#6366f1'
-                    const status = STATUS_CONFIG[r.status]
                     return (
                       <button key={r.id} onClick={() => onReservationClick(r.id)}
                         className="group w-full text-left rounded-xl p-3 border border-neutral-100 dark:border-neutral-700/50 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-all cursor-pointer"
@@ -105,11 +106,9 @@ export default function DayDetailPanel({ date, reservations, onClose, onReservat
                               <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
                                 {r.eventType?.name || r.customEventType || 'Wydarzenie'}
                               </span>
-                              {status && (
-                                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', status.bgClass)}>{status.label}</span>
-                              )}
+                              <StatusBadge type="reservation" status={r.status} className="text-[10px]" />
                             </div>
-                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-300">
                               <span className="flex items-center gap-1"><Users className="h-3 w-3" />{r.client?.firstName} {r.client?.lastName}</span>
                               {r.startTime && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{r.startTime}{r.endTime ? ` - ${r.endTime}` : ''}</span>}
                               {hallGroups.length <= 1 && r.hall && (
@@ -118,7 +117,7 @@ export default function DayDetailPanel({ date, reservations, onClose, onReservat
                             </div>
                             <div className="flex items-center justify-between mt-1.5">
                               <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
-                                {r.guests} os. • {formatCurrency(r.totalPrice)}
+                                {r.guests} os. • {formatCurrency(Number(r.totalPrice))}
                                 {isMulti && hall?.capacity && (
                                   <span className="text-violet-500 ml-1">
                                     ({Math.round(((r.guests || 0) / hall.capacity) * 100)}% sali)

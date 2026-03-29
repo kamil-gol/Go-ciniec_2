@@ -1,15 +1,16 @@
 'use client'
 
 import {
-  DollarSign, Plus, FileDown, CheckCircle2, Clock,
+  DollarSign, Plus, FileDown, CheckCircle2,
   XCircle, Loader2, ExternalLink, CalendarDays,
   Undo2, Mail, Trash2, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
-import { statusConfig, paymentMethodIcons } from './types'
+import { paymentMethodIcons } from './types'
 import type { Financials } from './types'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import { getDaysLabel, formatDate } from './utils'
 
 interface DepositSummaryProps {
@@ -84,8 +85,6 @@ export function DepositSummary({
           {!depositsLoading && deposits.length > 0 && (
             <div className="space-y-2 mb-3">
               {deposits.map((deposit) => {
-                const st = statusConfig[deposit.status]
-                const StatusIcon = st?.icon || Clock
                 const isPending = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
                 const isPaid = deposit.status === 'PAID'
                 const isCancelled = deposit.status === 'CANCELLED'
@@ -114,10 +113,7 @@ export function DepositSummary({
                           </span>
                         )}
                       </div>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${st?.className || ''}`}>
-                        <StatusIcon className="h-3 w-3" />
-                        {st?.label || deposit.status}
-                      </span>
+                      <StatusBadge type="deposit" status={deposit.status} />
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
@@ -161,7 +157,7 @@ export function DepositSummary({
                       )}
                       {!isCancelled && !isPaid && !readOnly && (
                         <button onClick={() => onCancel(deposit)} disabled={isActioning}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700 dark:hover:bg-neutral-700 transition-colors">
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700 dark:hover:bg-neutral-700 transition-colors">
                           <XCircle className="h-3 w-3" /> Anuluj
                         </button>
                       )}

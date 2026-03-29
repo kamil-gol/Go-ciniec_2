@@ -15,16 +15,17 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useReservations, useUnarchiveReservation } from '@/lib/api/reservations'
-import { formatCurrency, getStatusColor, getStatusLabel } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
-import { PageLayout, PageHero, StatCard, LoadingState } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared'
+import { Skeleton } from '@/components/ui/skeleton'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 
 const accent = moduleAccents.archive
 
@@ -83,13 +84,13 @@ export default function ArchivePage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+      <div className={layout.statGrid3}>
         <StatCard
           label="Zarchiwizowane"
           value={stats.total}
           subtitle="Łącznie w archiwum"
           icon={Archive}
-          iconGradient="from-neutral-500 to-neutral-600"
+          iconGradient={statGradients.neutral}
           delay={0.1}
         />
         <StatCard
@@ -97,7 +98,7 @@ export default function ArchivePage() {
           value={stats.completed}
           subtitle="Pomyślnie zrealizowane"
           icon={Calendar}
-          iconGradient="from-emerald-500 to-teal-500"
+          iconGradient={statGradients.success}
           delay={0.2}
         />
         <StatCard
@@ -105,7 +106,7 @@ export default function ArchivePage() {
           value={stats.cancelled}
           subtitle="Anulowane rezerwacje"
           icon={Clock}
-          iconGradient="from-red-500 to-rose-500"
+          iconGradient={statGradients.alert}
           delay={0.3}
         />
       </div>
@@ -114,7 +115,18 @@ export default function ArchivePage() {
       <Card>
         <CardContent className="p-4 sm:p-6">
           {isLoading ? (
-            <LoadingState variant="skeleton" count={5} />
+            <div className="space-y-4">
+              {/* Stats skeleton */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-6 rounded-lg" />
+                ))}
+              </div>
+              {/* Card skeletons */}
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-44 rounded-2xl" />
+              ))}
+            </div>
           ) : error ? (
             <div className="flex items-center justify-center py-12">
               <p className="text-red-600 dark:text-red-400">
@@ -122,26 +134,17 @@ export default function ArchivePage() {
               </p>
             </div>
           ) : reservations.length === 0 ? (
-            <div className="rounded-2xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 py-16 text-center">
-              <div
-                className={cn(
-                  'w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center mx-auto mb-4 shadow-md',
-                  accent.iconBg
-                )}
-              >
-                <Archive className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-                Archiwum jest puste
-              </h3>
-              <p className="text-neutral-500 dark:text-neutral-400">
-                Brak zarchiwizowanych rezerwacji
-              </p>
-            </div>
+            <EmptyState
+              icon={Archive}
+              title="Archiwum jest puste"
+              description="Nie ma jeszcze żadnych zarchiwizowanych rezerwacji. Zakończone lub anulowane rezerwacje pojawią się tutaj po archiwizacji."
+              actionLabel="Przejdź do rezerwacji"
+              actionHref="/dashboard/reservations"
+            />
           ) : (
             <div className="space-y-4">
               {/* Count */}
-              <div className="text-sm text-neutral-500 dark:text-neutral-400">
+              <div className="text-sm text-neutral-500 dark:text-neutral-300">
                 Znaleziono{' '}
                 <strong className="text-neutral-900 dark:text-neutral-100">
                   {reservations.length}
@@ -190,7 +193,7 @@ export default function ArchivePage() {
                                 ? `${reservation.client.firstName} ${reservation.client.lastName}`
                                 : 'Nieznany klient'}
                             </div>
-                            <div className="text-sm text-neutral-500 dark:text-neutral-400 truncate">
+                            <div className="text-sm text-neutral-500 dark:text-neutral-300 truncate">
                               {reservation.eventType?.name || 'Wydarzenie'}
                               {reservation.hall?.name &&
                                 ` · ${reservation.hall.name}`}
@@ -198,11 +201,7 @@ export default function ArchivePage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap justify-end flex-shrink-0">
-                          <Badge
-                            className={getStatusColor(reservation.status)}
-                          >
-                            {getStatusLabel(reservation.status)}
-                          </Badge>
+                          <StatusBadge type="reservation" status={reservation.status} />
                           {reservation.archivedAt && (
                             <span className="text-xs text-neutral-400 dark:text-neutral-500 hidden sm:inline">
                               Zarchiwizowano:{' '}
@@ -221,7 +220,7 @@ export default function ArchivePage() {
                       {/* Details Grid */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
                             <Calendar className="h-3 w-3" /> Data
                           </div>
                           <div className="font-medium text-sm sm:text-base text-neutral-900 dark:text-neutral-100">
@@ -235,7 +234,7 @@ export default function ArchivePage() {
                           </div>
                         </div>
                         <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
                             <Users className="h-3 w-3" /> Goście
                           </div>
                           <div className="font-medium text-sm sm:text-base text-neutral-900 dark:text-neutral-100">
@@ -243,7 +242,7 @@ export default function ArchivePage() {
                           </div>
                         </div>
                         <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-300">
                             <DollarSign className="h-3 w-3" /> Wartość
                           </div>
                           <div className="font-bold text-sm sm:text-lg text-green-600 dark:text-green-400">
@@ -285,7 +284,7 @@ export default function ArchivePage() {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4">
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <p className="text-sm text-neutral-500 dark:text-neutral-300">
                     Strona{' '}
                     <strong className="text-neutral-900 dark:text-neutral-100">
                       {page}

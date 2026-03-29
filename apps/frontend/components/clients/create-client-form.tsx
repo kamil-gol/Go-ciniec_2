@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { FormSection } from '@/components/shared/FormSection'
 import { createClient } from '@/lib/api/clients'
 import type { ClientType } from '@/types'
 import { toast } from 'sonner'
@@ -18,6 +19,7 @@ interface CreateClientFormProps {
 export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps) {
   const [loading, setLoading] = useState(false)
   const [clientType, setClientType] = useState<ClientType>('INDIVIDUAL')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -37,15 +39,28 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.firstName || !formData.lastName || !formData.phone) {
-      toast.error('Wypełnij wszystkie wymagane pola')
+    const errors: Record<string, string> = {}
+
+    if (!formData.firstName) errors.firstName = 'Imię jest wymagane'
+    if (!formData.lastName) errors.lastName = 'Nazwisko jest wymagane'
+    if (!formData.phone) errors.phone = 'Telefon jest wymagany'
+
+    if (isCompany && !formData.companyName) {
+      errors.companyName = 'Nazwa firmy jest wymagana'
+    }
+
+    if (isCompany && !formData.nip) {
+      errors.nip = 'NIP jest wymagany dla klienta firmowego'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      const firstError = Object.values(errors)[0]
+      toast.error(firstError)
       return
     }
 
-    if (isCompany && !formData.companyName) {
-      toast.error('Podaj nazwę firmy')
-      return
-    }
+    setFieldErrors({})
 
     try {
       setLoading(true)
@@ -107,6 +122,14 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const next = { ...prev }
+        delete next[name]
+        return next
+      })
+    }
   }
 
   return (
@@ -121,7 +144,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold transition-all ${
               clientType === 'INDIVIDUAL'
                 ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-500'
-                : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
             }`}
           >
             <User className="h-5 w-5" />
@@ -133,7 +156,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold transition-all ${
               clientType === 'COMPANY'
                 ? 'border-purple-500 bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-500'
-                : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
             }`}
           >
             <Building2 className="h-5 w-5" />
@@ -162,14 +185,18 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
                 onChange={handleChange}
                 placeholder="np. Budimex S.A."
                 aria-required="true"
-                className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
+                aria-invalid={!!fieldErrors.companyName}
+                className={`h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 ${fieldErrors.companyName ? 'border-red-500 dark:border-red-400' : ''}`}
               />
+              {fieldErrors.companyName && (
+                <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.companyName}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="nip" className="text-base font-semibold flex items-center gap-2">
                 <Hash className="h-4 w-4" />
-                NIP
+                NIP <span className="text-destructive ml-0.5" aria-hidden="true">*</span>
               </Label>
               <Input
                 id="nip"
@@ -177,8 +204,13 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
                 value={formData.nip}
                 onChange={handleChange}
                 placeholder="1234567890"
-                className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
+                aria-required="true"
+                aria-invalid={!!fieldErrors.nip}
+                className={`h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 ${fieldErrors.nip ? 'border-red-500 dark:border-red-400' : ''}`}
               />
+              {fieldErrors.nip && (
+                <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.nip}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -245,12 +277,11 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
       )}
 
       {/* Personal Info */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-lg font-semibold">
-          <User className="h-5 w-5 text-orange-600" />
-          <span>{isCompany ? 'Osoba reprezentująca' : 'Dane osobowe'}</span>
-        </div>
-        
+      <FormSection
+        title={isCompany ? 'Osoba reprezentująca' : 'Dane podstawowe'}
+        description="Imię i nazwisko klienta"
+        icon={User}
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="firstName" className="text-base font-semibold">
@@ -264,8 +295,12 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
               placeholder="Jan"
               required
               aria-required="true"
-              className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500"
+              aria-invalid={!!fieldErrors.firstName}
+              className={`h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500 ${fieldErrors.firstName ? 'border-red-500 dark:border-red-400' : ''}`}
             />
+            {fieldErrors.firstName && (
+              <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.firstName}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -280,19 +315,22 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
               placeholder="Kowalski"
               required
               aria-required="true"
-              className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500"
+              aria-invalid={!!fieldErrors.lastName}
+              className={`h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-orange-500 ${fieldErrors.lastName ? 'border-red-500 dark:border-red-400' : ''}`}
             />
+            {fieldErrors.lastName && (
+              <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.lastName}</p>
+            )}
           </div>
         </div>
-      </div>
+      </FormSection>
 
       {/* Contact Info */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-lg font-semibold">
-          <Phone className="h-5 w-5 text-blue-600" />
-          <span>Dane kontaktowe</span>
-        </div>
-        
+      <FormSection
+        title="Kontakt"
+        description="Email i numer telefonu"
+        icon={Phone}
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-base font-semibold flex items-center gap-2">
@@ -324,19 +362,22 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
               placeholder="+48 123 456 789"
               required
               aria-required="true"
-              className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-blue-500"
+              aria-invalid={!!fieldErrors.phone}
+              className={`h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-blue-500 ${fieldErrors.phone ? 'border-red-500 dark:border-red-400' : ''}`}
             />
+            {fieldErrors.phone && (
+              <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.phone}</p>
+            )}
           </div>
         </div>
-      </div>
+      </FormSection>
 
       {/* Notes */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-lg font-semibold">
-          <FileText className="h-5 w-5 text-purple-600" />
-          <span>Notatki</span>
-        </div>
-        
+      <FormSection
+        title="Dodatkowe"
+        description="Notatki i inne informacje"
+        icon={FileText}
+      >
         <div className="space-y-2">
           <Label htmlFor="notes" className="text-base font-semibold">
             Dodatkowe informacje
@@ -351,7 +392,7 @@ export function CreateClientForm({ onSuccess, onCancel }: CreateClientFormProps)
             className="text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 resize-none"
           />
         </div>
-      </div>
+      </FormSection>
 
       {/* Actions */}
       <div className="flex gap-3 pt-4">

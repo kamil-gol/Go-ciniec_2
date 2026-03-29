@@ -45,9 +45,23 @@ function buildReservation(overrides: Record<string, any> = {}) {
     menuSnapshot: null,
     eventType: { standardHours: null, extraHourRate: null },
     extras: [],
+    categoryExtras: [],
     ...overrides,
   };
 }
+
+// ═════════════════════════════════════════════════════════════════
+// Constants
+// ═════════════════════════════════════════════════════════════════
+describe('exported constants', () => {
+  it('STANDARD_HOURS is 6', () => {
+    expect(STANDARD_HOURS).toBe(6);
+  });
+
+  it('DEFAULT_EXTRA_HOUR_RATE is 500', () => {
+    expect(DEFAULT_EXTRA_HOUR_RATE).toBe(500);
+  });
+});
 
 // ═════════════════════════════════════════════════════════════════
 // calculateExtraHoursCost
@@ -135,6 +149,18 @@ describe('calculateExtraHoursCost', () => {
     const start = makeDate('2026-06-15', '14:00');
     const end = makeDate('2026-06-15', '22:00'); // 8h
     expect(calculateExtraHoursCost(start, end, DEFAULT_EXTRA_HOUR_RATE, 10)).toBe(0);
+  });
+
+  it('handles overnight events crossing midnight', () => {
+    const start = makeDate('2026-06-15', '20:00');
+    const end = makeDate('2026-06-16', '04:00'); // 8h → 2 extra
+    expect(calculateExtraHoursCost(start, end)).toBe(2 * DEFAULT_EXTRA_HOUR_RATE);
+  });
+
+  it('ceils 6h01m to 1 extra hour (minimal overflow)', () => {
+    const start = new Date('2026-06-15T14:00:00.000Z');
+    const end = new Date('2026-06-15T20:01:00.000Z'); // 6h 1min
+    expect(calculateExtraHoursCost(start, end)).toBe(1 * DEFAULT_EXTRA_HOUR_RATE);
   });
 });
 
@@ -281,6 +307,115 @@ describe('computeReservationBasePrice', () => {
     expect(result.basePrice).toBe(12000);
   });
 
+  it('coerces string menuSnapshot.totalMenuPrice via Number()', async () => {
+    const reservation = buildReservation({
+      menuSnapshot: { totalMenuPrice: '9500.50' },
+    });
+    mockFindUnique.mockResolvedValue(reservation);
+
+    const result = await computeReservationBasePrice('res-1');
+
+    expect(result.menuPrice).toBe(9500.50);
+  });
+
+  it('coerces string extras totalPrice via Number()', async () => {
+    const reservation = buildReservation({
+      extras: [
+        { totalPrice: '250.75', status: 'CONFIRMED', serviceItem: { basePrice: 250.75, priceType: 'FLAT' } },
+      ],
+    });
+    mockFindUnique.mockResolvedValue(reservation);
+
+    const result = await computeReservationBasePrice('res-1');
+
+    expect(result.extrasTotal).toBe(250.75);
+  });
+
+  it('includes categoryExtras in basePrice', async () => {
+    const reservation = buildReservation({
+      categoryExtras: [
+        { totalPrice: 300 },
+        { totalPrice: 200 },
+      ],
+    });
+    mockFindUnique.mockResolvedValue(reservation);
+
+    const result = await computeReservationBasePrice('res-1');
+
+    expect(result.categoryExtrasTotal).toBe(500);
+    expect(result.basePrice).toBe(8300 + 500);
+    expect(result.totalPrice).toBe(8800);
+  });
+
+  it('handles empty categoryExtras array', async () => {
+    const reservation = buildReservation({ categoryExtras: [] });
+    mockFindUnique.mockResolvedValue(reservation);
+
+    const result = await computeReservationBasePrice('res-1');
+
+    expect(result.categoryExtrasTotal).toBe(0);
+  });
+
+  it('hasDiscount is false when discountValue is 0', async () => {
+    const reservation = buildReservation({
+      discountType: 'PERCENTAGE',
+      discountValue: 0,
+    });
+    mockFindUnique.mockResolvedValue(reservation);
+
+    const result = await computeReservationBasePrice('res-1');
+
+    expect(result.hasDiscount).toBe(false);
+    expect(result.discountAmount).toBe(0);
+    expect(result.totalPrice).toBe(result.basePrice);
+  });
+
+  it('hasDiscount is false when discountType is null', async () => {
+    const reservation = buildReservation({
+      discountType: null,
+      discountValue: 500,
+    });
+    mockFindUnique.mockResolvedValue(reservation);
+
+    const result = await computeReservationBasePrice('res-1');
+
+    expect(result.hasDiscount).toBe(false);
+    expect(result.discountAmount).toBe(0);
+  });
+
+  it('rounds PERCENTAGE discount to 2 decimal places', async () => {
+    const reservation = buildReservation({
+      adults: 1, children: 0, toddlers: 0,
+      pricePerAdult: 333, pricePerChild: 0, pricePerToddler: 0,
+      discountType: 'PERCENTAGE',
+      discountValue: 7, // 7% of 333 = 23.31
+    });
+    mockFindUnique.mockResolvedValue(reservation);
+
+    const result = await computeReservationBasePrice('res-1');
+
+    expect(result.basePrice).toBe(333);
+    expect(result.discountAmount).toBe(23.31);
+    expect(result.totalPrice).toBe(309.69);
+  });
+
+  it('rounds basePrice to 2 decimal places', async () => {
+    // Create a scenario where sum could have floating point issues
+    const reservation = buildReservation({
+      adults: 1, children: 0, toddlers: 0,
+      pricePerAdult: 100.1, pricePerChild: 0, pricePerToddler: 0,
+      extras: [
+        { totalPrice: 200.2, status: 'CONFIRMED', serviceItem: { basePrice: 200.2, priceType: 'FLAT' } },
+      ],
+    });
+    mockFindUnique.mockResolvedValue(reservation);
+
+    const result = await computeReservationBasePrice('res-1');
+
+    // 100.1 + 200.2 = 300.3 (should be cleanly rounded)
+    expect(result.basePrice).toBe(300.3);
+  });
+
   it('full scenario: extras + surcharge + extra hours + discount', async () => {
     const reservation = buildReservation({
       endDateTime: makeDate('2026-06-15', '22:00'), // 8h → 2 extra
@@ -307,6 +442,32 @@ describe('computeReservationBasePrice', () => {
     expect(result.basePrice).toBe(10700);
     expect(result.discountAmount).toBe(535);
     expect(result.totalPrice).toBe(10165);
+  });
+
+  it('full scenario: categoryExtras included in base and discount', async () => {
+    const reservation = buildReservation({
+      adults: 10, children: 0, toddlers: 0,
+      pricePerAdult: 100, pricePerChild: 0, pricePerToddler: 0,
+      categoryExtras: [
+        { totalPrice: 500 },
+      ],
+      venueSurcharge: 200,
+      discountType: 'AMOUNT',
+      discountValue: 300,
+    });
+    mockFindUnique.mockResolvedValue(reservation);
+
+    const result = await computeReservationBasePrice('res-1');
+
+    // menu: 1000, categoryExtras: 500, surcharge: 200 = base 1700
+    // discount: min(300, 1700) = 300
+    // total: 1700 - 300 = 1400
+    expect(result.menuPrice).toBe(1000);
+    expect(result.categoryExtrasTotal).toBe(500);
+    expect(result.surcharge).toBe(200);
+    expect(result.basePrice).toBe(1700);
+    expect(result.discountAmount).toBe(300);
+    expect(result.totalPrice).toBe(1400);
   });
 });
 
@@ -389,5 +550,35 @@ describe('recalculateReservationTotalPrice', () => {
 
     expect(typeof result).toBe('number');
     expect(result).toBe(8300);
+  });
+
+  it('persists extrasTotalPrice and extraHoursCost correctly', async () => {
+    const reservation = buildReservation({
+      endDateTime: makeDate('2026-06-15', '23:00'), // 9h → 3 extra
+      extras: [
+        { totalPrice: 600, status: 'CONFIRMED', serviceItem: { basePrice: 600, priceType: 'FLAT' } },
+      ],
+    });
+    mockFindUnique.mockResolvedValue(reservation);
+    mockUpdate.mockResolvedValue({});
+
+    await recalculateReservationTotalPrice('res-1');
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: 'res-1' },
+      data: expect.objectContaining({
+        extrasTotalPrice: 600,
+        extraHoursCost: 3 * DEFAULT_EXTRA_HOUR_RATE,
+      }),
+    });
+  });
+
+  it('throws when reservation not found (propagates from computeReservationBasePrice)', async () => {
+    mockFindUnique.mockResolvedValue(null);
+
+    await expect(recalculateReservationTotalPrice('nonexistent')).rejects.toThrow(
+      'Nie znaleziono rezerwacji'
+    );
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 });

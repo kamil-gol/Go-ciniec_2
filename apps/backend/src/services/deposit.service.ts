@@ -81,16 +81,14 @@ const depositService = {
 
     const dueDateStr = dueDate.substring(0, 10);
 
-    const result: Array<{ id: string }> = await prisma.$queryRawUnsafe(
-      `INSERT INTO "Deposit" (
+    const result: Array<{ id: string }> = await prisma.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO "Deposit" (
         id, "reservationId", amount, "remainingAmount", "paidAmount",
         "dueDate", status, paid, "createdAt", "updatedAt"
       ) VALUES (
-        gen_random_uuid(), $1::uuid, $2, $3, 0,
-        $4, 'PENDING', false, NOW(), NOW()
-      ) RETURNING id::text as id`,
-      reservationId, amount, amount, dueDateStr
-    );
+        gen_random_uuid(), ${reservationId}::uuid, ${amount}, ${amount}, 0,
+        ${dueDateStr}, 'PENDING', false, NOW(), NOW()
+      ) RETURNING id::text as id`;
 
     const newId = result[0].id;
 
@@ -248,21 +246,12 @@ const depositService = {
 
     if (input.amount !== undefined && input.dueDate) {
       const dueDateStr = input.dueDate.substring(0, 10);
-      await prisma.$queryRawUnsafe(
-        `UPDATE "Deposit" SET amount = $1, "remainingAmount" = $2, "dueDate" = $3, "updatedAt" = NOW() WHERE id = $4::uuid`,
-        input.amount, input.amount, dueDateStr, id
-      );
+      await prisma.$queryRaw`UPDATE "Deposit" SET amount = ${input.amount}, "remainingAmount" = ${input.amount}, "dueDate" = ${dueDateStr}, "updatedAt" = NOW() WHERE id = ${id}::uuid`;
     } else if (input.amount !== undefined) {
-      await prisma.$queryRawUnsafe(
-        `UPDATE "Deposit" SET amount = $1, "remainingAmount" = $2, "updatedAt" = NOW() WHERE id = $3::uuid`,
-        input.amount, input.amount, id
-      );
+      await prisma.$queryRaw`UPDATE "Deposit" SET amount = ${input.amount}, "remainingAmount" = ${input.amount}, "updatedAt" = NOW() WHERE id = ${id}::uuid`;
     } else if (input.dueDate) {
       const dueDateStr = input.dueDate.substring(0, 10);
-      await prisma.$queryRawUnsafe(
-        `UPDATE "Deposit" SET "dueDate" = $1, "updatedAt" = NOW() WHERE id = $2::uuid`,
-        dueDateStr, id
-      );
+      await prisma.$queryRaw`UPDATE "Deposit" SET "dueDate" = ${dueDateStr}, "updatedAt" = NOW() WHERE id = ${id}::uuid`;
     }
 
     const updated = await prisma.deposit.findUnique({
@@ -292,7 +281,7 @@ const depositService = {
     // Usunięcie opłaconej zaliczki jest dozwolone (np. błąd lub rezygnacja klienta).
     // Operacja jest w pełni auditowana — pole wasPaid zapisywane w logu.
 
-    await prisma.$queryRawUnsafe(`DELETE FROM "Deposit" WHERE id = $1::uuid`, id);
+    await prisma.$queryRaw`DELETE FROM "Deposit" WHERE id = ${id}::uuid`;
 
     // Audit log
     await logChange({
@@ -326,10 +315,7 @@ const depositService = {
     const newStatus = isPaid ? 'PAID' : 'PARTIALLY_PAID';
     const remainingAmount = Math.max(0, remaining);
 
-    await prisma.$queryRawUnsafe(
-      `UPDATE "Deposit" SET paid = $1, status = $2, "paidAt" = $3::timestamp, "paymentMethod" = $4, "remainingAmount" = $5, "paidAmount" = $6, "updatedAt" = NOW() WHERE id = $7::uuid`,
-      isPaid, newStatus, input.paidAt, input.paymentMethod, remainingAmount, amountPaid, id
-    );
+    await prisma.$queryRaw`UPDATE "Deposit" SET paid = ${isPaid}, status = ${newStatus}, "paidAt" = ${input.paidAt}::timestamp, "paymentMethod" = ${input.paymentMethod}, "remainingAmount" = ${remainingAmount}, "paidAmount" = ${amountPaid}, "updatedAt" = NOW() WHERE id = ${id}::uuid`;
 
     const updated = await prisma.deposit.findUnique({
       where: { id },
@@ -381,10 +367,7 @@ const depositService = {
 
     const depositAmount = Number(deposit.amount);
 
-    await prisma.$queryRawUnsafe(
-      `UPDATE "Deposit" SET paid = false, status = 'PENDING', "paidAt" = NULL, "paymentMethod" = NULL, "remainingAmount" = $1, "paidAmount" = 0, "updatedAt" = NOW() WHERE id = $2::uuid`,
-      depositAmount, id
-    );
+    await prisma.$queryRaw`UPDATE "Deposit" SET paid = false, status = 'PENDING', "paidAt" = NULL, "paymentMethod" = NULL, "remainingAmount" = ${depositAmount}, "paidAmount" = 0, "updatedAt" = NOW() WHERE id = ${id}::uuid`;
 
     const updated = await prisma.deposit.findUnique({
       where: { id },
@@ -415,10 +398,7 @@ const depositService = {
       throw AppError.badRequest(DEPOSIT.CANNOT_CANCEL_PAID);
     }
 
-    await prisma.$queryRawUnsafe(
-      `UPDATE "Deposit" SET status = 'CANCELLED', "remainingAmount" = 0, "updatedAt" = NOW() WHERE id = $1::uuid`,
-      id
-    );
+    await prisma.$queryRaw`UPDATE "Deposit" SET status = 'CANCELLED', "remainingAmount" = 0, "updatedAt" = NOW() WHERE id = ${id}::uuid`;
 
     const updated = await prisma.deposit.findUnique({
       where: { id },

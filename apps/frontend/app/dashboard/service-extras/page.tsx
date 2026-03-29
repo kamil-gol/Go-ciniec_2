@@ -33,7 +33,7 @@ import {
   EmptyState,
 } from '@/components/shared';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { moduleAccents } from '@/lib/design-tokens';
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import type { ServiceCategory, ServiceItem } from '@/types/service-extra.types';
 
 type ViewMode = 'categories' | 'items';
@@ -155,13 +155,13 @@ export default function ServiceExtrasPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className={layout.statGrid}>
         <StatCard
           label="Kategorie"
           value={stats.total}
           subtitle="W systemie"
           icon={FolderOpen}
-          iconGradient="from-purple-500 to-fuchsia-500"
+          iconGradient={statGradients.info}
           delay={0.1}
         />
         <StatCard
@@ -169,7 +169,7 @@ export default function ServiceExtrasPage() {
           value={stats.items}
           subtitle="Łącznie usług"
           icon={Package}
-          iconGradient="from-violet-500 to-purple-500"
+          iconGradient={statGradients.count}
           delay={0.2}
         />
         <StatCard
@@ -177,7 +177,7 @@ export default function ServiceExtrasPage() {
           value={stats.active}
           subtitle="Dostępne do wyboru"
           icon={TrendingUp}
-          iconGradient="from-emerald-500 to-teal-500"
+          iconGradient={statGradients.success}
           delay={0.3}
         />
         <StatCard
@@ -185,7 +185,7 @@ export default function ServiceExtrasPage() {
           value={stats.free}
           subtitle="Bezpłatne pozycje"
           icon={Sparkles}
-          iconGradient="from-amber-500 to-orange-500"
+          iconGradient={statGradients.financial}
           delay={0.4}
         />
       </div>
@@ -218,7 +218,7 @@ export default function ServiceExtrasPage() {
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
                     showInactive
                       ? 'bg-purple-100 text-purple-700 shadow-sm dark:bg-purple-900/30 dark:text-purple-300'
-                      : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
+                      : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700'
                   }`}
                 >
                   {showInactive ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -249,7 +249,7 @@ export default function ServiceExtrasPage() {
               <EmptyState
                 icon={Gift}
                 title="Nie znaleziono"
-                description="Spróbuj użyć innego wyszukiwania"
+                description="Żadna usługa ani kategoria nie pasuje do wyszukiwania. Spróbuj użyć innej frazy."
               />
             </div>
           ) : filteredCategories.length === 0 ? (
@@ -257,7 +257,7 @@ export default function ServiceExtrasPage() {
               <EmptyState
                 icon={Gift}
                 title="Brak kategorii"
-                description="Utwórz pierwszą kategorię usług dodatkowych"
+                description="Nie masz jeszcze żadnych kategorii usług dodatkowych. Utwórz pierwszą kategorię, aby zacząć dodawać usługi takie jak tort, muzyka czy dekoracje."
                 actionLabel="Nowa Kategoria"
                 onAction={handleCreateCategory}
               />
@@ -276,7 +276,7 @@ export default function ServiceExtrasPage() {
 
       {/* Dialog: Category Form */}
       <Dialog open={categoryFormOpen} onOpenChange={handleCategoryFormClose}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editingCategory ? 'Edytuj kategorię' : 'Nowa kategoria usług'}
@@ -291,7 +291,7 @@ export default function ServiceExtrasPage() {
 
       {/* Dialog: Item Form */}
       <Dialog open={itemFormOpen} onOpenChange={handleItemFormClose}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>
               {editingItem ? 'Edytuj pozycję' : 'Nowa pozycja usługi'}

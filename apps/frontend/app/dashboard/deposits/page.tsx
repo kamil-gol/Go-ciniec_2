@@ -18,9 +18,10 @@ import { DepositsList } from '@/components/deposits/deposits-list'
 import { CreateDepositForm } from '@/components/deposits/create-deposit-form'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, DepositStats, DepositStatus } from '@/lib/api/deposits'
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
+import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared'
+import { Skeleton } from '@/components/ui/skeleton'
 import { FilterTabs } from '@/components/shared/FilterTabs'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { toast } from 'sonner'
 
 type FilterStatus = 'ALL' | DepositStatus
@@ -113,14 +114,22 @@ export default function DepositsPage() {
         }
       />
 
+      {loading && !stats && (
+        <div className={layout.statGrid}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" />
+          ))}
+        </div>
+      )}
+
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className={layout.statGrid}>
           <StatCard
             label="Oczekujące"
             value={stats.counts.pending}
             subtitle={`${stats.amounts.pending.toLocaleString('pl-PL')} zł do zapłaty`}
             icon={Clock}
-            iconGradient="from-amber-500 to-orange-500"
+            iconGradient={statGradients.alert}
             delay={0.1}
           />
           <StatCard
@@ -128,7 +137,7 @@ export default function DepositsPage() {
             value={stats.counts.paid}
             subtitle={`${stats.amounts.paid.toLocaleString('pl-PL')} zł wpłacono`}
             icon={CheckCircle2}
-            iconGradient="from-emerald-500 to-teal-500"
+            iconGradient={statGradients.success}
             delay={0.2}
           />
           <StatCard
@@ -136,7 +145,7 @@ export default function DepositsPage() {
             value={stats.counts.overdue}
             subtitle={`${stats.amounts.overdue.toLocaleString('pl-PL')} zł zaległości`}
             icon={AlertTriangle}
-            iconGradient="from-red-500 to-rose-500"
+            iconGradient={statGradients.alert}
             delay={0.3}
           />
           {/* #deposits-fix (5/5): totalAllCount includes CANCELLED so the subtitle */}
@@ -146,14 +155,14 @@ export default function DepositsPage() {
             value={`${stats.amounts.total.toLocaleString('pl-PL')} zł`}
             subtitle={`${percentPaid}% wpłacono \u00b7 ${totalAllCount} zaliczek`}
             icon={TrendingUp}
-            iconGradient="from-rose-500 to-pink-500"
+            iconGradient={statGradients.financial}
             delay={0.4}
           />
         </div>
       )}
 
       {showCreateForm && (
-        <Card className="overflow-hidden animate-in slide-in-from-top-4 duration-300">
+        <Card className="overflow-hidden mb-6 animate-in slide-in-from-top-4 duration-300">
           <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-4 sm:p-8`}>
             <div className="flex items-center gap-3 mb-6">
               <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>
@@ -207,15 +216,17 @@ export default function DepositsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-4 sm:p-6">
-              <LoadingState variant="skeleton" rows={5} message="Ładowanie zaliczek..." />
+            <div data-testid="loading-state" className="p-4 sm:p-6 space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-xl" />
+              ))}
             </div>
           ) : filteredDeposits.length === 0 && (searchQuery || statusFilter !== 'ALL') ? (
             <div className="p-4 sm:p-6">
               <EmptyState
                 icon={DollarSign}
                 title="Nie znaleziono zaliczek"
-                description="Spróbuj innych kryteriów wyszukiwania lub filtru"
+                description="Żadna zaliczka nie pasuje do wybranych kryteriów. Spróbuj zmienić filtr statusu lub wyszukiwanie."
               />
             </div>
           ) : filteredDeposits.length === 0 ? (
@@ -223,7 +234,7 @@ export default function DepositsPage() {
               <EmptyState
                 icon={DollarSign}
                 title="Brak zaliczek"
-                description="Utwórz pierwszą zaliczkę aby zacząć śledzić płatności"
+                description="Nie masz jeszcze żadnych zaliczek. Utwórz pierwszą zaliczkę, aby rozpocząć śledzenie płatności za rezerwacje."
                 actionLabel="Nowa Zaliczka"
                 onAction={() => setShowCreateForm(true)}
               />

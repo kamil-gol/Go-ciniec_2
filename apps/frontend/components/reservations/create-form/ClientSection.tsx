@@ -17,10 +17,10 @@ export function ClientSection({
 }: ClientSectionProps) {
   const { control, errors } = formCtx
 
-  const isClientCompany = (selectedClient as any)?.clientType === 'COMPANY'
-  const clientCompanyName = (selectedClient as any)?.companyName
-  const clientNip = (selectedClient as any)?.nip
-  const clientPrimaryContact = (selectedClient as any)?.contacts?.find((c: any) => c.isPrimary)
+  const isClientCompany = selectedClient?.clientType === 'COMPANY'
+  const clientCompanyName = selectedClient?.companyName
+  const clientNip = selectedClient?.nip
+  const clientPrimaryContact = selectedClient?.contacts?.find((c: { isPrimary?: boolean }) => c.isPrimary)
 
   return (
     <div className="space-y-6">
@@ -29,7 +29,7 @@ export function ClientSection({
           <User className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Kto rezerwuje?</h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Wyszukaj istniejącego klienta lub dodaj nowego</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-1">Wyszukaj istniejącego klienta lub dodaj nowego</p>
       </div>
 
       {isPromotingFromQueue ? (

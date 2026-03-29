@@ -75,7 +75,7 @@ const CommandEmpty = React.forwardRef<
 >((props, ref) => (
   <CommandPrimitive.Empty
     ref={ref}
-    className="py-6 text-center text-sm text-muted-foreground"
+    className="py-6 text-center text-sm text-neutral-500 dark:text-neutral-300"
     {...props}
   />
 ))
@@ -133,7 +133,7 @@ const CommandShortcut = ({
   return (
     <span
       className={cn(
-        "ml-auto text-xs tracking-widest text-muted-foreground",
+        "ml-auto text-xs tracking-widest text-neutral-500 dark:text-neutral-300",
         className
       )}
       {...props}

@@ -9,7 +9,11 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { LoadingState } from '@/components/shared/LoadingState'
+import { StatCard } from '@/components/shared/StatCard'
+import { statGradients, layout } from '@/lib/design-tokens'
 import { getClientById, deleteClient } from '@/lib/api/clients'
+import type { Client, Reservation } from '@/types'
 import Link from 'next/link'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
@@ -17,6 +21,7 @@ import { DeleteClientModal } from '@/components/clients/delete-client-modal'
 import { ContactsManager } from '@/components/clients/contacts-manager'
 import { toast } from 'sonner'
 
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 import { ClientHeroSection } from './components/ClientHeroSection'
 import { CompanyInfoCard, ContactInfoCard } from './components/ClientInfoCards'
 import { ClientReservationsHistory } from './components/ClientReservationsHistory'
@@ -68,11 +73,8 @@ export default function ClientDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Wczytywanie...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <LoadingState message="Wczytywanie klienta..." />
       </div>
     )
   }
@@ -89,16 +91,18 @@ export default function ClientDetailsPage() {
   const reservations = client.reservations || []
   const stats = {
     total: reservations.length,
-    confirmed: reservations.filter((r: any) => r.status === 'CONFIRMED').length,
-    completed: reservations.filter((r: any) => r.status === 'COMPLETED').length,
+    confirmed: reservations.filter((r: Reservation) => r.status === 'CONFIRMED').length,
+    completed: reservations.filter((r: Reservation) => r.status === 'COMPLETED').length,
     totalSpent: reservations
-      .filter((r: any) => r.status === 'CONFIRMED' || r.status === 'COMPLETED')
+      .filter((r: Reservation) => r.status === 'CONFIRMED' || r.status === 'COMPLETED')
       .reduce((sum: number, r: any) => sum + (Number(r.totalPrice) || 0), 0),
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto py-8 px-4 space-y-8">
+        <Breadcrumb />
+
         {/* Soft-deleted banner */}
         {isDeleted && (
           <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400">
@@ -118,77 +122,42 @@ export default function ClientDetailsPage() {
           stats={stats}
         />
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="relative overflow-hidden border-0 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10" />
-            <CardContent className="relative p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Rezerwacje</p>
-                  <p className="text-3xl font-bold">{stats.total}</p>
-                </div>
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg">
-                  <Calendar className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-0 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10" />
-            <CardContent className="relative p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Potwierdzone</p>
-                  <p className="text-3xl font-bold">{stats.confirmed}</p>
-                </div>
-                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg">
-                  <CheckCircle2 className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-0 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10" />
-            <CardContent className="relative p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Zakończone</p>
-                  <p className="text-3xl font-bold">{stats.completed}</p>
-                </div>
-                <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
-                  <TrendingUp className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-0 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-amber-500/10" />
-            <CardContent className="relative p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Wydano</p>
-                  <p className="text-3xl font-bold">{stats.totalSpent.toLocaleString('pl-PL')} zł</p>
-                </div>
-                <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg">
-                  <DollarSign className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Stats Grid — shared StatCard */}
+        <div className={layout.statGrid}>
+          <StatCard
+            label="Rezerwacje"
+            value={String(stats.total)}
+            icon={Calendar}
+            iconGradient={statGradients.count}
+          />
+          <StatCard
+            label="Potwierdzone"
+            value={String(stats.confirmed)}
+            icon={CheckCircle2}
+            iconGradient={statGradients.success}
+          />
+          <StatCard
+            label="Zakończone"
+            value={String(stats.completed)}
+            icon={TrendingUp}
+            iconGradient={statGradients.info}
+          />
+          <StatCard
+            label="Wydano"
+            value={`${stats.totalSpent.toLocaleString('pl-PL')} zł`}
+            icon={DollarSign}
+            iconGradient={statGradients.financial}
+          />
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
+        <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-full sm:w-fit">
           <button
             onClick={() => setActiveTab('details')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'details'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
             {isCompany ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
@@ -199,7 +168,7 @@ export default function ClientDetailsPage() {
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'history'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
             <History className="h-4 w-4" />
@@ -244,64 +213,67 @@ export default function ClientDetailsPage() {
                 </Card>
               )}
 
-              <Card className="border-0 shadow-xl">
-                <CardHeader className="border-b">
-                  <CardTitle className="text-lg">Szybkie akcje</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 space-y-2">
-                  {!isDeleted && (
-                    <>
-                      <Link href={`/dashboard/reservations/list?create=true&clientId=${client.id}`}>
-                        <Button variant="outline" className="w-full justify-start" size="lg">
-                          <Calendar className="mr-2 h-4 w-4" />
-                          Nowa rezerwacja
+              <Card className="border-0 shadow-xl overflow-hidden">
+                <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-red-950/30 p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg shadow-lg">
+                      <Sparkles className="h-5 w-5 text-white" />
+                    </div>
+                    <h2 className="text-xl font-bold">Szybkie akcje</h2>
+                  </div>
+                  <div className="space-y-3">
+                    {!isDeleted && (
+                      <>
+                        <Link href={`/dashboard/reservations/new?clientId=${client.id}`}>
+                          <Button variant="outline" className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md" size="lg">
+                            <Calendar className="mr-2 h-4 w-4 flex-shrink-0" />
+                            Nowa rezerwacja
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md"
+                          size="lg"
+                          onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
+                        >
+                          <Edit className="mr-2 h-4 w-4 flex-shrink-0" />
+                          Edytuj dane
                         </Button>
-                      </Link>
+                      </>
+                    )}
+                    {!isDeleted && (
                       <Button
                         variant="outline"
-                        className="w-full justify-start"
+                        className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md text-red-600 hover:text-red-700"
                         size="lg"
-                        onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
+                        disabled={deleting}
+                        onClick={() => setShowDeleteModal(true)}
                       >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edytuj dane
+                        <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
+                        Usuń klienta
                       </Button>
-                    </>
-                  )}
-                  {!isDeleted && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-red-600 hover:text-red-700"
-                      size="lg"
-                      disabled={deleting}
-                      onClick={() => setShowDeleteModal(true)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Usuń klienta
-                    </Button>
-                  )}
-                </CardContent>
+                    )}
+                  </div>
+                </div>
               </Card>
             </div>
 
             {/* Right Column - Reservations History + Attachments */}
             <div className="lg:col-span-2 space-y-6 min-w-0">
-              <Card className="border-0 shadow-xl">
-                <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+              <Card className="border-0 shadow-xl overflow-hidden">
+                <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
                       <Sparkles className="h-5 w-5 text-white" />
                     </div>
-                    <CardTitle className="text-2xl font-bold">Historia rezerwacji</CardTitle>
+                    <h2 className="text-xl font-bold">Historia rezerwacji</h2>
                   </div>
-                </CardHeader>
-                <CardContent className="p-6">
                   <ClientReservationsHistory
                     reservations={reservations}
                     clientId={client.id}
                     isDeleted={isDeleted}
                   />
-                </CardContent>
+                </div>
               </Card>
 
               {/* Attachments Panel */}

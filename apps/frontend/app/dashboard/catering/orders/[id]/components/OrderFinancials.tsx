@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import {
   useUpdateCateringDeposit,
 } from '@/hooks/use-catering-orders';
-import { SectionCard } from './SectionCard';
+import { SectionCard } from '@/components/shared/SectionCard';
 import { formatPrice, formatDatePl, iconBtnEdit, iconBtnDelete } from './types';
 import type { CateringOrder, CateringDeposit } from './types';
 
@@ -180,7 +180,7 @@ export function OrderFinancials({
         <div className="space-y-2.5">
           {Number(order.subtotal) > 0 && (
             <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400">
+              <span className="flex items-center gap-2 text-neutral-500 dark:text-neutral-300">
                 <Utensils className="w-3.5 h-3.5" /> Dania
               </span>
               <span className="font-medium">{formatPrice(order.subtotal)}</span>
@@ -188,7 +188,7 @@ export function OrderFinancials({
           )}
           {Number(order.extrasTotalPrice) > 0 && (
             <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400">
+              <span className="flex items-center gap-2 text-neutral-500 dark:text-neutral-300">
                 <Star className="w-3.5 h-3.5" /> Usługi dodatkowe
               </span>
               <span className="font-medium">{formatPrice(order.extrasTotalPrice)}</span>
@@ -271,10 +271,10 @@ export function OrderFinancials({
                     <div className="shrink-0">
                       {paid
                         ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        : <Circle className="w-4 h-4 text-neutral-300 dark:text-neutral-600" />}
+                        : <Circle className="w-4 h-4 text-neutral-300 dark:text-neutral-400" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-medium truncate ${paid ? 'text-emerald-700 dark:text-emerald-300' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                      <p className={`text-xs font-medium truncate ${paid ? 'text-emerald-700 dark:text-emerald-300' : 'text-neutral-600 dark:text-neutral-300'}`}>
                         {d.title ?? 'Zaliczka'}
                       </p>
                       {d.dueDate && (

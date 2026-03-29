@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CalendarDays, ChevronLeft, ChevronRight, CalendarCheck } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, CalendarCheck, TrendingUp } from 'lucide-react'
 import { PageLayout, PageHero } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
+import { useReservations } from '@/lib/api/reservations'
 import DailyReservationsSection from './components/DailyReservationsSection'
 import CateringDailyWidget from './components/CateringDailyWidget'
 
@@ -39,6 +40,52 @@ function formatDisplayDate(dateStr: string, isToday: boolean, isTomorrow: boolea
   return `${capitalized}, ${dayMonth}`
 }
 
+/** Get end of current week (Sunday) from a date string */
+function getEndOfWeek(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const dayOfWeek = date.getDay()
+  const daysToSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek
+  return shiftDate(dateStr, daysToSunday)
+}
+
+// ─── Week summary widget ─────────────────────────────────────────────────────
+
+function WeekSummaryBanner({
+  selectedDate,
+  weekEndDate,
+}: {
+  selectedDate: string
+  weekEndDate: string
+}) {
+  const { data } = useReservations({
+    dateFrom: shiftDate(selectedDate, 1),
+    dateTo: `${weekEndDate}T23:59:59.999Z`,
+    pageSize: 100,
+  })
+
+  const remainingCount = data?.data?.length ?? 0
+  if (remainingCount === 0) return null
+
+  const [, em, ed] = weekEndDate.split('-').map(Number)
+  const endDate = new Date(Number(weekEndDate.split('-')[0]), em - 1, ed)
+  const endLabel = endDate.toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' })
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex items-center gap-3 rounded-xl bg-blue-50 dark:bg-blue-900/15 border border-blue-100 dark:border-blue-800/30 px-4 py-3"
+    >
+      <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+      <p className="text-sm text-neutral-700 dark:text-neutral-300">
+        <span className="font-semibold text-blue-700 dark:text-blue-300">{remainingCount}</span>
+        {' '}rezerwacji do ko{'\u0144'}ca tygodnia ({endLabel})
+      </p>
+    </motion.div>
+  )
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function DailyViewPage() {
@@ -51,6 +98,7 @@ export default function DailyViewPage() {
 
   const isToday = selectedDate === todayStr
   const isTomorrow = selectedDate === tomorrowStr
+  const weekEndDate = useMemo(() => getEndOfWeek(selectedDate), [selectedDate])
 
   const goTo = useCallback((date: string, dir: 'left' | 'right') => {
     setDirection(dir)
@@ -105,7 +153,10 @@ export default function DailyViewPage() {
         }
       />
 
-      {/* Dwie kolumny na xl, jedna na mobile */}
+      {/* Week summary — shows remaining reservations for the rest of the week */}
+      <WeekSummaryBanner selectedDate={selectedDate} weekEndDate={weekEndDate} />
+
+      {/* Panels: stacked on mobile, side-by-side on lg+ */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={selectedDate}
@@ -113,7 +164,7 @@ export default function DailyViewPage() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: direction === 'right' ? -24 : 24 }}
           transition={{ duration: 0.22, ease: 'easeInOut' }}
-          className="grid grid-cols-1 xl:grid-cols-2 gap-6"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6"
         >
           <DailyReservationsSection date={selectedDate} />
           <CateringDailyWidget date={selectedDate} />

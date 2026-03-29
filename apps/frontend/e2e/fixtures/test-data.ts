@@ -7,14 +7,14 @@
 
 export const testData = {
   admin: {
-    email: 'admin@gosciniecrodzinny.pl',
-    password: 'Admin123!@#',
+    email: process.env.TEST_ADMIN_EMAIL || process.env.E2E_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl',
+    password: process.env.TEST_ADMIN_PASSWORD || process.env.E2E_ADMIN_PASSWORD || 'Admin123!@#',
     firstName: 'Admin',
     lastName: 'System',
   },
   employee: {
-    email: 'pracownik@gosciniecrodzinny.pl',
-    password: 'Employee123!@#',
+    email: process.env.E2E_EMPLOYEE_EMAIL || 'pracownik@gosciniecrodzinny.pl',
+    password: process.env.E2E_EMPLOYEE_PASSWORD || 'Employee123!@#',
     firstName: 'Pracownik',
     lastName: 'Testowy',
   },

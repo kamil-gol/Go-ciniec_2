@@ -204,7 +204,7 @@ export function ServiceItemForm({
           id="item-icon"
           value={icon}
           onChange={(e) => setIcon(e.target.value)}
-          placeholder="\uD83C\uDFB5"
+          placeholder="🎵"
           maxLength={4}
           className="w-24"
         />

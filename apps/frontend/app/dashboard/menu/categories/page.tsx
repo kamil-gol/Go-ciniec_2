@@ -68,9 +68,16 @@ export default function DishCategoriesPage() {
     setDialogOpen(true)
   }
 
+  // Reset form after dialog animation (#436)
+  useEffect(() => {
+    if (!dialogOpen) {
+      const timer = setTimeout(() => resetForm(), 200)
+      return () => clearTimeout(timer)
+    }
+  }, [dialogOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleClose = () => {
     setDialogOpen(false)
-    setTimeout(() => resetForm(), 200)
   }
 
   const handleSubmit = async () => {
@@ -153,7 +160,7 @@ export default function DishCategoriesPage() {
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
-        <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingCategory ? 'Edytuj Kategorię' : 'Nowa Kategoria'}</DialogTitle>
           </DialogHeader>
@@ -211,7 +218,7 @@ export default function DishCategoriesPage() {
         <EmptyState
           icon={Tags}
           title="Brak kategorii"
-          description="Dodaj pierwszą kategorię dań"
+          description="Nie masz jeszcze żadnych kategorii dań. Dodaj pierwszą kategorię, aby móc organizować dania w menu (np. zupy, przystawki, dania główne)."
           actionLabel="Dodaj kategorię"
           onAction={handleCreate}
         />

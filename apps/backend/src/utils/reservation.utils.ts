@@ -91,8 +91,8 @@ export function validateCustomEventFields(
 export function detectReservationChanges(
   oldData: any,
   newData: UpdateReservationDTO
-): Array<{ field: string; oldValue: any; newValue: any; label: string }> {
-  const changes: Array<{ field: string; oldValue: any; newValue: any; label: string }> = [];
+): Array<{ field: string; oldValue: unknown; newValue: unknown; label: string }> {
+  const changes: Array<{ field: string; oldValue: unknown; newValue: unknown; label: string }> = [];
   
   // Compare startDateTime
   if (newData.startDateTime && newData.startDateTime !== oldData.startDateTime?.toISOString()) {
@@ -231,7 +231,7 @@ export function detectReservationChanges(
  * Format changes summary for display
  */
 export function formatChangesSummary(
-  changes: Array<{ field: string; oldValue: any; newValue: any; label: string }>
+  changes: Array<{ field: string; oldValue: unknown; newValue: unknown; label: string }>
 ): string {
   if (changes.length === 0) {
     return 'Brak zmian';
@@ -294,7 +294,7 @@ export function enrichWithExtrasTotals(reservation: any): any {
 /**
  * Format value for display
  */
-function formatValue(value: any): string {
+function formatValue(value: unknown): string {
   if (value === null || value === undefined) {
     return 'brak';
   }

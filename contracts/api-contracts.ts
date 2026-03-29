@@ -59,9 +59,13 @@ export interface AuthLoginResponseContract {
     refreshToken?: string;
     user: AuthUserContract;
   };
+  /** @deprecated Use data.token instead */
   token: string;
+  /** @deprecated Use data.accessToken instead */
   accessToken?: string;
+  /** @deprecated Use data.refreshToken instead */
   refreshToken?: string;
+  /** @deprecated Use data.user instead */
   user: AuthUserContract;
   message: string;
 }
@@ -74,9 +78,13 @@ export interface AuthRegisterResponseContract {
     refreshToken?: string;
     user: AuthUserContract;
   };
+  /** @deprecated Use data.token instead */
   token: string;
+  /** @deprecated Use data.accessToken instead */
   accessToken?: string;
+  /** @deprecated Use data.refreshToken instead */
   refreshToken?: string;
+  /** @deprecated Use data.user instead */
   user: AuthUserContract;
   message: string;
 }

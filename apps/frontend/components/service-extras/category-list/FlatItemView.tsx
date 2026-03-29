@@ -129,7 +129,7 @@ export function FlatItemView({ categories, onEditItem, onDeleteItem }: FlatItemV
                       {priceSuffix(item.priceType) && <span className="text-xs text-neutral-400 ml-0.5">{priceSuffix(item.priceType)}</span>}
                     </span>
                   ) : (
-                    <span className="text-sm text-neutral-300 dark:text-neutral-600">—</span>
+                    <span className="text-sm text-neutral-300 dark:text-neutral-400">—</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -139,7 +139,7 @@ export function FlatItemView({ categories, onEditItem, onDeleteItem }: FlatItemV
                       Aktywna
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-500 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-500 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700">
                       <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
                       Nieaktywna
                     </span>

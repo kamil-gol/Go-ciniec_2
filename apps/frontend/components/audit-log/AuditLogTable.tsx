@@ -13,7 +13,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Eye, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, Clock } from 'lucide-react';
+import { Pagination } from '@/components/shared/Pagination';
 import { AuditLogDetails } from './AuditLogDetails';
 import { entityLabels } from './audit-log.constants';
 import { groupLogEntries, isSystemAction, type LogGroup } from './audit-log.utils';
@@ -93,7 +94,7 @@ export function AuditLogTable({
               >
                 {/* Row 1: Date + Action Badge */}
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-300">
                     <Clock className="h-3.5 w-3.5 flex-shrink-0" />
                     <span className="font-medium text-neutral-900 dark:text-neutral-100">
                       {format(new Date(log.createdAt), 'dd.MM.yyyy', { locale: pl })}
@@ -119,14 +120,14 @@ export function AuditLogTable({
                       ? `${log.user.firstName} ${log.user.lastName}`
                       : 'System'}
                   </p>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 flex-shrink-0">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-300 flex-shrink-0">
                     {entityLabels[log.entityType] || log.entityType}
                   </span>
                 </div>
 
                 {/* Row 3: Description */}
                 {(log.details?.description || log.details?.reason) && (
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-300 line-clamp-2">
                     {log.details?.description || log.details?.reason}
                   </p>
                 )}
@@ -194,39 +195,13 @@ export function AuditLogTable({
       </div>
 
       {/* Paginacja */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t bg-muted/20">
-          <p className="text-sm text-muted-foreground">
-            Strona <span className="font-medium text-neutral-900 dark:text-neutral-100">{page}</span> z{' '}
-            <span className="font-medium text-neutral-900 dark:text-neutral-100">{totalPages}</span>
-            {total && (
-              <span className="ml-2">{'\u00b7'} {total} {total === 1 ? 'wpis' : total < 5 ? 'wpisy' : 'wpisów'} łącznie</span>
-            )}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(page - 1)}
-              disabled={page <= 1}
-              className="h-8"
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Poprzednia
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(page + 1)}
-              disabled={page >= totalPages}
-              className="h-8"
-            >
-              Następna
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        onPageChange={onPageChange}
+        className="px-4 sm:px-6 py-4 border-t bg-muted/20"
+      />
 
       {/* Modal szczegółów */}
       {selectedLog && (
@@ -298,12 +273,12 @@ function DesktopGroupRows({
           </div>
         </TableCell>
         <TableCell>
-          <span className="text-sm text-neutral-600 dark:text-neutral-400">
+          <span className="text-sm text-neutral-600 dark:text-neutral-300">
             {entityLabels[log.entityType] || log.entityType}
           </span>
         </TableCell>
         <TableCell className="max-w-md">
-          <p className="truncate text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="truncate text-sm text-neutral-600 dark:text-neutral-300">
             {log.details?.description || log.details?.reason || '\u2014'}
           </p>
         </TableCell>

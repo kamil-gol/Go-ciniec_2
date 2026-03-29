@@ -1,6 +1,6 @@
 import { FileText, History } from 'lucide-react';
 import { OrderTimeline } from '../../components/OrderTimeline';
-import { SectionCard } from './SectionCard';
+import { SectionCard } from '@/components/shared/SectionCard';
 import type { CateringOrder } from './types';
 
 interface OrderNotesProps {
@@ -16,7 +16,7 @@ export function OrderNotes({ order, orderId }: OrderNotesProps) {
         <SectionCard
           icon={FileText}
           iconBg="bg-neutral-100 dark:bg-neutral-800"
-          iconColor="text-neutral-500 dark:text-neutral-400"
+          iconColor="text-neutral-500 dark:text-neutral-300"
           title="Uwagi"
         >
           <div className="space-y-4">

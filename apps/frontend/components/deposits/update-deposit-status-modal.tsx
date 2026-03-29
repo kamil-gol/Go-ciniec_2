@@ -99,7 +99,7 @@ export function UpdateDepositStatusModal({
           <div className="flex items-center gap-3 p-4 bg-secondary-50 dark:bg-secondary-900/20 rounded-lg">
             <DollarSign className="w-6 h-6 text-primary-600 dark:text-primary-400" />
             <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">Kwota zaliczki</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">Kwota zaliczki</p>
               <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
                 {deposit.amount.toFixed(2)} zł
               </p>
@@ -112,7 +112,7 @@ export function UpdateDepositStatusModal({
               <div className="space-y-2">
                 <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Sposób płatności</label>
                 <div className="flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+                  <CreditCard className="w-5 h-5 text-neutral-500 dark:text-neutral-300" />
                   <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Wybierz sposób płatności" />
@@ -131,7 +131,7 @@ export function UpdateDepositStatusModal({
               <div className="space-y-2">
                 <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Data i czas płatności</label>
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+                  <Calendar className="w-5 h-5 text-neutral-500 dark:text-neutral-300" />
                   <Input
                     type="datetime-local"
                     value={paidAt}

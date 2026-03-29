@@ -5,7 +5,6 @@ import Link from 'next/link'
 import {
   UtensilsCrossed,
   ArrowRight,
-  AlertCircle,
   Users,
   Clock,
   MapPin,
@@ -16,37 +15,21 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
+import { StatusBadge } from '@/components/shared/StatusBadge'
+import { ErrorState } from '@/components/shared/ErrorState'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { LoadingState } from '@/components/shared/LoadingState'
 import {
   useCateringOrdersByDate,
-  CATERING_STATUS_LABELS,
   CATERING_DELIVERY_LABELS,
   formatCateringCurrency,
   type CateringOrderListItem,
 } from '@/lib/api/catering-orders'
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function SkeletonRow() {
-  return (
-    <div className="rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 border border-neutral-100 dark:border-neutral-700/50 animate-pulse space-y-2">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
-        <div className="flex-1 space-y-1.5">
-          <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-neutral-700" />
-          <div className="h-3 w-64 rounded bg-neutral-200 dark:bg-neutral-700" />
-        </div>
-        <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-700" />
-      </div>
-      <div className="h-3 w-48 rounded bg-neutral-200 dark:bg-neutral-700 ml-13" />
-    </div>
-  )
-}
-
 // ─── Single order row ──────────────────────────────────────────────────────
 
 function OrderRow({ order, index }: { order: CateringOrderListItem; index: number }) {
   const accent = moduleAccents.catering
-  const statusInfo = CATERING_STATUS_LABELS[order.status]
 
   const clientName = order.client.companyName
     ? order.client.companyName
@@ -94,18 +77,11 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
               <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
                 {clientName}
               </span>
-              <span
-                className={cn(
-                  'rounded-full px-2 py-0.5 text-xs font-semibold flex-shrink-0',
-                  statusInfo.classes
-                )}
-              >
-                {statusInfo.emoji} {statusInfo.label}
-              </span>
+              <StatusBadge type="catering" status={order.status} />
             </div>
 
             {/* Linia 2: sposób dostawy + godzina + goście + liczba dań */}
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+            <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 truncate">
               {CATERING_DELIVERY_LABELS[order.deliveryType]}
               {order.deliveryTime && (
                 <> <Clock className="inline h-3 w-3 mb-0.5" /> {order.deliveryTime}</>
@@ -121,7 +97,7 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
 
             {/* Linia 3: adres dostawy (tylko DELIVERY) */}
             {hasAddress && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1">
+              <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 flex items-center gap-1">
                 <MapPin className="h-3 w-3 flex-shrink-0 text-orange-500" />
                 <span className="break-all">{order.deliveryAddress}</span>
               </p>
@@ -129,14 +105,14 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
 
             {/* Linia 4: nazwa wydarzenia */}
             {order.eventName && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+              <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 truncate">
                 🎉 {order.eventName}
               </p>
             )}
 
             {/* Linia 5: kontakt — osobna linia, bez truncate żeby numer nie był ucinany */}
             {hasContact && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1 flex-wrap">
+              <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 flex items-center gap-1 flex-wrap">
                 <Phone className="h-3 w-3 flex-shrink-0" />
                 <span className="font-medium">{contactDisplay}</span>
                 {order.contactPhone && (
@@ -198,7 +174,7 @@ function SummaryFooter({ orders }: { orders: CateringOrderListItem[] }) {
       )}
     >
       <div className="flex items-center gap-3 text-sm flex-wrap">
-        <span className="text-neutral-600 dark:text-neutral-400">
+        <span className="text-neutral-600 dark:text-neutral-300">
           <span className="font-bold text-neutral-900 dark:text-neutral-100">{orders.length}</span>
           {' '}zamówień
         </span>
@@ -253,7 +229,7 @@ export default function CateringDailyWidget({ date }: CateringDailyWidgetProps) 
             <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
               🍱 Catering
             </h3>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-neutral-500 dark:text-neutral-300">
               Zamówienia na ten dzień
             </p>
           </div>
@@ -284,44 +260,20 @@ export default function CateringDailyWidget({ date }: CateringDailyWidgetProps) 
       {/* Content */}
       <div className="space-y-2">
         {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
+          <LoadingState variant="skeleton" count={3} />
         ) : error ? (
-          <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
-            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-            <p className="text-sm font-medium text-red-800 dark:text-red-300 flex-1">
-              Nie udało się pobrać zamówień
-            </p>
-            <button
-              onClick={() => refetch()}
-              className="text-sm font-medium text-red-700 dark:text-red-300 hover:underline flex-shrink-0"
-            >
-              Spróbuj ponownie
-            </button>
-          </div>
+          <ErrorState
+            message="Nie udało się pobrać zamówień"
+            onRetry={() => refetch()}
+          />
         ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div
-              className={cn(
-                'mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br opacity-20',
-                accent.iconBg
-              )}
-            >
-              <UtensilsCrossed className="h-7 w-7 text-white" />
-            </div>
-            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              Brak zamówień cateringowych
-            </p>
-            <Link
-              href="/dashboard/catering/orders/new"
-              className={cn(
-                'mt-2 text-sm font-medium hover:opacity-80 transition-opacity',
-                accent.text,
-                accent.textDark
-              )}
-            >
-              + Nowe zamówienie
-            </Link>
-          </div>
+          <EmptyState
+            icon={UtensilsCrossed}
+            title="Brak zamówień cateringowych"
+            actionLabel="+ Nowe zamówienie"
+            actionHref="/dashboard/catering/orders/new"
+            variant="compact"
+          />
         ) : (
           <>
             {orders.map((order, index) => (

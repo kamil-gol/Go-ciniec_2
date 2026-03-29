@@ -113,7 +113,7 @@ export function SortableCategoryRows({
               Aktywna
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-500 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-500 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700">
               <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
               Nieaktywna
             </span>
@@ -173,7 +173,7 @@ export function SortableCategoryRows({
             {item.isActive ? (
               <span className="text-xs text-emerald-600 dark:text-emerald-400">✓</span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300">
                 Nieaktywna
               </span>
             )}

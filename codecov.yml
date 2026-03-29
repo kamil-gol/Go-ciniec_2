@@ -29,13 +29,17 @@ flags:
     paths:
       - apps/backend/src/
     carryforward: true
+  frontend:
+    paths:
+      - apps/frontend/
+    carryforward: true
 
 # Ignore paths
 ignore:
   - "apps/backend/src/tests/**"
   - "apps/backend/coverage/**"
   - "apps/backend/prisma/**"
-  - "apps/frontend/**"
+  - "apps/frontend/node_modules/**"
   - "docs/**"
   - "**/*.d.ts"
   - "**/*.config.*"

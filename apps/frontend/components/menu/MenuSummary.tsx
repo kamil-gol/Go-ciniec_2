@@ -78,7 +78,7 @@ export function MenuSummary({
         <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
           Podsumowanie Wybór Menu
         </h2>
-        <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+        <p className="mt-2 text-neutral-600 dark:text-neutral-300">
           Sprawdź szczegóły przed potwierdzeniem
         </p>
       </div>
@@ -129,19 +129,19 @@ export function MenuSummary({
             {/* Pricing */}
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-neutral-600 dark:text-neutral-400">Dorośli</span>
+                <span className="text-neutral-600 dark:text-neutral-300">Dorośli</span>
                 <span className="font-semibold text-neutral-900 dark:text-white">
                   {formatPrice(pkg.pricePerAdult)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-neutral-600 dark:text-neutral-400">Dzieci</span>
+                <span className="text-neutral-600 dark:text-neutral-300">Dzieci</span>
                 <span className="font-semibold text-neutral-900 dark:text-white">
                   {formatPrice(pkg.pricePerChild)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-neutral-600 dark:text-neutral-400">Maluchy</span>
+                <span className="text-neutral-600 dark:text-neutral-300">Maluchy</span>
                 <span className="font-semibold text-neutral-900 dark:text-white">
                   {typeof pkg.pricePerToddler === 'string' && parseFloat(pkg.pricePerToddler) === 0 
                     ? 'Gratis' 
@@ -158,7 +158,7 @@ export function MenuSummary({
                 </p>
                 <ul className="space-y-1">
                   {pkg.includedItems.slice(0, 5).map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+                    <li key={i} className="flex items-start gap-2 text-sm text-neutral-600 dark:text-neutral-300">
                       <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
                       <span>{item}</span>
                     </li>
@@ -197,19 +197,19 @@ export function MenuSummary({
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-neutral-600 dark:text-neutral-400">Dorośli</span>
+                <span className="text-neutral-600 dark:text-neutral-300">Dorośli</span>
                 <span className="font-semibold text-neutral-900 dark:text-white">
                   {guestCounts.adults} osób
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-neutral-600 dark:text-neutral-400">Dzieci</span>
+                <span className="text-neutral-600 dark:text-neutral-300">Dzieci</span>
                 <span className="font-semibold text-neutral-900 dark:text-white">
                   {guestCounts.childrenCount} osób
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-neutral-600 dark:text-neutral-400">Maluchy</span>
+                <span className="text-neutral-600 dark:text-neutral-300">Maluchy</span>
                 <span className="font-semibold text-neutral-900 dark:text-white">
                   {guestCounts.toddlers} osób
                 </span>

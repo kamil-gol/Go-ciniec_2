@@ -66,9 +66,13 @@ export const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'image/jpeg',
   'image/png',
+  'image/gif',
   'image/webp',
+  'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/csv',
 ] as const;
 
 export type AllowedMimeType = typeof ALLOWED_MIME_TYPES[number];
@@ -80,9 +84,13 @@ export const MIME_TYPE_LABELS: Record<string, string> = {
   'application/pdf': 'PDF',
   'image/jpeg': 'JPEG',
   'image/png': 'PNG',
+  'image/gif': 'GIF',
   'image/webp': 'WebP',
+  'application/msword': 'DOC',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+  'application/vnd.ms-excel': 'XLS',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+  'text/csv': 'CSV',
 };
 
 /**

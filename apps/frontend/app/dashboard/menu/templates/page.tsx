@@ -40,7 +40,7 @@ import { downloadMenuTemplatePDF } from '@/lib/api/menu-templates-api'
 import type { MenuTemplate } from '@/lib/api/menu-templates-api'
 import { toast } from 'sonner'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 
 export default function MenuTemplatesPage() {
   const [selectedEventType, setSelectedEventType] = useState<string>('all')
@@ -131,10 +131,10 @@ export default function MenuTemplatesPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
-        <StatCard label="Wszystkie" value={stats.total} subtitle="Szablony w systemie" icon={FileText} iconGradient="from-blue-500 to-indigo-500" delay={0.1} />
-        <StatCard label="Aktywne" value={stats.active} subtitle="Gotowe do użycia" icon={Eye} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Nieaktywne" value={stats.inactive} subtitle="Wyłączone" icon={EyeOff} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+      <div className={layout.statGrid3}>
+        <StatCard label="Wszystkie" value={stats.total} subtitle="Szablony w systemie" icon={FileText} iconGradient={statGradients.count} delay={0.1} />
+        <StatCard label="Aktywne" value={stats.active} subtitle="Gotowe do użycia" icon={Eye} iconGradient={statGradients.success} delay={0.2} />
+        <StatCard label="Nieaktywne" value={stats.inactive} subtitle="Wyłączone" icon={EyeOff} iconGradient={statGradients.neutral} delay={0.3} />
       </div>
 
       {/* Filters */}
@@ -174,7 +174,9 @@ export default function MenuTemplatesPage() {
         <EmptyState
           icon={FileText}
           title="Brak szablonów"
-          description={selectedEventType !== 'all' ? 'Brak szablonów dla wybranego typu wydarzenia' : 'Zacznij od stworzenia pierwszego szablonu menu'}
+          description={selectedEventType !== 'all'
+            ? 'Nie znaleziono szablonów menu dla wybranego typu wydarzenia. Zmień filtr lub utwórz nowy szablon.'
+            : 'Nie masz jeszcze żadnych szablonów menu. Utwórz pierwszy szablon, aby zdefiniować ofertę menu dla swoich wydarzeń.'}
           actionLabel="Utwórz szablon"
           onAction={handleCreate}
         />
@@ -198,7 +200,7 @@ export default function MenuTemplatesPage() {
                     )}
                   </div>
                   {!template.isActive && (
-                    <Badge className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 ml-2 flex-shrink-0">Nieaktywny</Badge>
+                    <Badge className="bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 ml-2 flex-shrink-0">Nieaktywny</Badge>
                   )}
                 </div>
 

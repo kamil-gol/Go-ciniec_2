@@ -13,9 +13,9 @@ vi.mock('@/lib/api/settings', () => ({
   },
 }))
 
-vi.mock('@/components/shared', () => ({
-  LoadingState: ({ message }: { message: string }) =>
-    React.createElement('div', { 'data-testid': 'loading' }, message),
+vi.mock('@/components/ui/skeleton', () => ({
+  Skeleton: (props: any) =>
+    React.createElement('div', { ...props, 'data-testid': 'skeleton' }),
 }))
 
 // Mock UI components

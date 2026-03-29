@@ -16,7 +16,7 @@ import { OrdersTable } from './components/OrdersTable';
 import { OrdersFilters } from './components/OrdersFilters';
 import { NewOrderWizard } from './components/NewOrderWizard';
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
-import { moduleAccents } from '@/lib/design-tokens';
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import type { CateringOrdersFilter } from '@/types/catering-order.types';
 
 const CATERING_ACCENT = moduleAccents.catering;
@@ -86,13 +86,13 @@ export default function CateringOrdersPage() {
       />
 
       {/* StatCards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className={layout.statGrid}>
         <StatCard
           label="Wszystkie"
           value={stats.total}
           subtitle="Łącznie zamówień"
           icon={ShoppingBag}
-          iconGradient="from-orange-500 to-amber-500"
+          iconGradient={statGradients.count}
           delay={0.1}
         />
         <StatCard
@@ -100,7 +100,7 @@ export default function CateringOrdersPage() {
           value={stats.confirmed}
           subtitle="Potwierdzone / W realizacji"
           icon={CheckCircle2}
-          iconGradient="from-emerald-500 to-teal-500"
+          iconGradient={statGradients.success}
           delay={0.2}
         />
         <StatCard
@@ -108,7 +108,7 @@ export default function CateringOrdersPage() {
           value={stats.pending}
           subtitle="Szkice i zapytania"
           icon={Clock}
-          iconGradient="from-amber-500 to-orange-500"
+          iconGradient={statGradients.alert}
           delay={0.3}
         />
         <StatCard
@@ -116,7 +116,7 @@ export default function CateringOrdersPage() {
           value={stats.thisMonth}
           subtitle="Wydarzeń w tym miesiącu"
           icon={TrendingUp}
-          iconGradient="from-violet-500 to-purple-500"
+          iconGradient={statGradients.info}
           delay={0.4}
         />
       </div>
@@ -163,7 +163,7 @@ export default function CateringOrdersPage() {
             <EmptyState
               icon={ShoppingBag}
               title="Brak zamówień"
-              description="Utwórz pierwsze zamówienie cateringowe"
+              description="Nie znaleziono zamówień spełniających wybrane kryteria. Utwórz nowe zamówienie cateringowe, aby rozpocząć."
               actionLabel="Nowe zamówienie"
               onAction={() => setShowWizard(true)}
             />

@@ -60,19 +60,19 @@ export default function CategoryExtrasList({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-neutral-200 dark:border-neutral-700">
-              <th className="text-left py-2 pr-4 font-medium text-neutral-500 dark:text-neutral-400">
+              <th className="text-left py-2 pr-4 font-medium text-neutral-500 dark:text-neutral-300">
                 Kategoria
               </th>
-              <th className="text-center py-2 px-2 font-medium text-neutral-500 dark:text-neutral-400">
+              <th className="text-center py-2 px-2 font-medium text-neutral-500 dark:text-neutral-300">
                 Ilość
               </th>
-              <th className="text-right py-2 px-2 font-medium text-neutral-500 dark:text-neutral-400">
+              <th className="text-right py-2 px-2 font-medium text-neutral-500 dark:text-neutral-300">
                 Cena/os.
               </th>
-              <th className="text-center py-2 px-2 font-medium text-neutral-500 dark:text-neutral-400">
+              <th className="text-center py-2 px-2 font-medium text-neutral-500 dark:text-neutral-300">
                 Osoby
               </th>
-              <th className="text-right py-2 pl-2 font-medium text-neutral-500 dark:text-neutral-400">
+              <th className="text-right py-2 pl-2 font-medium text-neutral-500 dark:text-neutral-300">
                 Suma
               </th>
             </tr>

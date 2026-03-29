@@ -1,5 +1,5 @@
 import { Utensils, Star, CalendarDays } from 'lucide-react';
-import { SectionCard, CountBadge, Field } from './SectionCard';
+import { SectionCard, CountBadge, Field } from '@/components/shared/SectionCard';
 import { formatPrice } from './types';
 import type { CateringOrder } from './types';
 
@@ -13,7 +13,7 @@ export function OrderItems({ order }: OrderItemsProps) {
 
   return (
     <>
-      {/* Szczegoly cateringu */}
+      {/* Szczegóły cateringu */}
       <SectionCard
         icon={CalendarDays}
         iconBg="bg-orange-100 dark:bg-orange-900/30"
@@ -51,10 +51,10 @@ export function OrderItems({ order }: OrderItemsProps) {
                   <tr key={item.id} className={`border-b border-neutral-100 dark:border-neutral-800 last:border-0 ${i % 2 === 1 ? 'bg-neutral-50/50 dark:bg-neutral-800/20' : 'bg-white dark:bg-transparent'}`}>
                     <td className="px-5 py-3">
                       <span className="font-medium text-neutral-900 dark:text-neutral-100">{item.dishNameSnapshot ?? '—'}</span>
-                      {item.note && <span className="block text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{item.note}</span>}
+                      {item.note && <span className="block text-xs text-neutral-500 dark:text-neutral-300 mt-0.5">{item.note}</span>}
                     </td>
-                    <td className="text-center px-4 py-3 text-neutral-600 dark:text-neutral-400 font-mono">×{item.quantity}</td>
-                    <td className="text-right px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatPrice(item.unitPrice)}</td>
+                    <td className="text-center px-4 py-3 text-neutral-600 dark:text-neutral-300 font-mono">×{item.quantity}</td>
+                    <td className="text-right px-4 py-3 text-neutral-600 dark:text-neutral-300">{formatPrice(item.unitPrice)}</td>
                     <td className="text-right px-5 py-3 font-semibold text-neutral-900 dark:text-neutral-100">{formatPrice(item.totalPrice)}</td>
                   </tr>
                 ))}
@@ -95,10 +95,10 @@ export function OrderItems({ order }: OrderItemsProps) {
                   <tr key={extra.id} className={`border-b border-neutral-100 dark:border-neutral-800 last:border-0 ${i % 2 === 1 ? 'bg-neutral-50/50 dark:bg-neutral-800/20' : 'bg-white dark:bg-transparent'}`}>
                     <td className="px-5 py-3">
                       <span className="font-medium text-neutral-900 dark:text-neutral-100">{extra.name}</span>
-                      {extra.description && <span className="block text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{extra.description}</span>}
+                      {extra.description && <span className="block text-xs text-neutral-500 dark:text-neutral-300 mt-0.5">{extra.description}</span>}
                     </td>
-                    <td className="text-center px-4 py-3 text-neutral-600 dark:text-neutral-400 font-mono">×{extra.quantity}</td>
-                    <td className="text-right px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatPrice(extra.unitPrice)}</td>
+                    <td className="text-center px-4 py-3 text-neutral-600 dark:text-neutral-300 font-mono">×{extra.quantity}</td>
+                    <td className="text-right px-4 py-3 text-neutral-600 dark:text-neutral-300">{formatPrice(extra.unitPrice)}</td>
                     <td className="text-right px-5 py-3 font-semibold text-neutral-900 dark:text-neutral-100">{formatPrice(extra.totalPrice)}</td>
                   </tr>
                 ))}

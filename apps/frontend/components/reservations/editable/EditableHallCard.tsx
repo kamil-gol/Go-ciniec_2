@@ -226,7 +226,7 @@ export function EditableHallCard({
                   {hallsArray.map((hall: any) => (
                     <SelectItem key={hall.id} value={hall.id}>
                       {hall.name} (max {hall.capacity} osób)
-                      {hall.isWholeVenue ? ' \uD83C\uDFDB' : ''}
+                      {hall.isWholeVenue ? ' 🏛' : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -234,7 +234,7 @@ export function EditableHallCard({
             </div>
 
             {selectedCapacity > 0 && (
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">
                 Pojemność: {selectedCapacity} osób
                 {totalGuests > selectedCapacity && (
                   <span className="text-red-600 dark:text-red-400 font-medium">
@@ -298,7 +298,7 @@ export function EditableHallCard({
                   <div className="p-4 rounded-lg border bg-neutral-50 dark:bg-neutral-950/30 border-neutral-200 dark:border-neutral-800">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-sm text-neutral-600 dark:text-neutral-400">Sprawdzanie dostępności...</span>
+                      <span className="text-sm text-neutral-600 dark:text-neutral-300">Sprawdzanie dostępności...</span>
                     </div>
                   </div>
                 ) : availabilityStatus?.type === 'available' ? (
@@ -340,13 +340,13 @@ export function EditableHallCard({
                         </div>
                       </div>
                       <div className="flex justify-between text-xs mt-1">
-                        <span className="text-neutral-500 dark:text-neutral-400">Wolne: {capacityData.availableCapacity} miejsc</span>
+                        <span className="text-neutral-500 dark:text-neutral-300">Wolne: {capacityData.availableCapacity} miejsc</span>
                         <span className={getCapacityColor(utilizationPercent).text}>{utilizationPercent}%</span>
                       </div>
                     </div>
                     <div className="space-y-1">
                       {capacityData.overlappingReservations.map((r) => (
-                        <div key={r.id} className="ml-1 text-xs text-neutral-600 dark:text-neutral-400">
+                        <div key={r.id} className="ml-1 text-xs text-neutral-600 dark:text-neutral-300">
                           {`\u2022 ${r.clientName} \u2014 ${r.eventTypeName || 'Wydarzenie'} (${localTime(r.startDateTime)}\u2013${localTime(r.endDateTime)}, ${r.guests} os.)`}
                         </div>
                       ))}

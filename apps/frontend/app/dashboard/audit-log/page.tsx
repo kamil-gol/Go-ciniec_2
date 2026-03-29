@@ -9,8 +9,9 @@ import { AuditLogFilters } from '@/components/audit-log/AuditLogFilters';
 import { AuditLogTable } from '@/components/audit-log/AuditLogTable';
 import { useAuditLogs, useAuditLogStatistics } from '@/hooks/use-audit-log';
 import type { AuditLogFilters as Filters } from '@/types/audit-log.types';
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
-import { moduleAccents } from '@/lib/design-tokens';
+import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared';
+import { Skeleton } from '@/components/ui/skeleton';
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 
 const actionLabelsGenitive: Record<string, string> = {
   // Basic CRUD
@@ -105,13 +106,13 @@ export default function AuditLogPage() {
 
       {/* Statystyki */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className={layout.statGrid}>
           <StatCard
             label="Wszystkie wpisy"
             value={stats.totalLogs}
             subtitle="Łączna liczba zmian"
             icon={Activity}
-            iconGradient="from-zinc-600 to-neutral-600"
+            iconGradient={statGradients.neutral}
             delay={0.1}
           />
           <StatCard
@@ -119,7 +120,7 @@ export default function AuditLogPage() {
             value={stats.byAction.length > 0 ? stats.byAction[0].count : 0}
             subtitle={stats.byAction.length > 0 ? (actionLabelsGenitive[stats.byAction[0].action] || stats.byAction[0].action) : 'Brak danych'}
             icon={Archive}
-            iconGradient="from-amber-500 to-orange-500"
+            iconGradient={statGradients.info}
             delay={0.2}
           />
           <StatCard
@@ -127,7 +128,7 @@ export default function AuditLogPage() {
             value={stats.byEntityType.length > 0 ? stats.byEntityType[0].count : 0}
             subtitle={stats.byEntityType.length > 0 ? (entityLabelsPlural[stats.byEntityType[0].entityType] || stats.byEntityType[0].entityType) : 'Brak danych'}
             icon={Layers}
-            iconGradient="from-blue-500 to-cyan-500"
+            iconGradient={statGradients.info}
             delay={0.3}
           />
           <StatCard
@@ -135,18 +136,16 @@ export default function AuditLogPage() {
             value={stats.byUser.length}
             subtitle="Wykonało zmiany"
             icon={Users}
-            iconGradient="from-violet-500 to-purple-500"
+            iconGradient={statGradients.count}
             delay={0.4}
           />
         </div>
       )}
 
       {statsLoading && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="p-4 sm:p-6">
-              <LoadingState variant="skeleton" rows={2} />
-            </Card>
+        <div className={layout.statGrid}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} data-testid="loading-state" className="h-24 rounded-xl" />
           ))}
         </div>
       )}
@@ -206,15 +205,21 @@ export default function AuditLogPage() {
 
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-4 sm:p-6">
-              <LoadingState variant="skeleton" rows={8} message="Ładowanie dziennika audytu..." />
+            <div data-testid="loading-state" className="p-4 sm:p-6 space-y-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 rounded-xl" />
+              ))}
             </div>
           ) : !data || data.data.length === 0 ? (
             <div className="p-4 sm:p-6">
               <EmptyState
                 icon={FileText}
                 title="Brak wpisów w dzienniku"
-                description={hasActiveFilters ? 'Spróbuj zmienić kryteria filtrowania' : 'System jeszcze nie zarejestrował żadnych zmian'}
+                description={hasActiveFilters
+                  ? 'Żaden wpis nie pasuje do wybranych filtrów. Spróbuj zmienić kryteria filtrowania lub wyczyść filtry.'
+                  : 'System jeszcze nie zarejestrował żadnych zmian. Wpisy pojawią się automatycznie po wykonaniu operacji w systemie.'}
+                actionLabel={hasActiveFilters ? 'Wyczyść filtry' : undefined}
+                onAction={hasActiveFilters ? handleResetFilters : undefined}
               />
             </div>
           ) : (

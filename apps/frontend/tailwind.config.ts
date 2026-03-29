@@ -1,7 +1,7 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
-  darkMode: ['class', 'class'],
+  darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -196,11 +196,11 @@ const config: Config = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		boxShadow: {
-  			soft: '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-  			medium: '0 4px 20px -2px rgba(0, 0, 0, 0.1), 0 12px 30px -4px rgba(0, 0, 0, 0.1)',
-  			hard: '0 10px 40px -5px rgba(0, 0, 0, 0.2), 0 20px 50px -10px rgba(0, 0, 0, 0.15)',
-  			glow: '0 0 20px rgba(99, 102, 241, 0.4)',
-  			'glow-lg': '0 0 40px rgba(99, 102, 241, 0.6)'
+  			soft: '0 2px 15px -3px hsl(var(--shadow-color) / 0.15), 0 10px 20px -2px hsl(var(--shadow-color) / 0.08)',
+  			medium: '0 4px 20px -2px hsl(var(--shadow-color) / 0.2), 0 12px 30px -4px hsl(var(--shadow-color) / 0.15)',
+  			hard: '0 10px 40px -5px hsl(var(--shadow-color) / 0.3), 0 20px 50px -10px hsl(var(--shadow-color) / 0.25)',
+  			glow: '0 0 20px hsl(var(--premium-glow) / 0.4)',
+  			'glow-lg': '0 0 40px hsl(var(--premium-glow) / 0.6)'
   		},
   		backgroundImage: {
   			'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

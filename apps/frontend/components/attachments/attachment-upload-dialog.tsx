@@ -135,7 +135,7 @@ export default function AttachmentUploadDialog({
                 'w-10 h-10 transition-colors',
                 dragOver ? 'text-violet-500' : 'text-neutral-400'
               )} />
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 text-center">
+              <p className="text-sm text-neutral-600 dark:text-neutral-300 text-center">
                 <span className="font-medium text-violet-600 dark:text-violet-400">Kliknij</span> lub przeciągnij plik
               </p>
               <p className="text-xs text-neutral-400">PDF, JPG, PNG, WebP · max 10 MB</p>
@@ -180,7 +180,7 @@ export default function AttachmentUploadDialog({
                     'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
                     category === cat.value
                       ? 'bg-violet-600 text-white border-violet-600'
-                      : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700 hover:border-violet-300'
+                      : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700 hover:border-violet-300'
                   )}
                 >
                   {cat.label}

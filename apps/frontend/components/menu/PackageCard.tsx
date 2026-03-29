@@ -72,18 +72,18 @@ export function PackageCard({
           {/* Prices Grid */}
           <div className="grid grid-cols-3 gap-2">
             <div className="text-center p-2 min-w-0 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border border-neutral-200/50 dark:border-neutral-700/30">
-              <Users className="h-4 w-4 mx-auto mb-1.5 text-neutral-600 dark:text-neutral-400" />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1 truncate">Dorośli</p>
+              <Users className="h-4 w-4 mx-auto mb-1.5 text-neutral-600 dark:text-neutral-300" />
+              <p className="text-xs text-neutral-500 dark:text-neutral-300 mb-1 truncate">Dorośli</p>
               <p className="text-base font-bold text-neutral-900 dark:text-neutral-100 truncate">{pkg.pricePerAdult} zł</p>
             </div>
             <div className="text-center p-2 min-w-0 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
               <Smile className="h-4 w-4 mx-auto mb-1.5 text-blue-600 dark:text-blue-400" />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1 truncate">Dzieci</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-300 mb-1 truncate">Dzieci</p>
               <p className="text-base font-bold text-blue-600 dark:text-blue-400 truncate">{pkg.pricePerChild} zł</p>
             </div>
             <div className="text-center p-2 min-w-0 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200/50 dark:border-green-800/50">
               <Baby className="h-4 w-4 mx-auto mb-1.5 text-green-600 dark:text-green-400" />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1 truncate">Maluchy</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-300 mb-1 truncate">Maluchy</p>
               <p className="text-base font-bold text-green-600 dark:text-green-400 truncate">{pkg.pricePerToddler} zł</p>
             </div>
           </div>
@@ -91,7 +91,7 @@ export function PackageCard({
           {/* Included Items */}
           {pkg.includedItems && pkg.includedItems.length > 0 && (
             <div className="space-y-2.5 pt-2">
-              <div className="flex items-center gap-2 text-sm font-semibold text-neutral-500 dark:text-neutral-400">
+              <div className="flex items-center gap-2 text-sm font-semibold text-neutral-500 dark:text-neutral-300">
                 <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
                 W pakiecie:
               </div>

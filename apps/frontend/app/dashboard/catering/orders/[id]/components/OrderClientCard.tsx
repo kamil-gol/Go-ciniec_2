@@ -5,7 +5,7 @@ import {
   Phone,
   ChevronRight,
 } from 'lucide-react';
-import { SectionCard } from './SectionCard';
+import { SectionCard } from '@/components/shared/SectionCard';
 import { getInitials } from './types';
 import type { CateringOrder } from './types';
 
@@ -47,13 +47,13 @@ export function OrderClientCard({ order, onViewProfile }: OrderClientCardProps) 
       </div>
       <div className="space-y-2">
         {order.client.email && (
-          <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-300">
             <Mail className="w-4 h-4 shrink-0 text-neutral-400" />
             <span className="truncate">{order.client.email}</span>
           </div>
         )}
         {order.client.phone && (
-          <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-300">
             <Phone className="w-4 h-4 shrink-0 text-neutral-400" />
             <span>{order.client.phone}</span>
           </div>
@@ -70,13 +70,13 @@ export function OrderClientCard({ order, onViewProfile }: OrderClientCardProps) 
               </div>
             )}
             {order.contactPhone && (
-              <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-400">
+              <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-300">
                 <Phone className="w-4 h-4 shrink-0 text-neutral-400" />
                 <span>{order.contactPhone}</span>
               </div>
             )}
             {order.contactEmail && (
-              <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-400">
+              <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-300">
                 <Mail className="w-4 h-4 shrink-0 text-neutral-400" />
                 <span className="truncate">{order.contactEmail}</span>
               </div>

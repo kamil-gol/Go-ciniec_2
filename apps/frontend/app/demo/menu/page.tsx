@@ -20,6 +20,7 @@ import {
   useMenuPackages, 
 } from '@/hooks/use-menu';
 import { toast } from 'sonner';
+import { LoadingState } from '@/components/shared/LoadingState';
 
 export default function MenuDemoPage() {
   const [activeTab, setActiveTab] = useState<'components' | 'flow'>('components');
@@ -49,9 +50,9 @@ export default function MenuDemoPage() {
       <div className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
-            \uD83C\uDFA8 Menu Components Demo
+            🎨 Menu Components Demo
           </h1>
-          <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+          <p className="mt-2 text-neutral-600 dark:text-neutral-300">
             Interactive showcase of all menu system components
           </p>
 
@@ -91,16 +92,12 @@ export default function MenuDemoPage() {
                 <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
                   1. MenuCard
                 </h2>
-                <p className="text-neutral-600 dark:text-neutral-400">
+                <p className="text-neutral-600 dark:text-neutral-300">
                   Display menu templates with event type and validity
                 </p>
               </div>
               {templatesLoading ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  <div className="h-64 animate-pulse rounded-xl bg-neutral-200" />
-                  <div className="h-64 animate-pulse rounded-xl bg-neutral-200" />
-                  <div className="h-64 animate-pulse rounded-xl bg-neutral-200" />
-                </div>
+                <LoadingState variant="skeleton" count={3} />
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {templates?.slice(0, 3).map(template => (
@@ -124,7 +121,7 @@ export default function MenuDemoPage() {
                   <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
                     2. PackageCard
                   </h2>
-                  <p className="text-neutral-600 dark:text-neutral-400">
+                  <p className="text-neutral-600 dark:text-neutral-300">
                     Display pricing packages with included items
                   </p>
                 </div>
@@ -146,7 +143,7 @@ export default function MenuDemoPage() {
                 <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">
                   3. PriceBreakdown
                 </h2>
-                <p className="text-neutral-600 dark:text-neutral-400">
+                <p className="text-neutral-600 dark:text-neutral-300">
                   Display detailed price calculation
                 </p>
               </div>
@@ -163,7 +160,7 @@ export default function MenuDemoPage() {
               childrenCount={10}
               toddlers={5}
               onComplete={(selection) => {
-                console.log('Selection completed:', selection);
+                // Selection completed — toast handles UI feedback
                 toast.success('\u2705 Wybór menu zakończony!', {
                   description: `Template: ${selection.templateId}, Package: ${selection.packageId}`,
                 });
@@ -175,9 +172,9 @@ export default function MenuDemoPage() {
 
       {/* Footer Info */}
       <div className="border-t border-neutral-200 bg-white py-8 dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="container mx-auto px-4 text-center text-sm text-neutral-600 dark:text-neutral-400">
+        <div className="container mx-auto px-4 text-center text-sm text-neutral-600 dark:text-neutral-300">
           <p>
-            \uD83D\uDCDA Documentation:{' '}
+            📚 Documentation:{' '}
             <a
               href="https://github.com/kamil-gol/Go-ciniec_2/blob/main/apps/frontend/components/menu/README.md"
               target="_blank"
@@ -188,7 +185,7 @@ export default function MenuDemoPage() {
             </a>
           </p>
           <p className="mt-2">
-            \uD83D\uDE80 API Status: Connected to <code>http://localhost:3001/api</code>
+            🚀 API Status: Connected to <code>http://localhost:3001/api</code>
           </p>
         </div>
       </div>

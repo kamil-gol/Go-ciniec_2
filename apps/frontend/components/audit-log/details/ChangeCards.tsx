@@ -10,7 +10,7 @@ import { getFieldLabel, formatValue } from './formatters';
 // ─── Row components ──────────────────────────────────────────────────────────
 
 /** A single "old → new" change row */
-export function DiffChangeRow({ fieldName, oldVal, newVal }: { fieldName: string; oldVal: any; newVal: any }) {
+export function DiffChangeRow({ fieldName, oldVal, newVal }: { fieldName: string; oldVal: unknown; newVal: unknown }) {
   const label = getFieldLabel(fieldName);
   const oldStr = formatValue(oldVal, fieldName);
   const newStr = formatValue(newVal, fieldName);
@@ -41,7 +41,7 @@ export function DiffChangeRow({ fieldName, oldVal, newVal }: { fieldName: string
 }
 
 /** Row for flat changes (just key: value without old/new) */
-export function FlatChangeRow({ fieldName, value }: { fieldName: string; value: any }) {
+export function FlatChangeRow({ fieldName, value }: { fieldName: string; value: unknown }) {
   const label = getFieldLabel(fieldName);
   const valueStr = formatValue(value, fieldName);
 
@@ -60,7 +60,7 @@ export function FlatChangeRow({ fieldName, value }: { fieldName: string; value: 
 // ─── Card components ─────────────────────────────────────────────────────────
 
 /** Data card for CREATE operations — shows created entity data */
-export function CreatedDataCard({ data }: { data: Record<string, any> }) {
+export function CreatedDataCard({ data }: { data: any }) {
   return (
     <div className="rounded-xl border border-blue-200 dark:border-blue-800/50 overflow-hidden">
       <div className="px-4 py-2.5 bg-blue-50 dark:bg-blue-950/30 border-b border-blue-200 dark:border-blue-800/50 flex items-center gap-2">
@@ -77,7 +77,7 @@ export function CreatedDataCard({ data }: { data: Record<string, any> }) {
 }
 
 /** Data card for DELETE operations — shows deleted entity data */
-export function DeletedDataCard({ data }: { data: Record<string, any> }) {
+export function DeletedDataCard({ data }: { data: any }) {
   return (
     <div className="rounded-xl border border-red-200 dark:border-red-800/50 overflow-hidden">
       <div className="px-4 py-2.5 bg-red-50 dark:bg-red-950/30 border-b border-red-200 dark:border-red-800/50 flex items-center gap-2">
@@ -155,7 +155,7 @@ export function DiffChangesCard({ changes }: { changes: Record<string, { old: an
 }
 
 /** Flat changes card (for simple key:value changes without old/new) */
-export function FlatChangesCard({ changes }: { changes: Record<string, any> }) {
+export function FlatChangesCard({ changes }: { changes: any }) {
   return (
     <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 overflow-hidden">
       <div className="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800/50 flex items-center gap-2">
@@ -172,7 +172,7 @@ export function FlatChangesCard({ changes }: { changes: Record<string, any> }) {
 }
 
 /** Discount card */
-export function DiscountCard({ details }: { details: Record<string, any> }) {
+export function DiscountCard({ details }: { details: any }) {
   const isApplied = !!details.discountType;
   const isRemoved = !!details.removedDiscount;
 
@@ -207,7 +207,7 @@ export function DiscountCard({ details }: { details: Record<string, any> }) {
 }
 
 /** Payment card */
-export function PaymentCard({ details }: { details: Record<string, any> }) {
+export function PaymentCard({ details }: { details: any }) {
   return (
     <div className="rounded-xl border border-green-200 dark:border-green-800/50 overflow-hidden">
       <div className="px-4 py-2.5 bg-green-50 dark:bg-green-950/30 border-b border-green-200 dark:border-green-800/50 flex items-center gap-2">

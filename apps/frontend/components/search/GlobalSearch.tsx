@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar, Users, Building2, Loader2 } from 'lucide-react'
+import { Calendar, Users, Building2, Loader2, Plus, UserPlus, CalendarDays } from 'lucide-react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import {
   Command,
@@ -28,6 +28,12 @@ const statusLabels: Record<string, string> = {
   COMPLETED: 'Zakończona',
   ARCHIVED: 'Zarchiwizowana',
 }
+
+const quickActions = [
+  { label: 'Nowa rezerwacja', href: '/dashboard/reservations/new', icon: Plus },
+  { label: 'Nowy klient', href: '/dashboard/clients/new', icon: UserPlus },
+  { label: 'Widok dzienny', href: '/dashboard/daily-view', icon: CalendarDays },
+]
 
 export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const router = useRouter()
@@ -85,6 +91,23 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
               onValueChange={setQuery}
             />
             <CommandList>
+              {/* Quick actions when input is empty */}
+              {!query && (
+                <CommandGroup heading="Szybkie akcje">
+                  {quickActions.map((action) => (
+                    <CommandItem
+                      key={action.href}
+                      value={action.label}
+                      onSelect={() => handleSelect(action.href)}
+                      className="cursor-pointer"
+                    >
+                      <action.icon className="mr-3 h-4 w-4 text-primary flex-shrink-0" />
+                      <span className="font-medium">{action.label}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
               {isFetching && (
                 <div className="flex items-center justify-center gap-2 py-6 text-sm text-neutral-500">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -135,11 +158,11 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-medium truncate">{clientName}</span>
-                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 flex-shrink-0">
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 flex-shrink-0">
                               {status}
                             </span>
                           </div>
-                          <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                          <div className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5">
                             {[dateStr, r.hall?.name, r.eventType?.name].filter(Boolean).join(' • ')}
                           </div>
                         </div>
@@ -173,7 +196,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                         <div className="flex-1 min-w-0">
                           <span className="font-medium truncate">{name}</span>
                           {subtitle && (
-                            <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+                            <div className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 truncate">
                               {subtitle}
                             </div>
                           )}
@@ -201,7 +224,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                       <div className="flex-1 min-w-0">
                         <span className="font-medium">{h.name}</span>
                         {h.capacity && (
-                          <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-2">
+                          <span className="text-xs text-neutral-500 dark:text-neutral-300 ml-2">
                             do {h.capacity} osób
                           </span>
                         )}

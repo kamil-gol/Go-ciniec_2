@@ -9,7 +9,7 @@ import { getHalls, type Hall } from '@/lib/api/halls'
 import Link from 'next/link'
 import { HallCard } from '@/components/halls/hall-card'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { toast } from 'sonner'
 
 export default function HallsPage() {
@@ -67,11 +67,11 @@ export default function HallsPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard label="Wszystkie sale" value={halls.length} subtitle="W systemie" icon={Building2} iconGradient="from-sky-500 to-blue-500" delay={0.1} />
-        <StatCard label="Aktywne sale" value={activeHalls} subtitle="Dostępne do rezerwacji" icon={TrendingUp} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Całk. pojemność" value={totalCapacity} subtitle="Miejsc łącznie" icon={Users} iconGradient="from-violet-500 to-purple-500" delay={0.3} />
-        <StatCard label="Śr. pojemność" value={`${avgCapacity} osób`} subtitle="Średnio na salę" icon={Users} iconGradient="from-amber-500 to-orange-500" delay={0.4} />
+      <div className={layout.statGrid}>
+        <StatCard label="Wszystkie sale" value={halls.length} subtitle="W systemie" icon={Building2} iconGradient={statGradients.count} delay={0.1} />
+        <StatCard label="Aktywne sale" value={activeHalls} subtitle="Dostępne do rezerwacji" icon={TrendingUp} iconGradient={statGradients.success} delay={0.2} />
+        <StatCard label="Całk. pojemność" value={totalCapacity} subtitle="Miejsc łącznie" icon={Users} iconGradient={statGradients.count} delay={0.3} />
+        <StatCard label="Śr. pojemność" value={`${avgCapacity} osób`} subtitle="Średnio na salę" icon={Users} iconGradient={statGradients.info} delay={0.4} />
       </div>
 
       {/* Filters */}
@@ -79,7 +79,7 @@ export default function HallsPage() {
         <div className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400 h-5 w-5" />
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-neutral-400 h-5 w-5" />
               <Input
                 placeholder="Szukaj sali po nazwie..."
                 value={search}
@@ -91,10 +91,10 @@ export default function HallsPage() {
               size="lg"
               variant="outline"
               onClick={() => setShowInactive(!showInactive)}
-              className={showInactive
+              className={`h-12 ${showInactive
                 ? `bg-gradient-to-r ${accent.gradient} text-white border-transparent shadow-lg`
                 : ''
-              }
+              }`}
             >
               {showInactive ? (
                 <><EyeOff className="mr-2 h-5 w-5" />Wszystkie Sale</>
@@ -113,14 +113,16 @@ export default function HallsPage() {
         <EmptyState
           icon={Building2}
           title={search ? 'Nie znaleziono sal' : 'Brak sal'}
-          description={search ? 'Spróbuj użyć innego wyszukiwania' : 'Dodaj pierwszą salę, aby zacząć'}
+          description={search
+            ? 'Żadna sala nie pasuje do wyszukiwania. Spróbuj użyć innej frazy.'
+            : 'Nie masz jeszcze żadnych sal w systemie. Dodaj pierwszą salę, aby rozpocząć zarządzanie rezerwacjami.'}
           actionLabel={search ? undefined : 'Dodaj Pierwszą Salę'}
-          onAction={search ? undefined : () => window.location.href = '/dashboard/halls/new'}
+          actionHref={search ? undefined : '/dashboard/halls/new'}
         />
       ) : (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-neutral-500 dark:text-neutral-300">
               Znaleziono <span className="font-bold text-neutral-900 dark:text-neutral-100">{filteredHalls.length}</span> {filteredHalls.length === 1 ? 'salę' : 'sal'}
             </p>
           </div>

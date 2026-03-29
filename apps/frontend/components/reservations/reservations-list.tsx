@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useReservations, useArchiveReservation, useUnarchiveReservation } from '@/lib/api/reservations'
-import type { ReservationStatus } from '@/types'
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
+import type { ReservationStatus, Reservation } from '@/types'
+import { Calendar } from 'lucide-react'
+import { Pagination } from '@/components/shared/Pagination'
 import { toast } from 'sonner'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { apiClient } from '@/lib/api-client'
@@ -16,7 +17,7 @@ import { format, parseISO, isSameDay } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
-import { LoadingState } from '@/components/shared'
+import { LoadingState, EmptyState } from '@/components/shared'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit } from '@/lib/api/deposits'
 import { batchCheckContract, batchCheckRodo } from '@/lib/api/attachments'
@@ -63,19 +64,19 @@ export function ReservationsList() {
   }, [])
 
   const allReservations = useMemo(() => data?.data || [], [data])
-  const reservations = useMemo(() => allReservations.filter((r: any) => r.status !== 'RESERVED'), [allReservations])
+  const reservations = useMemo(() => allReservations.filter((r: Reservation) => r.status !== 'RESERVED'), [allReservations])
 
   useEffect(() => {
     if (reservations.length === 0) return
 
-    const reservationIds = reservations.map((r: any) => r.id)
+    const reservationIds = reservations.map((r: Reservation) => r.id)
     batchCheckContract(reservationIds)
       .then(setContractMap)
       .catch(console.error)
 
     const clientIds = [...new Set(
       reservations
-        .map((r: any) => r.clientId || r.client?.id)
+        .map((r: Reservation) => r.clientId || r.client?.id)
         .filter(Boolean)
     )] as string[]
     if (clientIds.length > 0) {
@@ -206,7 +207,7 @@ export function ReservationsList() {
 
   const totalPages = data?.totalPages || 1
 
-  const reservationsByDate = reservations.reduce((acc: any, res: any) => {
+  const reservationsByDate = reservations.reduce((acc: Record<string, Reservation[]>, res: Reservation) => {
     const date = getFormattedDate(res)
     if (!date) return acc
     const dateKey = format(date, 'yyyy-MM-dd')
@@ -241,30 +242,27 @@ export function ReservationsList() {
             checked={showArchived}
             onCheckedChange={setShowArchived}
           />
-          <Label htmlFor="show-archived" className="cursor-pointer font-medium text-sm">
+          <Label htmlFor="show-archived" className="cursor-pointer font-medium text-sm text-neutral-700 dark:text-neutral-300">
             <span className="hidden sm:inline">Pokaż zarchiwizowane</span>
             <span className="sm:hidden">Archiwum</span>
           </Label>
         </div>
 
         <div className="flex-1" />
-        <div className="text-sm text-neutral-500 dark:text-neutral-400 w-full sm:w-auto">
+        <div className="text-sm text-neutral-500 dark:text-neutral-300 w-full sm:w-auto">
           Znaleziono <strong className="text-neutral-900 dark:text-neutral-100">{reservations.length}</strong> rezerwacji
         </div>
       </div>
 
       {/* Reservations List */}
       {reservations.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 py-16 text-center">
-          <div className={cn(
-            'w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center mx-auto mb-4 shadow-md',
-            accent.iconBg
-          )}>
-            <Calendar className="h-8 w-8 text-white" />
-          </div>
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Brak rezerwacji</h3>
-          <p className="text-neutral-500 dark:text-neutral-400">Nie znaleziono rezerwacji spełniających kryteria</p>
-        </div>
+        <EmptyState
+          icon={Calendar}
+          title="Brak rezerwacji"
+          description="Nie znaleziono rezerwacji spełniających wybrane kryteria. Zmień filtry lub utwórz nową rezerwację."
+          actionLabel="Nowa rezerwacja"
+          actionHref="/dashboard/reservations/new"
+        />
       ) : (
         <div className="space-y-6">
           {dates.map((dateKey) => {
@@ -283,10 +281,10 @@ export function ReservationsList() {
                 )}>
                   <Calendar className="h-4 w-4" />
                   <div>
-                    <div className="font-semibold">
+                    <div className={cn('font-semibold', !isToday && 'text-neutral-800 dark:text-neutral-100')}>
                       {format(date, 'EEEE', { locale: pl })}
                     </div>
-                    <div className="text-sm opacity-90">
+                    <div className={cn('text-sm opacity-90', !isToday && 'text-neutral-600 dark:text-neutral-300')}>
                       {format(date, 'd MMMM yyyy', { locale: pl })}
                     </div>
                   </div>
@@ -304,7 +302,7 @@ export function ReservationsList() {
 
                 {/* Reservation Cards */}
                 <div className="grid gap-3">
-                  {dateReservations.map((reservation: any) => (
+                  {dateReservations.map((reservation: Reservation) => (
                     <ReservationCard
                       key={reservation.id}
                       reservation={reservation}
@@ -322,32 +320,18 @@ export function ReservationsList() {
         </div>
       )}
 
-      {/* Pagination — responsive */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Strona <strong className="text-neutral-900 dark:text-neutral-100">{page}</strong> z <strong className="text-neutral-900 dark:text-neutral-100">{totalPages}</strong>
+      {/* Pagination */}
+      {reservations.length > 0 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-sm text-muted-foreground">
+            Pokazuję {Math.min((page - 1) * 20 + 1, data?.total || 0)}-{Math.min(page * 20, data?.total || 0)} z {data?.total || 0} rezerwacji
           </p>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded-xl border-neutral-200 dark:border-neutral-700"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
               Poprzednia
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="rounded-xl border-neutral-200 dark:border-neutral-700"
-            >
+            <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}>
               Następna
-              <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
         </div>

@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { ErrorState } from '@/components/shared/ErrorState'
+import { LoadingState } from '@/components/shared/LoadingState'
 import { useReservation, useCancelReservation, useArchiveReservation, useUnarchiveReservation, downloadReservationPDF } from '@/lib/api/reservations'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import Link from 'next/link'
@@ -25,6 +27,9 @@ import {
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
 import { toast } from 'sonner'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
+import { ReservationTimeline } from '@/components/reservations/ReservationTimeline'
 import { ReservationHero } from './components/ReservationHero'
 import { QuickActionsCard } from './components/QuickActionsCard'
 
@@ -117,10 +122,38 @@ export default function ReservationDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Wczytywanie...</p>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="container mx-auto py-6 sm:py-8 px-4 space-y-6 sm:space-y-8">
+          {/* Breadcrumb skeleton */}
+          <Skeleton className="h-5 w-48" />
+          {/* Hero skeleton */}
+          <div className="rounded-2xl border p-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-14 w-14 rounded-xl" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-7 w-64" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+              <Skeleton className="h-10 w-32 rounded-lg" />
+            </div>
+          </div>
+          {/* Timeline skeleton */}
+          <Skeleton className="h-20 w-full rounded-xl" />
+          {/* Tab bar skeleton */}
+          <Skeleton className="h-11 w-56 rounded-xl" />
+          {/* 2-column grid skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <Skeleton className="h-48 w-full rounded-2xl" />
+              <Skeleton className="h-40 w-full rounded-2xl" />
+              <Skeleton className="h-56 w-full rounded-2xl" />
+            </div>
+            <div className="space-y-6">
+              <Skeleton className="h-40 w-full rounded-2xl" />
+              <Skeleton className="h-64 w-full rounded-2xl" />
+              <Skeleton className="h-36 w-full rounded-2xl" />
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -129,13 +162,14 @@ export default function ReservationDetailsPage() {
   if (isError || !reservation) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <XCircle className="h-16 w-16 text-red-400 mx-auto" />
-          <p className="text-muted-foreground">Nie udało się załadować rezerwacji</p>
-          <Link href="/dashboard/reservations">
-            <Button><ArrowLeft className="mr-2 h-4 w-4" />Powrót do listy</Button>
-          </Link>
-        </div>
+        <ErrorState
+          variant="card"
+          title="Błąd ładowania"
+          message="Nie udało się załadować rezerwacji"
+        />
+        <Link href="/dashboard/reservations" className="mt-4">
+          <Button><ArrowLeft className="mr-2 h-4 w-4" />Powrót do listy</Button>
+        </Link>
       </div>
     )
   }
@@ -176,6 +210,8 @@ export default function ReservationDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto py-6 sm:py-8 px-4 space-y-6 sm:space-y-8">
+        <Breadcrumb />
+
         {/* Read-only info banner */}
         {isReadOnly && readOnlyBannerMessage && (
           <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
@@ -195,14 +231,17 @@ export default function ReservationDetailsPage() {
           onRefetch={handleRefetch}
         />
 
+        {/* Status Timeline */}
+        <ReservationTimeline status={reservation.status} />
+
         {/* US-9.8: Tab bar */}
         <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
           <button
             onClick={() => setActiveTab('details')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'details'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
             <Calendar className="h-4 w-4" />
@@ -210,10 +249,10 @@ export default function ReservationDetailsPage() {
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'history'
                 ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
             }`}
           >
             <History className="h-4 w-4" />
@@ -227,10 +266,10 @@ export default function ReservationDetailsPage() {
             {/* Left Column - Main Info */}
             <div className="lg:col-span-2 space-y-6">
               {/* Client Info (read-only) */}
-              <Card className="border-0 shadow-xl">
-                <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-5 sm:p-6">
+              <Card className="shadow-sm border border-border">
+                <div className="bg-card p-4 sm:p-6 lg:p-8">
                   <div className="flex items-center gap-3 mb-5 sm:mb-6">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
+                    <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg shadow-sm">
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <h2 className="text-xl sm:text-2xl font-bold">Klient</h2>

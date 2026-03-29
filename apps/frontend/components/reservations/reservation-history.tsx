@@ -16,7 +16,7 @@ function getChangeIcon(changeType: ChangeType) {
     case 'CANCELLED':
       return <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
     default:
-      return <AlertCircle className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+      return <AlertCircle className="w-5 h-5 text-neutral-500 dark:text-neutral-300" />
   }
 }
 
@@ -66,13 +66,13 @@ export function ReservationHistory({ history }: ReservationHistoryProps) {
               <p className="font-medium text-neutral-900 dark:text-neutral-100">
                 {getChangeLabel(item.changeType)}
               </p>
-              <time className="text-sm text-neutral-500 dark:text-neutral-400">
+              <time className="text-sm text-neutral-500 dark:text-neutral-300">
                 {formatDate(item.createdAt, 'dd.MM.yyyy HH:mm')}
               </time>
             </div>
 
             {item.changedByUser && (
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
+              <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-2">
                 przez {item.changedByUser.firstName} {item.changedByUser.lastName}
               </p>
             )}
@@ -81,13 +81,13 @@ export function ReservationHistory({ history }: ReservationHistoryProps) {
               <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-xl p-3 text-sm space-y-1 border border-neutral-200/50 dark:border-neutral-700/30">
                 {item.oldValue && (
                   <p>
-                    <span className="text-neutral-500 dark:text-neutral-400">Przed:</span>{' '}
+                    <span className="text-neutral-500 dark:text-neutral-300">Przed:</span>{' '}
                     <span className="font-medium text-neutral-900 dark:text-neutral-100">{item.oldValue}</span>
                   </p>
                 )}
                 {item.newValue && (
                   <p>
-                    <span className="text-neutral-500 dark:text-neutral-400">Po:</span>{' '}
+                    <span className="text-neutral-500 dark:text-neutral-300">Po:</span>{' '}
                     <span className="font-medium text-neutral-900 dark:text-neutral-100">{item.newValue}</span>
                   </p>
                 )}
@@ -96,7 +96,7 @@ export function ReservationHistory({ history }: ReservationHistoryProps) {
 
             {item.reason && (
               <div className="mt-2">
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">Powód:</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-300">Powód:</p>
                 <p className="text-sm italic text-neutral-600 dark:text-neutral-300">{item.reason}</p>
               </div>
             )}

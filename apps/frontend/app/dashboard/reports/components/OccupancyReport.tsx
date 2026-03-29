@@ -27,10 +27,10 @@ export function OccupancyTab({ query }: { query: OccupancyQueryResult }) {
             <table className="w-full text-sm">
               <thead className="bg-neutral-50 dark:bg-neutral-800">
                 <tr>
-                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Sala</th>
-                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{"Zajętość"}</th>
-                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">Rez.</th>
-                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase hidden sm:table-cell">{"Śr. gości"}</th>
+                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase">Sala</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase">{"Zajętość"}</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden sm:table-cell">Rez.</th>
+                  <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden sm:table-cell">{"Śr. gości"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -45,8 +45,8 @@ export function OccupancyTab({ query }: { query: OccupancyQueryResult }) {
                         <span className="font-semibold text-blue-700 dark:text-blue-400 text-xs sm:text-sm">{hall.occupancy}%</span>
                       </span>
                     </td>
-                    <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{hall.reservations}</td>
-                    <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-400 hidden sm:table-cell">{hall.avgGuestsPerReservation}</td>
+                    <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-300 hidden sm:table-cell">{hall.reservations}</td>
+                    <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-300 hidden sm:table-cell">{hall.avgGuestsPerReservation}</td>
                   </tr>
                 ))}
               </tbody>
@@ -67,7 +67,7 @@ export function OccupancyTab({ query }: { query: OccupancyQueryResult }) {
                 const barWidth = (item.count / maxCount) * 100;
                 return (
                   <div key={item.hour} className="flex items-center gap-2 sm:gap-3">
-                    <span className="text-xs sm:text-sm font-medium text-neutral-600 dark:text-neutral-400 w-10 sm:w-12">{String(item.hour).padStart(2, '0')}:00</span>
+                    <span className="text-xs sm:text-sm font-medium text-neutral-600 dark:text-neutral-300 w-10 sm:w-12">{String(item.hour).padStart(2, '0')}:00</span>
                     <div className="flex-1 h-5 sm:h-6 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
                       <div className="h-full bg-blue-500 rounded-full flex items-center justify-end pr-2"
                         style={{ width: `${barWidth}%`, minWidth: '2rem' }}>
@@ -91,7 +91,7 @@ export function OccupancyTab({ query }: { query: OccupancyQueryResult }) {
                 const barWidth = (item.count / maxCount) * 100;
                 return (
                   <div key={item.dayOfWeekNum} className="flex items-center gap-2 sm:gap-3">
-                    <span className="text-xs sm:text-sm font-medium text-neutral-600 dark:text-neutral-400 w-16 sm:w-24 truncate">{dayNamesPL[item.dayOfWeek] || item.dayOfWeek}</span>
+                    <span className="text-xs sm:text-sm font-medium text-neutral-600 dark:text-neutral-300 w-16 sm:w-24 truncate">{dayNamesPL[item.dayOfWeek] || item.dayOfWeek}</span>
                     <div className="flex-1 h-5 sm:h-6 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
                       <div className="h-full bg-purple-500 rounded-full flex items-center justify-end pr-2"
                         style={{ width: `${barWidth}%`, minWidth: '2rem' }}>

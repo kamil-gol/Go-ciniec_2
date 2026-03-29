@@ -114,10 +114,10 @@ export function Stepper({
         })}
       </div>
 
-      {/* Mobile stepper — compact */}
+      {/* Mobile stepper — compact with step icons */}
       <div className="md:hidden">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-neutral-700">
+          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
             Krok {currentStep + 1} z {steps.length}
           </p>
           <p className="text-sm font-semibold text-primary-600">
@@ -134,21 +134,49 @@ export function Stepper({
           />
         </div>
 
-        {/* Step dots */}
-        <div className="flex justify-between mt-2 px-1">
+        {/* Step icons row */}
+        <div className="flex justify-between mt-3 px-1 overflow-x-auto gap-1">
           {steps.map((step, index) => {
             const isActive = index === currentStep
             const isCompleted = completedSteps.has(index)
+            const isPast = index < currentStep
+            const StepIcon = step.icon
+
             return (
-              <div
+              <button
                 key={step.id}
+                type="button"
+                onClick={() => (isCompleted || isPast) && onStepClick?.(index)}
+                disabled={!isCompleted && !isPast}
                 className={cn(
-                  'w-2 h-2 rounded-full transition-colors',
-                  isActive && 'bg-primary-500',
-                  isCompleted && 'bg-success-500',
-                  !isActive && !isCompleted && 'bg-secondary-300'
+                  'flex flex-col items-center gap-0.5 min-w-0',
+                  (isCompleted || isPast) && onStepClick && 'cursor-pointer'
                 )}
-              />
+              >
+                <div
+                  className={cn(
+                    'w-8 h-8 rounded-full flex items-center justify-center transition-colors',
+                    isActive && 'bg-primary-500 text-white shadow-sm',
+                    isCompleted && 'bg-success-500 text-white',
+                    isPast && !isCompleted && 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400',
+                    !isActive && !isCompleted && !isPast && 'bg-secondary-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500'
+                  )}
+                >
+                  {isCompleted ? (
+                    <Check className="w-3.5 h-3.5" />
+                  ) : (
+                    <StepIcon className="w-3.5 h-3.5" />
+                  )}
+                </div>
+                <span className={cn(
+                  'text-[9px] font-medium truncate max-w-[48px] hidden xs:block',
+                  isActive && 'text-primary-600',
+                  isCompleted && 'text-success-600',
+                  !isActive && !isCompleted && 'text-neutral-400'
+                )}>
+                  {step.title}
+                </span>
+              </button>
             )
           })}
         </div>

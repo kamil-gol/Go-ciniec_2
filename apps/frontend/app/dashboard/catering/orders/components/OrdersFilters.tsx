@@ -102,7 +102,7 @@ export function OrdersFilters({ filter, onChange }: Props) {
 
         {/* Data od */}
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 ml-0.5">Data od</span>
+          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-300 ml-0.5">Data od</span>
           <Input
             type="date"
             value={filter.eventDateFrom ?? ''}
@@ -113,7 +113,7 @@ export function OrdersFilters({ filter, onChange }: Props) {
 
         {/* Data do */}
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 ml-0.5">Data do</span>
+          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-300 ml-0.5">Data do</span>
           <Input
             type="date"
             value={filter.eventDateTo ?? ''}
@@ -128,7 +128,7 @@ export function OrdersFilters({ filter, onChange }: Props) {
             variant="ghost"
             size="sm"
             onClick={handleReset}
-            className="h-10 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+            className="h-10 rounded-xl text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100"
           >
             <X className="mr-1.5 h-3.5 w-3.5" />
             Resetuj

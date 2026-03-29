@@ -65,7 +65,7 @@ function ChangeDetails({ details }: { details: AuditLogEntry['details'] }) {
         return (
           <div key={field} className="text-xs">
             <span className="font-semibold text-neutral-700 dark:text-neutral-300">{label}:</span>{' '}
-            <span className="text-neutral-600 dark:text-neutral-400">{formatted}</span>
+            <span className="text-neutral-600 dark:text-neutral-300">{formatted}</span>
           </div>
         )
       })}
@@ -120,7 +120,7 @@ function TimelineItem({ log, index, isLast }: { log: AuditLogEntry; index: numbe
               </button>
             )}
           </div>
-          <time className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap flex items-center gap-1">
+          <time className="text-xs text-neutral-500 dark:text-neutral-300 whitespace-nowrap flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {format(new Date(log.createdAt), 'dd.MM.yyyy HH:mm', { locale: pl })}
           </time>
@@ -135,14 +135,14 @@ function TimelineItem({ log, index, isLast }: { log: AuditLogEntry; index: numbe
 
         {/* Powód */}
         {log.details?.reason && (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 italic mb-1">
+          <p className="text-sm text-neutral-600 dark:text-neutral-300 italic mb-1">
             Powód: {log.details.reason}
           </p>
         )}
 
         {/* Użytkownik */}
         {log.user && (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-neutral-500 dark:text-neutral-300">
             przez {log.user.firstName} {log.user.lastName}
           </p>
         )}
@@ -229,7 +229,7 @@ export function EntityActivityTimeline({ entityType, entityId }: EntityActivityT
           </div>
           <div className="text-center py-8">
             <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
-            <p className="text-neutral-600 dark:text-neutral-400">
+            <p className="text-neutral-600 dark:text-neutral-300">
               Nie udało się załadować historii zmian
             </p>
           </div>
@@ -249,8 +249,8 @@ export function EntityActivityTimeline({ entityType, entityId }: EntityActivityT
             <h2 className="text-xl font-bold">Historia zmian</h2>
           </div>
           <div className="text-center py-12">
-            <History className="h-16 w-16 text-neutral-300 dark:text-neutral-600 mx-auto mb-4" />
-            <p className="text-lg font-semibold text-neutral-500 dark:text-neutral-400">
+            <History className="h-16 w-16 text-neutral-300 dark:text-neutral-400 mx-auto mb-4" />
+            <p className="text-lg font-semibold text-neutral-500 dark:text-neutral-300">
               Brak historii zmian
             </p>
             <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-1">
@@ -272,7 +272,7 @@ export function EntityActivityTimeline({ entityType, entityId }: EntityActivityT
             </div>
             <div>
               <h2 className="text-xl font-bold">Historia zmian</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="text-sm text-neutral-500 dark:text-neutral-300">
                 {logs.length} {logs.length === 1 ? 'wpis' : logs.length < 5 ? 'wpisy' : 'wpisów'}
               </p>
             </div>

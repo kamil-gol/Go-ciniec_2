@@ -181,7 +181,7 @@ export const CATERING_STATUS_LABELS: Record<
   DRAFT: {
     label: 'Szkic',
     emoji: '📝',
-    classes: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400',
+    classes: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
   },
   CONFIRMED: {
     label: 'Potwierdzone',
@@ -211,13 +211,6 @@ export const CATERING_DELIVERY_LABELS: Record<CateringDeliveryType, string> = {
   ON_SITE: '🏠 Na miejscu',
 }
 
-export function formatCateringCurrency(amount: string | number | null | undefined): string {
-  const n = Number(amount)
-  if (isNaN(n)) return '—'
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n)
-}
+/** @deprecated Use formatCurrency from '@/lib/utils' instead */
+import { formatCurrency } from '@/lib/utils'
+export const formatCateringCurrency = formatCurrency

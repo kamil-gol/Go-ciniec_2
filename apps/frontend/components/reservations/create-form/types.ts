@@ -1,11 +1,14 @@
 import type { Control, FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from 'react-hook-form'
 import type { ReservationFormData } from './validation'
 import type { SelectedExtra } from '@/components/service-extras/CreateReservationExtrasSection'
+import type { Hall, EventType } from '@/types/hall.types'
+import type { Client } from '@/types/client.types'
+import type { MenuTemplate, MenuPackage } from '@/types/menu.types'
 
 // ═══ PROPS — main form ═══
 
 export interface CreateReservationFormProps {
-  onSubmit?: (data: any) => void | Promise<void>
+  onSubmit?: (data: ReservationFormData) => void | Promise<void>
   onSuccess?: () => void
   onCancel?: () => void
   initialData?: Partial<ReservationFormData>
@@ -36,7 +39,7 @@ export interface EventSectionProps {
 export interface VenueSectionProps {
   formCtx: FormContext
   hallsArray: any[]
-  selectedHall: any | undefined
+  selectedHall: any
   selectedHallCapacity: number
   isMultiBookingHall: boolean
   defaultHallId?: string

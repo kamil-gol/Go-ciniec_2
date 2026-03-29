@@ -45,6 +45,7 @@ export function DraggableQueueList({
   // ✨ BUG #6 FIX: Add loading state
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [announcement, setAnnouncement] = useState('')
 
   // Sync with parent when items change
   if (items !== localItems && !activeId && !isLoading) {
@@ -105,6 +106,10 @@ export function DraggableQueueList({
       setIsLoading(true)
       setError(null)
 
+      // Announce position change for screen readers
+      const movedItem = itemsWithNewPositions[newIndex]
+      setAnnouncement(`${movedItem.client.firstName} ${movedItem.client.lastName} przeniesiony na pozycję ${movedItem.position}`)
+
       try {
         await onReorder(itemsWithNewPositions)
         // Success - keep optimistic update
@@ -130,6 +135,28 @@ export function DraggableQueueList({
     setActiveId(null)
   }
 
+  const handleMoveItem = async (fromIndex: number, toIndex: number) => {
+    if (isLoading || disabled) return
+    const reordered = arrayMove(localItems, fromIndex, toIndex)
+    const withPositions = reordered.map((item, idx) => ({ ...item, position: idx + 1 }))
+    setLocalItems(withPositions)
+    setIsLoading(true)
+    setError(null)
+
+    // Announce for screen readers
+    const movedItem = withPositions[toIndex]
+    setAnnouncement(`${movedItem.client.firstName} ${movedItem.client.lastName} przeniesiony na pozycję ${movedItem.position}`)
+    try {
+      await onReorder(withPositions)
+    } catch (err: any) {
+      setLocalItems(items)
+      setError(err.message || 'Nie udało się zmienić kolejności. Spróbuj ponownie.')
+      setTimeout(() => setError(null), 5000)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const activeItem = activeId ? localItems.find((item) => item.id === activeId) : null
 
   if (localItems.length === 0) {
@@ -146,7 +173,7 @@ export function DraggableQueueList({
   // If disabled, show simple list without drag and drop
   if (isDisabled && !isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3" role="list" aria-label="Kolejka oczekujących">
         {localItems.map((item, index) => (
           <QueueItemCard
             key={item.id}
@@ -163,6 +190,11 @@ export function DraggableQueueList({
 
   return (
     <div className="relative">
+      {/* Screen reader announcement for position changes */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {announcement}
+      </div>
+
       {/* ✨ BUG #6 FIX: Loading overlay */}
       {isLoading && (
         <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
@@ -189,7 +221,9 @@ export function DraggableQueueList({
         onDragCancel={handleDragCancel}
       >
         <SortableContext items={localItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
-          <div 
+          <div
+            role="list"
+            aria-label="Kolejka oczekujących"
             className={`space-y-3 transition-opacity ${
               isLoading ? 'opacity-50 pointer-events-none' : ''
             }`}
@@ -202,6 +236,8 @@ export function DraggableQueueList({
                 isLast={index === localItems.length - 1}
                 onPromote={showPromoteButton && onPromote && !isLoading ? () => onPromote(item.id) : undefined}
                 onEdit={onEdit && !isLoading ? () => onEdit(item.id) : undefined}
+                onMoveUp={index > 0 ? () => handleMoveItem(index, index - 1) : undefined}
+                onMoveDown={index < localItems.length - 1 ? () => handleMoveItem(index, index + 1) : undefined}
                 disabled={isLoading}
               />
             ))}

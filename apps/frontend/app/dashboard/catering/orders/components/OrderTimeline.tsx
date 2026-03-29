@@ -135,7 +135,7 @@ function getEntryConfig(changeType: string) {
     default:
       return {
         iconBg: 'bg-neutral-100 dark:bg-neutral-800',
-        iconColor: 'text-neutral-500 dark:text-neutral-400',
+        iconColor: 'text-neutral-500 dark:text-neutral-300',
         Icon: Circle,
       };
   }
@@ -157,7 +157,7 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-6 text-center">
         <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-2">
-          <Circle className="w-5 h-5 text-neutral-300 dark:text-neutral-600" />
+          <Circle className="w-5 h-5 text-neutral-300 dark:text-neutral-400" />
         </div>
         <p className="text-sm text-neutral-400 dark:text-neutral-500">Brak wpisów w historii</p>
       </div>
@@ -185,7 +185,7 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
                   {CHANGE_TYPE_LABEL[entry.changeType] ?? entry.changeType}
                 </p>
 
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-0.5">
                   {entryLabel(entry)}
                 </p>
 
@@ -202,13 +202,13 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
 
                   {entry.changedBy && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-neutral-300 dark:text-neutral-600 text-xs">·</span>
+                      <span className="text-neutral-300 dark:text-neutral-400 text-xs">·</span>
                       <div
                         className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white shrink-0 text-[9px] font-bold leading-none"
                       >
                         {getAuthorInitials(entry.changedBy)}
                       </div>
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      <span className="text-xs text-neutral-500 dark:text-neutral-300">
                         {entry.changedBy.firstName} {entry.changedBy.lastName}
                       </span>
                     </div>

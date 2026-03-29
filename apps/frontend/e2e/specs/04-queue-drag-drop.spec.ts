@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/auth.fixture';
 import { manualLogin } from '../fixtures/auth.fixture';
-import { getFutureDate, formatDatePL } from '../fixtures/test-data';
+import { testData, getFutureDate, formatDatePL } from '../fixtures/test-data';
 
 test.describe('Kolejka - Drag & Drop', () => {
   const testDate = getFutureDate(30);
@@ -85,7 +85,7 @@ test.describe('Kolejka - Race Conditions (Bug #5) \ud83d\udd25', () => {
 
     const context1 = await browser.newContext();
     const page1 = await context1.newPage();
-    await manualLogin(page1, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
+    await manualLogin(page1, testData.admin.email, testData.admin.password);
 
     if (!page1.url().includes('/dashboard')) {
       await context1.close();
@@ -97,7 +97,7 @@ test.describe('Kolejka - Race Conditions (Bug #5) \ud83d\udd25', () => {
 
     const context2 = await browser.newContext();
     const page2 = await context2.newPage();
-    await manualLogin(page2, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
+    await manualLogin(page2, testData.admin.email, testData.admin.password);
     await page2.goto('/dashboard/queue', { waitUntil: 'domcontentloaded' }).catch(() => {});
 
     const items1 = page1.locator('[data-testid="queue-item"], .queue-item');
@@ -143,7 +143,7 @@ test.describe('Kolejka - Race Conditions (Bug #5) \ud83d\udd25', () => {
 
     const context1 = await browser.newContext();
     const page1 = await context1.newPage();
-    await manualLogin(page1, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
+    await manualLogin(page1, testData.admin.email, testData.admin.password);
 
     if (!page1.url().includes('/dashboard')) {
       await context1.close();

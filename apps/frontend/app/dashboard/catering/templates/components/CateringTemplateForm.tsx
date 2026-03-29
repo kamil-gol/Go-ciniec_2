@@ -44,6 +44,7 @@ export function CateringTemplateForm({ template, onClose }: Props) {
     control,
     formState: { errors },
   } = useForm<FormData>({
+    mode: 'onBlur',
     defaultValues: {
       name: '',
       slug: '',

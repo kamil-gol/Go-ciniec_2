@@ -13,6 +13,7 @@ import { DepositStatusBadge } from './deposit-status-badge'
 import { DepositActions } from './deposit-actions'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 
 interface DepositsListProps {
   deposits: Deposit[]
@@ -51,6 +52,28 @@ function resolveEventDate(reservation: Deposit['reservation']): string | undefin
   return (reservation as any).startDateTime ?? reservation.date ?? undefined
 }
 
+function getAmountColorClass(status: Deposit['status']): string {
+  switch (status) {
+    case 'PAID': return 'text-emerald-600 dark:text-emerald-400'
+    case 'OVERDUE': return 'text-red-600 dark:text-red-400'
+    case 'PENDING':
+    case 'PARTIALLY_PAID': return 'text-amber-600 dark:text-amber-400'
+    case 'CANCELLED': return 'text-neutral-400 dark:text-neutral-500'
+    default: return ''
+  }
+}
+
+function getProgressBarColor(status: Deposit['status']): string {
+  switch (status) {
+    case 'PAID': return 'bg-emerald-500'
+    case 'OVERDUE': return 'bg-red-500'
+    case 'PENDING':
+    case 'PARTIALLY_PAID': return 'bg-amber-500'
+    case 'CANCELLED': return 'bg-neutral-400'
+    default: return 'bg-amber-500'
+  }
+}
+
 export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
   return (
     <>
@@ -84,14 +107,14 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                     <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
                       {client ? `${client.firstName} ${client.lastName}` : 'Brak danych'}
                     </p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-300 truncate">
                       {eventType?.name || 'Brak'}
                       {hall?.name && ` \u00b7 ${hall.name}`}
                     </p>
                   </div>
                 </Link>
                 <div className="text-right flex-shrink-0">
-                  <p className="font-bold text-sm tabular-nums text-neutral-900 dark:text-neutral-100">
+                  <p className={cn("font-bold text-sm tabular-nums", getAmountColorClass(deposit.status))}>
                     {amount.toLocaleString('pl-PL')} zł
                   </p>
                   {paidAmount > 0 && paidAmount < amount && (
@@ -100,6 +123,22 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                     </p>
                   )}
                 </div>
+              </div>
+
+              {/* Payment progress */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5">
+                  <div
+                    className={cn(
+                      "h-1.5 rounded-full transition-all duration-500",
+                      getProgressBarColor(deposit.status)
+                    )}
+                    style={{ width: `${Math.min((paidAmount / amount) * 100, 100)}%` }}
+                  />
+                </div>
+                <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 whitespace-nowrap tabular-nums">
+                  {paidAmount.toLocaleString('pl-PL')} / {amount.toLocaleString('pl-PL')} zł
+                </span>
               </div>
 
               {/* Row 2: Status + Due Date + Method + Actions */}
@@ -122,7 +161,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
               </div>
 
               {/* Row 3: Due date info */}
-              <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+              <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-300">
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   <span>Termin: {new Date(deposit.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}</span>
@@ -232,16 +271,33 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
 
                   {/* Amount */}
                   <TableCell className="text-right">
-                    <span className="font-semibold tabular-nums text-sm">
+                    <span className={cn("font-semibold tabular-nums text-sm", getAmountColorClass(deposit.status))}>
                       {Number(deposit.amount).toLocaleString('pl-PL')} zł
                     </span>
                   </TableCell>
 
                   {/* Paid */}
                   <TableCell className="text-right">
-                    <span className={`font-semibold tabular-nums text-sm ${paidAmount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
-                      {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} zł` : `0 zł`}
-                    </span>
+                    <div className="space-y-1">
+                      <span className={`font-semibold tabular-nums text-sm ${paidAmount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-400'}`}>
+                        {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} zł` : `0 zł`}
+                      </span>
+                      {/* Payment progress bar */}
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex-1 bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5 min-w-[60px]">
+                          <div
+                            className={cn(
+                              "h-1.5 rounded-full transition-all duration-500",
+                              getProgressBarColor(deposit.status)
+                            )}
+                            style={{ width: `${Math.min((paidAmount / Number(deposit.amount)) * 100, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
+                          {Number(deposit.amount) > 0 ? Math.round((paidAmount / Number(deposit.amount)) * 100) : 0}%
+                        </span>
+                      </div>
+                    </div>
                   </TableCell>
 
                   {/* Due Date */}
@@ -265,7 +321,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                   <TableCell>
                     {deposit.paymentMethod ? (() => {
                       const config = paymentMethodConfig[deposit.paymentMethod as PaymentMethod]
-                      if (!config) return <span className="text-sm text-neutral-400">\u2014</span>
+                      if (!config) return <span className="text-sm text-neutral-400 dark:text-neutral-500">—</span>
                       const Icon = config.icon
                       return (
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`}>
@@ -274,7 +330,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                         </span>
                       )
                     })() : (
-                      <span className="text-sm text-neutral-300 dark:text-neutral-600">\u2014</span>
+                      <span className="text-sm text-neutral-300 dark:text-neutral-400">—</span>
                     )}
                   </TableCell>
 

@@ -2,6 +2,7 @@
 
 import type { GroupByPeriod } from '@/types/reports.types';
 import type { ReportFiltersProps } from './types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export function ReportFilters({
   presets,
@@ -32,7 +33,7 @@ export function ReportFilters({
               className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                 dateFrom === preset.dateFrom && dateTo === preset.dateTo
                   ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 ring-1 ring-blue-300 dark:ring-blue-700'
-                  : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                  : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
               }`}>
               {preset.label}
             </button>
@@ -41,38 +42,42 @@ export function ReportFilters({
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
           <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2 sm:items-center">
             <div>
-              <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Od</label>
+              <label className="block text-xs text-neutral-500 dark:text-neutral-300 mb-1">Od</label>
               <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
                 className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-blue-500" />
             </div>
             <div>
-              <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Do</label>
+              <label className="block text-xs text-neutral-500 dark:text-neutral-300 mb-1">Do</label>
               <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
                 className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-blue-500" />
             </div>
           </div>
           {activeTab === 'revenue' && (
             <div>
-              <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Grupuj po</label>
-              <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupByPeriod)}
-                className="w-full sm:w-auto px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-blue-500">
-                <option value="day">{"Dzień"}</option>
-                <option value="week">{"Tydzień"}</option>
-                <option value="month">{"Miesiąc"}</option>
-                <option value="year">Rok</option>
-              </select>
+              <label className="block text-xs text-neutral-500 dark:text-neutral-300 mb-1">Grupuj po</label>
+              <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupByPeriod)}>
+                <SelectTrigger className="w-full sm:w-auto h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Dzień</SelectItem>
+                  <SelectItem value="week">Tydzień</SelectItem>
+                  <SelectItem value="month">Miesiąc</SelectItem>
+                  <SelectItem value="year">Rok</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
           {showViewToggle && (
             <div>
-              <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Widok</label>
+              <label className="block text-xs text-neutral-500 dark:text-neutral-300 mb-1">Widok</label>
               <div className="flex rounded-lg border border-neutral-300 dark:border-neutral-600 overflow-hidden">
                 <button onClick={() => setCurrentView('detailed')}
-                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'detailed' ? `bg-${viewColor}-600 text-white` : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'detailed' ? `bg-${viewColor}-600 text-white` : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
                   {"Szczegółowy"}
                 </button>
                 <button onClick={() => setCurrentView('summary')}
-                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'summary' ? `bg-${viewColor}-600 text-white` : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'summary' ? `bg-${viewColor}-600 text-white` : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
                   Zbiorczy
                 </button>
               </div>

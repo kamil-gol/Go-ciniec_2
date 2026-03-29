@@ -127,7 +127,7 @@ export function ServiceExtrasCategoryAccordion({
                           )}
                         </div>
                         {item.description && (
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                          <p className="text-xs text-neutral-500 dark:text-neutral-300 truncate">
                             {item.description}
                           </p>
                         )}

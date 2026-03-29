@@ -1,26 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { Calendar, Clock, CheckCircle2, XCircle, Building2 } from 'lucide-react'
+import { Calendar, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Oczekująca',
-  CONFIRMED: 'Potwierdzona',
-  CANCELLED: 'Anulowana',
-  COMPLETED: 'Zakończona',
-}
-
-const STATUS_CONFIG: Record<string, { color: string; icon: any }> = {
-  PENDING: { color: 'bg-orange-500', icon: Clock },
-  CONFIRMED: { color: 'bg-green-500', icon: CheckCircle2 },
-  CANCELLED: { color: 'bg-red-500', icon: XCircle },
-  COMPLETED: { color: 'bg-blue-500', icon: CheckCircle2 },
-}
 
 interface ClientReservationsHistoryProps {
   reservations: any[]
@@ -36,7 +22,7 @@ export function ClientReservationsHistory({ reservations, clientId, isDeleted }:
         <p className="text-lg font-semibold text-muted-foreground">Brak rezerwacji</p>
         <p className="text-sm text-muted-foreground mt-1">Ten klient nie ma jeszcze żadnych rezerwacji</p>
         {!isDeleted && (
-          <Link href={`/dashboard/reservations/list?create=true&clientId=${clientId}`}>
+          <Link href={`/dashboard/reservations/new?clientId=${clientId}`}>
             <Button className="mt-4" size="lg">
               <Calendar className="mr-2 h-4 w-4" />
               Utwórz pierwszą rezerwację
@@ -56,21 +42,14 @@ export function ClientReservationsHistory({ reservations, clientId, isDeleted }:
           ? new Date(reservation.date)
           : null
 
-        const statusCfg = STATUS_CONFIG[reservation.status] || STATUS_CONFIG.PENDING
-        const StatusIcon = statusCfg.icon
-        const statusLabel = STATUS_LABELS[reservation.status] || reservation.status
-
         return (
           <Link key={reservation.id} href={`/dashboard/reservations/${reservation.id}`}>
-            <Card className="border-2 hover:border-indigo-300 transition-all hover:shadow-lg cursor-pointer">
-              <CardContent className="p-4">
+            <Card className="border-0 bg-white dark:bg-black/20 shadow-sm hover:shadow-md transition-all cursor-pointer rounded-lg">
+              <CardContent className="!p-4">
                 <div className="flex items-start justify-between">
                   <div className="space-y-2 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <Badge className={`${statusCfg.color} text-white border-0`}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {statusLabel}
-                      </Badge>
+                      <StatusBadge type="reservation" status={reservation.status} variant="solid" />
                       {eventDate && (
                         <span className="text-sm text-muted-foreground">
                           {format(eventDate, 'dd MMM yyyy', { locale: pl })}

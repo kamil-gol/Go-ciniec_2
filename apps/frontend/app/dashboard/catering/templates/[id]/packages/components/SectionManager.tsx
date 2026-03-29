@@ -396,7 +396,7 @@ export function SectionManager({ pkg, templateId }: Props) {
 
       {/* Section form dialog */}
       <Dialog open={sectionFormOpen} onOpenChange={handleCloseForm}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editingSection ? 'Edytuj sekcję' : 'Nowa sekcja dań'}

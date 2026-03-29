@@ -74,6 +74,9 @@ vi.mock('lucide-react', () => ({
   Users: () => <span />,
   Building2: () => <span />,
   Loader2: () => <span data-testid="loader" />,
+  Plus: () => <span />,
+  UserPlus: () => <span />,
+  CalendarDays: () => <span />,
 }))
 
 import GlobalSearch from '@/components/search/GlobalSearch'

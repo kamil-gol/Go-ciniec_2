@@ -77,7 +77,7 @@ export const DISH_CATEGORY_COLORS: Record<DishCategory, string> = {
   [DishCategory.SNACK]: 'bg-lime-100 text-lime-700 border-lime-200',
   [DishCategory.BREAKFAST]: 'bg-rose-100 text-rose-700 border-rose-200',
   [DishCategory.ADDON]: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-  [DishCategory.OTHER]: 'bg-gray-100 text-gray-700 border-gray-200',
+  [DishCategory.OTHER]: 'bg-neutral-100 text-neutral-700 border-neutral-200',
 };
 
 /**

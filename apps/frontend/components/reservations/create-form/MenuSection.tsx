@@ -54,7 +54,7 @@ export function MenuSection({
           <UtensilsCrossed className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Menu i wycena</h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Wybierz szablon menu i pakiet cenowy, lub ustaw ceny ręcznie</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-1">Wybierz szablon menu i pakiet cenowy, lub ustaw ceny ręcznie</p>
       </div>
 
       {/* Toggle: use menu package */}
@@ -65,7 +65,7 @@ export function MenuSection({
           </div>
           <div>
             <span className="font-medium text-neutral-800 dark:text-neutral-200">Gotowe menu</span>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Wybierz szablon i pakiet — ceny ustawią się automatycznie</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-300">Wybierz szablon i pakiet — ceny ustawią się automatycznie</p>
           </div>
         </div>
         <Controller name="useMenuPackage" control={control} render={({ field }) => (
@@ -141,7 +141,7 @@ export function MenuSection({
               {templatePackagesLoading ? (
                 <div className="flex items-center gap-2 py-2">
                   <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">Ładowanie pakietów...</span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-300">Ładowanie pakietów...</span>
                 </div>
               ) : templatePackagesArray.length === 0 ? (
                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2">
@@ -172,18 +172,18 @@ export function MenuSection({
                     <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-1" />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedPackage.name}</h4>
-                      {selectedPackage.shortDescription && <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{selectedPackage.shortDescription}</p>}
+                      {selectedPackage.shortDescription && <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">{selectedPackage.shortDescription}</p>}
                       <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-3">
                         <div className="text-center sm:text-left">
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">Dorosły</p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-300">Dorosły</p>
                           <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(parseFloat(selectedPackage.pricePerAdult))}</p>
                         </div>
                         <div className="text-center sm:text-left">
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">Dziecko 4–12</p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-300">Dziecko 4–12</p>
                           <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(parseFloat(selectedPackage.pricePerChild))}</p>
                         </div>
                         <div className="text-center sm:text-left">
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">Dziecko 0–3</p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-300">Dziecko 0–3</p>
                           <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(parseFloat(selectedPackage.pricePerToddler))}</p>
                         </div>
                       </div>
@@ -196,7 +196,7 @@ export function MenuSection({
 
           {/* Breadcrumb indicator */}
           {useMenuPackage && (
-            <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 px-1">
+            <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-300 px-1">
               <span className={menuTemplateId ? 'text-indigo-600 dark:text-indigo-400 font-medium' : 'text-neutral-400 dark:text-neutral-500'}>Szablon</span>
               <ChevronRight className="w-3 h-3" />
               <span className={menuPackageId ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-neutral-400 dark:text-neutral-500'}>Pakiet</span>
@@ -212,20 +212,20 @@ export function MenuSection({
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
+              <DollarSign className="w-5 h-5 text-neutral-500 dark:text-neutral-300 flex-shrink-0" />
               <Input type="number" label="Cena za dorosłego (PLN)" placeholder="0.00" error={errors.pricePerAdult?.message} onFocus={selectAllOnFocus} {...register('pricePerAdult')} />
             </div>
             <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
+              <DollarSign className="w-5 h-5 text-neutral-500 dark:text-neutral-300 flex-shrink-0" />
               <Input type="number" label="Cena za dziecko 4–12 (PLN)" placeholder="0.00" error={errors.pricePerChild?.message} disabled={pricePerAdult === 0} onFocus={selectAllOnFocus} {...register('pricePerChild', { onChange: () => setChildPriceManuallySet(true) })} />
             </div>
             <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
+              <DollarSign className="w-5 h-5 text-neutral-500 dark:text-neutral-300 flex-shrink-0" />
               <Input type="number" label="Cena za dziecko 0–3 (PLN)" placeholder="0.00" error={errors.pricePerToddler?.message} disabled={pricePerAdult === 0} onFocus={selectAllOnFocus} {...register('pricePerToddler', { onChange: () => setToddlerPriceManuallySet(true) })} />
             </div>
           </div>
           {pricePerAdult > 0 && !childPriceManuallySet && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">💡 Cena za dziecko ustawiona automatycznie na 50% ceny dorosłego. Cena za malucha na 25%. Możesz je zmienić ręcznie.</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-300">💡 Cena za dziecko ustawiona automatycznie na 50% ceny dorosłego. Cena za malucha na 25%. Możesz je zmienić ręcznie.</p>
           )}
         </motion.div>
       )}

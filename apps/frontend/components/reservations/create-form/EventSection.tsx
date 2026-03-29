@@ -30,7 +30,7 @@ export function EventSection({
           <Sparkles className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Jaki typ wydarzenia?</h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Określ rodzaj imprezy — wpłynie na dostępne szablony menu</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-1">Określ rodzaj imprezy — wpłynie na dostępne szablony menu</p>
       </div>
 
       <div className="space-y-1.5">

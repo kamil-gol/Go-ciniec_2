@@ -65,6 +65,7 @@ export function MenuTemplateDialog({
     watch,
     formState: { errors },
   } = useForm<FormData>({
+    mode: 'onBlur',
     defaultValues: {
       eventTypeId: '',
       name: '',

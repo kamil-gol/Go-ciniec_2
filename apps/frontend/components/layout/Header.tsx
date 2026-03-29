@@ -123,7 +123,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
             className="lg:hidden rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-2.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 active:scale-[0.95]"
             aria-label="Otwórz menu nawigacji"
           >
-            <Menu className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+            <Menu className="h-5 w-5 text-neutral-600 dark:text-neutral-300" />
           </button>
 
           {/* Welcome Message — responsive */}
@@ -131,7 +131,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
             <h1 className="text-lg lg:text-xl font-bold text-neutral-900 dark:text-neutral-100">
               Witaj, {user?.firstName}! 👋
             </h1>
-            <p className="hidden sm:block text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="hidden sm:block text-sm text-neutral-500 dark:text-neutral-300">
               {new Date().toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
@@ -142,12 +142,12 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
           {/* Search — hidden on small mobile */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="hidden sm:flex items-center gap-2 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 hover:-translate-y-0.5"
+            className="hidden sm:flex items-center gap-2 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 px-4 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 hover:-translate-y-0.5"
             aria-label="Szukaj"
           >
             <Search className="h-4 w-4" />
             <span className="hidden md:inline">Szukaj...</span>
-            <kbd className="hidden md:inline-flex items-center gap-1 rounded-md bg-neutral-200/80 dark:bg-neutral-700 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:text-neutral-400">
+            <kbd className="hidden md:inline-flex items-center gap-1 rounded-md bg-neutral-200/80 dark:bg-neutral-700 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:text-neutral-300">
               ⌘K
             </kbd>
           </button>
@@ -178,7 +178,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                     exit={{ rotate: -90, opacity: 0, scale: 0.5 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Moon className="h-[18px] w-[18px] text-neutral-600 dark:text-neutral-400" />
+                    <Moon className="h-[18px] w-[18px] text-neutral-600 dark:text-neutral-300" />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -194,7 +194,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
               className="relative rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-2.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-200 hover:-translate-y-0.5"
               aria-label="Powiadomienia"
             >
-              <Bell className="h-[18px] w-[18px] text-neutral-600 dark:text-neutral-400" />
+              <Bell className="h-[18px] w-[18px] text-neutral-600 dark:text-neutral-300" />
               {unreadCount > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
@@ -232,6 +232,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                                 onClick={handleMarkAllRead}
                                 className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors flex items-center gap-1"
                                 title="Oznacz wszystkie jako przeczytane"
+                                aria-label="Oznacz wszystkie jako przeczytane"
                               >
                                 <CheckCheck className="h-3.5 w-3.5" />
                               </button>
@@ -245,7 +246,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                     </div>
                     <div className="max-h-80 overflow-y-auto scrollbar-thin">
                       {notifications.length === 0 ? (
-                        <div className="p-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                        <div className="p-8 text-center text-sm text-neutral-500 dark:text-neutral-300">
                           Brak powiadomień
                         </div>
                       ) : (
@@ -263,7 +264,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                                 <p className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
                                   {notif.title}
                                 </p>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-2">
+                                <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-0.5 line-clamp-2">
                                   {notif.message}
                                 </p>
                                 <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">

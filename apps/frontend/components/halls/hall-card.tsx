@@ -195,7 +195,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
             <Users className="h-4 w-4 text-white" />
           </div>
           <div>
-            <div className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Pojemność</div>
+            <div className="text-xs text-neutral-600 dark:text-neutral-300 font-medium">Pojemność</div>
             <div className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{hall.capacity} osób</div>
           </div>
         </div>
@@ -218,7 +218,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
 
         {/* Description */}
         {hall.description && (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-neutral-500 dark:text-neutral-300 line-clamp-2 leading-relaxed">
             {hall.description}
           </p>
         )}
@@ -256,9 +256,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
             <Button
               className={cn(
                 'w-full bg-gradient-to-r text-white shadow-md hover:shadow-lg transition-all duration-300 rounded-xl',
-                hall.isWholeVenue
-                  ? 'from-amber-500 to-orange-500'
-                  : accent.gradient
+                accent.gradient
               )}
             >
               <Calendar className="mr-2 h-4 w-4" />

@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 
 export default function QueuePage() {
   const [queues, setQueues] = useState<QueueItem[]>([])
@@ -218,11 +218,11 @@ export default function QueuePage() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
-          <StatCard label="W kolejce" value={stats.totalQueued} subtitle={`${stats.queuesByDate.length} ${stats.queuesByDate.length === 1 ? 'data' : 'różnych dat'}`} icon={CalendarDays} iconGradient="from-amber-500 to-orange-500" delay={0.1} />
-          <StatCard label="Najstarsza data" value={stats.oldestQueueDate ? format(parseISO(stats.oldestQueueDate), 'd MMM yyyy', { locale: pl }) : 'Brak'} subtitle="Najwcześniejszy termin" icon={TrendingUp} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-          <StatCard label="Ręczne kolejności" value={stats.manualOrderCount} subtitle="Zmodyfikowanych pozycji" icon={RefreshCw} iconGradient="from-rose-500 to-pink-500" delay={0.3} />
-          <StatCard label="Liczba dat" value={stats.queuesByDate.length} subtitle="Różnych terminów" icon={ListOrdered} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+        <div className={layout.statGrid}>
+          <StatCard label="W kolejce" value={stats.totalQueued} subtitle={`${stats.queuesByDate.length} ${stats.queuesByDate.length === 1 ? 'data' : 'różnych dat'}`} icon={CalendarDays} iconGradient={statGradients.alert} delay={0.1} />
+          <StatCard label="Najstarsza data" value={stats.oldestQueueDate ? format(parseISO(stats.oldestQueueDate), 'd MMM yyyy', { locale: pl }) : 'Brak'} subtitle="Najwcześniejszy termin" icon={TrendingUp} iconGradient={statGradients.info} delay={0.2} />
+          <StatCard label="Ręczne kolejności" value={stats.manualOrderCount} subtitle="Zmodyfikowanych pozycji" icon={RefreshCw} iconGradient={statGradients.count} delay={0.3} />
+          <StatCard label="Liczba dat" value={stats.queuesByDate.length} subtitle="Różnych terminów" icon={ListOrdered} iconGradient={statGradients.info} delay={0.4} />
         </div>
       )}
 
@@ -236,7 +236,7 @@ export default function QueuePage() {
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100">Dodaj do kolejki</h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 hidden sm:block">Dodaj klienta do kolejki oczekujących na dostępny termin</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-300 hidden sm:block">Dodaj klienta do kolejki oczekujących na dostępny termin</p>
               </div>
             </div>
             <AddToQueueForm
@@ -252,13 +252,13 @@ export default function QueuePage() {
       {/* Queue List */}
       <Card>
         <div className={`bg-gradient-to-br ${accent.gradientSubtle} p-4 sm:p-8`}>
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-4 sm:mb-6">
             <div className={`p-2 bg-gradient-to-br ${accent.iconBg} rounded-lg shadow-lg`}>
               <Clock className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1">
               <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100">Kolejka</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 hidden sm:block">
+              <p className="text-sm text-neutral-500 dark:text-neutral-300 hidden sm:block">
                 {selectedDate === 'all'
                   ? 'Wybierz konkretną datę aby zarządzać kolejnością i awansować klientów'
                   : 'Przeciągnij karty aby zmienić kolejność lub kliknij "Awansuj" aby utworzyć rezerwację'
@@ -266,6 +266,7 @@ export default function QueuePage() {
               </p>
             </div>
           </div>
+
 
           {/* Date Tabs — horizontal scroll on mobile */}
           <div className="flex flex-nowrap sm:flex-wrap gap-2 mb-6 overflow-x-auto pb-2 sm:pb-0 -mx-1 px-1 scrollbar-thin">
@@ -290,7 +291,7 @@ export default function QueuePage() {
 
           {/* Info Alert */}
           {isDragDropDisabled && queues.length > 0 && (
-            <Alert className="mb-6 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
+            <Alert className="mb-4 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
               <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <AlertDescription className="text-blue-800 dark:text-blue-300 text-sm">
                 Zmiana kolejności dostępna tylko w widoku pojedynczej daty. Wybierz konkretną datę aby przeciągać karty.
@@ -302,7 +303,7 @@ export default function QueuePage() {
             <EmptyState
               icon={Clock}
               title="Kolejka jest pusta"
-              description="Dodaj klientów do kolejki oczekujących"
+              description="Nie ma jeszcze żadnych klientów w kolejce oczekujących. Dodaj klienta, który czeka na wolny termin rezerwacji."
               actionLabel="Dodaj do kolejki"
               onAction={() => setShowAddForm(true)}
             />
@@ -346,7 +347,7 @@ export default function QueuePage() {
             </Alert>
             <div className="space-y-3">
               <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Co zostanie zrobione:</p>
-              <ul className="text-sm list-disc list-inside space-y-1.5 ml-2 text-neutral-500 dark:text-neutral-400">
+              <ul className="text-sm list-disc list-inside space-y-1.5 ml-2 text-neutral-500 dark:text-neutral-300">
                 <li>Wszystkie rezerwacje w kolejce zostaną ponumerowane od nowa</li>
                 <li>Każda data będzie miała numerację od 1</li>
                 <li>Sortowanie według daty dodania (starsze rezerwacje pierwsze)</li>
@@ -378,7 +379,7 @@ export default function QueuePage() {
                   <label htmlFor="rebuild-confirm" className="text-sm font-medium cursor-pointer text-neutral-900 dark:text-neutral-100">
                     Rozumiem konsekwencje i akceptuję ryzyko utraty ręcznych modyfikacji kolejności
                   </label>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-300">
                     Potwierdzam, że jestem świadomy nieodwracalności tej operacji
                   </p>
                 </div>

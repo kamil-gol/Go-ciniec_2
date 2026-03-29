@@ -7,7 +7,7 @@ import { getMenuTemplates, type MenuTemplate } from '@/lib/api/menu-templates-ap
 import { Package, Calendar, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { PageLayout } from '@/components/shared';
+import { PageLayout, LoadingState } from '@/components/shared';
 import { Breadcrumb } from '@/components/shared/Breadcrumb';
 
 export default function NewPackagePage() {
@@ -57,7 +57,7 @@ export default function NewPackagePage() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">Nowy pakiet menu</h1>
-              <p className="text-neutral-600 dark:text-neutral-400">Szablon: {selectedTemplate.name}</p>
+              <p className="text-neutral-600 dark:text-neutral-300">Szablon: {selectedTemplate.name}</p>
             </div>
           </div>
           <button
@@ -83,14 +83,7 @@ export default function NewPackagePage() {
   if (loading) {
     return (
       <PageLayout narrowContent>
-        <div className="animate-pulse space-y-6">
-          <div className="h-12 bg-neutral-200 dark:bg-neutral-800 rounded-xl w-1/3"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2].map((i) => (
-              <div key={i} className="h-48 bg-neutral-200 dark:bg-neutral-800 rounded-2xl"></div>
-            ))}
-          </div>
-        </div>
+        <LoadingState variant="skeleton" count={2} />
       </PageLayout>
     );
   }
@@ -109,7 +102,7 @@ export default function NewPackagePage() {
             <h1 className="text-2xl sm:text-4xl font-bold text-neutral-900 dark:text-neutral-100">
               Wybierz szablon menu
             </h1>
-            <p className="text-neutral-600 dark:text-neutral-400 text-sm sm:text-lg mt-1">
+            <p className="text-neutral-600 dark:text-neutral-300 text-sm sm:text-lg mt-1">
               Wybierz szablon, dla którego chcesz utworzyć nowy pakiet
             </p>
           </div>
@@ -126,12 +119,12 @@ export default function NewPackagePage() {
             <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-3">
               Brak aktywnych szablonów
             </h3>
-            <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+            <p className="text-neutral-600 dark:text-neutral-300 mb-6">
               Przed utworzeniem pakietu musisz utworzyć szablon menu.
             </p>
             <Link
               href="/dashboard/menu/templates/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+              className="inline-flex items-center gap-2 h-10 px-8 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
             >
               <Calendar className="w-5 h-5" />
               Utwórz szablon menu
@@ -157,7 +150,7 @@ export default function NewPackagePage() {
                     {template.name}
                   </h3>
                   {template.description && (
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-300 line-clamp-2">
                       {template.description}
                     </p>
                   )}
@@ -175,13 +168,13 @@ export default function NewPackagePage() {
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: template.eventType.color || '#3b82f6' }}
                     ></div>
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    <span className="text-sm text-neutral-600 dark:text-neutral-300">
                       {template.eventType.name}
                     </span>
                   </div>
                 )}
                 {template._count && (
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <span className="text-sm text-neutral-500 dark:text-neutral-300">
                     {template._count.packages} pakietów
                   </span>
                 )}

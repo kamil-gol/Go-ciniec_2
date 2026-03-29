@@ -54,7 +54,7 @@ export function CreateReservationDiscountSection({
           </div>
           <div>
             <span className="font-medium text-neutral-800 dark:text-neutral-200">Rabat</span>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">{'Opcjonalnie — zastosuj rabat do tej rezerwacji'}</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-300">{'Opcjonalnie — zastosuj rabat do tej rezerwacji'}</p>
           </div>
         </div>
         <Controller
@@ -123,7 +123,7 @@ export function CreateReservationDiscountSection({
               animate={{ opacity: 1 }}
               className="p-3 bg-white dark:bg-black/20 rounded-lg border border-orange-200 dark:border-orange-800 space-y-1 text-sm"
             >
-              <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
+              <div className="flex justify-between text-neutral-600 dark:text-neutral-300">
                 <span>Cena bazowa</span>
                 <span>{formatCurrency(totalPrice)}</span>
               </div>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { getEventTypes, getEventTypeStats, type EventType, type EventTypeStats } from '@/lib/api/event-types-api'
 import { EventTypeCard } from '@/components/event-types/event-type-card'
 import { EventTypeFormDialog } from '@/components/event-types/event-type-form-dialog'
@@ -97,13 +97,13 @@ export default function EventTypesPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className={layout.statGrid}>
         <StatCard
           label="Typy wydarzeń"
           value={eventTypes.length}
           subtitle="W systemie"
           icon={Theater}
-          iconGradient="from-fuchsia-500 to-pink-500"
+          iconGradient={statGradients.count}
           delay={0.1}
         />
         <StatCard
@@ -111,7 +111,7 @@ export default function EventTypesPage() {
           value={activeTypes}
           subtitle="Dostępne do wyboru"
           icon={TrendingUp}
-          iconGradient="from-emerald-500 to-teal-500"
+          iconGradient={statGradients.success}
           delay={0.2}
         />
         <StatCard
@@ -119,7 +119,7 @@ export default function EventTypesPage() {
           value={totalReservations}
           subtitle="Powiązane łącznie"
           icon={Calendar}
-          iconGradient="from-violet-500 to-purple-500"
+          iconGradient={statGradients.count}
           delay={0.3}
         />
         <StatCard
@@ -127,7 +127,7 @@ export default function EventTypesPage() {
           value={totalTemplates}
           subtitle="Przypisane łącznie"
           icon={FileText}
-          iconGradient="from-amber-500 to-orange-500"
+          iconGradient={statGradients.info}
           delay={0.4}
         />
       </div>
@@ -171,14 +171,16 @@ export default function EventTypesPage() {
         <EmptyState
           icon={Theater}
           title={search ? 'Nie znaleziono typów' : 'Brak typów wydarzeń'}
-          description={search ? 'Spróbuj użyć innego wyszukiwania' : 'Dodaj pierwszy typ wydarzenia, aby zacząć'}
+          description={search
+            ? 'Żaden typ wydarzenia nie pasuje do wyszukiwania. Spróbuj użyć innej frazy.'
+            : 'Nie masz jeszcze żadnych typów wydarzeń. Dodaj pierwszy typ, aby móc kategoryzować rezerwacje (np. wesele, komunia, chrzciny).'}
           actionLabel={search ? undefined : 'Dodaj Pierwszy Typ'}
           onAction={search ? undefined : handleCreate}
         />
       ) : (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-neutral-500 dark:text-neutral-300">
               Znaleziono <span className="font-bold text-neutral-900 dark:text-neutral-100">{filteredTypes.length}</span>{' '}
               {filteredTypes.length === 1 ? 'typ' : filteredTypes.length < 5 ? 'typy' : 'typów'}
             </p>

@@ -12,7 +12,7 @@ set -e  # Zatrzymaj na błędzie
 # ===== ŁADOWANIE ZMIENNYCH ŚRODOWISKOWYCH =====
 
 # Automatycznie ładuj zmienne z .env.backup jeśli istnieje
-PROJECT_DIR="${PROJECT_DIR:-/home/kamil/rezerwacje}"
+PROJECT_DIR="${PROJECT_DIR:?ERROR: Set PROJECT_DIR env var (e.g. /home/kamil/rezerwacje)}"
 if [ -f "${PROJECT_DIR}/.env.backup" ]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Ładuję zmienne z .env.backup..."
     set -a  # Automatycznie eksportuj zmienne
@@ -25,7 +25,7 @@ fi
 # ===== KONFIGURACJA =====
 
 # Katalogi
-BACKUP_DIR="${BACKUP_DIR:-/home/kamil/backups/gosciniec}"
+BACKUP_DIR="${BACKUP_DIR:?ERROR: Set BACKUP_DIR env var (e.g. /home/kamil/backups/gosciniec)}"
 LOG_FILE="${BACKUP_DIR}/backup.log"
 
 # Konfiguracja Docker

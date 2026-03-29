@@ -25,7 +25,7 @@ export function GuestsSection({
           <Users className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Ilu gości?</h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Podaj liczbę osób w każdej grupie wiekowej</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-1">Podaj liczbę osób w każdej grupie wiekowej</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -78,6 +78,7 @@ export function CreateReservationForm({
     formState: { errors },
   } = useForm<ReservationFormData>({
     resolver: zodResolver(reservationSchema),
+    mode: 'onBlur',
     defaultValues: {
       useMenuPackage: false,
       adults: 0,
@@ -397,7 +398,7 @@ export function CreateReservationForm({
 
           {onCancel && (
             <div className="mt-4 text-center">
-              <button type="button" onClick={onCancel} className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors" disabled={createReservation.isPending}>
+              <button type="button" onClick={onCancel} className="text-sm text-neutral-500 dark:text-neutral-300 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors" disabled={createReservation.isPending}>
                 Anuluj tworzenie rezerwacji
               </button>
             </div>

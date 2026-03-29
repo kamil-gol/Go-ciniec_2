@@ -167,11 +167,11 @@ describe('Security: File Upload Attack Vectors', () => {
   // =========================================
   describe('Path traversal in filename', () => {
     const TRAVERSAL_FILENAMES = [
-      '../../etc/passwd',
-      '../../../etc/shadow',
-      '..\\..\\windows\\system32\\config\\sam',
-      '....//....//etc/passwd',
-      'file.jpg/../../etc/passwd',
+      '../../etc/passwd.jpg',
+      '../../../etc/shadow.jpg',
+      '..\\..\\windows\\system32\\config\\sam.jpg',
+      '....//....//etc/passwd.jpg',
+      'file.jpg/../../etc/passwd.jpg',
     ];
 
     it.each(TRAVERSAL_FILENAMES)(
@@ -180,7 +180,7 @@ describe('Security: File Upload Attack Vectors', () => {
         const res = await uploadFile(
           maliciousFilename,
           Buffer.from('test content'),
-          'application/pdf',
+          'image/jpeg',
           DEFAULT_FIELDS
         );
 
@@ -199,7 +199,7 @@ describe('Security: File Upload Attack Vectors', () => {
 
     it('should sanitize URL-encoded path traversal: ..%2F..%2F', async () => {
       const res = await uploadFile(
-        '..%2F..%2Fetc%2Fpasswd',
+        '..%2F..%2Fetc%2Fpasswd.pdf',
         Buffer.from('test content'),
         'application/pdf',
         DEFAULT_FIELDS
@@ -213,6 +213,9 @@ describe('Security: File Upload Attack Vectors', () => {
   // 4. Double Extension Attacks
   // =========================================
   describe('Double extension attacks', () => {
+    // NOTE: path.extname() returns the LAST extension, so these pass
+    // extension validation (.jpg, .png, .pdf, .docx). The server's UUID
+    // renaming ensures the dangerous first extension is never preserved.
     const DOUBLE_EXTENSIONS = [
       'malware.php.jpg',
       'shell.asp.png',
@@ -254,9 +257,10 @@ describe('Security: File Upload Attack Vectors', () => {
   // 5. Null Byte in Filename
   // =========================================
   describe('Null byte in filename', () => {
-    it('should handle null byte injection in filename: file.jpg[NUL].php', async () => {
+    it('should reject null byte injection in filename: file.jpg[NUL].php', async () => {
       // Null byte truncation attack — use URL-encoded version since raw \x00
-      // causes HTTP header errors in supertest/node http
+      // causes HTTP header errors in supertest/node http.
+      // path.extname returns '.php' which is a disallowed extension → rejected by fileFilter.
       const res = await uploadFile(
         'file.jpg%00.php',
         Buffer.from('fake content'),
@@ -264,19 +268,13 @@ describe('Security: File Upload Attack Vectors', () => {
         DEFAULT_FIELDS
       );
 
-      // Should not crash
-      expect(res.status).not.toBe(500);
-
-      // If stored, verify no .php extension
-      if (res.status === 200 || res.status === 201) {
-        const storedFilename = res.body?.data?.storedFilename || '';
-        if (storedFilename) {
-          expect(storedFilename).not.toContain('.php');
-        }
-      }
+      // Extension validation rejects .php → 400
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect([200, 201]).not.toContain(res.status);
     });
 
-    it('should handle URL-encoded null byte: file.jpg%00.exe', async () => {
+    it('should reject URL-encoded null byte: file.jpg%00.exe', async () => {
+      // path.extname returns '.exe' which is a disallowed extension → rejected
       const res = await uploadFile(
         'file.jpg%00.exe',
         Buffer.from('fake content'),
@@ -284,12 +282,86 @@ describe('Security: File Upload Attack Vectors', () => {
         DEFAULT_FIELDS
       );
 
-      expect(res.status).not.toBe(500);
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect([200, 201]).not.toContain(res.status);
     });
   });
 
   // =========================================
-  // 6. Missing Required Fields
+  // 6. File Extension Validation (#436)
+  // =========================================
+  describe('File extension validation', () => {
+    const BLOCKED_EXTENSIONS = [
+      { ext: 'script.js', mime: 'application/javascript' },
+      { ext: 'shell.sh', mime: 'application/x-sh' },
+      { ext: 'backdoor.php', mime: 'application/x-php' },
+      { ext: 'exploit.exe', mime: 'application/octet-stream' },
+      { ext: 'payload.bat', mime: 'application/x-msdos-program' },
+      { ext: 'hack.py', mime: 'text/x-python' },
+      { ext: 'trojan.html', mime: 'text/html' },
+    ];
+
+    it.each(BLOCKED_EXTENSIONS)(
+      'should reject file with disallowed extension: $ext',
+      async ({ ext, mime }) => {
+        const res = await uploadFile(
+          ext,
+          Buffer.from('malicious content'),
+          mime,
+          DEFAULT_FIELDS
+        );
+
+        expect(res.status).toBeGreaterThanOrEqual(400);
+        expect([200, 201]).not.toContain(res.status);
+      }
+    );
+
+    const ALLOWED_EXTENSIONS_LIST = [
+      { filename: 'photo.jpg', mime: 'image/jpeg' },
+      { filename: 'photo.jpeg', mime: 'image/jpeg' },
+      { filename: 'image.png', mime: 'image/png' },
+      { filename: 'animation.gif', mime: 'image/gif' },
+      { filename: 'modern.webp', mime: 'image/webp' },
+      { filename: 'document.pdf', mime: 'application/pdf' },
+      { filename: 'report.doc', mime: 'application/msword' },
+      { filename: 'report.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+      { filename: 'data.xls', mime: 'application/vnd.ms-excel' },
+      { filename: 'data.xlsx', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+      { filename: 'export.csv', mime: 'text/csv' },
+    ];
+
+    it.each(ALLOWED_EXTENSIONS_LIST)(
+      'should NOT reject allowed extension: $filename',
+      async ({ filename, mime }) => {
+        const res = await uploadFile(
+          filename,
+          Buffer.from('test content'),
+          mime,
+          DEFAULT_FIELDS
+        );
+
+        // Should not be rejected for MIME/extension reasons (415)
+        // May fail for other reasons (entity not found = 404, etc.)
+        expect(res.status).not.toBe(415);
+        expect(res.status).not.toBe(500);
+      }
+    );
+
+    it('should reject file with no extension', async () => {
+      const res = await uploadFile(
+        'Makefile',
+        Buffer.from('test content'),
+        'application/octet-stream',
+        DEFAULT_FIELDS
+      );
+
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect([200, 201]).not.toContain(res.status);
+    });
+  });
+
+  // =========================================
+  // 7. Missing Required Fields
   // =========================================
   describe('Upload without required form fields', () => {
     it('should reject upload without entityType', async () => {

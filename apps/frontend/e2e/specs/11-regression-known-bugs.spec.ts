@@ -11,6 +11,7 @@
  * BUG9b: Race condition in batch queue update
  */
 import { test, expect } from '@playwright/test';
+import { testData } from '../fixtures/test-data';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -28,8 +29,8 @@ test.describe.serial('Regression Tests — Known Bugs', () => {
   test('login — obtain auth token', async ({ request }) => {
     const res = await request.post(`${API_URL}/api/auth/login`, {
       data: {
-        email: process.env.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl',
-        password: process.env.TEST_ADMIN_PASSWORD || 'Admin123!@#',
+        email: testData.admin.email,
+        password: testData.admin.password,
       },
     });
     expect(res.ok()).toBeTruthy();

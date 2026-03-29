@@ -22,7 +22,7 @@ import {
 import { CateringTemplateList } from './components/CateringTemplateList';
 import { CateringTemplateForm } from './components/CateringTemplateForm';
 import type { CateringTemplate } from '@/types/catering.types';
-import { moduleAccents } from '@/lib/design-tokens';
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 
 const CATERING_ACCENT = moduleAccents.catering;
 
@@ -76,13 +76,13 @@ export default function CateringTemplatesPage() {
       />
 
       {/* StatCards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
+      <div className={layout.statGrid3}>
         <StatCard
           label="Wszystkie"
           value={stats.total}
           subtitle="Szablony w systemie"
           icon={LayoutTemplate}
-          iconGradient="from-orange-500 to-amber-500"
+          iconGradient={statGradients.count}
           delay={0.1}
         />
         <StatCard
@@ -90,7 +90,7 @@ export default function CateringTemplatesPage() {
           value={stats.active}
           subtitle="Gotowe do użycia"
           icon={Eye}
-          iconGradient="from-emerald-500 to-teal-500"
+          iconGradient={statGradients.success}
           delay={0.2}
         />
         <StatCard
@@ -98,7 +98,7 @@ export default function CateringTemplatesPage() {
           value={stats.inactive}
           subtitle="Wyłączone"
           icon={EyeOff}
-          iconGradient="from-amber-500 to-orange-500"
+          iconGradient={statGradients.neutral}
           delay={0.3}
         />
       </div>

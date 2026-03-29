@@ -378,6 +378,7 @@ export let COLORS = {
   bgWhite: '#ffffff',       // Main background
   allergen: '#e67e22',      // Allergen labels
   purple: '#8e44ad',        // Optional extras
+  reservationBg: '#EDE9FE', // Light purple — reservation cards (menu preparations)
 };
 
 /** Snapshot of default colors for reset after each render */

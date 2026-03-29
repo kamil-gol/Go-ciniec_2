@@ -20,10 +20,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  
-  /* Opt out of parallel tests on CI */
-  workers: process.env.CI ? 1 : 4,
+  retries: process.env.CI ? 1 : 0,
+
+  /* Run 2 workers on CI for faster execution (~50% speedup) */
+  workers: process.env.CI ? 2 : 4,
   
   /* Reporter to use */
   reporter: [
@@ -70,11 +70,38 @@ export default defineConfig({
   
   /* Configure projects for major browsers */
   projects: [
+    // ── Auth setup — logs in once, saves storageState ──
     {
-      name: 'chromium',
-      use: { 
+      name: 'setup',
+      testDir: './e2e',
+      testMatch: /auth\.setup\.ts/,
+    },
+
+    // ── Auth tests — run WITHOUT storageState (tests login itself) ──
+    {
+      name: 'no-auth',
+      testMatch: /01-auth\.spec\.ts/,
+      use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 },
+        ...(chromiumExecutable ? {
+          launchOptions: {
+            executablePath: chromiumExecutable,
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+          },
+        } : {}),
+      },
+      // No dependencies, no storageState — starts fresh
+    },
+
+    // ── Main browser — pre-authenticated via storageState ──
+    {
+      name: 'chromium',
+      testIgnore: /01-auth\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+        storageState: 'e2e/.auth/admin.json',
         // Use system Chromium when PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set (Alpine/Docker)
         ...(chromiumExecutable ? {
           launchOptions: {
@@ -88,40 +115,53 @@ export default defineConfig({
           },
         } : {}),
       },
+      dependencies: ['setup'],
     },
-    
+
     // Firefox & WebKit only when NOT using system Chromium (i.e., not in Docker Alpine)
     ...(!chromiumExecutable ? [
       {
         name: 'firefox',
-        use: { 
+        testIgnore: /01-auth\.spec\.ts/,
+        use: {
           ...devices['Desktop Firefox'],
           viewport: { width: 1920, height: 1080 },
+          storageState: 'e2e/.auth/admin.json',
         },
+        dependencies: ['setup'],
       },
       {
         name: 'webkit',
         timeout: 60000,
-        use: { 
+        testIgnore: /01-auth\.spec\.ts/,
+        use: {
           ...devices['Desktop Safari'],
           viewport: { width: 1920, height: 1080 },
           navigationTimeout: 45000,
+          storageState: 'e2e/.auth/admin.json',
         },
+        dependencies: ['setup'],
       },
       {
         name: 'mobile-chrome',
         timeout: 60000,
-        use: { 
+        testIgnore: /01-auth\.spec\.ts/,
+        use: {
           ...devices['Pixel 5'],
+          storageState: 'e2e/.auth/admin.json',
         },
+        dependencies: ['setup'],
       },
       {
         name: 'mobile-safari',
         timeout: 60000,
-        use: { 
+        testIgnore: /01-auth\.spec\.ts/,
+        use: {
           ...devices['iPhone 12'],
           navigationTimeout: 45000,
+          storageState: 'e2e/.auth/admin.json',
         },
+        dependencies: ['setup'],
       },
     ] : []),
   ],

@@ -113,7 +113,7 @@ export function EditableNotesCard({
                 placeholder="Wybierz datę..."
                 minDate={new Date()}
               />
-              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-300">
                 Musi być co najmniej 1 dzień przed rozpoczęciem wydarzenia
               </p>
             </div>

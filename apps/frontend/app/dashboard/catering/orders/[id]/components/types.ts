@@ -5,23 +5,9 @@ export type { CateringOrder, CateringDeposit };
 
 // ═══ HELPERS ═══
 
-export function formatPrice(value: number | string | null | undefined) {
-  if (value == null || value === '') return '—';
-  const n = Number(value);
-  if (isNaN(n)) return '—';
-  return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(n);
-}
-
-export function formatDatePl(iso: string | null | undefined) {
-  if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
-  } catch {
-    return iso;
-  }
-}
+import { formatCurrency, formatDateLong } from '@/lib/utils'
+export const formatPrice = formatCurrency
+export const formatDatePl = formatDateLong
 
 export function getInitials(
   firstName?: string | null,

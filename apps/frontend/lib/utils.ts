@@ -50,15 +50,35 @@ export function formatTime(time: string): string {
   return time.substring(0, 5) // HH:MM
 }
 
-/**
- * Format currency (PLN)
- */
-export function formatCurrency(amount: number | string): string {
-  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+/** Price: always "X XXX,XX zł" format with 2 decimal places */
+export function formatCurrency(amount: number | string | null | undefined): string {
+  if (amount == null || amount === '' || isNaN(Number(amount))) return '—'
   return new Intl.NumberFormat('pl-PL', {
     style: 'currency',
     currency: 'PLN',
-  }).format(numAmount)
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(amount))
+}
+
+/** Date: always "3 marca 2026" format */
+export function formatDateLong(date: string | Date | null | undefined): string {
+  if (!date) return '—'
+  return new Intl.DateTimeFormat('pl-PL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(date))
+}
+
+/** Short date: "03.03.2026" for tables */
+export function formatDateShort(date: string | Date | null | undefined): string {
+  if (!date) return '—'
+  return new Intl.DateTimeFormat('pl-PL', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(date))
 }
 
 /**
@@ -91,9 +111,9 @@ export function getStatusColor(status: string): string {
     CONFIRMED: 'bg-green-100 text-green-800',
     COMPLETED: 'bg-blue-100 text-blue-800',
     CANCELLED: 'bg-red-100 text-red-800',
-    ARCHIVED: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400',
+    ARCHIVED: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
   }
-  return colors[status] || 'bg-gray-100 text-gray-800'
+  return colors[status] || 'bg-neutral-100 text-neutral-800'
 }
 
 /**

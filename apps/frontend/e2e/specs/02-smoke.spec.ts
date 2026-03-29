@@ -1,21 +1,17 @@
 import { test, expect } from '@playwright/test';
-import { manualLogin as login } from '../fixtures/auth.fixture';
+import { testData } from '../fixtures/test-data';
 
 /**
  * SMOKE TESTS
- * 
+ *
  * Quick tests to verify basic functionality works.
  * Run these before every deployment to catch critical regressions.
- * 
+ *
  * Routes are under /dashboard/* (Next.js App Router structure).
  * Auth token is stored as 'auth_token' in localStorage.
  */
 
 test.describe('Smoke Tests - Critical Paths', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
-  });
-
   test('should load dashboard successfully', async ({ page }) => {
     await page.goto('/dashboard');
 
@@ -92,8 +88,6 @@ test.describe('Smoke Tests - API Health', () => {
 
 test.describe('Smoke Tests - Performance', () => {
   test('should load dashboard in less than 5 seconds', async ({ page }) => {
-    await login(page, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
-
     const startTime = Date.now();
     await page.goto('/dashboard');
     await page.waitForSelector('h1');
@@ -104,8 +98,6 @@ test.describe('Smoke Tests - Performance', () => {
   });
 
   test('should load reservations page in less than 5 seconds', async ({ page }) => {
-    await login(page, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
-
     const startTime = Date.now();
     await page.goto('/dashboard/reservations');
     await page.waitForLoadState('networkidle');
@@ -120,8 +112,6 @@ test.describe('Smoke Tests - Mobile Responsive', () => {
   test.use({ viewport: { width: 375, height: 667 } }); // iPhone SE
 
   test('should be usable on mobile', async ({ page }) => {
-    await login(page, 'admin@gosciniecrodzinny.pl', 'Admin123!@#');
-
     // Dashboard should load
     await page.goto('/dashboard');
     await expect(
@@ -149,11 +139,11 @@ test.describe('Smoke Tests - Accessibility', () => {
 
     // Tab to email field and type
     await page.keyboard.press('Tab');
-    await page.keyboard.type('admin@gosciniecrodzinny.pl');
-    
+    await page.keyboard.type(testData.admin.email);
+
     // Tab to password field and type
     await page.keyboard.press('Tab');
-    await page.keyboard.type('Admin123!@#');
+    await page.keyboard.type(testData.admin.password);
     
     // Press Enter to submit
     await page.keyboard.press('Enter');

@@ -3,7 +3,7 @@
 import { QueueItem } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Calendar, Users, Phone, Mail, ArrowUp, ArrowDown, Check, Pencil } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
+import { format, formatDistanceToNow, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -29,8 +29,24 @@ export function QueueItemCard({
   onPromote,
   onEdit,
 }: QueueItemCardProps) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowUp' && !isFirst && onMoveUp) {
+      e.preventDefault()
+      onMoveUp(item.id)
+    } else if (e.key === 'ArrowDown' && !isLast && onMoveDown) {
+      e.preventDefault()
+      onMoveDown(item.id)
+    }
+  }
+
   return (
-    <div className="group rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 p-5">
+    <div
+      role="listitem"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      aria-label={`Pozycja ${item.position}: ${item.client.firstName} ${item.client.lastName}`}
+      className="group rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 p-5 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+    >
       <div className="flex items-start justify-between gap-4">
         {/* Position Badge */}
         <div className="flex-shrink-0">
@@ -48,7 +64,7 @@ export function QueueItemCard({
             <h3 className="font-semibold text-lg text-neutral-900 dark:text-neutral-100">
               {item.client.firstName} {item.client.lastName}
             </h3>
-            <div className="flex flex-wrap gap-3 mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            <div className="flex flex-wrap gap-3 mt-1 text-sm text-neutral-500 dark:text-neutral-300">
               <div className="flex items-center gap-1">
                 <Phone className="h-3.5 w-3.5" />
                 {item.client.phone}
@@ -63,26 +79,26 @@ export function QueueItemCard({
           </div>
 
           <div className="flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+            <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-300">
               <Calendar className="h-3.5 w-3.5" />
               <span>
                 {format(parseISO(item.queueDate), 'd MMMM yyyy', { locale: pl })}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+            <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-300">
               <Users className="h-3.5 w-3.5" />
               <span>{item.guests} osób</span>
             </div>
           </div>
 
           {item.notes && (
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400 italic">
+            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-300 italic">
               {item.notes}
             </p>
           )}
 
           <div className="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
-            Dodane {format(parseISO(item.createdAt), 'd MMM yyyy HH:mm', { locale: pl })}
+            Dodane {formatDistanceToNow(parseISO(item.createdAt), { addSuffix: true, locale: pl })}
             {' przez '}
             {item.createdBy.firstName} {item.createdBy.lastName}
           </div>
@@ -94,6 +110,7 @@ export function QueueItemCard({
             <Button
               size="sm"
               onClick={() => onPromote(item.id)}
+              aria-label="Awansuj do rezerwacji"
               className={cn(
                 'whitespace-nowrap bg-gradient-to-r text-white shadow-md hover:shadow-lg rounded-xl',
                 accent.gradient

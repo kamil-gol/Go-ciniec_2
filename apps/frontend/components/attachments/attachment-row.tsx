@@ -112,7 +112,7 @@ export default function AttachmentRow({ attachment, onDeleted, onArchived, onPre
             {getCategoryLabel(attachment.category)}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+        <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-300">
           <span className="truncate">{attachment.originalName}</span>
           <span>·</span>
           <span className="flex-shrink-0">{formatFileSize(attachment.sizeBytes)}</span>

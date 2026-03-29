@@ -1,8 +1,10 @@
 name: Frontend Tests
 
 on:
+  schedule:
+    - cron: '0 2 * * *'  # Codziennie o 02:00 UTC (nightly)
   push:
-    branches: [main, develop, 'sprint-*']
+    branches: [main, develop, 'sprint-*', 'claude/*']
     paths:
       - 'apps/frontend/**'
       - 'contracts/**'
@@ -31,6 +33,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./apps/frontend
@@ -58,14 +62,25 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./apps/frontend
         run: npm install --legacy-peer-deps
 
-      - name: Run Component Tests
+      - name: Run tests with coverage
         working-directory: ./apps/frontend
-        run: npx vitest run --reporter=verbose
+        run: npx vitest run --coverage --reporter=verbose
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: apps/frontend/coverage/lcov.info
+          flags: frontend
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   # ========================================
   # Job 3: Contract Tests (API response shape validation)
@@ -80,6 +95,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./apps/frontend
@@ -102,6 +119,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./apps/frontend

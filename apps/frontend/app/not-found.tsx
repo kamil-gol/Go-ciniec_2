@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 export default function NotFound() {
   return (
@@ -6,12 +7,11 @@ export default function NotFound() {
       <div className="text-center">
         <h1 className="text-6xl font-bold text-neutral-900 dark:text-neutral-100">404</h1>
         <p className="mt-4 text-xl text-neutral-600 dark:text-neutral-400">Strona nie została znaleziona</p>
-        <Link
-          href="/dashboard"
-          className="mt-8 inline-block rounded-lg bg-violet-600 dark:bg-violet-500 px-6 py-3 text-sm font-medium text-white hover:bg-violet-700 dark:hover:bg-violet-400 transition-colors"
-        >
-          Wróć do panelu
-        </Link>
+        <Button asChild size="lg" className="mt-8">
+          <Link href="/dashboard">
+            Wróć do panelu
+          </Link>
+        </Button>
       </div>
     </div>
   )

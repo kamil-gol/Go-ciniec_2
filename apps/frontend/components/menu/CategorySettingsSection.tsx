@@ -125,7 +125,7 @@ export default function CategorySettingsSection({
           </div>
           <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Kategorie dań w pakiecie</h2>
         </div>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">
           Wybierz kategorie dań dostępne w tym pakiecie i ustaw limity wyboru
         </p>
       </div>
@@ -133,7 +133,7 @@ export default function CategorySettingsSection({
       {categories.length === 0 ? (
         <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600">
           <div className="text-4xl mb-3">{'\ud83d\udcc2'}</div>
-          <p className="text-neutral-500 dark:text-neutral-400 font-medium">Brak kategorii dań</p>
+          <p className="text-neutral-500 dark:text-neutral-300 font-medium">Brak kategorii dań</p>
           <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-1">
             Dodaj kategorie dań w sekcji {'"'}Kategorie{'"'} aby móc je przypisywać do pakietów
           </p>
@@ -173,7 +173,7 @@ export default function CategorySettingsSection({
                         <span className="text-lg font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {category.name}
                         </span>
-                        <span className="block text-xs text-neutral-500 dark:text-neutral-400 font-mono">{category.slug}</span>
+                        <span className="block text-xs text-neutral-500 dark:text-neutral-300 font-mono">{category.slug}</span>
                       </div>
                     </div>
                   </label>
@@ -206,7 +206,7 @@ export default function CategorySettingsSection({
                   <div className="space-y-4 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-300 mb-1.5 uppercase tracking-wider">
                           Min wyborów
                         </label>
                         <input
@@ -227,7 +227,7 @@ export default function CategorySettingsSection({
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-300 mb-1.5 uppercase tracking-wider">
                           Max wyborów
                         </label>
                         <input
@@ -259,7 +259,7 @@ export default function CategorySettingsSection({
                     {/* Porcje dla & Wymagana */}
                     <div className="flex items-center gap-4">
                       <div className="flex-1">
-                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-300 mb-1.5 uppercase tracking-wider">
                           Porcje dla
                         </label>
                         <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 px-3 py-2">
@@ -291,7 +291,7 @@ export default function CategorySettingsSection({
 
                     {/* Własna etykieta */}
                     <div>
-                      <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                      <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-300 mb-1.5 uppercase tracking-wider">
                         Własna etykieta
                       </label>
                       <input
@@ -332,7 +332,7 @@ export default function CategorySettingsSection({
                       {setting.extraItemPrice != null && (
                         <div className="grid grid-cols-2 gap-4 ml-7">
                           <div>
-                            <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                            <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-300 mb-1.5 uppercase tracking-wider">
                               Cena za szt. (PLN)
                             </label>
                             <input
@@ -360,7 +360,7 @@ export default function CategorySettingsSection({
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                            <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-300 mb-1.5 uppercase tracking-wider">
                               Max dodatkowych
                             </label>
                             <input

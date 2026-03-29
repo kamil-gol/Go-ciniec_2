@@ -161,7 +161,7 @@ export function ServiceCategoryForm({ category, onClose }: ServiceCategoryFormPr
             id="cat-icon"
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
-            placeholder="\uD83C\uDF82"
+            placeholder="🎂"
             maxLength={4}
           />
         </div>

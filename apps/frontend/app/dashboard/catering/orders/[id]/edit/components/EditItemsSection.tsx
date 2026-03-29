@@ -32,7 +32,7 @@ export function EditItemsSection({
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Dania</h3>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-neutral-500 dark:text-neutral-300">
             {form.items.length > 0
               ? `${form.items.length} ${form.items.length === 1 ? 'pozycja' : 'pozycje'} · ${fmt(subtotal)}`
               : 'Dodaj pozycje menu do zamówienia'}

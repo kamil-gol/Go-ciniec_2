@@ -49,6 +49,11 @@ vi.mock('@/lib/design-tokens', () => ({
       gradientSubtle: 'from-rose-50 to-pink-50',
     },
   },
+  layout: { statGrid: "grid grid-cols-2 lg:grid-cols-4 gap-4", statGrid3: "grid grid-cols-2 sm:grid-cols-3 gap-4", statGrid6: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4", containerClass: "container mx-auto", cardPadding: "p-4", sectionGap: "space-y-6", maxWidth: "max-w-7xl", narrowWidth: "max-w-5xl", cardHover: "", detailGrid: "grid grid-cols-2 md:grid-cols-4 gap-3" },
+  statGradients: { financial: "from-amber-500 to-yellow-600", count: "from-blue-600 to-blue-800", alert: "from-rose-500 to-red-600", success: "from-emerald-500 to-teal-600", neutral: "from-zinc-500 to-neutral-600", info: "from-violet-500 to-purple-600" },
+  typography: { pageTitle: "", sectionTitle: "", cardTitle: "", body: "", muted: "", smallMuted: "", label: "", heroSubtitle: "", statValue: "", statLabel: "", tableHeader: "", pageTitleStandalone: "" },
+  animations: { fadeIn: "", slideUp: "", scaleIn: "", cardHover: "", buttonPress: "", pageEnter: "" },
+  motionTokens: { duration: { instant: 0.1, fast: 0.2, normal: 0.3, slow: 0.5 }, ease: { default: "easeOut", smooth: [0.4, 0, 0.2, 1] }, stagger: { cards: 0.06, list: 0.04 } },
 }))
 
 vi.mock('@/components/shared', () => ({
@@ -66,7 +71,6 @@ vi.mock('@/components/shared', () => ({
       <span>{value}</span>
     </div>
   ),
-  LoadingState: ({ message }: any) => <div data-testid="loading-state">{message}</div>,
   EmptyState: ({ title, description, actionLabel, onAction }: any) => (
     <div data-testid="empty-state">
       <h3>{title}</h3>
@@ -90,6 +94,10 @@ vi.mock('@/components/shared/FilterTabs', () => ({
 
 vi.mock('@/components/ui/button', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+}))
+
+vi.mock('@/components/ui/skeleton', () => ({
+  Skeleton: (props: any) => <div {...props} />,
 }))
 
 vi.mock('@/components/ui/card', () => ({

@@ -57,9 +57,19 @@ const storage = multer.diskStorage({
 });
 
 /**
- * File filter - validate MIME type
+ * Allowed file extensions (must match ALLOWED_MIME_TYPES)
+ */
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv'];
+
+/**
+ * File filter - validate MIME type AND extension (#436)
  */
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: FileFilterCallback): void => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    cb(new Error(`Niedozwolone rozszerzenie pliku: ${ext}. Dozwolone: ${ALLOWED_EXTENSIONS.join(', ')}`));
+    return;
+  }
   if (ALLOWED_MIME_TYPES.includes(file.mimetype as any)) {
     cb(null, true);
   } else {

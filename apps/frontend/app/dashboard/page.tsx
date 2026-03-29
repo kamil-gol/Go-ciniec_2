@@ -15,9 +15,9 @@ import {
   RefreshCw,
   AlertCircle,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
 import { PageLayout, PageHero, StatCard } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { useDashboardOverview, useDashboardUpcoming } from '@/lib/api/stats-api'
 
 // ===============================================================
@@ -43,18 +43,10 @@ const statusLabels: Record<string, { label: string; emoji: string; classes: stri
   COMPLETED: {
     label: 'Zakończone',
     emoji: '🏁',
-    classes: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
+    classes: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-300',
   },
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
 
 function formatDate(dateStr: string | null): { day: string; month: string; full: string } {
   if (!dateStr) return { day: '?', month: '?', full: 'Brak daty' }
@@ -140,7 +132,7 @@ export default function DashboardPage() {
           change: `${overview.reservationsThisWeek} w tym tygodniu`,
           changeType: 'neutral' as const,
           icon: Calendar,
-          gradient: 'from-blue-500 to-cyan-500',
+          gradient: statGradients.count,
         },
         {
           name: 'W Kolejce',
@@ -148,7 +140,7 @@ export default function DashboardPage() {
           change: `${overview.reservationsThisMonth} rezerwacji w miesiącu`,
           changeType: overview.queueCount > 0 ? ('neutral' as const) : ('positive' as const),
           icon: Clock,
-          gradient: 'from-amber-500 to-orange-500',
+          gradient: statGradients.alert,
         },
         {
           name: 'Potwierdzone',
@@ -156,7 +148,7 @@ export default function DashboardPage() {
           change: 'ten miesiąc',
           changeType: 'positive' as const,
           icon: CheckCircle2,
-          gradient: 'from-emerald-500 to-teal-500',
+          gradient: statGradients.success,
         },
         {
           name: 'Przychód miesiąc',
@@ -174,7 +166,7 @@ export default function DashboardPage() {
               ? ('negative' as const)
               : ('neutral' as const),
           icon: DollarSign,
-          gradient: 'from-violet-500 to-purple-500',
+          gradient: statGradients.financial,
         },
         {
           name: 'Klienci',
@@ -182,7 +174,7 @@ export default function DashboardPage() {
           change: `+${overview.newClientsThisMonth} nowych ten miesiąc`,
           changeType: overview.newClientsThisMonth > 0 ? ('positive' as const) : ('neutral' as const),
           icon: Users,
-          gradient: 'from-indigo-500 to-blue-500',
+          gradient: statGradients.count,
         },
         {
           name: 'Oczekujące Zaliczki',
@@ -193,7 +185,7 @@ export default function DashboardPage() {
               : 'wszystko opłacone',
           changeType: overview.pendingDepositsCount > 0 ? ('negative' as const) : ('positive' as const),
           icon: Wallet,
-          gradient: 'from-rose-500 to-pink-500',
+          gradient: statGradients.alert,
         },
       ]
     : []
@@ -244,7 +236,7 @@ export default function DashboardPage() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className={layout.statGrid6}>
         {isLoadingOverview
           ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
           : stats.map((stat, index) => (
@@ -290,7 +282,7 @@ export default function DashboardPage() {
           {isLoadingUpcoming ? (
             Array.from({ length: 3 }).map((_, i) => <SkeletonEvent key={i} />)
           ) : upcomingError ? (
-            <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
+            <div className="text-center py-8 text-neutral-500 dark:text-neutral-300">
               <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">Nie udało się pobrać nadchodzących wydarzeń</p>
             </div>
@@ -311,16 +303,16 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.6 + index * 0.08 }}
                   onClick={() => handleEventClick(event.id)}
-                  className="group flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-all duration-200 hover:-translate-y-0.5 border border-neutral-100 dark:border-neutral-700/50 cursor-pointer"
+                  className="group flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-all duration-200 hover:-translate-y-0.5 border border-neutral-100 dark:border-neutral-700/50 cursor-pointer"
                 >
                   <div
                     className={cn(
-                      'flex h-16 w-16 flex-col items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg flex-shrink-0',
+                      'flex h-10 w-10 sm:h-16 sm:w-16 flex-col items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg flex-shrink-0',
                       accent.iconBg
                     )}
                   >
-                    <span className="text-xs font-semibold">{dateInfo.month}</span>
-                    <span className="text-2xl font-bold">{dateInfo.day}</span>
+                    <span className="text-[10px] sm:text-xs font-semibold">{dateInfo.month}</span>
+                    <span className="text-base sm:text-2xl font-bold">{dateInfo.day}</span>
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -337,14 +329,14 @@ export default function DashboardPage() {
                         {statusInfo.emoji} {statusInfo.label}
                       </span>
                     </div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-300">
                       {clientName}
                       {event.startTime && ` • ${event.startTime}`}
                       {event.hall && ` • ${event.hall.name}`}
                       {event.guests > 0 && ` • ${event.guests} os.`}
                     </p>
                     {Number(event.totalPrice) > 0 && (
-                      <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+                      <p className="text-xs text-neutral-600 dark:text-neutral-300 mt-1">
                         💰 Wartość: {formatCurrency(Number(event.totalPrice))}
                       </p>
                     )}
@@ -365,7 +357,7 @@ export default function DashboardPage() {
               )
             })
           ) : (
-            <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
+            <div className="text-center py-8 text-neutral-500 dark:text-neutral-300">
               <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">Brak nadchodzących wydarzeń</p>
               <Link

@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { ErrorState } from '@/components/shared/ErrorState'
+import { LoadingState } from '@/components/shared/LoadingState'
 import { useClient, useUpdateClient } from '@/lib/api/clients'
 import type { ClientType } from '@/types'
 import Link from 'next/link'
@@ -116,32 +118,27 @@ export default function EditClientPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Wczytywanie...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <LoadingState message="Wczytywanie klienta..." />
       </div>
     )
   }
 
   if (error || !client) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <Card className="border-0 shadow-xl max-w-md">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="h-8 w-8 text-red-600" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Błąd ładowania</h3>
-            <p className="text-muted-foreground mb-6">
-              {error instanceof Error ? error.message : 'Klient nie został znaleziony'}
-            </p>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-6">
+        <div className="max-w-md w-full">
+          <ErrorState
+            variant="card"
+            title="Błąd ładowania"
+            message={error instanceof Error ? error.message : 'Klient nie został znaleziony'}
+          />
+          <div className="text-center mt-4">
             <Link href="/dashboard/clients">
               <Button variant="outline" size="lg">Powrót do listy klientów</Button>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     )
   }
@@ -197,7 +194,7 @@ export default function EditClientPage() {
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 rounded-xl border-2 font-semibold text-lg transition-all ${
                     clientType === 'INDIVIDUAL'
                       ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-500'
-                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
                   }`}
                 >
                   <User className="h-6 w-6" />
@@ -209,7 +206,7 @@ export default function EditClientPage() {
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 rounded-xl border-2 font-semibold text-lg transition-all ${
                     clientType === 'COMPANY'
                       ? 'border-purple-500 bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-500'
-                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
+                      : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
                   }`}
                 >
                   <Building2 className="h-6 w-6" />

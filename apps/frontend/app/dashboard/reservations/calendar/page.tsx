@@ -21,15 +21,17 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { PageLayout, PageHero, StatCard } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { PageLayout, PageHero, StatCard, ErrorState } from '@/components/shared'
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { getReservations } from '@/lib/api/reservations'
 import {
   useCalendarReservations,
   useCalendarHalls,
   CalendarReservation,
 } from '@/lib/api/calendar-api'
-import { DAYS_PL, MONTHS_PL, STATUS_CONFIG } from './calendar.constants'
+import { DAYS_PL, MONTHS_PL } from './calendar.constants'
+import { reservationStatusColors } from '@/lib/status-colors'
 import { getMonthGrid, dateKey, isToday, buildPillTooltip } from './calendar.helpers'
 import DayDetailPanel from './DayDetailPanel'
 
@@ -43,7 +45,7 @@ function ReservationPill({
   onClick: () => void
 }) {
   const color = reservation.eventType?.color || '#6366f1'
-  const status = STATUS_CONFIG[reservation.status]
+  const status = reservationStatusColors[reservation.status]
   const name = reservation.client
     ? `${reservation.client.firstName} ${reservation.client.lastName.charAt(0)}.`
     : 'Klient'
@@ -54,7 +56,7 @@ function ReservationPill({
       style={{ backgroundColor: `${color}18`, color, borderLeft: `3px solid ${color}` }}
       title={buildPillTooltip(reservation, allDayReservations)}
     >
-      <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0', status?.dotClass || 'bg-neutral-400')} />
+      <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0', status?.dot || 'bg-neutral-400')} />
       {reservation.startTime && <span className="opacity-70">{reservation.startTime} </span>}
       {name}
     </button>
@@ -221,6 +223,25 @@ export default function CalendarPage() {
 
   const MAX_PILLS = 3
 
+  const DAYS_FULL_PL = ['niedziela', 'poniedziałek', 'wtorek', 'środa', 'czwartek', 'piątek', 'sobota']
+  const MONTHS_GENITIVE_PL = [
+    'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
+    'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia',
+  ]
+
+  /** Sorted date keys for the mobile agenda view */
+  const sortedAgendaDates = useMemo(() => {
+    return Array.from(reservationsByDate.keys()).sort()
+  }, [reservationsByDate])
+
+  const formatAgendaDate = (dateStr: string) => {
+    const d = new Date(dateStr + 'T00:00:00')
+    const dayName = DAYS_FULL_PL[d.getDay()]
+    const dayNum = d.getDate()
+    const monthName = MONTHS_GENITIVE_PL[d.getMonth()]
+    return `${dayName.charAt(0).toUpperCase() + dayName.slice(1)}, ${dayNum} ${monthName}`
+  }
+
   return (
     <PageLayout>
       {/* Hero */}
@@ -232,7 +253,7 @@ export default function CalendarPage() {
         action={
           <Button
             size="lg"
-            onClick={() => router.push('/dashboard/reservations/list?create=true')}
+            onClick={() => router.push('/dashboard/reservations/new')}
             className="bg-white text-blue-600 hover:bg-white/90 shadow-xl"
           >
             <Plus className="h-5 w-5 sm:mr-2" />
@@ -242,11 +263,11 @@ export default function CalendarPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={CalendarIcon} iconGradient="from-blue-500 to-cyan-500" delay={0.1} />
-        <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient="from-emerald-500 to-teal-500" delay={0.2} />
-        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
-        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient="from-violet-500 to-purple-500" delay={0.4} />
+      <div className={layout.statGrid}>
+        <StatCard label="Wszystkie" value={stats.total} subtitle="Łącznie rezerwacji" icon={CalendarIcon} iconGradient={statGradients.count} delay={0.1} />
+        <StatCard label="Potwierdzone" value={stats.confirmed} subtitle="Aktywne rezerwacje" icon={CheckCircle2} iconGradient={statGradients.success} delay={0.2} />
+        <StatCard label="Oczekujące" value={stats.pending} subtitle="Do potwierdzenia" icon={Clock} iconGradient={statGradients.alert} delay={0.3} />
+        <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient={statGradients.info} delay={0.4} />
       </div>
 
       {/* Controls bar */}
@@ -255,7 +276,7 @@ export default function CalendarPage() {
           <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">
             <Link
               href="/dashboard/reservations/list"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-sm font-medium text-neutral-500 dark:text-neutral-300 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
             >
               <List className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Lista</span>
@@ -285,88 +306,159 @@ export default function CalendarPage() {
         {halls && halls.length > 0 && (
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-neutral-400 flex-shrink-0" />
-            <select value={hallFilter} onChange={(e) => setHallFilter(e.target.value)}
-              className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1.5 text-sm text-neutral-700 dark:text-neutral-300 focus:ring-2 focus:ring-ring focus:border-transparent w-full sm:w-auto"
-            >
-              <option value="all">Wszystkie sale</option>
-              {halls.filter((h) => h.isActive).map((h) => (<option key={h.id} value={h.id}>{h.name}</option>))}
-            </select>
+            <Select value={hallFilter} onValueChange={setHallFilter}>
+              <SelectTrigger className="w-auto min-w-[160px] h-9">
+                <SelectValue placeholder="Wszystkie sale" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie sale</SelectItem>
+                {halls.filter((h) => h.isActive).map((h) => (
+                  <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 flex items-center gap-3">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700 dark:text-red-300">Nie udało się załadować rezerwacji</p>
-        </div>
+        <ErrorState message="Nie udało się załadować rezerwacji" variant="banner" />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className={cn('lg:col-span-2', selectedDate ? '' : 'lg:col-span-3')}>
           {isLoading ? <SkeletonGrid /> : (
-            <div className="rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 overflow-hidden">
-              <div className="grid grid-cols-7 bg-neutral-50 dark:bg-neutral-800">
-                {DAYS_PL.map((day, i) => (
-                  <div key={day} className={cn('py-2 sm:py-2.5 text-center text-[10px] sm:text-xs font-semibold uppercase tracking-wider',
-                    i >= 5 ? 'text-rose-400 dark:text-rose-500' : 'text-neutral-500 dark:text-neutral-400'
-                  )}>{day}</div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-neutral-700">
-                {days.map((dayInfo, idx) => {
-                  const key = dateKey(dayInfo.date)
-                  const dayReservations = reservationsByDate.get(key) || []
-                  const isTodayCell = isToday(dayInfo.date)
-                  const isSelected = selectedDate && dateKey(selectedDate) === key
-                  const isWeekend = idx % 7 >= 5
-                  return (
-                    <div key={idx} onClick={() => setSelectedDate(dayInfo.date)}
-                      className={cn(
-                        'min-h-[68px] sm:min-h-[90px] md:min-h-[110px] p-1 sm:p-1.5 cursor-pointer transition-colors',
-                        dayInfo.isCurrentMonth ? 'bg-white dark:bg-neutral-800/80' : 'bg-neutral-50/70 dark:bg-neutral-900/40',
-                        isSelected && 'ring-2 ring-indigo-500 ring-inset',
-                        !isSelected && 'hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10'
-                      )}
-                    >
-                      <div className="flex items-center justify-between mb-0.5 sm:mb-1">
-                        <span className={cn(
-                          'text-[10px] sm:text-xs font-medium w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full',
-                          !dayInfo.isCurrentMonth && 'text-neutral-300 dark:text-neutral-600',
-                          dayInfo.isCurrentMonth && !isTodayCell && (isWeekend ? 'text-rose-400 dark:text-rose-500' : 'text-neutral-700 dark:text-neutral-300'),
-                          isTodayCell && 'bg-indigo-600 text-white font-bold'
-                        )}>{dayInfo.day}</span>
-                        {dayReservations.length > 0 && (
-                          <span className="text-[9px] sm:text-[10px] font-medium text-neutral-400 dark:text-neutral-500">{dayReservations.length}</span>
+            <>
+              {/* Desktop/Tablet Calendar Grid */}
+              <div className="hidden md:block rounded-2xl bg-white dark:bg-neutral-800/80 shadow-soft border border-neutral-100 dark:border-neutral-700/50 overflow-hidden">
+                <div className="grid grid-cols-7 bg-neutral-50 dark:bg-neutral-800">
+                  {DAYS_PL.map((day, i) => (
+                    <div key={day} className={cn('py-2 sm:py-2.5 text-center text-[10px] sm:text-xs font-semibold uppercase tracking-wider',
+                      i >= 5 ? 'text-rose-400 dark:text-rose-500' : 'text-neutral-500 dark:text-neutral-300'
+                    )}>{day}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-neutral-700">
+                  {days.map((dayInfo, idx) => {
+                    const key = dateKey(dayInfo.date)
+                    const dayReservations = reservationsByDate.get(key) || []
+                    const isTodayCell = isToday(dayInfo.date)
+                    const isSelected = selectedDate && dateKey(selectedDate) === key
+                    const isWeekend = idx % 7 >= 5
+                    return (
+                      <div key={idx} onClick={() => setSelectedDate(dayInfo.date)}
+                        className={cn(
+                          'min-h-[68px] sm:min-h-[90px] md:min-h-[110px] p-1 sm:p-1.5 cursor-pointer transition-colors',
+                          dayInfo.isCurrentMonth ? 'bg-white dark:bg-neutral-800/80' : 'bg-neutral-50/70 dark:bg-neutral-900/40',
+                          isSelected && 'ring-2 ring-indigo-500 ring-inset',
+                          !isSelected && 'hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10'
                         )}
-                      </div>
+                      >
+                        <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+                          <span className={cn(
+                            'text-[10px] sm:text-xs font-medium w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full',
+                            !dayInfo.isCurrentMonth && 'text-neutral-300 dark:text-neutral-400',
+                            dayInfo.isCurrentMonth && !isTodayCell && (isWeekend ? 'text-rose-400 dark:text-rose-500' : 'text-neutral-700 dark:text-neutral-300'),
+                            isTodayCell && 'bg-indigo-600 text-white font-bold'
+                          )}>{dayInfo.day}</span>
+                          {dayReservations.length > 0 && (
+                            <span className="text-[9px] sm:text-[10px] font-medium text-neutral-400 dark:text-neutral-500">{dayReservations.length}</span>
+                          )}
+                        </div>
 
-                      <div className="sm:hidden">
-                        <MobileDots reservations={dayReservations} />
-                      </div>
+                        <div className="sm:hidden">
+                          <MobileDots reservations={dayReservations} />
+                        </div>
 
-                      <div className="hidden sm:block space-y-0.5">
-                        {dayReservations.slice(0, MAX_PILLS).map((r) => (
-                          <ReservationPill
-                            key={r.id}
-                            reservation={r}
-                            allDayReservations={dayReservations}
-                            onClick={() => router.push(`/dashboard/reservations/${r.id}`)}
-                          />
-                        ))}
-                        {dayReservations.length > MAX_PILLS && (
-                          <div className="text-[10px] text-center text-neutral-400 dark:text-neutral-500 font-medium pt-0.5">
-                            +{dayReservations.length - MAX_PILLS} więcej
-                          </div>
-                        )}
-                        {/* #165: Mini capacity bars for multi-booking halls */}
-                        <CellCapacityBars reservations={dayReservations} />
+                        <div className="hidden sm:block space-y-0.5">
+                          {dayReservations.slice(0, MAX_PILLS).map((r) => (
+                            <ReservationPill
+                              key={r.id}
+                              reservation={r}
+                              allDayReservations={dayReservations}
+                              onClick={() => router.push(`/dashboard/reservations/${r.id}`)}
+                            />
+                          ))}
+                          {dayReservations.length > MAX_PILLS && (
+                            <div className="text-[10px] text-center text-neutral-400 dark:text-neutral-500 font-medium pt-0.5">
+                              +{dayReservations.length - MAX_PILLS} więcej
+                            </div>
+                          )}
+                          {/* #165: Mini capacity bars for multi-booking halls */}
+                          <CellCapacityBars reservations={dayReservations} />
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
-            </div>
+
+              {/* Mobile Agenda View */}
+              <div className="md:hidden space-y-4">
+                {sortedAgendaDates.length === 0 ? (
+                  <div className="text-center py-12 text-neutral-500 dark:text-neutral-400 text-sm">
+                    Brak rezerwacji w tym miesiącu
+                  </div>
+                ) : (
+                  sortedAgendaDates.map((date) => {
+                    const dayReservations = reservationsByDate.get(date) || []
+                    return (
+                      <div key={date}>
+                        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 px-1 border-b border-neutral-200 dark:border-neutral-700">
+                          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                            {formatAgendaDate(date)}
+                          </h3>
+                        </div>
+                        <div className="space-y-2 mt-2">
+                          {dayReservations.map((r) => {
+                            const status = reservationStatusColors[r.status]
+                            const clientName = r.client
+                              ? `${r.client.firstName} ${r.client.lastName}`
+                              : 'Klient'
+                            const eventName = r.eventType?.name || r.customEventType || 'Wydarzenie'
+                            return (
+                              <Link
+                                href={`/dashboard/reservations/${r.id}`}
+                                key={r.id}
+                                className="block p-3 rounded-xl border border-neutral-200 dark:border-neutral-700/50 bg-white dark:bg-neutral-800/80 hover:shadow-md transition-shadow"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                                    <Clock className="inline h-3.5 w-3.5 mr-1 text-neutral-400" />
+                                    {r.startTime} - {r.endTime}
+                                  </span>
+                                  {status && (
+                                    <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full', status.bg, status.text)}>
+                                      {status.label}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+                                  {eventName}
+                                </div>
+                                <div className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1 flex-wrap">
+                                  {r.hall && (
+                                    <>
+                                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                                      <span>{r.hall.name}</span>
+                                      <span className="text-neutral-300 dark:text-neutral-400">&#183;</span>
+                                    </>
+                                  )}
+                                  <Users className="h-3 w-3 flex-shrink-0" />
+                                  <span>{clientName}</span>
+                                  <span className="text-neutral-300 dark:text-neutral-400">&#183;</span>
+                                  <span>{r.guests} os.</span>
+                                </div>
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </>
           )}
         </div>
         <AnimatePresence>
@@ -384,7 +476,7 @@ export default function CalendarPage() {
       </div>
 
       {eventTypes.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-neutral-500 dark:text-neutral-300">
           <span className="font-semibold">Typy wydarzeń:</span>
           {eventTypes.map((et) => (
             <span key={et.name} className="flex items-center gap-1.5">
@@ -393,9 +485,9 @@ export default function CalendarPage() {
             </span>
           ))}
           <span className="ml-2 sm:ml-4 font-semibold">Statusy:</span>
-          {Object.values(STATUS_CONFIG).filter((s) => s.label !== 'Anulowane').map((s) => (
+          {Object.values(reservationStatusColors).filter((s) => s.label !== 'Anulowana').map((s) => (
             <span key={s.label} className="flex items-center gap-1.5">
-              <span className={cn('w-2 h-2 rounded-full flex-shrink-0', s.dotClass)} />
+              <span className={cn('w-2 h-2 rounded-full flex-shrink-0', s.dot)} />
               {s.label}
             </span>
           ))}

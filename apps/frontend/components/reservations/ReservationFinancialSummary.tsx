@@ -20,7 +20,8 @@ import {
   type ReservationFinancialSummaryProps,
   type Financials,
 } from './financial/types'
-import { formatPLN, suggestDueDate } from './financial/utils'
+import { formatCurrency } from '@/lib/utils'
+import { suggestDueDate } from './financial/utils'
 
 // Component
 export function ReservationFinancialSummary({
@@ -308,7 +309,7 @@ export function ReservationFinancialSummary({
                 <span className="text-sm font-semibold">Koszty usług</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold">{formatPLN(effectiveTotalPrice)} zł</span>
+                <span className="text-sm font-bold">{formatCurrency(effectiveTotalPrice)}</span>
                 {showCostDetails ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
               </div>
             </button>

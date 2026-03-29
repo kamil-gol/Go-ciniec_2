@@ -66,7 +66,7 @@ export function StepSummary({ state, set, selectedClient, goToStep }: StepSummar
             selectedClient.clientType === 'COMPANY' && selectedClient.companyName ? (
               <>
                 <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.companyName}</p>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">{selectedClient.firstName} {selectedClient.lastName}</p>
+                <p className="text-sm text-neutral-600 dark:text-neutral-300">{selectedClient.firstName} {selectedClient.lastName}</p>
               </>
             ) : (
               <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient?.firstName} {selectedClient?.lastName}</p>
@@ -79,8 +79,8 @@ export function StepSummary({ state, set, selectedClient, goToStep }: StepSummar
             <span className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase">Szczegóły</span>
           </div>
           <p className="font-semibold text-neutral-900 dark:text-neutral-100">{state.eventName || '—'}</p>
-          {state.eventDate && <p className="text-sm text-neutral-600 dark:text-neutral-400">{formatDatePl(state.eventDate)}</p>}
-          {parseInt(state.guestsCount) > 0 && <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.guestsCount} osób</p>}
+          {state.eventDate && <p className="text-sm text-neutral-600 dark:text-neutral-300">{formatDatePl(state.eventDate)}</p>}
+          {parseInt(state.guestsCount) > 0 && <p className="text-sm text-neutral-600 dark:text-neutral-300">{state.guestsCount} osób</p>}
         </div>
         <div className="p-4 rounded-xl border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 cursor-pointer hover:border-green-400 dark:hover:border-green-600 transition-colors" onClick={() => goToStep(3)}>
           <div className="flex items-center gap-2 mb-2">
@@ -90,7 +90,7 @@ export function StepSummary({ state, set, selectedClient, goToStep }: StepSummar
           <p className="font-semibold text-neutral-900 dark:text-neutral-100">
             {state.items.length} {state.items.length === 1 ? 'danie' : state.items.length < 5 ? 'dania' : 'dań'}
           </p>
-          {state.extras.length > 0 && <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.extras.length} usług dodatkowych</p>}
+          {state.extras.length > 0 && <p className="text-sm text-neutral-600 dark:text-neutral-300">{state.extras.length} usług dodatkowych</p>}
         </div>
         <div className="p-4 rounded-xl border bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 cursor-pointer hover:border-rose-400 dark:hover:border-rose-600 transition-colors" onClick={() => goToStep(4)}>
           <div className="flex items-center gap-2 mb-2">
@@ -98,9 +98,9 @@ export function StepSummary({ state, set, selectedClient, goToStep }: StepSummar
             <span className="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase">Logistyka</span>
           </div>
           <p className="font-semibold text-neutral-900 dark:text-neutral-100">{DELIVERY_TYPE_LABEL[state.deliveryType]}</p>
-          {formattedAddress && <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate">{formattedAddress}</p>}
-          {state.deliveryTime && <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.deliveryType === 'PICKUP' ? 'Odbiór:' : 'Godzina:'} {state.deliveryTime}</p>}
-          {state.eventDate && <p className="text-sm text-neutral-600 dark:text-neutral-400">{formatDatePl(state.eventDate)}</p>}
+          {formattedAddress && <p className="text-sm text-neutral-600 dark:text-neutral-300 truncate">{formattedAddress}</p>}
+          {state.deliveryTime && <p className="text-sm text-neutral-600 dark:text-neutral-300">{state.deliveryType === 'PICKUP' ? 'Odbiór:' : 'Godzina:'} {state.deliveryTime}</p>}
+          {state.eventDate && <p className="text-sm text-neutral-600 dark:text-neutral-300">{formatDatePl(state.eventDate)}</p>}
         </div>
       </div>
     </div>

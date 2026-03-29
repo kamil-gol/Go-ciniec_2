@@ -6,7 +6,6 @@ import {
   Plus,
   FileDown,
   CheckCircle2,
-  Clock,
   XCircle,
   Loader2,
   ExternalLink,
@@ -23,13 +22,13 @@ import { toast } from 'sonner'
 import Link from 'next/link'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  statusConfig,
   paymentMethodIcons,
   getDaysLabel,
   formatDate,
   suggestDueDate,
   type ReservationDepositsSectionProps,
 } from './deposits-section/deposits-config'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import { DeletePaidDepositDialog } from './deposits-section/DeletePaidDepositDialog'
 import { CreateDepositDialog } from './deposits-section/CreateDepositDialog'
 import { MarkAsPaidDialog } from './deposits-section/MarkAsPaidDialog'
@@ -293,8 +292,6 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
           {!loading && deposits.length > 0 && (
             <div className="space-y-3">
               {deposits.map((deposit) => {
-                const status = statusConfig[deposit.status]
-                const StatusIcon = status?.icon || Clock
                 const isPending = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
                 const isPaid = deposit.status === 'PAID'
                 const isCancelled = deposit.status === 'CANCELLED'
@@ -324,10 +321,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
                           </span>
                         )}
                       </div>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${status?.className || ''}`}>
-                        <StatusIcon className="h-3 w-3" />
-                        {status?.label || deposit.status}
-                      </span>
+                      <StatusBadge type="deposit" status={deposit.status} />
                     </div>
 
                     {/* Row 2: Due date + Payment method */}
@@ -399,7 +393,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
                         <button
                           onClick={() => handleCancel(deposit)}
                           disabled={isActioning}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700 dark:hover:bg-neutral-700 transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-neutral-50 text-neutral-500 border border-neutral-200 hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700 dark:hover:bg-neutral-700 transition-colors"
                         >
                           <XCircle className="h-3 w-3" />
                           Anuluj

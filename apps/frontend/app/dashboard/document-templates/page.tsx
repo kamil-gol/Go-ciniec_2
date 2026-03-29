@@ -35,7 +35,7 @@ import {
   EmptyState,
 } from '@/components/shared';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { moduleAccents } from '@/lib/design-tokens';
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import {
   TEMPLATE_CATEGORY_LABELS,
   TEMPLATE_CATEGORY_ORDER,
@@ -189,13 +189,13 @@ export default function DocumentTemplatesPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className={layout.statGrid}>
         <StatCard
           label="Wszystkie szablony"
           value={stats.total}
           subtitle="W systemie"
           icon={ScrollText}
-          iconGradient="from-cyan-500 to-blue-500"
+          iconGradient={statGradients.count}
           delay={0.1}
         />
         <StatCard
@@ -203,7 +203,7 @@ export default function DocumentTemplatesPage() {
           value={stats.pdf}
           subtitle="Rezerwacje i catering"
           icon={FileText}
-          iconGradient="from-blue-500 to-indigo-500"
+          iconGradient={statGradients.info}
           delay={0.2}
         />
         <StatCard
@@ -211,7 +211,7 @@ export default function DocumentTemplatesPage() {
           value={stats.email}
           subtitle="Wiadomości"
           icon={Mail}
-          iconGradient="from-violet-500 to-purple-500"
+          iconGradient={statGradients.info}
           delay={0.3}
         />
         <StatCard
@@ -219,7 +219,7 @@ export default function DocumentTemplatesPage() {
           value={stats.policy}
           subtitle="Dokumenty prawne"
           icon={BookOpen}
-          iconGradient="from-amber-500 to-orange-500"
+          iconGradient={statGradients.neutral}
           delay={0.4}
         />
       </div>
@@ -278,13 +278,15 @@ export default function DocumentTemplatesPage() {
             <EmptyState
               icon={ScrollText}
               title="Brak szablonów"
-              description="Uruchom seed aby utworzyć domyślne szablony lub dodaj nowy szablon"
+              description="Nie ma jeszcze żadnych szablonów dokumentów. Dodaj nowy szablon, aby rozpocząć tworzenie dokumentów PDF, e-mail i regulaminów."
+              actionLabel="Dodaj nowy szablon"
+              onAction={openCreateDialog}
             />
           ) : filteredCategories.length === 0 ? (
             <EmptyState
               icon={Search}
               title="Nie znaleziono"
-              description="Spróbuj użyć innego wyszukiwania"
+              description="Żaden szablon nie pasuje do wyszukiwania. Spróbuj użyć innej frazy lub zmień filtr kategorii."
             />
           ) : (
             <div className="space-y-8">

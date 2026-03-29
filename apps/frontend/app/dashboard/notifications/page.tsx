@@ -147,22 +147,24 @@ export default function NotificationsPage() {
           icon={Bell}
           title={filter === 'unread' ? 'Brak nieprzeczytanych' : 'Brak powiadomień'}
           description={filter === 'unread'
-            ? 'Wszystkie powiadomienia zostały przeczytane'
-            : 'Powiadomienia pojawią się tutaj automatycznie'
+            ? 'Wszystkie powiadomienia zostały przeczytane. Nowe powiadomienia pojawią się, gdy nastąpią zmiany w rezerwacjach, zaliczkach lub kolejce.'
+            : 'Powiadomienia pojawią się tutaj automatycznie, gdy nastąpią zmiany w systemie rezerwacji, zaliczek lub kolejki.'
           }
+          actionLabel="Przejdź do rezerwacji"
+          actionHref="/dashboard/reservations"
         />
       )}
 
       {/* Notifications grouped by day */}
       {!isLoading && Object.entries(groupedNotifications).map(([dayKey, dayNotifs]) => (
         <div key={dayKey}>
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3 px-1">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-300 mb-3 px-1">
             {formatDate(dayNotifs[0].createdAt)}
           </h2>
           <div className="space-y-2">
             {dayNotifs.map((notif, i) => {
               const Icon = typeIcons[notif.type] || Bell
-              const colorClass = typeColors[notif.type] || 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
+              const colorClass = typeColors[notif.type] || 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
 
               return (
                 <motion.div
@@ -193,7 +195,7 @@ export default function NotificationsPage() {
                         <span className="h-2 w-2 rounded-full bg-amber-500 flex-shrink-0" />
                       )}
                     </div>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-2">
+                    <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-0.5 line-clamp-2">
                       {notif.message}
                     </p>
                     <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1.5">
@@ -219,7 +221,7 @@ export default function NotificationsPage() {
             <ChevronLeft className="h-4 w-4 mr-1" />
             Poprzednia
           </Button>
-          <span className="text-sm text-neutral-500 dark:text-neutral-400 tabular-nums">
+          <span className="text-sm text-neutral-500 dark:text-neutral-300 tabular-nums">
             {page} z {pagination.totalPages}
           </span>
           <Button

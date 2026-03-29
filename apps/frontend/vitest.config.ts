@@ -74,6 +74,8 @@ export default defineConfig({
       { find: '@radix-ui/react-select', replacement: mock('radix-stub.ts') },
       { find: '@radix-ui/react-switch', replacement: mock('radix-switch.ts') },
       { find: '@radix-ui/react-label', replacement: mock('radix-label.ts') },
+      { find: '@radix-ui/react-dropdown-menu', replacement: mock('radix-stub.ts') },
+      { find: '@radix-ui/react-tabs', replacement: mock('radix-tabs.ts') },
       { find: '@radix-ui/react-slot', replacement: mock('radix-stub.ts') },
 
       // ── Other heavy deps ──

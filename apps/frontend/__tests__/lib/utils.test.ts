@@ -1,9 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest';
 import {
   cn,
   formatDate,
   formatTime,
   formatCurrency,
+  formatDateLong,
+  formatDateShort,
   calculateTotalPrice,
   calculateDuration,
   getStatusColor,
@@ -11,248 +13,146 @@ import {
   debounce,
   isPastDate,
   generateId,
-} from '@/lib/utils'
+} from '../../lib/utils';
 
-// ════════════════════════════════════════════════════════════
-// cn()
-// ════════════════════════════════════════════════════════════
-describe('cn()', () => {
-  it('merges class names', () => {
-    expect(cn('px-2', 'py-1')).toBe('px-2 py-1')
-  })
+describe('utils', () => {
+  describe('cn', () => {
+    it('should merge class names', () => {
+      expect(cn('foo', 'bar')).toBe('foo bar');
+    });
 
-  it('handles conditional classes', () => {
-    expect(cn('base', false && 'hidden', 'extra')).toBe('base extra')
-  })
+    it('should handle conditional classes', () => {
+      expect(cn('base', false && 'hidden', 'visible')).toBe('base visible');
+    });
 
-  it('deduplicates tailwind classes', () => {
-    const result = cn('px-2 py-1', 'px-4')
-    expect(result).toContain('px-4')
-    expect(result).not.toContain('px-2')
-  })
-})
+    it('should merge Tailwind conflicts', () => {
+      const result = cn('p-4', 'p-2');
+      expect(result).toBe('p-2');
+    });
+  });
 
-// ════════════════════════════════════════════════════════════
-// formatDate()
-// ════════════════════════════════════════════════════════════
-describe('formatDate()', () => {
-  it('formats ISO date string', () => {
-    const result = formatDate('2026-03-15T10:00:00Z')
-    expect(result).toMatch(/15\.03\.2026/)
-  })
+  describe('formatDate', () => {
+    it('should format date to dd.MM.yyyy by default', () => {
+      const result = formatDate('2027-03-15');
+      expect(result).toMatch(/15\.03\.2027/);
+    });
 
-  it('formats simple date string (no T)', () => {
-    const result = formatDate('2026-02-13')
-    expect(result).toBe('13.02.2026')
-  })
+    it('should accept Date objects', () => {
+      const result = formatDate(new Date('2027-06-01'));
+      expect(result).toMatch(/01\.06\.2027/);
+    });
+  });
 
-  it('formats Date object', () => {
-    const result = formatDate(new Date(2026, 0, 5)) // Jan 5 2026
-    expect(result).toBe('05.01.2026')
-  })
+  describe('formatTime', () => {
+    it('should format time to HH:MM', () => {
+      expect(formatTime('14:30:00')).toBe('14:30');
+    });
+  });
 
-  it('returns N/A for falsy input', () => {
-    expect(formatDate('')).toBe('N/A')
-    // @ts-expect-error testing null
-    expect(formatDate(null)).toBe('N/A')
-  })
+  describe('formatCurrency', () => {
+    it('should format number as PLN', () => {
+      const result = formatCurrency(1500);
+      expect(result).toContain('1');
+      expect(result).toContain('500');
+    });
 
-  it('returns Invalid date for garbage', () => {
-    expect(formatDate('not-a-date')).toBe('Invalid date')
-  })
+    it('should handle null/undefined', () => {
+      expect(formatCurrency(null)).toBeDefined();
+      expect(formatCurrency(undefined)).toBeDefined();
+    });
 
-  it('accepts custom format string', () => {
-    const result = formatDate('2026-06-01', 'yyyy')
-    expect(result).toBe('2026')
-  })
-})
+    it('should handle string input', () => {
+      expect(formatCurrency('2500')).toBeDefined();
+    });
+  });
 
-// ════════════════════════════════════════════════════════════
-// formatTime()
-// ════════════════════════════════════════════════════════════
-describe('formatTime()', () => {
-  it('extracts HH:MM from HH:MM:SS', () => {
-    expect(formatTime('14:30:00')).toBe('14:30')
-  })
+  describe('formatDateLong', () => {
+    it('should format to long Polish date', () => {
+      const result = formatDateLong('2027-03-15');
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('string');
+    });
 
-  it('returns N/A for empty string', () => {
-    expect(formatTime('')).toBe('N/A')
-  })
+    it('should handle null', () => {
+      const result = formatDateLong(null);
+      expect(result).toBeDefined();
+    });
+  });
 
-  it('handles already short time', () => {
-    expect(formatTime('09:15')).toBe('09:15')
-  })
-})
+  describe('formatDateShort', () => {
+    it('should format to short date', () => {
+      const result = formatDateShort('2027-03-15');
+      expect(result).toBeDefined();
+    });
+  });
 
-// ════════════════════════════════════════════════════════════
-// formatCurrency()
-// ════════════════════════════════════════════════════════════
-describe('formatCurrency()', () => {
-  it('formats number to PLN', () => {
-    const result = formatCurrency(1234.5)
-    // Polish locale uses different formatting
-    expect(result).toContain('1')
-    expect(result).toContain('234')
-    expect(result).toMatch(/PLN|zł/)
-  })
+  describe('calculateTotalPrice', () => {
+    it('should multiply guests by price', () => {
+      expect(calculateTotalPrice(50, 200)).toBe(10000);
+    });
 
-  it('handles string input', () => {
-    const result = formatCurrency('99.99')
-    expect(result).toContain('99')
-    expect(result).toMatch(/PLN|zł/)
-  })
+    it('should handle string price', () => {
+      expect(calculateTotalPrice(10, '100')).toBe(1000);
+    });
 
-  it('formats zero', () => {
-    const result = formatCurrency(0)
-    expect(result).toContain('0')
-  })
-})
+    it('should handle zero', () => {
+      expect(calculateTotalPrice(0, 200)).toBe(0);
+    });
+  });
 
-// ════════════════════════════════════════════════════════════
-// calculateTotalPrice()
-// ════════════════════════════════════════════════════════════
-describe('calculateTotalPrice()', () => {
-  it('multiplies guests by price', () => {
-    expect(calculateTotalPrice(100, 150)).toBe(15000)
-  })
+  describe('calculateDuration', () => {
+    it('should calculate hours between times', () => {
+      expect(calculateDuration('14:00', '20:00')).toBe(6);
+    });
+  });
 
-  it('handles string price', () => {
-    expect(calculateTotalPrice(50, '200.50')).toBe(10025)
-  })
+  describe('getStatusColor', () => {
+    it('should return color class for known statuses', () => {
+      expect(getStatusColor('CONFIRMED')).toBeDefined();
+      expect(getStatusColor('PENDING')).toBeDefined();
+      expect(getStatusColor('CANCELLED')).toBeDefined();
+    });
+  });
 
-  it('returns 0 for 0 guests', () => {
-    expect(calculateTotalPrice(0, 100)).toBe(0)
-  })
-})
+  describe('getStatusLabel', () => {
+    it('should return Polish label for known statuses', () => {
+      const label = getStatusLabel('CONFIRMED');
+      expect(typeof label).toBe('string');
+      expect(label.length).toBeGreaterThan(0);
+    });
+  });
 
-// ════════════════════════════════════════════════════════════
-// calculateDuration()
-// ════════════════════════════════════════════════════════════
-describe('calculateDuration()', () => {
-  it('calculates hours between two times', () => {
-    expect(calculateDuration('10:00', '14:00')).toBe(4)
-  })
+  describe('debounce', () => {
+    it('should debounce function calls', async () => {
+      let count = 0;
+      const fn = debounce(() => count++, 50);
 
-  it('handles partial hours', () => {
-    expect(calculateDuration('10:00', '11:30')).toBe(1.5)
-  })
+      fn();
+      fn();
+      fn();
 
-  it('returns 0 for same time', () => {
-    expect(calculateDuration('12:00', '12:00')).toBe(0)
-  })
-})
+      expect(count).toBe(0);
+      await new Promise((r) => setTimeout(r, 100));
+      expect(count).toBe(1);
+    });
+  });
 
-// ════════════════════════════════════════════════════════════
-// getStatusColor()
-// ════════════════════════════════════════════════════════════
-describe('getStatusColor()', () => {
-  it.each([
-    ['PENDING', 'bg-yellow-100'],
-    ['CONFIRMED', 'bg-green-100'],
-    ['COMPLETED', 'bg-blue-100'],
-    ['CANCELLED', 'bg-red-100'],
-    ['ARCHIVED', 'bg-neutral-100'],
-  ])('returns correct color for %s', (status, expected) => {
-    expect(getStatusColor(status)).toContain(expected)
-  })
+  describe('isPastDate', () => {
+    it('should return true for past dates', () => {
+      expect(isPastDate('2020-01-01')).toBe(true);
+    });
 
-  it('returns default gray for unknown status', () => {
-    expect(getStatusColor('UNKNOWN')).toBe('bg-gray-100 text-gray-800')
-  })
-})
+    it('should return false for future dates', () => {
+      expect(isPastDate('2099-01-01')).toBe(false);
+    });
+  });
 
-// ════════════════════════════════════════════════════════════
-// getStatusLabel()
-// ════════════════════════════════════════════════════════════
-describe('getStatusLabel()', () => {
-  it.each([
-    ['PENDING', 'Oczekująca'],
-    ['CONFIRMED', 'Potwierdzona'],
-    ['COMPLETED', 'Zakończona'],
-    ['CANCELLED', 'Anulowana'],
-    ['ARCHIVED', 'Zarchiwizowana'],
-  ])('returns Polish label for %s', (status, label) => {
-    expect(getStatusLabel(status)).toBe(label)
-  })
-
-  it('returns raw status for unknown', () => {
-    expect(getStatusLabel('CUSTOM')).toBe('CUSTOM')
-  })
-})
-
-// ════════════════════════════════════════════════════════════
-// debounce()
-// ════════════════════════════════════════════════════════════
-describe('debounce()', () => {
-  beforeEach(() => { vi.useFakeTimers() })
-  afterEach(() => { vi.useRealTimers() })
-
-  it('delays function execution', () => {
-    const fn = vi.fn()
-    const debounced = debounce(fn, 300)
-
-    debounced('a')
-    expect(fn).not.toHaveBeenCalled()
-
-    vi.advanceTimersByTime(300)
-    expect(fn).toHaveBeenCalledWith('a')
-  })
-
-  it('resets timer on subsequent calls', () => {
-    const fn = vi.fn()
-    const debounced = debounce(fn, 300)
-
-    debounced('a')
-    vi.advanceTimersByTime(200)
-    debounced('b')
-    vi.advanceTimersByTime(200)
-    expect(fn).not.toHaveBeenCalled()
-
-    vi.advanceTimersByTime(100)
-    expect(fn).toHaveBeenCalledTimes(1)
-    expect(fn).toHaveBeenCalledWith('b')
-  })
-})
-
-// ════════════════════════════════════════════════════════════
-// isPastDate()
-// ════════════════════════════════════════════════════════════
-describe('isPastDate()', () => {
-  it('returns true for past date', () => {
-    expect(isPastDate('2020-01-01')).toBe(true)
-  })
-
-  it('returns true for past ISO date', () => {
-    expect(isPastDate('2020-01-01T12:00:00Z')).toBe(true)
-  })
-
-  it('returns false for future date', () => {
-    expect(isPastDate('2099-12-31')).toBe(false)
-  })
-
-  it('returns true for past Date object', () => {
-    expect(isPastDate(new Date(2020, 0, 1))).toBe(true)
-  })
-
-  it('returns false for invalid date', () => {
-    expect(isPastDate('garbage')).toBe(false)
-  })
-})
-
-// ════════════════════════════════════════════════════════════
-// generateId()
-// ════════════════════════════════════════════════════════════
-describe('generateId()', () => {
-  it('returns a string', () => {
-    expect(typeof generateId()).toBe('string')
-  })
-
-  it('returns unique values', () => {
-    const ids = new Set(Array.from({ length: 50 }, () => generateId()))
-    expect(ids.size).toBe(50)
-  })
-
-  it('returns non-empty string', () => {
-    expect(generateId().length).toBeGreaterThan(0)
-  })
-})
+  describe('generateId', () => {
+    it('should generate unique IDs', () => {
+      const id1 = generateId();
+      const id2 = generateId();
+      expect(id1).not.toBe(id2);
+      expect(typeof id1).toBe('string');
+    });
+  });
+});

@@ -1,5 +1,5 @@
 /**
- * CreateClientForm Component Tests
+ * CreateClientForm Component Tests (#436)
  *
  * Tests client creation form:
  * - Form field rendering (individual vs company)
@@ -77,9 +77,9 @@ describe('CreateClientForm', () => {
       expect(screen.getByText('Dodaj klienta')).toBeInTheDocument()
     })
 
-    it('should show section heading "Dane osobowe" for individual', () => {
+    it('should show section heading "Dane podstawowe" for individual', () => {
       render(<CreateClientForm />)
-      expect(screen.getByText('Dane osobowe')).toBeInTheDocument()
+      expect(screen.getByText('Dane podstawowe')).toBeInTheDocument()
     })
   })
 
@@ -154,7 +154,7 @@ describe('CreateClientForm', () => {
       fireEvent.submit(form)
 
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith('Wypełnij wszystkie wymagane pola')
+        expect(toast.error).toHaveBeenCalledWith('Nazwisko jest wymagane')
       })
     })
 
@@ -173,7 +173,7 @@ describe('CreateClientForm', () => {
       fireEvent.click(screen.getByText('Dodaj firmę'))
 
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith('Podaj nazwę firmy')
+        expect(toast.error).toHaveBeenCalledWith('Nazwa firmy jest wymagana')
       })
     })
   })

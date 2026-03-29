@@ -180,7 +180,7 @@ export default function NewHallPage() {
                   placeholder="np. Klimatyzacja, Parking, Wi-Fi..."
                   className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-emerald-500"
                 />
-                <Button type="button" onClick={addAmenity} variant="outline" size="lg" className="h-12 px-8">
+                <Button type="button" onClick={addAmenity} variant="outline" size="lg" className="h-12">
                   Dodaj
                 </Button>
               </div>

@@ -88,7 +88,7 @@ export default function SessionTimeoutModal() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="6"
-                className="text-neutral-200 dark:text-neutral-700"
+                className="text-neutral-200 dark:text-neutral-400"
               />
               {/* Progress circle */}
               <circle

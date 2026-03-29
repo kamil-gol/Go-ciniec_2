@@ -10,7 +10,7 @@ import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles } from '
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
-import { moduleAccents } from '@/lib/design-tokens';
+import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
 
 export default function PackagesListPage() {
@@ -85,10 +85,10 @@ export default function PackagesListPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
-        <StatCard label="Wszystkie" value={packages.length} subtitle="Pakiety w systemie" icon={Package} iconGradient="from-blue-500 to-indigo-500" delay={0.1} />
-        <StatCard label="Polecane" value={packages.filter(p => p.isRecommended).length} subtitle="Oznaczone gwiazdką" icon={Star} iconGradient="from-green-500 to-emerald-500" delay={0.2} />
-        <StatCard label="Popularne" value={packages.filter(p => p.isPopular).length} subtitle="Najczęściej wybierane" icon={TrendingUp} iconGradient="from-amber-500 to-orange-500" delay={0.3} />
+      <div className={layout.statGrid3}>
+        <StatCard label="Wszystkie" value={packages.length} subtitle="Pakiety w systemie" icon={Package} iconGradient={statGradients.count} delay={0.1} />
+        <StatCard label="Polecane" value={packages.filter(p => p.isRecommended).length} subtitle="Oznaczone gwiazdką" icon={Star} iconGradient={statGradients.success} delay={0.2} />
+        <StatCard label="Popularne" value={packages.filter(p => p.isPopular).length} subtitle="Najczęściej wybierane" icon={TrendingUp} iconGradient={statGradients.financial} delay={0.3} />
       </div>
 
       {/* Packages Grid */}
@@ -135,7 +135,7 @@ export default function PackagesListPage() {
                           {pkg.name}
                         </h3>
                         {pkg.shortDescription && (
-                          <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2">{pkg.shortDescription}</p>
+                          <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 line-clamp-2">{pkg.shortDescription}</p>
                         )}
                       </div>
                       {pkg.icon && (
@@ -171,7 +171,7 @@ export default function PackagesListPage() {
                           <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded sm:rounded-lg flex-shrink-0">
                             <Users className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
-                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400 truncate">Dorośli</span>
+                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-300 truncate">Dorośli</span>
                         </div>
                         <div className="flex items-baseline gap-0.5">
                           <span className="text-base sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{pkg.pricePerAdult}</span>
@@ -183,7 +183,7 @@ export default function PackagesListPage() {
                           <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded sm:rounded-lg flex-shrink-0">
                             <Users className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
-                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400 truncate">Dzieci</span>
+                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-300 truncate">Dzieci</span>
                         </div>
                         <div className="flex items-baseline gap-0.5">
                           <span className="text-base sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{pkg.pricePerChild}</span>
@@ -195,7 +195,7 @@ export default function PackagesListPage() {
                           <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-green-500 to-emerald-500 rounded sm:rounded-lg flex-shrink-0">
                             <Baby className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
-                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-400 truncate">Maluchy</span>
+                          <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-300 truncate">Maluchy</span>
                         </div>
                         <div className="flex items-baseline gap-0.5">
                           <span className="text-base sm:text-2xl font-bold text-green-600 dark:text-green-400">{pkg.pricePerToddler}</span>
@@ -208,7 +208,7 @@ export default function PackagesListPage() {
                   {/* Details */}
                   <div className="px-4 sm:px-6 py-3 sm:py-5">
                     <div className="flex items-center justify-between text-sm mb-3 sm:mb-4">
-                      <span className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 font-medium">
+                      <span className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300 font-medium">
                         <Sparkles className="w-4 h-4 text-blue-500" />
                         {(pkg as any).categorySettings?.filter((cs: any) => cs.isEnabled).length || 0} kategorii
                       </span>
@@ -219,7 +219,7 @@ export default function PackagesListPage() {
                       )}
                     </div>
                     {pkg.description && (
-                      <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 line-clamp-3 leading-relaxed">{pkg.description}</p>
+                      <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 line-clamp-3 leading-relaxed">{pkg.description}</p>
                     )}
                   </div>
 

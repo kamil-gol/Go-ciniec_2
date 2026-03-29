@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { OrderStatusBadge } from '../../components/OrderStatusBadge';
 import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
-import { StatPill } from './SectionCard';
+import { StatPill } from '@/components/shared/SectionCard';
 import { formatPrice, formatDatePl } from './types';
 import type { CateringOrder } from './types';
 

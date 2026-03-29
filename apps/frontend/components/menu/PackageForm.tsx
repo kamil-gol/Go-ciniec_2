@@ -266,7 +266,7 @@ export default function PackageForm({
               placeholder="Krótki opis wyświetlany na karcie pakietu"
               className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
             />
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{formData.shortDescription.length}/100 znaków</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-1">{formData.shortDescription.length}/100 znaków</p>
           </div>
 
           {/* Description */}
@@ -313,7 +313,7 @@ export default function PackageForm({
                 pattern="[0-9]+\.?[0-9]*"
                 className="w-full px-4 py-3 pr-12 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-400 font-medium">zł</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-300 font-medium">zł</span>
             </div>
           </div>
 
@@ -333,7 +333,7 @@ export default function PackageForm({
                 pattern="[0-9]+\.?[0-9]*"
                 className="w-full px-4 py-3 pr-12 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-400 font-medium">zł</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-300 font-medium">zł</span>
             </div>
           </div>
 
@@ -352,7 +352,7 @@ export default function PackageForm({
                 pattern="[0-9]+\.?[0-9]*"
                 className="w-full px-4 py-3 pr-12 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-400 font-medium">zł</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-300 font-medium">zł</span>
             </div>
           </div>
         </div>

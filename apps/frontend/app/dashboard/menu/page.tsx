@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import {
   UtensilsCrossed, ChefHat, Package, FileText, Tags,
   ArrowRight,
@@ -66,19 +66,19 @@ export default function MenuDashboardPage() {
                 <Card className="group hover:shadow-medium hover:-translate-y-1 cursor-pointer overflow-hidden h-full">
                   <div className="relative overflow-hidden h-full">
                     <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-[0.04] group-hover:opacity-[0.08] transition-opacity`} />
-                    <CardContent className="p-8 relative h-full flex flex-col">
+                    <div className="p-8 relative h-full flex flex-col">
                       <div className="flex-1">
                         <div className={`p-4 bg-gradient-to-br ${card.gradient} rounded-2xl shadow-lg w-fit mb-4 group-hover:scale-110 transition-transform duration-300`}>
                           <Icon className="h-8 w-8 text-white" />
                         </div>
                         <h3 className={`text-2xl font-bold group-hover:${card.hoverText} transition-colors mb-2 text-neutral-900 dark:text-neutral-100`}>{card.title}</h3>
-                        <p className="text-neutral-500 dark:text-neutral-400 mb-4">{card.desc}</p>
+                        <p className="text-neutral-500 dark:text-neutral-300 mb-4">{card.desc}</p>
                         <p className="text-sm text-neutral-400 dark:text-neutral-500">{card.stat}</p>
                       </div>
                       <div className={`flex items-center gap-2 ${card.hoverText} font-medium mt-4 group-hover:gap-4 transition-all`}>
                         Otwórz <ArrowRight className="h-4 w-4" />
                       </div>
-                    </CardContent>
+                    </div>
                   </div>
                 </Card>
               </Link>

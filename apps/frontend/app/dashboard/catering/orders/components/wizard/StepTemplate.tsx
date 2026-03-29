@@ -33,13 +33,13 @@ export function StepTemplate({
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">1</div>
           <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Szablon cateringu</Label>
-          <span className="text-xs text-neutral-500 dark:text-neutral-400">(opcjonalnie)</span>
+          <span className="text-xs text-neutral-500 dark:text-neutral-300">(opcjonalnie)</span>
         </div>
         <Select
           value={templateId || 'NONE'}
           onValueChange={v => set({ templateId: v === 'NONE' ? '' : v, packageId: '' })}
         >
-          <SelectTrigger className="h-11 bg-white dark:bg-neutral-900">
+          <SelectTrigger className="h-9 bg-white dark:bg-neutral-900">
             <SelectValue placeholder="Wybierz szablon" />
           </SelectTrigger>
           <SelectContent>
@@ -58,13 +58,13 @@ export function StepTemplate({
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">2</div>
             <Label className="font-semibold text-neutral-800 dark:text-neutral-200">Pakiet cenowy</Label>
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">(opcjonalnie)</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-300">(opcjonalnie)</span>
           </div>
           <Select
             value={packageId || 'NONE'}
             onValueChange={v => set({ packageId: v === 'NONE' ? '' : v })}
           >
-            <SelectTrigger className="h-11 bg-white dark:bg-neutral-900">
+            <SelectTrigger className="h-9 bg-white dark:bg-neutral-900">
               <SelectValue placeholder="Wybierz pakiet" />
             </SelectTrigger>
             <SelectContent>
@@ -80,7 +80,7 @@ export function StepTemplate({
       )}
 
       {!templateId && (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-2">
+        <p className="text-sm text-neutral-500 dark:text-neutral-300 text-center py-2">
           Możesz pominąć ten krok — szablon i pakiet nie są wymagane.
         </p>
       )}

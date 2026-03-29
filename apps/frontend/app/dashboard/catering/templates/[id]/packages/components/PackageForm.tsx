@@ -69,6 +69,7 @@ export function PackageForm({ templateId, pkg, onClose }: Props) {
     watch,
     formState: { errors },
   } = useForm<FormData>({
+    mode: 'onBlur',
     defaultValues: {
       name: '', shortDescription: '', description: '',
       priceType: 'PER_PERSON', basePrice: 0,
