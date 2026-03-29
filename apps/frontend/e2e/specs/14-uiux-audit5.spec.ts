@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { manualLogin as login } from '../fixtures/auth.fixture';
 import { testData } from '../fixtures/test-data';
 
 /**
@@ -35,38 +36,7 @@ async function waitForPageStable(page: import('@playwright/test').Page) {
 }
 
 async function ensureLoggedIn(page: import('@playwright/test').Page) {
-  await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  await page.waitForTimeout(2000);
-
-  if (!page.url().includes('/login')) return;
-
-  await page.evaluate(({ email, password }) => {
-    function setNativeValue(element: HTMLInputElement, value: string) {
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype, 'value'
-      )!.set!;
-      nativeInputValueSetter.call(element, value);
-      element.dispatchEvent(new Event('input', { bubbles: true }));
-      element.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement;
-    const passInput = document.querySelector('input[name="password"]') as HTMLInputElement;
-    if (emailInput) setNativeValue(emailInput, email);
-    if (passInput) setNativeValue(passInput, password);
-  }, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
-
-  await page.waitForTimeout(500);
-  await page.click('button[type="submit"]');
-
-  try {
-    await page.waitForURL(/\/dashboard/, { timeout: 30_000, waitUntil: 'domcontentloaded' });
-  } catch {
-    await page.waitForTimeout(5000);
-  }
-
-  if (page.url().includes('/login')) {
-    throw new Error(`Login failed for ${ADMIN_EMAIL}`);
-  }
+  await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 }
 
 async function enableDarkMode(page: import('@playwright/test').Page) {

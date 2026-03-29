@@ -28,44 +28,8 @@ async function waitForPageStable(page: import('@playwright/test').Page) {
 }
 
 async function ensureLoggedIn(page: import('@playwright/test').Page) {
-  await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  await page.waitForTimeout(2000);
-
-  // Jeśli już zalogowany (przekierowanie na dashboard)
-  if (!page.url().includes('/login')) return;
-
-  // Set values via React's internal mechanism (dispatchEvent with input event)
-  await page.evaluate(({ email, password }) => {
-    function setNativeValue(element: HTMLInputElement, value: string) {
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype, 'value'
-      )!.set!;
-      nativeInputValueSetter.call(element, value);
-      element.dispatchEvent(new Event('input', { bubbles: true }));
-      element.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement;
-    const passInput = document.querySelector('input[name="password"]') as HTMLInputElement;
-    if (emailInput) setNativeValue(emailInput, email);
-    if (passInput) setNativeValue(passInput, password);
-  }, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
-
-  await page.waitForTimeout(500);
-  await page.click('button[type="submit"]');
-
-  // Czekaj na redirect do dashboard
-  try {
-    await page.waitForURL(/\/dashboard/, { timeout: 30_000, waitUntil: 'domcontentloaded' });
-  } catch {
-    // Może redirect jest wolny — czekamy
-    await page.waitForTimeout(5000);
-  }
-
-  if (page.url().includes('/login')) {
-    // Sprawdź czy jest komunikat błędu
-    const errorMsg = await page.locator('text=Błąd logowania, text=Niepoprawny').textContent().catch(() => '');
-    throw new Error(`Login failed for ${ADMIN_EMAIL} — still on login page. Error: ${errorMsg}`);
-  }
+  // Reuse the standard login helper which uses page.fill() (works with React)
+  await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 }
 
 async function toggleDarkMode(page: import('@playwright/test').Page) {
