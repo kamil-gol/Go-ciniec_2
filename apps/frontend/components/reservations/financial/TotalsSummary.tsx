@@ -40,7 +40,7 @@ export function TotalsSummary({
             <DollarSign className="h-5 w-5 opacity-80" />
             <span className="font-bold">Razem do zapłaty</span>
           </div>
-          <span className="text-2xl font-bold">{formatPLN(finalTotalPrice)} zł</span>
+          <span className="text-2xl font-bold" data-testid="final-total-price">{formatPLN(finalTotalPrice)} zł</span>
         </div>
         {hasActiveDiscount && (
           <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
