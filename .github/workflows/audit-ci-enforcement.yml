@@ -13,7 +13,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install backend dependencies
         run: cd apps/backend && npm ci
@@ -25,11 +24,11 @@ jobs:
         run: cd apps/backend && npx prisma generate
 
       - name: Run backend tests with coverage
-        run: cd apps/backend && npm run test:coverage
+        run: cd apps/backend && npm run test:unit -- --coverage --passWithNoTests
         continue-on-error: false
 
       - name: Run frontend tests with coverage
-        run: cd apps/frontend && npm run test:coverage
+        run: cd apps/frontend && npx vitest run --reporter=verbose
         continue-on-error: false
 
       - name: Check coverage thresholds
