@@ -167,11 +167,11 @@ describe('Security: File Upload Attack Vectors', () => {
   // =========================================
   describe('Path traversal in filename', () => {
     const TRAVERSAL_FILENAMES = [
-      '../../etc/passwd',
-      '../../../etc/shadow',
-      '..\\..\\windows\\system32\\config\\sam',
-      '....//....//etc/passwd',
-      'file.jpg/../../etc/passwd',
+      '../../etc/passwd.jpg',
+      '../../../etc/shadow.jpg',
+      '..\\..\\windows\\system32\\config\\sam.jpg',
+      '....//....//etc/passwd.jpg',
+      'file.jpg/../../etc/passwd.jpg',
     ];
 
     it.each(TRAVERSAL_FILENAMES)(
@@ -180,7 +180,7 @@ describe('Security: File Upload Attack Vectors', () => {
         const res = await uploadFile(
           maliciousFilename,
           Buffer.from('test content'),
-          'application/pdf',
+          'image/jpeg',
           DEFAULT_FIELDS
         );
 
@@ -199,7 +199,7 @@ describe('Security: File Upload Attack Vectors', () => {
 
     it('should sanitize URL-encoded path traversal: ..%2F..%2F', async () => {
       const res = await uploadFile(
-        '..%2F..%2Fetc%2Fpasswd',
+        '..%2F..%2Fetc%2Fpasswd.pdf',
         Buffer.from('test content'),
         'application/pdf',
         DEFAULT_FIELDS
@@ -257,9 +257,10 @@ describe('Security: File Upload Attack Vectors', () => {
   // 5. Null Byte in Filename
   // =========================================
   describe('Null byte in filename', () => {
-    it('should handle null byte injection in filename: file.jpg[NUL].php', async () => {
+    it('should reject null byte injection in filename: file.jpg[NUL].php', async () => {
       // Null byte truncation attack — use URL-encoded version since raw \x00
-      // causes HTTP header errors in supertest/node http
+      // causes HTTP header errors in supertest/node http.
+      // path.extname returns '.php' which is a disallowed extension → rejected by fileFilter.
       const res = await uploadFile(
         'file.jpg%00.php',
         Buffer.from('fake content'),
@@ -267,19 +268,13 @@ describe('Security: File Upload Attack Vectors', () => {
         DEFAULT_FIELDS
       );
 
-      // Should not crash
-      expect(res.status).not.toBe(500);
-
-      // If stored, verify no .php extension
-      if (res.status === 200 || res.status === 201) {
-        const storedFilename = res.body?.data?.storedFilename || '';
-        if (storedFilename) {
-          expect(storedFilename).not.toContain('.php');
-        }
-      }
+      // Extension validation rejects .php → 400
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect([200, 201]).not.toContain(res.status);
     });
 
-    it('should handle URL-encoded null byte: file.jpg%00.exe', async () => {
+    it('should reject URL-encoded null byte: file.jpg%00.exe', async () => {
+      // path.extname returns '.exe' which is a disallowed extension → rejected
       const res = await uploadFile(
         'file.jpg%00.exe',
         Buffer.from('fake content'),
@@ -287,7 +282,8 @@ describe('Security: File Upload Attack Vectors', () => {
         DEFAULT_FIELDS
       );
 
-      expect(res.status).not.toBe(500);
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect([200, 201]).not.toContain(res.status);
     });
   });
 
