@@ -273,8 +273,8 @@ export default function ReservationDetailsPage() {
                 iconGradient="from-blue-600 to-indigo-600"
                 headerGradient="from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30"
               >
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
                     <User className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     <div className="min-w-0">
                       <p className="text-sm text-muted-foreground">Imię i nazwisko</p>
@@ -284,7 +284,7 @@ export default function ReservationDetailsPage() {
                     </div>
                   </div>
                   {reservation.client?.email && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
                       <Mail className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       <div className="min-w-0">
                         <p className="text-sm text-muted-foreground">Email</p>
@@ -293,7 +293,7 @@ export default function ReservationDetailsPage() {
                     </div>
                   )}
                   {reservation.client?.phone && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
                       <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       <div className="min-w-0">
                         <p className="text-sm text-muted-foreground">Telefon</p>

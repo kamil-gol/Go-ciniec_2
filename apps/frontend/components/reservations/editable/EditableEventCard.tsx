@@ -197,8 +197,8 @@ export function EditableEventCard({
       {(editing) => {
         if (!editing) {
           return (
-            <div className="space-y-4">
-              <div>
+            <div className="space-y-3">
+              <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
                 <p className="text-sm text-muted-foreground">Typ wydarzenia</p>
                 <p className="text-lg font-semibold">{initialEventTypeName}</p>
                 {initialCustom && <p className="text-sm text-muted-foreground mt-1">{initialCustom}</p>}
@@ -210,7 +210,7 @@ export function EditableEventCard({
                 )}
               </div>
               {eventDateForDisplay && (
-                <div>
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
                   <p className="text-sm text-muted-foreground">Data wydarzenia</p>
                   <p className="text-lg font-semibold">
                     {format(eventDateForDisplay, 'EEEE, dd MMMM yyyy', { locale: pl })}
@@ -218,7 +218,7 @@ export function EditableEventCard({
                 </div>
               )}
               {initialStart && initialEnd && (
-                <div>
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
                   <p className="text-sm text-muted-foreground">Godziny</p>
                   <p className="text-lg font-semibold">
                     {localTime(initialStart)} – {localTime(initialEnd)}

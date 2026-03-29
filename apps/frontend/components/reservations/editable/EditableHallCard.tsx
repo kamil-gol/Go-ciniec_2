@@ -195,19 +195,19 @@ export function EditableHallCard({
       {(editing) => {
         if (!editing) {
           return (
-            <div className="space-y-4">
-              <div>
+            <div className="space-y-3">
+              <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
                 <p className="text-sm text-muted-foreground">Nazwa sali</p>
                 <p className="text-2xl font-bold">{initialHallName}</p>
               </div>
               {initialCapacity && (
-                <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex items-center gap-2 p-3 bg-white dark:bg-black/20 rounded-lg text-muted-foreground">
                   <Users className="h-4 w-4" />
                   <span>Pojemność: {initialCapacity} osób</span>
                 </div>
               )}
               {initialIsWholeVenue && (
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <div className="flex items-center gap-2 p-3 bg-white dark:bg-black/20 rounded-lg text-amber-600 dark:text-amber-400">
                   <Landmark className="h-4 w-4" />
                   <span className="text-sm font-medium">Cały obiekt</span>
                 </div>

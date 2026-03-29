@@ -72,15 +72,17 @@ export function EditableNotesCard({
       {(editing) => {
         if (!editing) {
           return (
-            <div className="space-y-4">
-              {displayNotes ? (
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{displayNotes}</p>
-              ) : (
-                <p className="text-muted-foreground italic">Brak notatek</p>
-              )}
+            <div className="space-y-3">
+              <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
+                {displayNotes ? (
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{displayNotes}</p>
+                ) : (
+                  <p className="text-muted-foreground italic">Brak notatek</p>
+                )}
+              </div>
 
               {initialDeadline && (
-                <div className="flex items-center gap-2 pt-3 border-t">
+                <div className="flex items-center gap-2 p-3 bg-white dark:bg-black/20 rounded-lg">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Termin potwierdzenia</p>
