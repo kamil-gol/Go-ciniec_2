@@ -12,7 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { GradientCard } from '@/components/shared/GradientCard';
 import {
   Select,
   SelectContent,
@@ -131,44 +131,33 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
 
   return (
     <>
-      <Card className="border-0 shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 dark:from-violet-950/30 dark:via-purple-950/30 dark:to-fuchsia-950/30">
-          {/* Header */}
-          <div className="p-5 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg shadow-lg">
-                  <Gift className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-bold">Usługi dodatkowe</h2>
-                  {extras.length > 0 && (
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {extras.length} {extras.length === 1 ? 'pozycja' : extras.length < 5 ? 'pozycje' : 'pozycji'}
-                      {totalPrice > 0 && (
-                        <span className="font-semibold text-violet-700 dark:text-violet-300 ml-1">
-                          — {totalPrice.toLocaleString('pl-PL')} zł
-                        </span>
-                      )}
-                    </p>
-                  )}
-                </div>
-              </div>
-              {!readOnly && (
-                <Button
-                  size="sm"
-                  onClick={() => setAddDialogOpen(true)}
-                  className="bg-violet-600 hover:bg-violet-700 text-white shadow-md"
-                >
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  Dodaj
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="px-5 sm:px-6 pb-5 sm:pb-6">
+      <GradientCard
+        title="Usługi dodatkowe"
+        icon={<Gift className="h-5 w-5 text-white" />}
+        iconGradient="from-violet-500 to-purple-500"
+        headerGradient="from-violet-50 via-purple-50 to-fuchsia-50 dark:from-violet-950/30 dark:via-purple-950/30 dark:to-fuchsia-950/30"
+        badge={extras.length > 0 ? (
+          <span className="text-sm text-muted-foreground">
+            {extras.length} {extras.length === 1 ? 'pozycja' : extras.length < 5 ? 'pozycje' : 'pozycji'}
+            {totalPrice > 0 && (
+              <span className="font-semibold text-violet-700 dark:text-violet-300 ml-1">
+                — {totalPrice.toLocaleString('pl-PL')} zł
+              </span>
+            )}
+          </span>
+        ) : undefined}
+        action={!readOnly ? (
+          <Button
+            size="sm"
+            onClick={() => setAddDialogOpen(true)}
+            className="bg-violet-600 hover:bg-violet-700 text-white shadow-md"
+          >
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Dodaj
+          </Button>
+        ) : undefined}
+      >
+        <div>
             {extrasLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-violet-400" />
@@ -350,9 +339,8 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
                 </div>
               </div>
             )}
-          </div>
         </div>
-      </Card>
+      </GradientCard>
 
       {/* Add Extra Dialog — only render when not readOnly */}
       {!readOnly && (
