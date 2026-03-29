@@ -1,4 +1,3 @@
-import { getErrorMessage } from '@/utils/AppError';
 /**
  * Audit Log Controller
  * Handles HTTP requests for audit trail / activity logs
@@ -37,11 +36,11 @@ class AuditLogController {
       });
 
       res.json(result);
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('[AuditLogController] Error fetching audit logs:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania logów',
-        message: getErrorMessage(error)
+        message: error.message
       });
     }
   }
@@ -57,11 +56,11 @@ class AuditLogController {
       const logs = await auditLogService.getEntityLogs(entityType, entityId);
 
       res.json(logs);
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('[AuditLogController] Error fetching entity logs:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania logów encji',
-        message: getErrorMessage(error)
+        message: error.message
       });
     }
   }
@@ -78,11 +77,11 @@ class AuditLogController {
       const logs = await auditLogService.getRecentActivity(limitNum);
 
       res.json(logs);
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('[AuditLogController] Error fetching recent activity:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania ostatniej aktywności',
-        message: getErrorMessage(error)
+        message: error.message
       });
     }
   }
@@ -95,11 +94,11 @@ class AuditLogController {
     try {
       const types = await auditLogService.getEntityTypes();
       res.json(types);
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('[AuditLogController] Error fetching entity types:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania typów encji',
-        message: getErrorMessage(error)
+        message: error.message
       });
     }
   }
@@ -112,11 +111,11 @@ class AuditLogController {
     try {
       const actions = await auditLogService.getActions();
       res.json(actions);
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('[AuditLogController] Error fetching actions:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania akcji',
-        message: getErrorMessage(error)
+        message: error.message
       });
     }
   }
@@ -135,11 +134,11 @@ class AuditLogController {
       );
 
       res.json(stats);
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('[AuditLogController] Error fetching statistics:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania statystyk',
-        message: getErrorMessage(error)
+        message: error.message
       });
     }
   }

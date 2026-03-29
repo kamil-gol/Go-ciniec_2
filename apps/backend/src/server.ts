@@ -1,5 +1,4 @@
 import express, { Express, Request, Response } from 'express';
-import { getErrorMessage } from '@/utils/AppError';
 import helmet from 'helmet';
 import cors from 'cors';
 import cron from 'node-cron';
@@ -267,8 +266,8 @@ function setupAutoCancelCron() {
       } else {
         logger.info('[CRON] Auto-cancel completed: No expired reservations found');
       }
-    } catch (error: unknown) {
-      logger.error('[CRON] Auto-cancel failed:', getErrorMessage(error));
+    } catch (error: any) {
+      logger.error('[CRON] Auto-cancel failed:', error.message);
     }
   });
   logger.info('Auto-cancel cron job scheduled for 00:01 AM daily');
@@ -289,8 +288,8 @@ function setupDepositOverdueCron() {
       } else {
         logger.info('[CRON] Deposit overdue check completed: No overdue deposits found');
       }
-    } catch (error: unknown) {
-      logger.error('[CRON] Deposit overdue check failed:', getErrorMessage(error));
+    } catch (error: any) {
+      logger.error('[CRON] Deposit overdue check failed:', error.message);
     }
   });
   logger.info('Deposit overdue cron job scheduled for 06:00 AM daily');
@@ -307,8 +306,8 @@ function setupDepositReminderCron() {
       logger.info(
         `[CRON] Deposit reminders completed: ${result.upcomingSent} upcoming, ${result.overdueSent} overdue, ${result.errors} errors`
       );
-    } catch (error: unknown) {
-      logger.error('[CRON] Deposit reminders failed:', getErrorMessage(error));
+    } catch (error: any) {
+      logger.error('[CRON] Deposit reminders failed:', error.message);
     }
   });
   logger.info('Deposit reminder cron job scheduled for 08:00 AM daily');
@@ -332,8 +331,8 @@ function setupArchiveCron() {
       } else {
         logger.info('[CRON] Auto-archive completed: No reservations to archive');
       }
-    } catch (error: unknown) {
-      logger.error('[CRON] Auto-archive failed:', getErrorMessage(error));
+    } catch (error: any) {
+      logger.error('[CRON] Auto-archive failed:', error.message);
     }
   });
   logger.info(`Auto-archive cron job scheduled for 02:00 AM daily (ARCHIVE_AFTER_DAYS=${process.env.ARCHIVE_AFTER_DAYS || 30})`);
@@ -353,8 +352,8 @@ function setupRefreshTokenCleanupCron() {
       } else {
         logger.info('[CRON] Refresh token cleanup completed: No expired tokens found');
       }
-    } catch (error: unknown) {
-      logger.error('[CRON] Refresh token cleanup failed:', getErrorMessage(error));
+    } catch (error: any) {
+      logger.error('[CRON] Refresh token cleanup failed:', error.message);
     }
   });
   logger.info('Refresh token cleanup cron job scheduled for 03:00 AM daily');
