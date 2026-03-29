@@ -31,7 +31,7 @@ type TabType = 'details' | 'history'
 export default function ClientDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const [client, setClient] = useState<Client | null>(null)
+  const [client, setClient] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
