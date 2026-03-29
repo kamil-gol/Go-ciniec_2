@@ -28,19 +28,19 @@ function toLocalTime(iso: string | null | undefined): string | null {
   } catch { return null }
 }
 
-function getDayNumber(r: any): string {
+function getDayNumber(r: Reservation): string {
   if (r.date) return String(r.date).split('-')[2] ?? '?'
   if (r.startDateTime) return String(new Date(r.startDateTime).getDate()).padStart(2, '0')
   return '?'
 }
 
-function getStartTime(r: any): string | null {
+function getStartTime(r: Reservation): string | null {
   if (r.startDateTime) return toLocalTime(r.startDateTime)
   if (r.startTime) return toLocalTime(r.startTime)
   return null
 }
 
-function getEndTime(r: any): string | null {
+function getEndTime(r: Reservation): string | null {
   if (r.endDateTime) return toLocalTime(r.endDateTime)
   if (r.endTime) return toLocalTime(r.endTime)
   return null
@@ -58,7 +58,7 @@ function getDeadlineInfo(
 // ─── Mobile agenda card ─────────────────────────────────────────────────────
 
 function MobileAgendaCard({ reservation, index }: { reservation: Reservation; index: number }) {
-  const r = reservation as any
+  const r = reservation as Reservation
   const clientName = `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim()
 
   const startTime = getStartTime(r)
@@ -139,7 +139,7 @@ function MobileAgendaCard({ reservation, index }: { reservation: Reservation; in
 // ─── Reservation row (desktop) ──────────────────────────────────────────────
 
 function ReservationRow({ reservation, index }: { reservation: Reservation; index: number }) {
-  const r = reservation as any
+  const r = reservation as Reservation
   const accent = moduleAccents.reservations
   const clientName = `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim()
 
@@ -263,7 +263,7 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
 
 // ─── Summary footer (identyczna struktura co catering) ────────────────────────────
 
-function SummaryFooter({ reservations }: { reservations: any[] }) {
+function SummaryFooter({ reservations }: { reservations: Reservation[] }) {
   const accent = moduleAccents.reservations
   const totalValue = reservations.reduce((sum, r) => sum + Number(r.totalPrice ?? 0), 0)
   const confirmedCount = reservations.filter((r) => r.status === 'CONFIRMED').length

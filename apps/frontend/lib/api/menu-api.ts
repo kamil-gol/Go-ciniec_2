@@ -21,7 +21,7 @@ import type {
 // HELPER FUNCTIONS
 // ════════════════════════════════════════════════════════════════════════════════
 
-function buildQueryParams(params: Record<string, any>): string {
+function buildQueryParams(params: Record<string, string | number | boolean | undefined>): string {
   const query = new URLSearchParams();
   
   Object.entries(params).forEach(([key, value]) => {
@@ -61,12 +61,12 @@ export const menuApi = {
     return data;
   },
 
-  createTemplate: async (input: any): Promise<ApiResponse<MenuTemplate>> => {
+  createTemplate: async (input: Record<string, unknown>): Promise<ApiResponse<MenuTemplate>> => {
     const { data } = await apiClient.post<ApiResponse<MenuTemplate>>('/menu-templates', input);
     return data;
   },
 
-  updateTemplate: async (id: string, input: any): Promise<ApiResponse<MenuTemplate>> => {
+  updateTemplate: async (id: string, input: Record<string, unknown>): Promise<ApiResponse<MenuTemplate>> => {
     const { data } = await apiClient.put<ApiResponse<MenuTemplate>>(`/menu-templates/${id}`, input);
     return data;
   },
@@ -92,19 +92,19 @@ export const menuApi = {
     return data;
   },
 
-  getPackageCategories: async (packageId: string): Promise<ApiResponse<any>> => {
-    const { data } = await apiClient.get<ApiResponse<any>>(
+  getPackageCategories: async (packageId: string): Promise<ApiResponse<unknown>> => {
+    const { data } = await apiClient.get<ApiResponse<unknown>>(
       `/menu-packages/${packageId}/categories`
     );
     return data;
   },
 
-  createPackage: async (input: any): Promise<ApiResponse<MenuPackage>> => {
+  createPackage: async (input: Record<string, unknown>): Promise<ApiResponse<MenuPackage>> => {
     const { data } = await apiClient.post<ApiResponse<MenuPackage>>('/menu-packages', input);
     return data;
   },
 
-  updatePackage: async (id: string, input: any): Promise<ApiResponse<MenuPackage>> => {
+  updatePackage: async (id: string, input: Record<string, unknown>): Promise<ApiResponse<MenuPackage>> => {
     const { data } = await apiClient.put<ApiResponse<MenuPackage>>(`/menu-packages/${id}`, input);
     return data;
   },
@@ -129,12 +129,12 @@ export const menuApi = {
     return data;
   },
 
-  createOption: async (input: any): Promise<ApiResponse<MenuOption>> => {
+  createOption: async (input: Record<string, unknown>): Promise<ApiResponse<MenuOption>> => {
     const { data } = await apiClient.post<ApiResponse<MenuOption>>('/menu-options', input);
     return data;
   },
 
-  updateOption: async (id: string, input: any): Promise<ApiResponse<MenuOption>> => {
+  updateOption: async (id: string, input: Record<string, unknown>): Promise<ApiResponse<MenuOption>> => {
     const { data } = await apiClient.put<ApiResponse<MenuOption>>(`/menu-options/${id}`, input);
     return data;
   },
