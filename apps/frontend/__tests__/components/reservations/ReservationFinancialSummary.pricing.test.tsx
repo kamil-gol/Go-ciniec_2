@@ -10,6 +10,8 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ReservationFinancialSummary } from '@/components/reservations/ReservationFinancialSummary'
+import { useReservationMenu } from '@/hooks/use-menu'
+import { useReservationExtras } from '@/hooks/use-service-extras'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -27,18 +29,8 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
-// Brak menu — domyślny mock
-vi.mock('@/hooks/use-menu', () => ({
-  useReservationMenu: () => ({ data: null, isLoading: false }),
-}))
-
-// Brak extras — domyślny mock
-vi.mock('@/hooks/use-service-extras', () => ({
-  useReservationExtras: () => ({
-    data: { data: [], totalExtrasPrice: 0 },
-    isLoading: false,
-  }),
-}))
+vi.mock('@/hooks/use-menu')
+vi.mock('@/hooks/use-service-extras')
 
 // Depozyty — puste
 vi.mock('@/lib/api/deposits', () => ({
@@ -72,6 +64,20 @@ const BASE_PROPS = {
   status: 'CONFIRMED',
 }
 
+// ── Default mock values ───────────────────────────────────────────────────
+
+beforeEach(() => {
+  vi.mocked(useReservationMenu).mockReturnValue({
+    data: null,
+    isLoading: false,
+  } as any)
+
+  vi.mocked(useReservationExtras).mockReturnValue({
+    data: { data: [], totalExtrasPrice: 0 },
+    isLoading: false,
+  } as any)
+})
+
 // ── Testy ──────────────────────────────────────────────────────────────────
 
 describe('ReservationFinancialSummary — kalkulacja ceny (no-menu)', () => {
@@ -86,9 +92,7 @@ describe('ReservationFinancialSummary — kalkulacja ceny (no-menu)', () => {
 
   it('CASE 2: no-menu + extras 500 zł — NIE podwaja extras', async () => {
     // base=2000 + extras=500 = 2500 (nie 3000)
-    vi.mocked(
-      (await import('@/hooks/use-service-extras')).useReservationExtras
-    ).mockReturnValue({
+    vi.mocked(useReservationExtras).mockReturnValue({
       data: { data: [{ id: 'e1', status: 'ACTIVE', totalPrice: 500 }], totalExtrasPrice: 500 },
       isLoading: false,
     } as any)
@@ -136,9 +140,7 @@ describe('ReservationFinancialSummary — kalkulacja ceny (no-menu)', () => {
 
   it('CASE 5: no-menu + discount PERCENTAGE 10% od 2500 → 2250', async () => {
     // base=2000, extras=500 → przed rabatem=2500, rabat 10%=250 → 2250
-    vi.mocked(
-      (await import('@/hooks/use-service-extras')).useReservationExtras
-    ).mockReturnValue({
+    vi.mocked(useReservationExtras).mockReturnValue({
       data: { data: [{ id: 'e1', status: 'ACTIVE', totalPrice: 500 }], totalExtrasPrice: 500 },
       isLoading: false,
     } as any)
@@ -160,9 +162,7 @@ describe('ReservationFinancialSummary — kalkulacja ceny (no-menu)', () => {
 
   it('CASE 6: z menu snapshot — totalMenuPrice jest bazą, extras dodawane raz', async () => {
     // menu totalMenuPrice=3000, extras=500 → 3500
-    vi.mocked(
-      (await import('@/hooks/use-menu')).useReservationMenu
-    ).mockReturnValue({
+    vi.mocked(useReservationMenu).mockReturnValue({
       data: {
         snapshot: { id: 'snap-1' },
         priceBreakdown: {
@@ -179,9 +179,7 @@ describe('ReservationFinancialSummary — kalkulacja ceny (no-menu)', () => {
       isLoading: false,
     } as any)
 
-    vi.mocked(
-      (await import('@/hooks/use-service-extras')).useReservationExtras
-    ).mockReturnValue({
+    vi.mocked(useReservationExtras).mockReturnValue({
       data: { data: [{ id: 'e1', status: 'ACTIVE', totalPrice: 500 }], totalExtrasPrice: 500 },
       isLoading: false,
     } as any)
