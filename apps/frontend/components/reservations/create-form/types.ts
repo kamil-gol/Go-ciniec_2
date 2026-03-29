@@ -54,9 +54,9 @@ export interface VenueSectionProps {
   extraHours: number
   standardHours: number
   extraHourRate: number
-  availability: { available: boolean; conflicts?: unknown[] } | undefined
+  availability: any
   availabilityLoading: boolean
-  availableCapacity: { available: number; total: number } | undefined
+  availableCapacity: any
   capacityLoading: boolean
 }
 
@@ -68,7 +68,7 @@ export interface GuestsSectionProps {
   totalGuests: number
   selectedHallCapacity: number
   isMultiBookingHall: boolean
-  availableCapacity: { available: number; total: number } | undefined
+  availableCapacity: any
 }
 
 export interface MenuSectionProps {
