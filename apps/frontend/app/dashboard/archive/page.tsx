@@ -65,6 +65,7 @@ export default function ArchivePage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={accent}
@@ -163,7 +164,6 @@ export default function ArchivePage() {
 
                 return (
                   <div
-                    <Breadcrumb />
                     key={reservation.id}
                     className={cn(
                       'rounded-2xl bg-white dark:bg-neutral-800/80',
