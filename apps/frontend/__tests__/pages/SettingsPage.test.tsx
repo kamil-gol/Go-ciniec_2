@@ -93,7 +93,7 @@ describe('SettingsPage', () => {
 
   it('renders page hero with title', () => {
     render(<SettingsPage />)
-    expect(screen.getByText('Ustawienia')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Ustawienia' })).toBeInTheDocument()
   })
 
   it('renders subtitle', () => {

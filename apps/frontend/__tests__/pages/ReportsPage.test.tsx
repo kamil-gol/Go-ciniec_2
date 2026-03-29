@@ -132,7 +132,7 @@ describe('ReportsPage', () => {
 
   it('renders page hero with title', () => {
     render(<ReportsPage />)
-    expect(screen.getByText('Raporty')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Raporty' })).toBeInTheDocument()
   })
 
   it('renders subtitle with description', () => {

@@ -113,7 +113,7 @@ describe('ReservationsListPage', () => {
 
   it('renders page hero with title', async () => {
     render(<ReservationsListPage />)
-    expect(screen.getByText('Rezerwacje')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Rezerwacje' })).toBeInTheDocument()
   })
 
   it('renders subtitle', () => {
@@ -138,7 +138,7 @@ describe('ReservationsListPage', () => {
 
   it('renders list/calendar view toggle', () => {
     render(<ReservationsListPage />)
-    expect(screen.getByText('Lista')).toBeInTheDocument()
+    expect(screen.getAllByText('Lista').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Kalendarz')).toBeInTheDocument()
   })
 

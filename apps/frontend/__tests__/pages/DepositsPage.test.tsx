@@ -171,7 +171,7 @@ describe('DepositsPage', () => {
     mockDepositsGetStats.mockResolvedValue(mockStats)
 
     render(<DepositsPage />)
-    expect(screen.getByText('Zaliczki')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Zaliczki' })).toBeInTheDocument()
   })
 
   it('renders subtitle', async () => {
