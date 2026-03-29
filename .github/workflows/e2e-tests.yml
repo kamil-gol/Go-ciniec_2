@@ -177,6 +177,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
           NODE_ENV: development
+          SEED_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
         run: npm run db:seed
 
       - name: Start backend server
@@ -202,6 +203,8 @@ jobs:
         working-directory: apps/frontend
         env:
           CI: true
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl' }}
         run: |
           npx playwright test --project=chromium --retries=0 --reporter=html --grep-invert "Visual Regression"
 
