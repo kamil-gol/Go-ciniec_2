@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Edit, Calendar, Users, Sparkles, CheckCircle2, Building2, UsersRound, UserCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getHallById, type Hall } from '@/lib/api/halls'
 import { HallReservationsCalendar } from '@/components/halls/hall-reservations-calendar'
@@ -109,33 +109,29 @@ export default function HallDetailsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Description */}
           {hall.description && (
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+            <Card className="border-0 shadow-xl overflow-hidden">
+              <div className="bg-gradient-to-br from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
                     <Sparkles className="h-5 w-5 text-white" />
                   </div>
-                  Opis
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                  <h2 className="text-xl font-bold">Opis</h2>
+                </div>
                 <p className="text-muted-foreground leading-relaxed">{hall.description}</p>
-              </CardContent>
+              </div>
             </Card>
           )}
 
           {/* Amenities */}
           {hall.amenities && hall.amenities.length > 0 && (
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
+            <Card className="border-0 shadow-xl overflow-hidden">
+              <div className="bg-gradient-to-br from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-lg">
                     <CheckCircle2 className="h-5 w-5 text-white" />
                   </div>
-                  Udogodnienia
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                  <h2 className="text-xl font-bold">Udogodnienia</h2>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {hall.amenities.map((amenity, idx) => (
                     <Badge
@@ -146,7 +142,7 @@ export default function HallDetailsPage() {
                     </Badge>
                   ))}
                 </div>
-              </CardContent>
+              </div>
             </Card>
           )}
         </div>

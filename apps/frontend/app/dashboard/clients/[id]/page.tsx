@@ -198,18 +198,16 @@ export default function ClientDetailsPage() {
               )}
 
               {client.notes && (
-                <Card className="border-0 shadow-xl">
-                  <CardHeader className="border-b">
-                    <CardTitle className="flex items-center gap-2">
-                      <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg">
+                <Card className="border-0 shadow-xl overflow-hidden">
+                  <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-lg">
                         <FileText className="h-5 w-5 text-white" />
                       </div>
-                      Notatki
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
+                      <h2 className="text-xl font-bold">Notatki</h2>
+                    </div>
                     <p className="text-muted-foreground leading-relaxed">{client.notes}</p>
-                  </CardContent>
+                  </div>
                 </Card>
               )}
 
