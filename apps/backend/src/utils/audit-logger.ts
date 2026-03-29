@@ -14,7 +14,7 @@ export interface LogChangeParams {
     newValue?: any;
     description?: string;
     changes?: any; // Flexible: Record<string, { old, new }>, plain object, or string
-    [key: string]: any; // Dodatkowe dane kontekstowe
+    [key: string]: unknown; // Dodatkowe dane kontekstowe
   };
   ipAddress?: string;
   userAgent?: string;
@@ -91,8 +91,8 @@ export const logActivity = logChange;
  * // { email: { old: 'jan@example.com', new: 'jan.nowy@example.com' }, age: { old: 30, new: 31 } }
  */
 export function diffObjects(
-  oldObj: Record<string, any>,
-  newObj: Record<string, any>
+  oldObj: Record<string, unknown>,
+  newObj: Record<string, unknown>
 ): Record<string, { old: any; new: any }> {
   const changes: Record<string, { old: any; new: any }> = {};
 

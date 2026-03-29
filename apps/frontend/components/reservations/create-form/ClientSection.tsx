@@ -17,10 +17,10 @@ export function ClientSection({
 }: ClientSectionProps) {
   const { control, errors } = formCtx
 
-  const isClientCompany = (selectedClient as any)?.clientType === 'COMPANY'
-  const clientCompanyName = (selectedClient as any)?.companyName
-  const clientNip = (selectedClient as any)?.nip
-  const clientPrimaryContact = (selectedClient as any)?.contacts?.find((c: any) => c.isPrimary)
+  const isClientCompany = selectedClient?.clientType === 'COMPANY'
+  const clientCompanyName = selectedClient?.companyName
+  const clientNip = selectedClient?.nip
+  const clientPrimaryContact = selectedClient?.contacts?.find((c: { isPrimary?: boolean }) => c.isPrimary)
 
   return (
     <div className="space-y-6">

@@ -76,7 +76,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
       lastName: contact.lastName || '',
       email: contact.email || '',
       phone: contact.phone || '',
-      role: (contact as any).role || '',
+      role: contact.role || '',
       isPrimary: contact.isPrimary || false,
     })
     setShowForm(true)
@@ -261,10 +261,10 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
                     <p className="font-semibold text-sm leading-tight">
                       {contact.firstName} {contact.lastName}
                     </p>
-                    {(contact as any).role && (
+                    {contact.role && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                         <Briefcase className="h-3 w-3 shrink-0" />
-                        {(contact as any).role}
+                        {contact.role}
                       </p>
                     )}
                   </div>

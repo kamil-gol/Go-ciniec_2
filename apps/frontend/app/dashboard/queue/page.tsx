@@ -81,7 +81,7 @@ export default function QueuePage() {
 
   const dates = Object.keys(queuesByDate).sort()
 
-  const handleAddToQueue = async (data: any) => {
+  const handleAddToQueue = async (data: Record<string, unknown>) => {
     try {
       await queueApi.addToQueue(data)
       toast.success('Dodano do kolejki')

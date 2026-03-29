@@ -97,16 +97,16 @@ export function SummarySection({
 
         <div className="p-4 rounded-xl border bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors" onClick={() => goToStep(4)}>
           <div className="flex items-center gap-2 mb-2">
-            {(selectedClient as any)?.clientType === 'COMPANY' ? <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> : <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+            {selectedClient?.clientType === 'COMPANY' ? <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> : <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
             <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 uppercase">Klient</span>
-            {(selectedClient as any)?.clientType === 'COMPANY' && <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded font-medium">Firma</span>}
+            {selectedClient?.clientType === 'COMPANY' && <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded font-medium">Firma</span>}
           </div>
           {selectedClient ? (
             <div>
-              {(selectedClient as any).clientType === 'COMPANY' && (selectedClient as any).companyName ? (
+              {selectedClient.clientType === 'COMPANY' && selectedClient.companyName ? (
                 <>
-                  <p className="font-semibold text-neutral-900 dark:text-neutral-100">{(selectedClient as any).companyName}</p>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-300">{selectedClient.firstName} {selectedClient.lastName}{(selectedClient as any).nip ? ` · NIP: ${(selectedClient as any).nip}` : ''}</p>
+                  <p className="font-semibold text-neutral-900 dark:text-neutral-100">{selectedClient.companyName}</p>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-300">{selectedClient.firstName} {selectedClient.lastName}{selectedClient.nip ? ` · NIP: ${selectedClient.nip}` : ''}</p>
                 </>
               ) : (
                 <>
