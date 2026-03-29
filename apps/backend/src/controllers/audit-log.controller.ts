@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/utils/AppError';
 /**
  * Audit Log Controller
  * Handles HTTP requests for audit trail / activity logs
@@ -40,7 +41,7 @@ class AuditLogController {
       console.error('[AuditLogController] Error fetching audit logs:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania logów',
-        message: error.message
+        message: getErrorMessage(error)
       });
     }
   }
@@ -60,7 +61,7 @@ class AuditLogController {
       console.error('[AuditLogController] Error fetching entity logs:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania logów encji',
-        message: error.message
+        message: getErrorMessage(error)
       });
     }
   }
@@ -81,7 +82,7 @@ class AuditLogController {
       console.error('[AuditLogController] Error fetching recent activity:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania ostatniej aktywności',
-        message: error.message
+        message: getErrorMessage(error)
       });
     }
   }
@@ -98,7 +99,7 @@ class AuditLogController {
       console.error('[AuditLogController] Error fetching entity types:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania typów encji',
-        message: error.message
+        message: getErrorMessage(error)
       });
     }
   }
@@ -115,7 +116,7 @@ class AuditLogController {
       console.error('[AuditLogController] Error fetching actions:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania akcji',
-        message: error.message
+        message: getErrorMessage(error)
       });
     }
   }
@@ -138,7 +139,7 @@ class AuditLogController {
       console.error('[AuditLogController] Error fetching statistics:', error);
       res.status(500).json({
         error: 'Błąd podczas pobierania statystyk',
-        message: error.message
+        message: getErrorMessage(error)
       });
     }
   }
