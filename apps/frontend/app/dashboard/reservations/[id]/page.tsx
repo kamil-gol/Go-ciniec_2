@@ -29,6 +29,7 @@ import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTim
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
+import { GradientCard } from '@/components/shared/GradientCard'
 import { ReservationTimeline } from '@/components/reservations/ReservationTimeline'
 import { ReservationHero } from './components/ReservationHero'
 import { QuickActionsCard } from './components/QuickActionsCard'
@@ -266,45 +267,42 @@ export default function ReservationDetailsPage() {
             {/* Left Column - Main Info */}
             <div className="lg:col-span-2 space-y-6">
               {/* Client Info (read-only) */}
-              <Card className="shadow-sm border border-border">
-                <div className="bg-card p-4 sm:p-6 lg:p-8">
-                  <div className="flex items-center gap-3 mb-5 sm:mb-6">
-                    <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg shadow-sm">
-                      <User className="h-5 w-5 text-white" />
+              <GradientCard
+                title="Klient"
+                icon={<User className="h-5 w-5 text-white" />}
+                iconGradient="from-blue-600 to-indigo-600"
+                headerGradient="from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <User className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm text-muted-foreground">Imię i nazwisko</p>
+                      <p className="text-base sm:text-lg font-semibold truncate">
+                        {reservation.client?.firstName} {reservation.client?.lastName}
+                      </p>
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-bold">Klient</h2>
                   </div>
-                  <div className="space-y-4">
+                  {reservation.client?.email && (
                     <div className="flex items-center gap-3">
-                      <User className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <Mail className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-sm text-muted-foreground">Imię i nazwisko</p>
-                        <p className="text-base sm:text-lg font-semibold truncate">
-                          {reservation.client?.firstName} {reservation.client?.lastName}
-                        </p>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="text-base sm:text-lg font-semibold truncate">{reservation.client.email}</p>
                       </div>
                     </div>
-                    {reservation.client?.email && (
-                      <div className="flex items-center gap-3">
-                        <Mail className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="text-base sm:text-lg font-semibold truncate">{reservation.client.email}</p>
-                        </div>
+                  )}
+                  {reservation.client?.phone && (
+                    <div className="flex items-center gap-3">
+                      <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm text-muted-foreground">Telefon</p>
+                        <p className="text-base sm:text-lg font-semibold">{reservation.client.phone}</p>
                       </div>
-                    )}
-                    {reservation.client?.phone && (
-                      <div className="flex items-center gap-3">
-                        <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-sm text-muted-foreground">Telefon</p>
-                          <p className="text-base sm:text-lg font-semibold">{reservation.client.phone}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              </Card>
+              </GradientCard>
 
               {/* Hall Info */}
               <EditableHallCard
