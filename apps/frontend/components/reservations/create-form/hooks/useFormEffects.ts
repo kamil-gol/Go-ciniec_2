@@ -10,18 +10,18 @@ export interface FormEffectsParams {
 
   // Default hall from props
   defaultHallId: string | undefined
-  hallsArray: Hall[]
+  hallsArray: any[]
 
   // Computed values
   standardHours: number
   useMenuPackage: boolean
-  selectedPackage: MenuPackage | null
+  selectedPackage: any
   pricePerAdult: number
   selectedEventTypeId: string | undefined
   menuTemplateId: string | undefined
   menuPackageId: string | undefined
-  menuTemplatesArray: MenuTemplate[]
-  templatePackagesArray: MenuPackage[]
+  menuTemplatesArray: any[]
+  templatePackagesArray: any[]
   hallId: string | undefined
 
   // Manual price flags

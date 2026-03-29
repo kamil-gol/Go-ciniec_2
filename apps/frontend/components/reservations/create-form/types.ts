@@ -30,7 +30,7 @@ export interface FormContext {
 
 export interface EventSectionProps {
   formCtx: FormContext
-  eventTypesArray: EventType[]
+  eventTypesArray: any[]
   isBirthday: boolean
   isAnniversary: boolean
   isCustom: boolean
@@ -38,8 +38,8 @@ export interface EventSectionProps {
 
 export interface VenueSectionProps {
   formCtx: FormContext
-  hallsArray: Hall[]
-  selectedHall: Hall | undefined
+  hallsArray: any[]
+  selectedHall: any
   selectedHallCapacity: number
   isMultiBookingHall: boolean
   defaultHallId?: string
@@ -77,12 +77,12 @@ export interface MenuSectionProps {
   selectedEventTypeId: string
   menuTemplateId: string | undefined
   menuPackageId: string | undefined
-  menuTemplatesArray: MenuTemplate[]
+  menuTemplatesArray: any[]
   menuTemplatesLoading: boolean
-  templatePackagesArray: MenuPackage[]
+  templatePackagesArray: any[]
   templatePackagesLoading: boolean
-  selectedTemplate: MenuTemplate | null
-  selectedPackage: MenuPackage | null
+  selectedTemplate: any
+  selectedPackage: any
   hasNoTemplatesForEventType: boolean | string
   pricePerAdult: number
   childPriceManuallySet: boolean
@@ -100,7 +100,7 @@ export interface ClientSectionProps {
   formCtx: FormContext
   clientComboboxOptions: { value: string; label: string; description?: string; secondaryLabel?: string }[]
   clientsLoading: boolean
-  selectedClient: Client | null
+  selectedClient: any
   isPromotingFromQueue: boolean
   showCreateClientModal: boolean
   setShowCreateClientModal: (v: boolean) => void
@@ -113,7 +113,7 @@ export interface SummarySectionProps {
   isAnniversary: boolean
   isCustom: boolean
   watchAll: ReservationFormData
-  selectedHall: Hall | undefined
+  selectedHall: any
   startDate: string
   startTime: string
   endTime: string
@@ -126,10 +126,10 @@ export interface SummarySectionProps {
   adults: number
   children: number
   toddlers: number
-  selectedClient: Client | null
+  selectedClient: any
   useMenuPackage: boolean
-  selectedTemplate: MenuTemplate | null
-  selectedPackage: MenuPackage | null
+  selectedTemplate: any
+  selectedPackage: any
   discountEnabled: boolean
   discountType: 'PERCENTAGE' | 'FIXED'
   discountValue: number
@@ -160,8 +160,8 @@ export interface PriceSummaryProps {
   selectedExtras: SelectedExtra[]
   totalWithExtras: number
   useMenuPackage: boolean
-  selectedTemplate: MenuTemplate | null
-  selectedPackage: MenuPackage | null
+  selectedTemplate: any
+  selectedPackage: any
   venueSurchargeAmount: number
   venueSurcharge: { amount: number; label: string | null }
 }
