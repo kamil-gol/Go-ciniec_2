@@ -31,6 +31,10 @@ async function waitForPageStable(page: import('@playwright/test').Page) {
 }
 
 async function enableDarkMode(page: import('@playwright/test').Page) {
+  // Ensure we're on a real page (not about:blank) before accessing localStorage
+  if (page.url() === 'about:blank') {
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+  }
   await page.evaluate(() => {
     document.documentElement.classList.add('dark');
     localStorage.setItem('theme', 'dark');
@@ -111,6 +115,7 @@ test.describe('#420 Error boundary', () => {
     // Ten test weryfikuje że error boundary działa — trudne do testowania bez
     // sztucznego wywołania błędu, więc sprawdzamy że strona w ogóle się ładuje
 
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await waitForPageStable(page);
 
     // Dashboard powinien się załadować poprawnie
