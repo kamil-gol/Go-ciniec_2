@@ -60,7 +60,7 @@ export function ReservationMenuSection({
   const hasMenu = !!menuData?.snapshot
   const isSaving = selectMenuMutation.isPending || updateMenuMutation.isPending
 
-  const handleMenuSelected = async (selection: any) => {
+  const handleMenuSelected = async (selection: Record<string, unknown>) => {
     if (isSaving || readOnly) return
     try {
       if (hasMenu) {
@@ -91,20 +91,20 @@ export function ReservationMenuSection({
 
   const buildInitialSelection = () => {
     if (!hasMenu || !menuData?.snapshot) return undefined
-    const snapshot = menuData.snapshot as any
-    const md = snapshot.menuData || {} as any
+    const snapshot = menuData.snapshot as Record<string, unknown>
+    const md = snapshot.menuData || {} as Record<string, unknown>
     const templateId = snapshot.menuTemplateId || md.templateId || md.menuTemplateId || undefined
     const packageId = snapshot.packageId || md.packageId || md.selectedPackageId || undefined
     return {
       templateId,
       packageId,
-      selectedOptions: (md.selectedOptions || []).map((opt: any) => ({
+      selectedOptions: (md.selectedOptions || []).map((opt: { name: string; description?: string | null }) => ({
         optionId: opt.optionId,
         quantity: opt.quantity || 1
       })),
-      dishSelections: (md.dishSelections || []).map((cat: any) => ({
+      dishSelections: (md.dishSelections || []).map((cat: { categoryName: string; portionTarget?: string; dishes: { dishName?: string; name?: string; description?: string | null; quantity?: number }[] }) => ({
         categoryId: cat.categoryId,
-        dishes: (cat.dishes || []).map((dish: any) => ({
+        dishes: (cat.dishes || []).map((dish: { dishName?: string; name?: string; description?: string | null; quantity?: number }) => ({
           dishId: dish.dishId,
           quantity: dish.quantity || 1
         }))
@@ -125,7 +125,7 @@ export function ReservationMenuSection({
   }
 
   const snapshot = menuData?.snapshot
-  const menuDataNested = snapshot?.menuData || {} as any
+  const menuDataNested = snapshot?.menuData || {} as Record<string, unknown>
   const {
     packageName,
     packageDescription,
@@ -241,7 +241,7 @@ export function ReservationMenuSection({
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  {dishSelections.map((category: any) => {
+                  {dishSelections.map((category: { categoryName: string; portionTarget?: string; dishes: { dishName?: string; name?: string; description?: string | null; quantity?: number }[] }) => {
                     const pt = category.portionTarget as PortionTarget | undefined;
                     return (
                       <div key={category.categoryId}>
@@ -263,7 +263,7 @@ export function ReservationMenuSection({
                           )}
                         </div>
                         <div className="flex flex-wrap gap-1.5 ml-5">
-                          {category.dishes.map((dish: any) => (
+                          {category.dishes.map((dish: { dishName?: string; name?: string; description?: string | null; quantity?: number }) => (
                             <span
                               key={dish.dishId}
                               className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/50 rounded-full text-xs border border-orange-200 dark:border-orange-800"
