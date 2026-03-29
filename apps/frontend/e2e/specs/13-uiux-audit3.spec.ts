@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { manualLogin as login } from '../fixtures/auth.fixture';
+import { testData } from '../fixtures/test-data';
 
 /**
  * UI/UX AUDIT #3 — Automated Verification Tests
@@ -12,17 +13,12 @@ import { manualLogin as login } from '../fixtures/auth.fixture';
  * - Mobile responsiveness
  *
  * Uruchomienie:
- *   PLAYWRIGHT_TEST_BASE_URL=https://dev.gosciniec.online npx playwright test specs/13-uiux-audit3.spec.ts --project=chromium
- *
- * Z aktualizacją baseline:
- *   ... --update-snapshots
+ *   npx playwright test specs/13-uiux-audit3.spec.ts --project=chromium
  */
 
-const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl';
-const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || '';
-const SKIP_REASON = 'TEST_ADMIN_PASSWORD not set — skipping audit tests';
+const ADMIN_EMAIL = testData.admin.email;
+const ADMIN_PASSWORD = testData.admin.password;
 
-test.skip(!ADMIN_PASSWORD, SKIP_REASON);
 test.setTimeout(90_000);
 test.describe.configure({ retries: 2 });
 
