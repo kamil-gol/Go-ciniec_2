@@ -9,12 +9,12 @@ import type { MenuTemplate, MenuPackage } from '@/types/menu.types'
 
 export interface FormComputedParams {
   watchAll: ReservationFormData
-  hallsArray: Hall[]
-  eventTypesArray: EventType[]
-  menuTemplatesArray: MenuTemplate[]
+  hallsArray: any[]
+  eventTypesArray: any[]
+  menuTemplatesArray: any[]
   menuTemplatesLoading: boolean
-  templatePackagesArray: MenuPackage[]
-  clientsArray: Client[]
+  templatePackagesArray: any[]
+  clientsArray: any[]
   selectedExtras: SelectedExtra[]
 }
 
