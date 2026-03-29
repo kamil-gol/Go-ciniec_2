@@ -92,8 +92,8 @@ export const menuApi = {
     return data;
   },
 
-  getPackageCategories: async (packageId: string): Promise<ApiResponse<unknown>> => {
-    const { data } = await apiClient.get<ApiResponse<unknown>>(
+  getPackageCategories: async (packageId: string): Promise<ApiResponse<any>> => {
+    const { data } = await apiClient.get<ApiResponse<any>>(
       `/menu-packages/${packageId}/categories`
     );
     return data;
