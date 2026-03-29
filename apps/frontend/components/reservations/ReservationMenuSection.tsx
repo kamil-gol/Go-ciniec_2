@@ -60,7 +60,7 @@ export function ReservationMenuSection({
   const hasMenu = !!menuData?.snapshot
   const isSaving = selectMenuMutation.isPending || updateMenuMutation.isPending
 
-  const handleMenuSelected = async (selection: Record<string, unknown>) => {
+  const handleMenuSelected = async (selection: any) => {
     if (isSaving || readOnly) return
     try {
       if (hasMenu) {
@@ -91,8 +91,8 @@ export function ReservationMenuSection({
 
   const buildInitialSelection = () => {
     if (!hasMenu || !menuData?.snapshot) return undefined
-    const snapshot = menuData.snapshot as Record<string, unknown>
-    const md = snapshot.menuData || {} as Record<string, unknown>
+    const snapshot = menuData.snapshot as any
+    const md = snapshot.menuData || {} as any
     const templateId = snapshot.menuTemplateId || md.templateId || md.menuTemplateId || undefined
     const packageId = snapshot.packageId || md.packageId || md.selectedPackageId || undefined
     return {
@@ -125,7 +125,7 @@ export function ReservationMenuSection({
   }
 
   const snapshot = menuData?.snapshot
-  const menuDataNested = snapshot?.menuData || {} as Record<string, unknown>
+  const menuDataNested = snapshot?.menuData || {} as any
   const {
     packageName,
     packageDescription,
