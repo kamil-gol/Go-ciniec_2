@@ -21,7 +21,7 @@ import type {
 // HELPER FUNCTIONS
 // ════════════════════════════════════════════════════════════════════════════════
 
-function buildQueryParams(params: Record<string, string | number | boolean | undefined>): string {
+function buildQueryParams(params: Record<string, any>): string {
   const query = new URLSearchParams();
   
   Object.entries(params).forEach(([key, value]) => {
