@@ -16,8 +16,8 @@ interface PriceBreakdownProps {
   effectivePricePerChild: number
   effectivePricePerToddler: number
   hasMenu: boolean
-  priceBreakdown: Record<string, unknown>
-  activeExtras: Record<string, unknown>[]
+  priceBreakdown: any
+  activeExtras: any[]
   extrasTotalPrice: number
   activeCategoryExtras: CategoryExtra[]
   effectiveCategoryExtrasTotal: number
@@ -102,7 +102,7 @@ export function PriceBreakdown({
             <p className="text-sm font-semibold text-muted-foreground">Opcje dodatkowe</p>
           </div>
           <div className="space-y-2">
-            {priceBreakdown.optionsCost.map((opt: Record<string, unknown>, idx: number) => (
+            {priceBreakdown.optionsCost.map((opt: any, idx: number) => (
               <div key={idx} className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
                   {opt.option} ({opt.priceType === 'PER_PERSON' ? `${opt.quantity} × ${formatCurrency(opt.priceEach)}` : 'stała kwota'})
@@ -127,7 +127,7 @@ export function PriceBreakdown({
             <p className="text-sm font-semibold text-muted-foreground">Usługi dodatkowe</p>
           </div>
           <div className="space-y-2">
-            {activeExtras.map((extra: Record<string, unknown>) => (
+            {activeExtras.map((extra: any) => (
               <div key={extra.id} className="flex justify-between text-sm gap-2">
                 <span className="text-muted-foreground flex items-center gap-1.5 min-w-0">
                   <span className="shrink-0">{extra.serviceItem?.icon || '📦'}</span>
