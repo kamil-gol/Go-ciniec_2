@@ -98,13 +98,13 @@ export function ReservationMenuSection({
     return {
       templateId,
       packageId,
-      selectedOptions: (md.selectedOptions || []).map((opt: { name: string; description?: string | null }) => ({
+      selectedOptions: (md.selectedOptions || []).map((opt: any) => ({
         optionId: opt.optionId,
         quantity: opt.quantity || 1
       })),
-      dishSelections: (md.dishSelections || []).map((cat: { categoryName: string; portionTarget?: string; dishes: { dishName?: string; name?: string; description?: string | null; quantity?: number }[] }) => ({
+      dishSelections: (md.dishSelections || []).map((cat: any) => ({
         categoryId: cat.categoryId,
-        dishes: (cat.dishes || []).map((dish: { dishName?: string; name?: string; description?: string | null; quantity?: number }) => ({
+        dishes: (cat.dishes || []).map((dish: any) => ({
           dishId: dish.dishId,
           quantity: dish.quantity || 1
         }))
@@ -241,7 +241,7 @@ export function ReservationMenuSection({
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  {dishSelections.map((category: { categoryName: string; portionTarget?: string; dishes: { dishName?: string; name?: string; description?: string | null; quantity?: number }[] }) => {
+                  {dishSelections.map((category: any) => {
                     const pt = category.portionTarget as PortionTarget | undefined;
                     return (
                       <div key={category.categoryId}>
@@ -263,7 +263,7 @@ export function ReservationMenuSection({
                           )}
                         </div>
                         <div className="flex flex-wrap gap-1.5 ml-5">
-                          {category.dishes.map((dish: { dishName?: string; name?: string; description?: string | null; quantity?: number }) => (
+                          {category.dishes.map((dish: any) => (
                             <span
                               key={dish.dishId}
                               className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/50 rounded-full text-xs border border-orange-200 dark:border-orange-800"
