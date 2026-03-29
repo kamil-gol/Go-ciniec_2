@@ -183,8 +183,9 @@ fix-timezone-dry:
 
 fix-timezone:
 	@echo "\n=== Timezone fix: LIVE MIGRATION ==="
-	@echo "WARNING: This will modify the database. Press Ctrl+C within 5s to abort."
-	@sleep 5
+	@echo "WARNING: This will MODIFY the database irreversibly!"
+	@echo "Make sure you have a recent backup (make minio-backup)."
+	@read -p "Type 'yes' to continue: " confirm && [ "$$confirm" = "yes" ] || (echo "Aborted."; exit 1)
 	$(COMPOSE_DEV) --env-file .env.dev exec backend \
 		sh -c "DRY_RUN=false npx tsx src/scripts/fix-timezone-offset.ts"
 

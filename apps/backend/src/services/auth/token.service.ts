@@ -7,7 +7,11 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import logger from '@utils/logger';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-DO-NOT-USE-IN-PRODUCTION';
+const JWT_SECRET_RAW = process.env.JWT_SECRET;
+if (!JWT_SECRET_RAW && process.env.NODE_ENV === 'production') {
+  throw new Error('FATAL: JWT_SECRET environment variable is required in production');
+}
+const JWT_SECRET = JWT_SECRET_RAW || 'dev-secret-key-DO-NOT-USE-IN-PRODUCTION';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '24h';
 
