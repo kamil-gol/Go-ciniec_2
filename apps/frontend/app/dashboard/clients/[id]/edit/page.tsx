@@ -14,6 +14,7 @@ import { useClient, useUpdateClient } from '@/lib/api/clients'
 import type { ClientType } from '@/types'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function EditClientPage() {
   const params = useParams()
@@ -145,6 +146,7 @@ export default function EditClientPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <Breadcrumb />
       <div className="container mx-auto py-8 px-4 max-w-4xl space-y-8">
         {/* Premium Hero */}
         <div className={`relative overflow-hidden rounded-2xl p-8 text-white shadow-2xl bg-gradient-to-r ${

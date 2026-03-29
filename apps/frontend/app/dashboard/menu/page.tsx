@@ -12,6 +12,7 @@ import { useDishCategories } from '@/hooks/use-menu-config'
 import { PageLayout, PageHero } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { motion } from 'framer-motion'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function MenuDashboardPage() {
   const { data: templates = [] } = useMenuTemplates()
@@ -65,6 +66,7 @@ export default function MenuDashboardPage() {
               <Link href={card.href}>
                 <Card className="group hover:shadow-medium hover:-translate-y-1 cursor-pointer overflow-hidden h-full">
                   <div className="relative overflow-hidden h-full">
+                    <Breadcrumb />
                     <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-[0.04] group-hover:opacity-[0.08] transition-opacity`} />
                     <div className="p-8 relative h-full flex flex-col">
                       <div className="flex-1">

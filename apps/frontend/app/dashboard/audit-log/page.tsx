@@ -12,6 +12,7 @@ import type { AuditLogFilters as Filters } from '@/types/audit-log.types';
 import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared';
 import { Skeleton } from '@/components/ui/skeleton';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 const actionLabelsGenitive: Record<string, string> = {
   // Basic CRUD
@@ -97,6 +98,7 @@ export default function AuditLogPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       <PageHero
         accent={accent}
         title="Dziennik Audytu"

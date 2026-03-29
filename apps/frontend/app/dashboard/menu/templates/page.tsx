@@ -41,6 +41,7 @@ import type { MenuTemplate } from '@/lib/api/menu-templates-api'
 import { toast } from 'sonner'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function MenuTemplatesPage() {
   const [selectedEventType, setSelectedEventType] = useState<string>('all')
@@ -111,6 +112,7 @@ export default function MenuTemplatesPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       <PageHero
         accent={accent}
         title="Szablony Menu"

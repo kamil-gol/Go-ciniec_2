@@ -12,6 +12,7 @@ import { EventTypeCard } from '@/components/event-types/event-type-card'
 import { EventTypeFormDialog } from '@/components/event-types/event-type-form-dialog'
 import { EventTypeDeleteDialog } from '@/components/event-types/event-type-delete-dialog'
 import { toast } from 'sonner'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function EventTypesPage() {
   const [eventTypes, setEventTypes] = useState<EventType[]>([])
@@ -78,6 +79,7 @@ export default function EventTypesPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={accent}

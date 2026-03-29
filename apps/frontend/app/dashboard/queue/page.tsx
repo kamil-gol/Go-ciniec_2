@@ -19,6 +19,7 @@ import { format, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function QueuePage() {
   const [queues, setQueues] = useState<QueueItem[]>([])
@@ -186,6 +187,7 @@ export default function QueuePage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={accent}

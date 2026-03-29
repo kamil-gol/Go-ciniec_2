@@ -6,6 +6,7 @@ import { DishLibraryManager } from '@/components/menu/DishLibraryManager'
 import { useDishes } from '@/hooks/use-dishes'
 import { PageLayout, PageHero } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function DishesPage() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -14,6 +15,7 @@ export default function DishesPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       <PageHero
         accent={accent}
         title="Biblioteka Dań"

@@ -22,6 +22,7 @@ import { EditDiscountSection } from './components/EditDiscountSection';
 import { EditContactSection } from './components/EditContactSection';
 import { EditNotesSection } from './components/EditNotesSection';
 import { EditPriceSidebar } from './components/EditPriceSidebar';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 // ─── Strona ───────────────────────────────────────────────────
 
@@ -186,7 +187,7 @@ export default function EditOrderPage() {
 
   return (
     <div className="space-y-6 p-6">
-
+      <Breadcrumb />
       {/* ═══ GRADIENT HERO HEADER ═══ */}
       <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${moduleAccents.catering.gradient} px-6 py-6 text-white shadow-lg`}>
         {/* Decorative circles */}

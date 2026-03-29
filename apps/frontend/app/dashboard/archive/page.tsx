@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared'
 import { Skeleton } from '@/components/ui/skeleton'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 const accent = moduleAccents.archive
 
@@ -162,6 +163,7 @@ export default function ArchivePage() {
 
                 return (
                   <div
+                    <Breadcrumb />
                     key={reservation.id}
                     className={cn(
                       'rounded-2xl bg-white dark:bg-neutral-800/80',

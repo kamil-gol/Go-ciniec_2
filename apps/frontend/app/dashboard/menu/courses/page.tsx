@@ -14,6 +14,7 @@ import type { MenuCourse } from '@/types/menu.types'
 import { PageLayout, PageHero, EmptyState, LoadingState } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function CoursesPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
@@ -72,6 +73,7 @@ export default function CoursesPage() {
       />
 
       <PageLayout>
+        <Breadcrumb />
         <PageHero
           accent={accent}
           title="Kursy Menu"

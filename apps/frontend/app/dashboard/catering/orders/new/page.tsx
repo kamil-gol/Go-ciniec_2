@@ -4,12 +4,14 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NewOrderWizard } from '../components/NewOrderWizard';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function NewCateringOrderPage() {
   const router = useRouter();
 
   return (
     <div className="space-y-6 p-6">
+      <Breadcrumb />
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"

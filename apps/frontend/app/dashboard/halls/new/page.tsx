@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { createHall } from '@/lib/api/halls'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function NewHallPage() {
   const router = useRouter()
@@ -65,6 +66,7 @@ export default function NewHallPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <Breadcrumb />
       <div className="container mx-auto py-8 px-4 max-w-4xl space-y-8">
         {/* Premium Hero */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 p-8 text-white shadow-2xl">

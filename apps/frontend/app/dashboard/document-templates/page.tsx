@@ -46,6 +46,7 @@ import { CATEGORY_CONFIG, toSlug } from './components/template-config';
 import { TemplateCard } from './components/TemplateCard';
 import { CreateTemplateDialog } from './components/CreateTemplateDialog';
 import { DeleteTemplateDialog } from './components/DeleteTemplateDialog';
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 type FilterValue = 'all' | TemplateCategory;
 
@@ -297,6 +298,7 @@ export default function DocumentTemplatesPage() {
 
                 return (
                   <div key={cat}>
+                    <Breadcrumb />
                     {/* Category header */}
                     <div className="flex items-center gap-2.5 mb-4">
                       <div className={`p-1.5 bg-gradient-to-br ${catConfig.gradient} rounded-lg`}>

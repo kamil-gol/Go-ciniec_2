@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { CreateReservationForm } from '@/components/reservations/create-reservation-form'
 import { PageLayout, PageHero } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function NewReservationPage() {
   const router = useRouter()
@@ -15,6 +16,7 @@ export default function NewReservationPage() {
 
   return (
     <PageLayout narrowContent>
+      <Breadcrumb />
       {/* Back button */}
       <Button
         variant="ghost"

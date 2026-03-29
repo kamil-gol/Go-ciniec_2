@@ -22,6 +22,17 @@ const pathLabels: Record<string, string> = {
   packages: 'Pakiety',
   new: 'Nowy',
   edit: 'Edycja',
+  catering: 'Catering',
+  orders: 'Zamówienia',
+  archive: 'Archiwum',
+  'audit-log': 'Dziennik Audytu',
+  'daily-view': 'Widok Dzienny',
+  'document-templates': 'Szablony Dokumentów',
+  notifications: 'Powiadomienia',
+  'service-extras': 'Usługi Dodatkowe',
+  courses: 'Dania',
+  calendar: 'Kalendarz',
+  list: 'Lista',
 }
 
 export function Breadcrumb() {

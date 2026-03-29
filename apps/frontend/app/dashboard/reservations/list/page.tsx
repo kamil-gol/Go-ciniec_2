@@ -11,6 +11,7 @@ import { getReservations } from '@/lib/api/reservations'
 import { PageLayout, PageHero, StatCard } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { toast } from 'sonner'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function ReservationsListPage() {
   const searchParams = useSearchParams()
@@ -62,6 +63,7 @@ export default function ReservationsListPage() {
 
   return (
     <PageLayout>
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={accent}

@@ -17,6 +17,7 @@ import { EventTypeFormDialog } from '@/components/event-types/event-type-form-di
 import { EventTypeDeleteDialog } from '@/components/event-types/event-type-delete-dialog'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function EventTypeDetailPage() {
   const params = useParams()
@@ -92,6 +93,7 @@ export default function EventTypeDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <Breadcrumb />
       <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Hero */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-fuchsia-600 via-fuchsia-500 to-pink-600 p-8 text-white shadow-2xl">
