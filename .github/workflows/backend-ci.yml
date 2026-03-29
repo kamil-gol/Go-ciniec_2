@@ -1,6 +1,8 @@
 name: Backend CI/CD
 
 on:
+  schedule:
+    - cron: '0 2 * * *'  # Codziennie o 02:00 UTC (nightly)
   push:
     branches: [main, develop, 'sprint-*']
     paths:
