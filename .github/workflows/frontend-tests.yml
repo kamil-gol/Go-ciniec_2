@@ -31,6 +31,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./apps/frontend
@@ -58,6 +60,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./apps/frontend
@@ -80,6 +84,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./apps/frontend
@@ -102,6 +108,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: ./apps/frontend

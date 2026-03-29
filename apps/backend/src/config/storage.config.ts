@@ -37,15 +37,26 @@ export interface StorageConfig {
   };
 }
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+function requireEnvInProd(name: string, fallback: string): string {
+  const value = process.env[name];
+  if (value) return value;
+  if (isProduction) {
+    throw new Error(`FATAL: ${name} environment variable is required in production`);
+  }
+  return fallback;
+}
+
 export const storageConfig: StorageConfig = {
   driver: (process.env.STORAGE_DRIVER as 'local' | 'minio') || 'local',
   minio: {
     endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:9000',
     publicEndpoint: process.env.MINIO_PUBLIC_ENDPOINT || null,
-    accessKey: process.env.MINIO_ACCESS_KEY || process.env.MINIO_ROOT_USER || 'minioadmin',
-    secretKey: process.env.MINIO_SECRET_KEY || process.env.MINIO_ROOT_PASSWORD || 'minioadmin123',
-    rootUser: process.env.MINIO_ROOT_USER || 'minioadmin',
-    rootPassword: process.env.MINIO_ROOT_PASSWORD || 'minioadmin123',
+    accessKey: process.env.MINIO_ACCESS_KEY || requireEnvInProd('MINIO_ROOT_USER', 'minioadmin'),
+    secretKey: process.env.MINIO_SECRET_KEY || requireEnvInProd('MINIO_ROOT_PASSWORD', 'minioadmin123'),
+    rootUser: requireEnvInProd('MINIO_ROOT_USER', 'minioadmin'),
+    rootPassword: requireEnvInProd('MINIO_ROOT_PASSWORD', 'minioadmin123'),
   },
   buckets: {
     attachments: process.env.MINIO_BUCKET_ATTACHMENTS || 'attachments',

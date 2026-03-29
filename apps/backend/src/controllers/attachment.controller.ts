@@ -7,10 +7,19 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import attachmentService from '../services/attachment.service';
 import { CreateAttachmentDTO, UpdateAttachmentDTO } from '../types/attachment.types';
 import { EntityType } from '../constants/attachmentCategories';
 import logger from '../utils/logger';
+
+const createAttachmentSchema = z.object({
+  entityType: z.enum(['RESERVATION', 'CLIENT', 'DEPOSIT']),
+  entityId: z.string().uuid('entityId musi być poprawnym UUID'),
+  category: z.string().min(1, 'Kategoria jest wymagana'),
+  label: z.string().optional(),
+  description: z.string().optional(),
+});
 
 class AttachmentController {
   /**
@@ -24,12 +33,17 @@ class AttachmentController {
         return res.status(400).json({ error: 'Nie przesłano pliku' });
       }
 
+      const parsed = createAttachmentSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors.map(e => e.message).join(', ') });
+      }
+
       const dto: CreateAttachmentDTO = {
-        entityType: req.body.entityType,
-        entityId: req.body.entityId,
-        category: req.body.category,
-        label: req.body.label || undefined,
-        description: req.body.description || undefined,
+        entityType: parsed.data.entityType,
+        entityId: parsed.data.entityId,
+        category: parsed.data.category,
+        label: parsed.data.label || undefined,
+        description: parsed.data.description || undefined,
       };
 
       const userId = (req as any).user?.id;

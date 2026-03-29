@@ -22,6 +22,7 @@ import { calculateVenueSurcharge } from '../utils/venue-surcharge';
 import { recalculateReservationTotalPrice } from '../utils/recalculate-price';
 import { reservationCategoryExtraService } from './reservationCategoryExtra.service';
 import reservationMenuService from './reservation-menu.service';
+import logger from '../utils/logger';
 import { RESERVATION, HALL, VENUE_SURCHARGE } from '../i18n/pl';
 import notificationService from './notification.service';
 import { validateCapacityForTimeRange, checkWholeVenueConflict } from './reservation-validation.service';
@@ -84,7 +85,7 @@ export async function processHallAndTimingUpdates(
 
   // #176: eventTypeId is immutable after creation — silently ignore if sent
   if (data.eventTypeId !== undefined && data.eventTypeId !== existing.eventTypeId) {
-    console.warn(`[Reservation] Ignored eventTypeId change attempt on ${existing.id}: ${existing.eventTypeId} → ${data.eventTypeId}`);
+    logger.debug(`[Reservation] Ignored eventTypeId change attempt on ${existing.id}: ${existing.eventTypeId} → ${data.eventTypeId}`);
   }
 
   if (data.menuPackageId !== undefined) {
@@ -192,7 +193,7 @@ export async function recalculatePrices(
     const recalcResult = await reservationMenuService.recalculateForGuestChange(existing.id, newAdults, newChildren, newToddlers);
     /* istanbul ignore next */
     if (recalcResult) {
-      console.log(`[Reservation] Auto-recalculated menu snapshot for ${existing.id}: menuPrice=${recalcResult.totalMenuPrice}`);
+      logger.debug(`[Reservation] Auto-recalculated menu snapshot for ${existing.id}: menuPrice=${recalcResult.totalMenuPrice}`);
     }
   }
 
@@ -231,7 +232,7 @@ export async function recalculatePrices(
       updateData.totalPrice = Math.round((baseTotal - oldSurcharge + newSurcharge) * 100) / 100;
 
       if (!oldIsWholeVenue && newIsWholeVenue) {
-        console.log(`[Reservation] Venue surcharge APPLIED for ${existing.id}: +${newSurcharge} PLN (hall changed to whole venue)`);
+        logger.debug(`[Reservation] Venue surcharge APPLIED for ${existing.id}: +${newSurcharge} PLN (hall changed to whole venue)`);
         await createHistoryEntry(
           existing.id,
           userId,
@@ -242,10 +243,10 @@ export async function recalculatePrices(
           VENUE_SURCHARGE.AUDIT_APPLIED(newSurcharge, finalGuests)
         );
       } else if (oldIsWholeVenue && !newIsWholeVenue) {
-        console.log(`[Reservation] Venue surcharge REMOVED for ${existing.id}: -${oldSurcharge} PLN (hall changed to normal)`);
+        logger.debug(`[Reservation] Venue surcharge REMOVED for ${existing.id}: -${oldSurcharge} PLN (hall changed to normal)`);
         await createHistoryEntry(existing.id, userId, 'SURCHARGE_REMOVED', 'venueSurcharge', String(oldSurcharge), '0', VENUE_SURCHARGE.AUDIT_REMOVED);
       } else {
-        console.log(`[Reservation] Venue surcharge RECALCULATED for ${existing.id}: ${oldSurcharge} → ${newSurcharge} PLN`);
+        logger.debug(`[Reservation] Venue surcharge RECALCULATED for ${existing.id}: ${oldSurcharge} → ${newSurcharge} PLN`);
         await createHistoryEntry(
           existing.id,
           userId,

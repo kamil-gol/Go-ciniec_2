@@ -68,9 +68,16 @@ export default function DishCategoriesPage() {
     setDialogOpen(true)
   }
 
+  // Reset form after dialog animation (#436)
+  useEffect(() => {
+    if (!dialogOpen) {
+      const timer = setTimeout(() => resetForm(), 200)
+      return () => clearTimeout(timer)
+    }
+  }, [dialogOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleClose = () => {
     setDialogOpen(false)
-    setTimeout(() => resetForm(), 200)
   }
 
   const handleSubmit = async () => {

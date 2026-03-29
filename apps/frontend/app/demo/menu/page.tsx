@@ -160,7 +160,7 @@ export default function MenuDemoPage() {
               childrenCount={10}
               toddlers={5}
               onComplete={(selection) => {
-                console.log('Selection completed:', selection);
+                // Selection completed — toast handles UI feedback
                 toast.success('\u2705 Wybór menu zakończony!', {
                   description: `Template: ${selection.templateId}, Package: ${selection.packageId}`,
                 });

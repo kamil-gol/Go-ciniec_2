@@ -5,7 +5,7 @@
 
 jest.mock('../../../../lib/prisma', () => ({
   prisma: {
-    $queryRawUnsafe: jest.fn(),
+    $queryRaw: jest.fn(),
     deposit: { findMany: jest.fn() },
   },
 }));
@@ -50,7 +50,7 @@ describe('getDatePlusDays', () => {
 
 describe('getStats', () => {
   it('returns formatted stats from raw query', async () => {
-    db.$queryRawUnsafe.mockResolvedValue([{
+    db.$queryRaw.mockResolvedValue([{
       total: 10,
       pending: 3,
       paid: 5,
@@ -75,7 +75,7 @@ describe('getStats', () => {
   });
 
   it('handles empty result', async () => {
-    db.$queryRawUnsafe.mockResolvedValue([{}]);
+    db.$queryRaw.mockResolvedValue([{}]);
 
     const result = await depositStatsService.getStats();
 
@@ -111,7 +111,7 @@ describe('getOverdue', () => {
 
 describe('autoMarkOverdue', () => {
   it('marks overdue and sends notification', async () => {
-    db.$queryRawUnsafe.mockResolvedValue([{ count: 3 }]);
+    db.$queryRaw.mockResolvedValue([{ count: 3 }]);
 
     const result = await depositStatsService.autoMarkOverdue();
 
@@ -125,7 +125,7 @@ describe('autoMarkOverdue', () => {
   });
 
   it('does not send notification when nothing marked', async () => {
-    db.$queryRawUnsafe.mockResolvedValue([{ count: 0 }]);
+    db.$queryRaw.mockResolvedValue([{ count: 0 }]);
 
     const result = await depositStatsService.autoMarkOverdue();
 

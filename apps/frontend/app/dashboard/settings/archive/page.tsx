@@ -44,6 +44,13 @@ export default function ArchiveSettingsPage() {
     }
   }, [settings]);
 
+  // Auto-hide save success message (#436)
+  useEffect(() => {
+    if (!saveSuccess) return;
+    const timer = setTimeout(() => setSaveSuccess(false), 3000);
+    return () => clearTimeout(timer);
+  }, [saveSuccess]);
+
   // ── Handlers ──────────────────────────────────────────
 
   const handleSaveDays = async () => {
@@ -53,7 +60,6 @@ export default function ArchiveSettingsPage() {
     try {
       await updateMutation.mutateAsync(days);
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
     } catch {
       // error handled by mutation state
     }
