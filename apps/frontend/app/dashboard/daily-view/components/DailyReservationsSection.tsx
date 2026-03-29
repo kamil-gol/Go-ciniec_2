@@ -58,7 +58,7 @@ function getDeadlineInfo(
 // ─── Mobile agenda card ─────────────────────────────────────────────────────
 
 function MobileAgendaCard({ reservation, index }: { reservation: Reservation; index: number }) {
-  const r = reservation as Reservation
+  const r = reservation as any
   const clientName = `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim()
 
   const startTime = getStartTime(r)
@@ -139,7 +139,7 @@ function MobileAgendaCard({ reservation, index }: { reservation: Reservation; in
 // ─── Reservation row (desktop) ──────────────────────────────────────────────
 
 function ReservationRow({ reservation, index }: { reservation: Reservation; index: number }) {
-  const r = reservation as Reservation
+  const r = reservation as any
   const accent = moduleAccents.reservations
   const clientName = `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim()
 
