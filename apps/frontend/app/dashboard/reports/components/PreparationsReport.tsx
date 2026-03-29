@@ -34,7 +34,7 @@ export function PreparationsTab({ query, view }: {
       {/* DETAILED VIEW */}
       {view === 'detailed' && days && days.length > 0 && (
         <div className="space-y-4">
-          {days.map((day: Record<string, unknown>) => (
+          {days.map((day: any) => (
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -44,7 +44,7 @@ export function PreparationsTab({ query, view }: {
                   {day.totalItems} {day.totalItems === 1 ? 'usługa' : 'usług'}
                 </span>
               </div>
-              {day.categories.map((cat: Record<string, unknown>) => (
+              {day.categories.map((cat: any) => (
                 <div key={cat.categoryId} className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0">
                   <div className="px-4 py-2 bg-purple-50 dark:bg-purple-950/20">
                     <span className="text-xs font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">
@@ -68,7 +68,7 @@ export function PreparationsTab({ query, view }: {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                        {cat.items.map((item: Record<string, unknown>) => (
+                        {cat.items.map((item: any) => (
                           <tr key={item.extraId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                             <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 truncate">{item.serviceName}</td>
                             <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{item.quantity}</td>
@@ -102,7 +102,7 @@ export function PreparationsTab({ query, view }: {
       {/* SUMMARY VIEW */}
       {view === 'summary' && summaryDays && summaryDays.length > 0 && (
         <div className="space-y-4">
-          {summaryDays.map((day: Record<string, unknown>) => (
+          {summaryDays.map((day: any) => (
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -131,7 +131,7 @@ export function PreparationsTab({ query, view }: {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                    {day.items.map((item: Record<string, unknown>) => (
+                    {day.items.map((item: any) => (
                       <tr key={item.serviceItemId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                         <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 truncate">{item.serviceName}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-neutral-600 dark:text-neutral-300 hidden sm:table-cell">
@@ -142,7 +142,7 @@ export function PreparationsTab({ query, view }: {
                         <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-700 dark:text-neutral-300 font-semibold">{item.totalQuantity}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-right text-neutral-600 dark:text-neutral-300 hidden sm:table-cell">{item.reservationCount}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-neutral-500 dark:text-neutral-500 text-xs hidden lg:table-column truncate">
-                          {item.reservations.map((r: Record<string, unknown>) => {
+                          {item.reservations.map((r: any) => {
                             const time = formatTime(r.startTime);
                             return time
                               ? `${r.clientName} ${time}`

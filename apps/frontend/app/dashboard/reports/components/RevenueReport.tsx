@@ -7,7 +7,7 @@ export function RevenueTab({ query }: { query: RevenueQueryResult }) {
   if (query.isError) return <ReportErrorState message={"Błąd ładowania raportu przychodów"} />;
   if (!query.data) return <ReportEmptyState message={"Brak danych do wyświetlenia"} />;
 
-  const { summary, breakdown, byHall, byEventType, byCategoryExtra } = query.data as Record<string, unknown>;
+  const { summary, breakdown, byHall, byEventType, byCategoryExtra } = query.data as any;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -61,7 +61,7 @@ export function RevenueTab({ query }: { query: RevenueQueryResult }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                {breakdown.map((item: Record<string, unknown>) => (
+                {breakdown.map((item: any) => (
                   <tr key={item.period} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                     <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">{item.period}</td>
                     <td className="px-3 sm:px-4 py-2.5 text-right text-green-700 dark:text-green-400 font-semibold whitespace-nowrap">{formatCurrency(item.revenue)}</td>
@@ -91,7 +91,7 @@ export function RevenueTab({ query }: { query: RevenueQueryResult }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {byHall.map((item: Record<string, unknown>) => (
+                  {byHall.map((item: any) => (
                     <tr key={item.hallId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                       <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100">{item.hallName}</td>
                       <td className="px-3 sm:px-4 py-2.5 text-right text-green-700 dark:text-green-400 font-semibold whitespace-nowrap">{formatCurrency(item.revenue)}</td>
@@ -118,7 +118,7 @@ export function RevenueTab({ query }: { query: RevenueQueryResult }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {byEventType.map((item: Record<string, unknown>) => (
+                  {byEventType.map((item: any) => (
                     <tr key={item.eventTypeId} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                       <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100">{item.eventTypeName}</td>
                       <td className="px-3 sm:px-4 py-2.5 text-right text-green-700 dark:text-green-400 font-semibold whitespace-nowrap">{formatCurrency(item.revenue)}</td>
@@ -149,7 +149,7 @@ export function RevenueTab({ query }: { query: RevenueQueryResult }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                {byCategoryExtra.map((item: Record<string, unknown>) => (
+                {byCategoryExtra.map((item: any) => (
                   <tr key={item.categoryName} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                     <td className="px-3 sm:px-4 py-2.5 font-medium text-neutral-900 dark:text-neutral-100">{item.categoryName}</td>
                     <td className="px-3 sm:px-4 py-2.5 text-right text-amber-700 dark:text-amber-400 font-semibold whitespace-nowrap">{formatCurrency(item.revenue)}</td>
