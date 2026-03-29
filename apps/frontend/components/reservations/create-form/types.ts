@@ -1,11 +1,14 @@
 import type { Control, FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from 'react-hook-form'
 import type { ReservationFormData } from './validation'
 import type { SelectedExtra } from '@/components/service-extras/CreateReservationExtrasSection'
+import type { Hall, EventType } from '@/types/hall.types'
+import type { Client } from '@/types/client.types'
+import type { MenuTemplate, MenuPackage } from '@/types/menu.types'
 
 // ═══ PROPS — main form ═══
 
 export interface CreateReservationFormProps {
-  onSubmit?: (data: any) => void | Promise<void>
+  onSubmit?: (data: ReservationFormData) => void | Promise<void>
   onSuccess?: () => void
   onCancel?: () => void
   initialData?: Partial<ReservationFormData>
@@ -27,7 +30,7 @@ export interface FormContext {
 
 export interface EventSectionProps {
   formCtx: FormContext
-  eventTypesArray: any[]
+  eventTypesArray: EventType[]
   isBirthday: boolean
   isAnniversary: boolean
   isCustom: boolean
@@ -35,8 +38,8 @@ export interface EventSectionProps {
 
 export interface VenueSectionProps {
   formCtx: FormContext
-  hallsArray: any[]
-  selectedHall: any | undefined
+  hallsArray: Hall[]
+  selectedHall: Hall | undefined
   selectedHallCapacity: number
   isMultiBookingHall: boolean
   defaultHallId?: string
@@ -51,9 +54,9 @@ export interface VenueSectionProps {
   extraHours: number
   standardHours: number
   extraHourRate: number
-  availability: any
+  availability: { available: boolean; conflicts?: unknown[] } | undefined
   availabilityLoading: boolean
-  availableCapacity: any
+  availableCapacity: { available: number; total: number } | undefined
   capacityLoading: boolean
 }
 
@@ -65,7 +68,7 @@ export interface GuestsSectionProps {
   totalGuests: number
   selectedHallCapacity: number
   isMultiBookingHall: boolean
-  availableCapacity: any
+  availableCapacity: { available: number; total: number } | undefined
 }
 
 export interface MenuSectionProps {
@@ -74,12 +77,12 @@ export interface MenuSectionProps {
   selectedEventTypeId: string
   menuTemplateId: string | undefined
   menuPackageId: string | undefined
-  menuTemplatesArray: any[]
+  menuTemplatesArray: MenuTemplate[]
   menuTemplatesLoading: boolean
-  templatePackagesArray: any[]
+  templatePackagesArray: MenuPackage[]
   templatePackagesLoading: boolean
-  selectedTemplate: any
-  selectedPackage: any
+  selectedTemplate: MenuTemplate | null
+  selectedPackage: MenuPackage | null
   hasNoTemplatesForEventType: boolean | string
   pricePerAdult: number
   childPriceManuallySet: boolean
@@ -97,7 +100,7 @@ export interface ClientSectionProps {
   formCtx: FormContext
   clientComboboxOptions: { value: string; label: string; description?: string; secondaryLabel?: string }[]
   clientsLoading: boolean
-  selectedClient: any
+  selectedClient: Client | null
   isPromotingFromQueue: boolean
   showCreateClientModal: boolean
   setShowCreateClientModal: (v: boolean) => void
@@ -110,7 +113,7 @@ export interface SummarySectionProps {
   isAnniversary: boolean
   isCustom: boolean
   watchAll: ReservationFormData
-  selectedHall: any
+  selectedHall: Hall | undefined
   startDate: string
   startTime: string
   endTime: string
@@ -123,10 +126,10 @@ export interface SummarySectionProps {
   adults: number
   children: number
   toddlers: number
-  selectedClient: any
+  selectedClient: Client | null
   useMenuPackage: boolean
-  selectedTemplate: any
-  selectedPackage: any
+  selectedTemplate: MenuTemplate | null
+  selectedPackage: MenuPackage | null
   discountEnabled: boolean
   discountType: 'PERCENTAGE' | 'FIXED'
   discountValue: number
@@ -157,8 +160,8 @@ export interface PriceSummaryProps {
   selectedExtras: SelectedExtra[]
   totalWithExtras: number
   useMenuPackage: boolean
-  selectedTemplate: any
-  selectedPackage: any
+  selectedTemplate: MenuTemplate | null
+  selectedPackage: MenuPackage | null
   venueSurchargeAmount: number
   venueSurcharge: { amount: number; label: string | null }
 }

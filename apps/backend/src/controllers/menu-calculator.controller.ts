@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from '@/utils/AppError';
  * Menu Calculator Controller (Express)
  *
  * Handles menu price calculation requests.
@@ -115,10 +116,10 @@ export async function calculatePrice(req: Request, res: Response) {
     };
 
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error calculating menu price:', error);
-    /* istanbul ignore next -- error.message fallback */
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    /* istanbul ignore next -- getErrorMessage(error) fallback */
+    res.status(500).json({ error: getErrorMessage(error) || 'Internal server error' });
   }
 }
 
@@ -174,10 +175,10 @@ export async function getAvailablePackages(req: Request, res: Response) {
       count: packages.length,
       packages,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting available packages:', error);
-    /* istanbul ignore next -- error.message fallback */
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    /* istanbul ignore next -- getErrorMessage(error) fallback */
+    res.status(500).json({ error: getErrorMessage(error) || 'Internal server error' });
   }
 }
 

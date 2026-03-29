@@ -43,27 +43,27 @@ interface ExistingReservation {
   children: number;
   toddlers: number;
   guests: number;
-  totalPrice: any;
-  pricePerAdult: any;
-  pricePerChild: any;
-  pricePerToddler: any;
-  venueSurcharge: any;
+  totalPrice: number | string | null;
+  pricePerAdult: number | string | null;
+  pricePerChild: number | string | null;
+  pricePerToddler: number | string | null;
+  venueSurcharge: number | string | null;
   startDateTime: Date | null;
   endDateTime: Date | null;
   internalNotes: string | null;
   status: string;
-  hall: any;
-  eventType: any;
-  menuSnapshot: any;
-  client: any;
-  [key: string]: any;
+  hall: { id: string; name: string; capacity: number; isWholeVenue?: boolean; allowMultipleBookings?: boolean } | null;
+  eventType: { id: string; name: string; standardHours?: number | null; extraHourRate?: number | string | null } | null;
+  menuSnapshot: { id: string; totalMenuPrice: number | string | null; menuData?: unknown } | null;
+  client: { id: string; firstName: string; lastName: string; companyName?: string | null; clientType?: string } | null;
+  [key: string]: unknown;
 }
 
 // ─── 1. Hall & timing update processing ──────────────────────────────────────
 
 export interface HallTimingResult {
   updateData: Prisma.ReservationUncheckedUpdateInput;
-  effectiveHall: any;
+  effectiveHall: { id: string; name: string; capacity: number; isWholeVenue?: boolean; allowMultipleBookings?: boolean } | null;
   hallChanged: boolean;
   guestsChanged: boolean;
   newAdults: number;
@@ -78,7 +78,7 @@ export async function processHallAndTimingUpdates(
   data: UpdateReservationDTO,
   existing: ExistingReservation,
   userId: string,
-  updateReservationMenu: (id: string, menuData: any, uid: string) => Promise<any>
+  updateReservationMenu: (id: string, menuData: unknown, uid: string) => Promise<unknown>
 ): Promise<HallTimingResult> {
   const updateData: Prisma.ReservationUncheckedUpdateInput = {};
 
@@ -287,7 +287,7 @@ export async function upsertCategoryExtrasAndRecalculate(
   existing: ExistingReservation,
   hallTimingResult: HallTimingResult,
   userId: string
-): Promise<any> {
+): Promise<unknown> {
   const { updateData } = hallTimingResult;
   const detectedChanges = detectReservationChanges(existing, data);
 
@@ -347,8 +347,8 @@ export async function executeUpdateReservation(
   userId: string,
   validateUserId: (uid: string) => Promise<void>,
   getReservationById: (rid: string) => Promise<any>,
-  updateReservationMenu: (rid: string, menuData: any, uid: string) => Promise<any>
-): Promise<any> {
+  updateReservationMenu: (rid: string, menuData: unknown, uid: string) => Promise<unknown>
+): Promise<unknown> {
   await validateUserId(userId);
   const existing = await prisma.reservation.findUnique({
     where: { id },
@@ -385,13 +385,13 @@ export async function executeUpdateReservation(
   if (existing.status === ReservationStatus.ARCHIVED) throw new AppError(RESERVATION.CANNOT_UPDATE_ARCHIVED, 409);
 
   // 1. Hall & timing update processing
-  const hallTimingResult = await processHallAndTimingUpdates(data, existing as any, userId, updateReservationMenu);
+  const hallTimingResult = await processHallAndTimingUpdates(data, existing, userId, updateReservationMenu);
 
   // 2. Price recalculation
-  await recalculatePrices(existing as any, data, hallTimingResult, userId);
+  await recalculatePrices(existing, data, hallTimingResult, userId);
 
   // 3. Category extras upsert & final recalculation
-  const reservation = await upsertCategoryExtrasAndRecalculate(id, data, existing as any, hallTimingResult, userId);
+  const reservation = await upsertCategoryExtrasAndRecalculate(id, data, existing, hallTimingResult, userId);
 
   return reservation;
 }

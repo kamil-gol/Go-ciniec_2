@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from '@/utils/AppError';
  * Email Service
  * Nodemailer-based email sending with HTML templates
  *
@@ -174,8 +175,8 @@ const emailService = {
         logger.debug(`[Email] Attachments: ${options.attachments.map(a => a.filename).join(', ')}`);
       }
       return true;
-    } catch (error: any) {
-      logger.error(`[Email] Failed to send to ${options.to}: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error(`[Email] Failed to send to ${options.to}: ${getErrorMessage(error)}`);
       return false;
     }
   },
@@ -463,8 +464,8 @@ const emailService = {
       await transport.verify();
       logger.info('[Email] SMTP connection verified successfully');
       return true;
-    } catch (error: any) {
-      logger.error(`[Email] SMTP verification failed: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error(`[Email] SMTP verification failed: ${getErrorMessage(error)}`);
       return false;
     }
   },
