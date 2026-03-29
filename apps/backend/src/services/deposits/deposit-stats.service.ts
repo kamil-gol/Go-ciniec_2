@@ -6,7 +6,7 @@
 import { prisma } from '../../lib/prisma';
 import notificationService from '../notification.service';
 
-/** Raw row shape returned by getStats $queryRawUnsafe */
+/** Raw row shape returned by getStats $queryRaw */
 export interface DepositStatsRow {
   total: number;
   pending: number;
@@ -20,7 +20,7 @@ export interface DepositStatsRow {
   overdueAmount: number | string;
 }
 
-/** Raw row shape returned by autoMarkOverdue $queryRawUnsafe */
+/** Raw row shape returned by autoMarkOverdue $queryRaw */
 export interface CountRow {
   count: number;
 }
@@ -35,20 +35,20 @@ export const depositStatsService = {
   async getStats() {
     const todayStr = new Date().toISOString().substring(0, 10);
 
-    const stats: DepositStatsRow[] = await prisma.$queryRawUnsafe(`
+    const futureStr = getDatePlusDays(7);
+    const stats: DepositStatsRow[] = await prisma.$queryRaw<DepositStatsRow[]>`
       SELECT
         COUNT(*) FILTER (WHERE status IN ('PENDING','PAID','OVERDUE','PARTIALLY_PAID'))::int as total,
         COUNT(*) FILTER (WHERE status = 'PENDING')::int as pending,
         COUNT(*) FILTER (WHERE status = 'PAID')::int as paid,
-        COUNT(*) FILTER (WHERE status = 'PENDING' AND "dueDate" < $1)::int as overdue,
+        COUNT(*) FILTER (WHERE status = 'PENDING' AND "dueDate" < ${todayStr})::int as overdue,
         COUNT(*) FILTER (WHERE status = 'PARTIALLY_PAID')::int as "partiallyPaid",
         COUNT(*) FILTER (WHERE status = 'CANCELLED')::int as cancelled,
-        COUNT(*) FILTER (WHERE status = 'PENDING' AND "dueDate" >= $1 AND "dueDate" <= $2)::int as "upcomingIn7Days",
+        COUNT(*) FILTER (WHERE status = 'PENDING' AND "dueDate" >= ${todayStr} AND "dueDate" <= ${futureStr})::int as "upcomingIn7Days",
         COALESCE(SUM(amount) FILTER (WHERE status IN ('PENDING','PAID','OVERDUE','PARTIALLY_PAID')), 0)::numeric as "totalAmount",
         COALESCE(SUM(amount) FILTER (WHERE paid = true), 0)::numeric as "paidAmountSum",
-        COALESCE(SUM(amount) FILTER (WHERE status = 'PENDING' AND "dueDate" < $1), 0)::numeric as "overdueAmount"
-      FROM "Deposit"
-    `, todayStr, getDatePlusDays(7));
+        COALESCE(SUM(amount) FILTER (WHERE status = 'PENDING' AND "dueDate" < ${todayStr}), 0)::numeric as "overdueAmount"
+      FROM "Deposit"`;
 
     const row = stats[0] || {};
     const totalAmt = Number(row.totalAmount || 0);
@@ -99,14 +99,12 @@ export const depositStatsService = {
   async autoMarkOverdue() {
     const todayStr = new Date().toISOString().substring(0, 10);
 
-    const result: CountRow[] = await prisma.$queryRawUnsafe(
-      `WITH updated AS (
+    const result: CountRow[] = await prisma.$queryRaw<CountRow[]>`
+      WITH updated AS (
         UPDATE "Deposit" SET status = 'OVERDUE', "updatedAt" = NOW()
-        WHERE status = 'PENDING' AND paid = false AND "dueDate" < $1
+        WHERE status = 'PENDING' AND paid = false AND "dueDate" < ${todayStr}
         RETURNING id
-      ) SELECT count(*)::int as count FROM updated`,
-      todayStr
-    );
+      ) SELECT count(*)::int as count FROM updated`;
 
     const count = Number(result[0]?.count || 0);
 
