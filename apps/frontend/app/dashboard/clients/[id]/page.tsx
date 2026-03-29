@@ -13,6 +13,7 @@ import { LoadingState } from '@/components/shared/LoadingState'
 import { StatCard } from '@/components/shared/StatCard'
 import { statGradients, layout } from '@/lib/design-tokens'
 import { getClientById, deleteClient } from '@/lib/api/clients'
+import type { Client, Reservation } from '@/types'
 import Link from 'next/link'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
@@ -30,7 +31,7 @@ type TabType = 'details' | 'history'
 export default function ClientDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const [client, setClient] = useState<any>(null)
+  const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -90,10 +91,10 @@ export default function ClientDetailsPage() {
   const reservations = client.reservations || []
   const stats = {
     total: reservations.length,
-    confirmed: reservations.filter((r: any) => r.status === 'CONFIRMED').length,
-    completed: reservations.filter((r: any) => r.status === 'COMPLETED').length,
+    confirmed: reservations.filter((r: Reservation) => r.status === 'CONFIRMED').length,
+    completed: reservations.filter((r: Reservation) => r.status === 'COMPLETED').length,
     totalSpent: reservations
-      .filter((r: any) => r.status === 'CONFIRMED' || r.status === 'COMPLETED')
+      .filter((r: Reservation) => r.status === 'CONFIRMED' || r.status === 'COMPLETED')
       .reduce((sum: number, r: any) => sum + (Number(r.totalPrice) || 0), 0),
   }
 

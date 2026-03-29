@@ -75,7 +75,7 @@ export function useCreateTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: any) => menuApi.createTemplate(input),
+    mutationFn: (input: Record<string, unknown>) => menuApi.createTemplate(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: menuKeys.templates() });
     },
@@ -86,7 +86,7 @@ export function useUpdateTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => 
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => 
       menuApi.updateTemplate(id, data),
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: menuKeys.templates() });
@@ -145,7 +145,7 @@ export function useCreatePackage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: any) => menuApi.createPackage(input),
+    mutationFn: (input: Record<string, unknown>) => menuApi.createPackage(input),
     onSuccess: (response) => {
       const templateId = response.data.menuTemplateId;
       queryClient.invalidateQueries({ queryKey: menuKeys.packages(templateId) });
@@ -158,7 +158,7 @@ export function useUpdatePackage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => 
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => 
       menuApi.updatePackage(id, data),
     onSuccess: (response, variables) => {
       const templateId = response.data.menuTemplateId;
@@ -210,7 +210,7 @@ export function useCreateOption() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: any) => menuApi.createOption(input),
+    mutationFn: (input: Record<string, unknown>) => menuApi.createOption(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: menuKeys.options() });
     },
@@ -221,7 +221,7 @@ export function useUpdateOption() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => 
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => 
       menuApi.updateOption(id, data),
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: menuKeys.options() });

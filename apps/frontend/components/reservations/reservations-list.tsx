@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useReservations, useArchiveReservation, useUnarchiveReservation } from '@/lib/api/reservations'
-import type { ReservationStatus } from '@/types'
+import type { ReservationStatus, Reservation } from '@/types'
 import { Calendar } from 'lucide-react'
 import { Pagination } from '@/components/shared/Pagination'
 import { toast } from 'sonner'
@@ -64,19 +64,19 @@ export function ReservationsList() {
   }, [])
 
   const allReservations = useMemo(() => data?.data || [], [data])
-  const reservations = useMemo(() => allReservations.filter((r: any) => r.status !== 'RESERVED'), [allReservations])
+  const reservations = useMemo(() => allReservations.filter((r: Reservation) => r.status !== 'RESERVED'), [allReservations])
 
   useEffect(() => {
     if (reservations.length === 0) return
 
-    const reservationIds = reservations.map((r: any) => r.id)
+    const reservationIds = reservations.map((r: Reservation) => r.id)
     batchCheckContract(reservationIds)
       .then(setContractMap)
       .catch(console.error)
 
     const clientIds = [...new Set(
       reservations
-        .map((r: any) => r.clientId || r.client?.id)
+        .map((r: Reservation) => r.clientId || r.client?.id)
         .filter(Boolean)
     )] as string[]
     if (clientIds.length > 0) {
@@ -207,7 +207,7 @@ export function ReservationsList() {
 
   const totalPages = data?.totalPages || 1
 
-  const reservationsByDate = reservations.reduce((acc: any, res: any) => {
+  const reservationsByDate = reservations.reduce((acc: Record<string, Reservation[]>, res: Reservation) => {
     const date = getFormattedDate(res)
     if (!date) return acc
     const dateKey = format(date, 'yyyy-MM-dd')
@@ -302,7 +302,7 @@ export function ReservationsList() {
 
                 {/* Reservation Cards */}
                 <div className="grid gap-3">
-                  {dateReservations.map((reservation: any) => (
+                  {dateReservations.map((reservation: Reservation) => (
                     <ReservationCard
                       key={reservation.id}
                       reservation={reservation}
