@@ -24,14 +24,9 @@ import { test, expect } from '@playwright/test';
 
 const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl';
 const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || '';
+const SKIP_REASON = 'TEST_ADMIN_PASSWORD not set — skipping audit tests';
 
-if (!ADMIN_PASSWORD) {
-  throw new Error(
-    'TEST_ADMIN_PASSWORD is required. Use:\n' +
-    '  TEST_ADMIN_PASSWORD=xxx npx playwright test specs/14-uiux-audit5.spec.ts --project=chromium'
-  );
-}
-
+test.skip(!ADMIN_PASSWORD, SKIP_REASON);
 test.setTimeout(90_000);
 test.describe.configure({ retries: 2 });
 

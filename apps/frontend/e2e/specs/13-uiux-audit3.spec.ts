@@ -20,14 +20,9 @@ import { manualLogin as login } from '../fixtures/auth.fixture';
 
 const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@gosciniecrodzinny.pl';
 const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || '';
+const SKIP_REASON = 'TEST_ADMIN_PASSWORD not set — skipping audit tests';
 
-if (!ADMIN_PASSWORD) {
-  throw new Error(
-    'TEST_ADMIN_PASSWORD is required. Use the wrapper script:\n' +
-    '  ./e2e/run-audit.sh'
-  );
-}
-
+test.skip(!ADMIN_PASSWORD, SKIP_REASON);
 test.setTimeout(90_000);
 test.describe.configure({ retries: 2 });
 
