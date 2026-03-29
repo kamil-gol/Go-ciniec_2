@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import type { UseFormSetValue, UseFormWatch } from 'react-hook-form'
 import type { ReservationFormData } from '../validation'
+import type { Hall } from '@/types/hall.types'
+import type { MenuTemplate, MenuPackage } from '@/types/menu.types'
 
 export interface FormEffectsParams {
   watch: UseFormWatch<ReservationFormData>
@@ -8,18 +10,18 @@ export interface FormEffectsParams {
 
   // Default hall from props
   defaultHallId: string | undefined
-  hallsArray: any[]
+  hallsArray: Hall[]
 
   // Computed values
   standardHours: number
   useMenuPackage: boolean
-  selectedPackage: any
+  selectedPackage: MenuPackage | null
   pricePerAdult: number
   selectedEventTypeId: string | undefined
   menuTemplateId: string | undefined
   menuPackageId: string | undefined
-  menuTemplatesArray: any[]
-  templatePackagesArray: any[]
+  menuTemplatesArray: MenuTemplate[]
+  templatePackagesArray: MenuPackage[]
   hallId: string | undefined
 
   // Manual price flags
@@ -128,7 +130,7 @@ export function useFormEffects({
   // Hall default price
   useEffect(() => {
     if (hallId && !useMenuPackage && !watchAll.pricePerAdult) {
-      const hall = hallsArray.find((h) => h.id === hallId) as any
+      const hall = hallsArray.find((h) => h.id === hallId)
       if (hall?.pricePerPerson) setValue('pricePerAdult', hall.pricePerPerson)
     }
   }, [hallId, hallsArray, setValue, useMenuPackage, watchAll.pricePerAdult])

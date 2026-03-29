@@ -89,10 +89,10 @@ export function validateCustomEventFields(
  * Detect changes between old and new reservation data
  */
 export function detectReservationChanges(
-  oldData: any,
+  oldData: Record<string, unknown>,
   newData: UpdateReservationDTO
-): Array<{ field: string; oldValue: any; newValue: any; label: string }> {
-  const changes: Array<{ field: string; oldValue: any; newValue: any; label: string }> = [];
+): Array<{ field: string; oldValue: unknown; newValue: unknown; label: string }> {
+  const changes: Array<{ field: string; oldValue: unknown; newValue: unknown; label: string }> = [];
   
   // Compare startDateTime
   if (newData.startDateTime && newData.startDateTime !== oldData.startDateTime?.toISOString()) {
@@ -231,7 +231,7 @@ export function detectReservationChanges(
  * Format changes summary for display
  */
 export function formatChangesSummary(
-  changes: Array<{ field: string; oldValue: any; newValue: any; label: string }>
+  changes: Array<{ field: string; oldValue: unknown; newValue: unknown; label: string }>
 ): string {
   if (changes.length === 0) {
     return 'Brak zmian';
@@ -271,8 +271,8 @@ export function calculateExtrasTotalPrice(
  * Enrich a reservation record with computed extras totals.
  * Used by getReservations (list) and getReservationById (detail).
  */
-export function enrichWithExtrasTotals(reservation: any): any {
-  const rawExtras = (reservation.extras || []).map((e: any) => ({
+export function enrichWithExtrasTotals(reservation: Record<string, unknown>): Record<string, unknown> {
+  const rawExtras = (reservation.extras || []).map((e: Record<string, unknown>) => ({
     quantity: e.quantity,
     customPrice: null as number | null,
     serviceItem: { basePrice: Number(e.serviceItem.basePrice), priceType: e.serviceItem.priceType },
@@ -294,7 +294,7 @@ export function enrichWithExtrasTotals(reservation: any): any {
 /**
  * Format value for display
  */
-function formatValue(value: any): string {
+function formatValue(value: unknown): string {
   if (value === null || value === undefined) {
     return 'brak';
   }
