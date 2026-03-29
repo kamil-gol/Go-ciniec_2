@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+// jest globals (describe, it, expect) are available via jest config
 import { MenuSnapshotService } from '../../../services/menuSnapshot.service';
 import { MenuSnapshotData, MenuPriceBreakdown } from '../../../types/menu.types';
 

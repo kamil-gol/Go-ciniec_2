@@ -139,19 +139,19 @@ describe('computeTotals', () => {
     });
   });
 
-  // ─── FIXED_AMOUNT discount ─────────────────────────────────────────────────
+  // ─── AMOUNT discount ─────────────────────────────────────────────────
 
-  describe('FIXED_AMOUNT discount', () => {
+  describe('AMOUNT discount', () => {
     it('applies fixed discount when value < gross', () => {
       const items = [{ quantity: 1, unitPrice: 200 }];
-      const result = computeTotals(items, [], 'FIXED_AMOUNT', 50);
+      const result = computeTotals(items, [], 'AMOUNT', 50);
       expect(result.discountAmount).toBe(50);
       expect(result.totalPrice).toBe(150);
     });
 
     it('caps fixed discount at gross (discount > gross)', () => {
       const items = [{ quantity: 1, unitPrice: 100 }];
-      const result = computeTotals(items, [], 'FIXED_AMOUNT', 500);
+      const result = computeTotals(items, [], 'AMOUNT', 500);
       // min(500, 100) = 100
       expect(result.discountAmount).toBe(100);
       expect(result.totalPrice).toBe(0);
@@ -159,7 +159,7 @@ describe('computeTotals', () => {
 
     it('caps fixed discount at gross (discount == gross)', () => {
       const items = [{ quantity: 2, unitPrice: 50 }];
-      const result = computeTotals(items, [], 'FIXED_AMOUNT', 100);
+      const result = computeTotals(items, [], 'AMOUNT', 100);
       expect(result.discountAmount).toBe(100);
       expect(result.totalPrice).toBe(0);
     });
@@ -167,7 +167,7 @@ describe('computeTotals', () => {
     it('applies fixed discount across items + extras', () => {
       const items = [{ quantity: 1, unitPrice: 80 }];
       const extras = [{ quantity: 1, unitPrice: 70 }];
-      const result = computeTotals(items, extras, 'FIXED_AMOUNT', 30);
+      const result = computeTotals(items, extras, 'AMOUNT', 30);
       // gross = 150, discount = 30
       expect(result.discountAmount).toBe(30);
       expect(result.totalPrice).toBe(120);
@@ -176,9 +176,9 @@ describe('computeTotals', () => {
 
   // ─── totalPrice never goes below 0 ────────────────────────────────────────
 
-  it('ensures totalPrice is never negative (large FIXED_AMOUNT)', () => {
+  it('ensures totalPrice is never negative (large AMOUNT)', () => {
     const items = [{ quantity: 1, unitPrice: 10 }];
-    const result = computeTotals(items, [], 'FIXED_AMOUNT', 9999);
+    const result = computeTotals(items, [], 'AMOUNT', 9999);
     expect(result.totalPrice).toBe(0);
     expect(result.totalPrice).toBeGreaterThanOrEqual(0);
   });
@@ -223,7 +223,7 @@ describe('computeTotals', () => {
 
     it('no discount when discountValue is negative', () => {
       const items = [{ quantity: 1, unitPrice: 100 }];
-      const result = computeTotals(items, [], 'FIXED_AMOUNT', -50);
+      const result = computeTotals(items, [], 'AMOUNT', -50);
       expect(result.discountAmount).toBe(0);
       expect(result.totalPrice).toBe(100);
     });
