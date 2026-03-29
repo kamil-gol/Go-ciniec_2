@@ -2,7 +2,7 @@ name: Frontend Tests
 
 on:
   push:
-    branches: [main, develop, 'sprint-*']
+    branches: [main, develop, 'sprint-*', 'claude/*']
     paths:
       - 'apps/frontend/**'
       - 'contracts/**'
