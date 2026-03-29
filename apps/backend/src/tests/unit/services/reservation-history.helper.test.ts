@@ -1,16 +1,18 @@
-jest.mock('../../../lib/prisma', () => ({
-  __esModule: true,
-  default: {
-    reservationHistory: {
-      create: jest.fn(),
-    },
+const prismaMock = {
+  reservationHistory: {
+    create: jest.fn(),
   },
+};
+
+jest.mock('../../../lib/prisma', () => ({
+  prisma: prismaMock,
+  __esModule: true,
+  default: prismaMock,
 }));
 
-import prisma from '../../../lib/prisma';
 import { createHistoryEntry } from '../../../services/reservation-history.helper';
 
-const mockCreate = prisma.reservationHistory.create as jest.Mock;
+const mockCreate = prismaMock.reservationHistory.create as jest.Mock;
 
 describe('createHistoryEntry', () => {
   beforeEach(() => {
@@ -33,7 +35,7 @@ describe('createHistoryEntry', () => {
     expect(mockCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         reservationId: 'res-001',
-        userId: 'user-001',
+        changedByUserId: 'user-001',
         changeType: 'UPDATE',
         fieldName: 'adults',
         oldValue: '50',

@@ -1,22 +1,25 @@
-jest.mock('../../../lib/prisma', () => ({
-  __esModule: true,
-  default: {
-    reservation: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
+const mock = {
+  reservation: {
+    findUnique: jest.fn(),
+    update: jest.fn(),
   },
+};
+jest.mock('../../../lib/prisma', () => ({
+  prisma: mock,
+  __esModule: true,
+  default: mock,
 }));
 
 jest.mock('../../../utils/logger', () => ({
+  __esModule: true,
+  default: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
 
-import prisma from '../../../lib/prisma';
 import { recalculateReservationTotal } from '../../../utils/recalculate-total';
 
-const mockFindUnique = prisma.reservation.findUnique as jest.Mock;
-const mockUpdate = prisma.reservation.update as jest.Mock;
+const mockFindUnique = mock.reservation.findUnique as jest.Mock;
+const mockUpdate = mock.reservation.update as jest.Mock;
 
 describe('recalculateReservationTotal', () => {
   beforeEach(() => {
@@ -34,7 +37,7 @@ describe('recalculateReservationTotal', () => {
     discountPercentage: null,
     discountAmount: null,
     venueSurcharge: 0,
-    reservationExtras: [],
+    extras: [],
   };
 
   it('should calculate base pricing without extras or discount', async () => {
@@ -52,7 +55,7 @@ describe('recalculateReservationTotal', () => {
   it('should include non-cancelled extras in total', async () => {
     mockFindUnique.mockResolvedValue({
       ...baseReservation,
-      reservationExtras: [
+      extras: [
         { status: 'ACTIVE', totalPrice: 500 },
         { status: 'ACTIVE', totalPrice: 300 },
         { status: 'CANCELLED', totalPrice: 200 },
@@ -79,16 +82,16 @@ describe('recalculateReservationTotal', () => {
     expect(result.totalPrice).toBe(11000 + 2000);
   });
 
-  it('should apply percentage discount', async () => {
+  it('should apply stored discount amount', async () => {
     mockFindUnique.mockResolvedValue({
       ...baseReservation,
-      discountPercentage: 10,
+      discountAmount: 1100,
     });
     mockUpdate.mockResolvedValue({});
 
     const result = await recalculateReservationTotal('res-001');
 
-    expect(result.discountAmount).toBe(1100); // 10% of 11000
+    expect(result.discountAmount).toBe(1100);
     expect(result.totalPrice).toBe(11000 - 1100);
   });
 

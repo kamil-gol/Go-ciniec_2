@@ -1,19 +1,33 @@
 import { compressIfImage, CompressionResult } from '../../../utils/image-compression';
 
 jest.mock('sharp', () => {
-  const mockSharp = jest.fn(() => ({
-    metadata: jest.fn().mockResolvedValue({ width: 3000, height: 2000, format: 'jpeg' }),
-    rotate: jest.fn().mockReturnThis(),
-    resize: jest.fn().mockReturnThis(),
-    jpeg: jest.fn().mockReturnThis(),
-    png: jest.fn().mockReturnThis(),
-    webp: jest.fn().mockReturnThis(),
-    toBuffer: jest.fn().mockResolvedValue(Buffer.alloc(500)),
-  }));
-  return mockSharp;
+  let callCount = 0;
+  const mockSharp = jest.fn(() => {
+    callCount++;
+    if (callCount % 2 === 1) {
+      // First call: input image pipeline
+      return {
+        metadata: jest.fn().mockResolvedValue({ width: 3000, height: 2000, format: 'jpeg' }),
+        rotate: jest.fn().mockReturnThis(),
+        resize: jest.fn().mockReturnThis(),
+        jpeg: jest.fn().mockReturnThis(),
+        png: jest.fn().mockReturnThis(),
+        webp: jest.fn().mockReturnThis(),
+        toBuffer: jest.fn().mockResolvedValue(Buffer.alloc(500)),
+      };
+    } else {
+      // Second call: output metadata inspection
+      return {
+        metadata: jest.fn().mockResolvedValue({ width: 2000, height: 1333, format: 'jpeg' }),
+      };
+    }
+  });
+  return { __esModule: true, default: mockSharp };
 });
 
 jest.mock('../../../utils/logger', () => ({
+  __esModule: true,
+  default: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 

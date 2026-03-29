@@ -60,8 +60,8 @@ describe('reservation.utils — extra coverage', () => {
   });
 
   describe('validateCustomEventFields', () => {
-    it('should validate Rocznica requires anniversaryYear', () => {
-      const result = validateCustomEventFields('Rocznica', { anniversaryYear: 25 } as any);
+    it('should validate Rocznica requires both anniversaryYear and anniversaryOccasion', () => {
+      const result = validateCustomEventFields('Rocznica', { anniversaryYear: 25, anniversaryOccasion: 'Ślubu' } as any);
       expect(result.valid).toBe(true);
     });
 

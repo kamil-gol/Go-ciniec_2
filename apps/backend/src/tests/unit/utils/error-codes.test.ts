@@ -35,7 +35,7 @@ describe('ErrorCode', () => {
       const allCodes = Object.values(ErrorCode);
       for (const code of allCodes) {
         const status = getStatusForErrorCode(code);
-        expect([400, 401, 403, 404, 409, 500]).toContain(status);
+        expect([400, 401, 403, 404, 409, 422, 500]).toContain(status);
       }
     });
   });

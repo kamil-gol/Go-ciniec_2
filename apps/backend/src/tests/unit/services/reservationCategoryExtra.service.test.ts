@@ -1,29 +1,34 @@
-jest.mock('../../../lib/prisma', () => ({
-  __esModule: true,
-  default: {
-    reservationCategoryExtra: {
-      findMany: jest.fn(),
-      upsert: jest.fn(),
-      deleteMany: jest.fn(),
-      aggregate: jest.fn(),
-    },
-    packageCategorySettings: {
-      findUnique: jest.fn(),
-    },
+const mock = {
+  reservationCategoryExtra: {
+    findMany: jest.fn(),
+    upsert: jest.fn(),
+    deleteMany: jest.fn(),
+    aggregate: jest.fn(),
   },
+  packageCategorySettings: {
+    findUnique: jest.fn(),
+  },
+  reservation: {
+    findUnique: jest.fn(),
+  },
+};
+jest.mock('../../../lib/prisma', () => ({
+  prisma: mock,
+  __esModule: true,
+  default: mock,
 }));
 
 jest.mock('../../../utils/audit-logger', () => ({
   logChange: jest.fn(),
 }));
 
-import prisma from '../../../lib/prisma';
+import { prisma } from '../../../lib/prisma';
 
-const mockFindMany = prisma.reservationCategoryExtra.findMany as jest.Mock;
-const mockUpsert = prisma.reservationCategoryExtra.upsert as jest.Mock;
-const mockDeleteMany = prisma.reservationCategoryExtra.deleteMany as jest.Mock;
-const mockAggregate = prisma.reservationCategoryExtra.aggregate as jest.Mock;
-const mockCategoryFind = (prisma as any).packageCategorySettings.findUnique as jest.Mock;
+const mockFindMany = mock.reservationCategoryExtra.findMany as jest.Mock;
+const mockUpsert = mock.reservationCategoryExtra.upsert as jest.Mock;
+const mockDeleteMany = mock.reservationCategoryExtra.deleteMany as jest.Mock;
+const mockAggregate = mock.reservationCategoryExtra.aggregate as jest.Mock;
+const mockCategoryFind = mock.packageCategorySettings.findUnique as jest.Mock;
 
 describe('ReservationCategoryExtraService', () => {
   beforeEach(() => {
@@ -61,9 +66,10 @@ describe('ReservationCategoryExtraService', () => {
 
   describe('calculateTotal', () => {
     it('should return sum of all extras totalPrice', async () => {
-      mockAggregate.mockResolvedValue({
-        _sum: { totalPrice: 1500 },
-      });
+      mockFindMany.mockResolvedValue([
+        { totalPrice: 500 },
+        { totalPrice: 1000 },
+      ]);
 
       const { reservationCategoryExtraService } = await import(
         '../../../services/reservationCategoryExtra.service'
@@ -74,9 +80,7 @@ describe('ReservationCategoryExtraService', () => {
     });
 
     it('should return 0 when no extras exist', async () => {
-      mockAggregate.mockResolvedValue({
-        _sum: { totalPrice: null },
-      });
+      mockFindMany.mockResolvedValue([]);
 
       const { reservationCategoryExtraService } = await import(
         '../../../services/reservationCategoryExtra.service'
