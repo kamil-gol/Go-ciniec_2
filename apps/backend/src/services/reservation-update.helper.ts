@@ -37,8 +37,8 @@ function sanitizeString(value: unknown): string | null {
 
 interface ExistingReservation {
   id: string;
-  hallId: string;
-  eventTypeId: string;
+  hallId: string | null;
+  eventTypeId: string | null;
   adults: number;
   children: number;
   toddlers: number;
@@ -78,7 +78,7 @@ export async function processHallAndTimingUpdates(
   data: UpdateReservationDTO,
   existing: ExistingReservation,
   userId: string,
-  updateReservationMenu: (id: string, menuData: unknown, uid: string) => Promise<unknown>
+  updateReservationMenu: (id: string, menuData: any, uid: string) => Promise<any>
 ): Promise<HallTimingResult> {
   const updateData: Prisma.ReservationUncheckedUpdateInput = {};
 
@@ -347,7 +347,7 @@ export async function executeUpdateReservation(
   userId: string,
   validateUserId: (uid: string) => Promise<void>,
   getReservationById: (rid: string) => Promise<any>,
-  updateReservationMenu: (rid: string, menuData: unknown, uid: string) => Promise<unknown>
+  updateReservationMenu: (rid: string, menuData: any, uid: string) => Promise<any>
 ): Promise<unknown> {
   await validateUserId(userId);
   const existing = await prisma.reservation.findUnique({

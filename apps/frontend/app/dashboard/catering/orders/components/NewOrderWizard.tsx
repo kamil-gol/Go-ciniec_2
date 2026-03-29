@@ -48,7 +48,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
   );
 
   const clientComboboxOptions = useMemo(() =>
-    clientsArray.map((client: { id: string; firstName: string; lastName: string; companyName?: string | null }) => {
+    clientsArray.map((client: { id: string; firstName: string; lastName: string; companyName?: string | null; clientType?: string; nip?: string | null; email?: string | null }) => {
       const isCompany = client.clientType === 'COMPANY';
       if (isCompany && client.companyName) {
         return {

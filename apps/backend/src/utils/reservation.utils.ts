@@ -89,7 +89,7 @@ export function validateCustomEventFields(
  * Detect changes between old and new reservation data
  */
 export function detectReservationChanges(
-  oldData: Record<string, unknown>,
+  oldData: any,
   newData: UpdateReservationDTO
 ): Array<{ field: string; oldValue: unknown; newValue: unknown; label: string }> {
   const changes: Array<{ field: string; oldValue: unknown; newValue: unknown; label: string }> = [];
@@ -271,8 +271,8 @@ export function calculateExtrasTotalPrice(
  * Enrich a reservation record with computed extras totals.
  * Used by getReservations (list) and getReservationById (detail).
  */
-export function enrichWithExtrasTotals(reservation: Record<string, unknown>): Record<string, unknown> {
-  const rawExtras = (reservation.extras || []).map((e: Record<string, unknown>) => ({
+export function enrichWithExtrasTotals(reservation: any): any {
+  const rawExtras = (reservation.extras || []).map((e: any) => ({
     quantity: e.quantity,
     customPrice: null as number | null,
     serviceItem: { basePrice: Number(e.serviceItem.basePrice), priceType: e.serviceItem.priceType },
