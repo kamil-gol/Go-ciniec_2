@@ -185,7 +185,9 @@ export function ReservationCard({
           </div>
         </div>
 
-        {/* Actions Bar */}
+      </div>
+      {/* Actions Bar — outside overflow-hidden div so tooltips are visible */}
+      <div className="px-4 sm:px-6 pb-4 sm:pb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-3 border-t border-neutral-200/50 dark:border-neutral-700/30">
           {reservation.client && (
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-300">
