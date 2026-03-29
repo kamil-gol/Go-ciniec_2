@@ -15,7 +15,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { GradientCard } from '@/components/shared/GradientCard'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { toast } from 'sonner'
@@ -223,25 +223,22 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
   // ── Render ──
   return (
     <>
-      <Card className="border-0 shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-red-50 dark:from-rose-950/30 dark:via-pink-950/30 dark:to-red-950/30 p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-rose-500 to-pink-500 rounded-lg shadow-lg">
-                <DollarSign className="h-5 w-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold">Zaliczki</h2>
-            </div>
-            <Button
-              size="sm"
-              onClick={handleOpenCreate}
-              className="bg-rose-600 hover:bg-rose-700 text-white shadow-md"
-            >
-              <Plus className="mr-1.5 h-4 w-4" />
-              Dodaj
-            </Button>
-          </div>
+      <GradientCard
+        title="Zaliczki"
+        icon={<DollarSign className="h-5 w-5 text-white" />}
+        iconGradient="from-rose-500 to-pink-500"
+        headerGradient="from-rose-50 via-pink-50 to-red-50 dark:from-rose-950/30 dark:via-pink-950/30 dark:to-red-950/30"
+        action={
+          <Button
+            size="sm"
+            onClick={handleOpenCreate}
+            className="bg-rose-600 hover:bg-rose-700 text-white shadow-md"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            Dodaj
+          </Button>
+        }
+      >
 
           {/* Summary */}
           {!loading && activeDeposits.length > 0 && (
@@ -418,8 +415,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
               </Link>
             </div>
           )}
-        </div>
-      </Card>
+      </GradientCard>
 
       {/* Dialogs */}
       <DeletePaidDepositDialog

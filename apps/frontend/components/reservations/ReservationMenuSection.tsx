@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { GradientCard } from '@/components/shared/GradientCard'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
@@ -178,37 +179,30 @@ export function ReservationMenuSection({
 
       {/* Menu selected - compact view */}
       {hasMenu && (
-        <Card className="border-0 shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-lg">
-                  <UtensilsCrossed className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">Menu</h2>
-                  <p className="text-sm text-muted-foreground">{packageName}</p>
-                </div>
-              </div>
-              {!readOnly && (
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setShowSelectionDialog(true)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Zmień
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleDeleteMenu} 
-                    className="text-red-600 hover:text-red-700"
-                    disabled={deleteMenuMutation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
+        <GradientCard
+          title="Menu"
+          icon={<UtensilsCrossed className="h-5 w-5 text-white" />}
+          iconGradient="from-orange-500 to-amber-500"
+          headerGradient="from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30"
+          headerSpacing="mb-4"
+          action={!readOnly ? (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowSelectionDialog(true)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Zmień
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDeleteMenu}
+                className="text-red-600 hover:text-red-700"
+                disabled={deleteMenuMutation.isPending}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
+          ) : undefined}
+        >
 
             {/* Package info - compact */}
             <div className="bg-white dark:bg-black/20 rounded-lg p-4 mb-3">
@@ -303,8 +297,7 @@ export function ReservationMenuSection({
                 </div>
               </div>
             )}
-          </div>
-        </Card>
+        </GradientCard>
       )}
 
       {/* Selection Dialog — only render when not readOnly */}

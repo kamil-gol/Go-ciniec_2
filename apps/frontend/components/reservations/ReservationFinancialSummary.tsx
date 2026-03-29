@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Receipt, Package, ChevronDown, ChevronUp } from 'lucide-react'
-import { Card } from '@/components/ui/card'
+import { GradientCard } from '@/components/shared/GradientCard'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { useReservationMenu } from '@/hooks/use-menu'
@@ -286,20 +286,15 @@ export function ReservationFinancialSummary({
 
   return (
     <>
-      <Card className="border-0 shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/30 dark:to-cyan-950/30">
-          {/* HEADER */}
-          <div className="p-6 pb-4">
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg shadow-lg">
-                <Receipt className="h-5 w-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold">Podsumowanie finansowe</h2>
-            </div>
-          </div>
-
+      <GradientCard
+        title="Podsumowanie finansowe"
+        icon={<Receipt className="h-5 w-5 text-white" />}
+        iconGradient="from-emerald-500 to-teal-500"
+        headerGradient="from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/30 dark:to-cyan-950/30"
+        headerSpacing="mb-4"
+      >
           {/* COST BREAKDOWN */}
-          <div className="px-6">
+          <div>
             <button
               onClick={() => setShowCostDetails(!showCostDetails)}
               className="w-full flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-xl mb-3 hover:bg-white/80 dark:hover:bg-black/30 transition-colors"
@@ -374,7 +369,7 @@ export function ReservationFinancialSummary({
           </div>
 
           {/* DEPOSITS */}
-          <div className="px-6 pb-6">
+          <div>
             <DepositSummary
               deposits={deposits}
               depositsLoading={depositsLoading}
@@ -393,8 +388,7 @@ export function ReservationFinancialSummary({
               onOpenDelete={handleOpenDelete}
             />
           </div>
-        </div>
-      </Card>
+      </GradientCard>
 
       {/* Deposit Modals */}
       {!readOnly && (

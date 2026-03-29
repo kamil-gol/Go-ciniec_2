@@ -17,6 +17,7 @@ import type { Client, Reservation } from '@/types'
 import Link from 'next/link'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
+import { GradientCard } from '@/components/shared/GradientCard'
 import { DeleteClientModal } from '@/components/clients/delete-client-modal'
 import { ContactsManager } from '@/components/clients/contacts-manager'
 import { toast } from 'sonner'
@@ -211,14 +212,12 @@ export default function ClientDetailsPage() {
                 </Card>
               )}
 
-              <Card className="border-0 shadow-xl overflow-hidden">
-                <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-red-950/30 p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg shadow-lg">
-                      <Sparkles className="h-5 w-5 text-white" />
-                    </div>
-                    <h2 className="text-xl font-bold">Szybkie akcje</h2>
-                  </div>
+              <GradientCard
+                title="Szybkie akcje"
+                icon={<Sparkles className="h-5 w-5 text-white" />}
+                iconGradient="from-amber-500 to-orange-500"
+                headerGradient="from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-red-950/30"
+              >
                   <div className="space-y-3">
                     {!isDeleted && (
                       <>
@@ -252,27 +251,23 @@ export default function ClientDetailsPage() {
                       </Button>
                     )}
                   </div>
-                </div>
-              </Card>
+              </GradientCard>
             </div>
 
             {/* Right Column - Reservations History + Attachments */}
             <div className="lg:col-span-2 space-y-6 min-w-0">
-              <Card className="border-0 shadow-xl overflow-hidden">
-                <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30 p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
-                      <Sparkles className="h-5 w-5 text-white" />
-                    </div>
-                    <h2 className="text-xl font-bold">Historia rezerwacji</h2>
-                  </div>
+              <GradientCard
+                title="Historia rezerwacji"
+                icon={<Sparkles className="h-5 w-5 text-white" />}
+                iconGradient="from-blue-500 to-cyan-500"
+                headerGradient="from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30"
+              >
                   <ClientReservationsHistory
                     reservations={reservations}
                     clientId={client.id}
                     isDeleted={isDeleted}
                   />
-                </div>
-              </Card>
+              </GradientCard>
 
               {/* Attachments Panel */}
               <AttachmentPanel

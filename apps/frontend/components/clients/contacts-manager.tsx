@@ -5,6 +5,7 @@ import {
   Users, Mail, Phone, Star, Plus, Pencil, Trash2, X, Save, Briefcase, MoreHorizontal,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { GradientCard } from '@/components/shared/GradientCard'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -153,31 +154,27 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
   }
 
   return (
-    <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-yellow-950/30 rounded-2xl border-0 shadow-xl overflow-hidden">
-      <div className="p-6">
-        {/* Header */}
-        <div className="space-y-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg shadow-lg shrink-0">
-              <Users className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold leading-tight">Osoby kontaktowe</h2>
-              <p className="text-sm text-muted-foreground">
-                {contacts.length === 0 ? 'Brak dodanych kontaktów' : contacts.length === 1 ? '1 osoba' : `${contacts.length} osoby`}
-              </p>
-            </div>
-          </div>
-          {!readOnly && !showForm && (
-            <Button
-              onClick={openAddForm}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md h-10"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Dodaj osobę kontaktową
-            </Button>
-          )}
-        </div>
+    <GradientCard
+      title="Osoby kontaktowe"
+      icon={<Users className="h-5 w-5 text-white" />}
+      iconGradient="from-amber-500 to-orange-500"
+      headerGradient="from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-yellow-950/30"
+      badge={
+        <span className="text-sm text-muted-foreground">
+          {contacts.length === 0 ? 'Brak dodanych kontaktów' : contacts.length === 1 ? '1 osoba' : `${contacts.length} osoby`}
+        </span>
+      }
+      action={!readOnly && !showForm ? (
+        <Button
+          onClick={openAddForm}
+          size="sm"
+          className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md"
+        >
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
+          Dodaj
+        </Button>
+      ) : undefined}
+    >
 
         {/* Add/Edit Form */}
         {showForm && (
@@ -330,8 +327,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
             ))}
           </div>
         )}
-      </div>
       {ConfirmDialog}
-    </div>
+    </GradientCard>
   )
 }
