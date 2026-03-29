@@ -213,6 +213,9 @@ describe('Security: File Upload Attack Vectors', () => {
   // 4. Double Extension Attacks
   // =========================================
   describe('Double extension attacks', () => {
+    // NOTE: path.extname() returns the LAST extension, so these pass
+    // extension validation (.jpg, .png, .pdf, .docx). The server's UUID
+    // renaming ensures the dangerous first extension is never preserved.
     const DOUBLE_EXTENSIONS = [
       'malware.php.jpg',
       'shell.asp.png',
@@ -289,7 +292,80 @@ describe('Security: File Upload Attack Vectors', () => {
   });
 
   // =========================================
-  // 6. Missing Required Fields
+  // 6. File Extension Validation (#436)
+  // =========================================
+  describe('File extension validation', () => {
+    const BLOCKED_EXTENSIONS = [
+      { ext: 'script.js', mime: 'application/javascript' },
+      { ext: 'shell.sh', mime: 'application/x-sh' },
+      { ext: 'backdoor.php', mime: 'application/x-php' },
+      { ext: 'exploit.exe', mime: 'application/octet-stream' },
+      { ext: 'payload.bat', mime: 'application/x-msdos-program' },
+      { ext: 'hack.py', mime: 'text/x-python' },
+      { ext: 'trojan.html', mime: 'text/html' },
+    ];
+
+    it.each(BLOCKED_EXTENSIONS)(
+      'should reject file with disallowed extension: $ext',
+      async ({ ext, mime }) => {
+        const res = await uploadFile(
+          ext,
+          Buffer.from('malicious content'),
+          mime,
+          DEFAULT_FIELDS
+        );
+
+        expect(res.status).toBeGreaterThanOrEqual(400);
+        expect([200, 201]).not.toContain(res.status);
+      }
+    );
+
+    const ALLOWED_EXTENSIONS_LIST = [
+      { filename: 'photo.jpg', mime: 'image/jpeg' },
+      { filename: 'photo.jpeg', mime: 'image/jpeg' },
+      { filename: 'image.png', mime: 'image/png' },
+      { filename: 'animation.gif', mime: 'image/gif' },
+      { filename: 'modern.webp', mime: 'image/webp' },
+      { filename: 'document.pdf', mime: 'application/pdf' },
+      { filename: 'report.doc', mime: 'application/msword' },
+      { filename: 'report.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+      { filename: 'data.xls', mime: 'application/vnd.ms-excel' },
+      { filename: 'data.xlsx', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+      { filename: 'export.csv', mime: 'text/csv' },
+    ];
+
+    it.each(ALLOWED_EXTENSIONS_LIST)(
+      'should NOT reject allowed extension: $filename',
+      async ({ filename, mime }) => {
+        const res = await uploadFile(
+          filename,
+          Buffer.from('test content'),
+          mime,
+          DEFAULT_FIELDS
+        );
+
+        // Should not be rejected for MIME/extension reasons (415)
+        // May fail for other reasons (entity not found = 404, etc.)
+        expect(res.status).not.toBe(415);
+        expect(res.status).not.toBe(500);
+      }
+    );
+
+    it('should reject file with no extension', async () => {
+      const res = await uploadFile(
+        'Makefile',
+        Buffer.from('test content'),
+        'application/octet-stream',
+        DEFAULT_FIELDS
+      );
+
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect([200, 201]).not.toContain(res.status);
+    });
+  });
+
+  // =========================================
+  // 7. Missing Required Fields
   // =========================================
   describe('Upload without required form fields', () => {
     it('should reject upload without entityType', async () => {

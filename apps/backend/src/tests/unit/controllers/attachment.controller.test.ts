@@ -107,7 +107,7 @@ describe('AttachmentController', () => {
       await attachmentController.upload(
         mockReq({
           file: { originalname: 'test.pdf' },
-          body: { entityType: 'RESERVATION', entityId: 'r-1', category: 'CONTRACT' },
+          body: { entityType: 'RESERVATION', entityId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', category: 'CONTRACT' },
         }), response, next
       );
       expect(next).toHaveBeenCalledWith(expect.any(Error));
