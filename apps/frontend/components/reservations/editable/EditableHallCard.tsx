@@ -185,7 +185,9 @@ export function EditableHallCard({
     <EditableCard
       title="Sala"
       icon={<Building2 className="h-5 w-5 text-white" />}
-      iconGradient="from-purple-500 to-pink-500"
+      iconGradient="from-blue-500 to-cyan-500"
+      gradientHeader
+      headerGradient="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30"
       onSave={handleSave}
       onCancel={handleCancel}
       disabled={disabled}

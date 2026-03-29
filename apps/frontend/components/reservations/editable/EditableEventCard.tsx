@@ -188,6 +188,8 @@ export function EditableEventCard({
       title="Szczegóły wydarzenia"
       icon={<Sparkles className="h-5 w-5 text-white" />}
       iconGradient="from-green-500 to-emerald-500"
+      gradientHeader
+      headerGradient="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-teal-950/30"
       onSave={handleSave}
       onCancel={handleCancel}
       disabled={disabled}

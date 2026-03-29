@@ -50,9 +50,9 @@ export function ReservationCard({
   const isPdfGenerating = generatingPdfId === reservation.id
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden active:scale-[0.99]">
+    <div className="rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 active:scale-[0.99]">
       <div className={cn(
-        'p-4 sm:p-6',
+        'p-4 sm:p-6 rounded-t-2xl overflow-hidden',
         `bg-gradient-to-r ${accent.gradientSubtle}`
       )}>
         {/* Header: Time + Status + Badges */}

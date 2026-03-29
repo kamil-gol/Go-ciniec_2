@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { GradientCard } from '@/components/shared/GradientCard'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -141,40 +141,35 @@ export function ReservationMenuSection({
     <>
       {/* No menu selected */}
       {!hasMenu && (
-        <Card className="border-0 shadow-xl">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg">
-                <UtensilsCrossed className="h-5 w-5 text-white" />
-              </div>
-              Menu
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-center py-8 space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-950/50 dark:to-amber-950/50 rounded-full flex items-center justify-center mx-auto">
-                <UtensilsCrossed className="h-8 w-8 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Brak wybranego menu</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {readOnly
-                    ? 'Menu nie zostało przypisane do tej rezerwacji'
-                    : 'Dodaj menu do rezerwacji aby zobaczyć szczegóły'}
-                </p>
-              </div>
-              {!readOnly && (
-                <Button
-                  onClick={() => setShowSelectionDialog(true)}
-                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Dodaj menu
-                </Button>
-              )}
+        <GradientCard
+          title="Menu"
+          icon={<UtensilsCrossed className="h-5 w-5 text-white" />}
+          iconGradient="from-orange-500 to-amber-500"
+          headerGradient="from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30"
+        >
+          <div className="text-center py-8 space-y-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-950/50 dark:to-amber-950/50 rounded-full flex items-center justify-center mx-auto">
+              <UtensilsCrossed className="h-8 w-8 text-orange-600 dark:text-orange-400" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <h3 className="text-lg font-semibold">Brak wybranego menu</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {readOnly
+                  ? 'Menu nie zostało przypisane do tej rezerwacji'
+                  : 'Dodaj menu do rezerwacji aby zobaczyć szczegóły'}
+              </p>
+            </div>
+            {!readOnly && (
+              <Button
+                onClick={() => setShowSelectionDialog(true)}
+                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Dodaj menu
+              </Button>
+            )}
+          </div>
+        </GradientCard>
       )}
 
       {/* Menu selected - compact view */}
