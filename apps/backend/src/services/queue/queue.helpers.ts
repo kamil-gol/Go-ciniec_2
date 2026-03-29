@@ -1,5 +1,4 @@
 /**
-import { getErrorMessage } from '@/utils/AppError';
  * Queue Helpers
  * Utility functions, formatters, and retry logic for queue operations
  */
@@ -19,12 +18,12 @@ export const withRetry = async <T>(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await operation();
-    } catch (error: unknown) {
+    } catch (error: any) {
       lastError = error;
       const isLockError =
         error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034' ||
-        getErrorMessage(error)?.includes('lock_not_available') ||
-        getErrorMessage(error)?.includes('55P03');
+        error.message?.includes('lock_not_available') ||
+        error.message?.includes('55P03');
       if (!isLockError || attempt === maxRetries - 1) throw error;
       const delay = baseDelay * Math.pow(2, attempt);
       await new Promise(resolve => setTimeout(resolve, delay));

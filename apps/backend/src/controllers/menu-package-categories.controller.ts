@@ -1,5 +1,4 @@
 /**
-import { getErrorMessage } from '@/utils/AppError';
  * Menu Package Categories Controller
  * 
  * Handles fetching package category settings with dishes
@@ -85,8 +84,8 @@ export async function getPackageCategories(req: Request, res: Response) {
         categories,
       },
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[getPackageCategories] Error:', error);
-    res.status(500).json({ error: getErrorMessage(error) || 'Internal server error' });
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
