@@ -1,6 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { manualLogin as login } from '../fixtures/auth.fixture';
-import { testData } from '../fixtures/test-data';
 
 /**
  * UI/UX AUDIT #3 — Automated Verification Tests
@@ -16,20 +14,12 @@ import { testData } from '../fixtures/test-data';
  *   npx playwright test specs/13-uiux-audit3.spec.ts --project=chromium
  */
 
-const ADMIN_EMAIL = testData.admin.email;
-const ADMIN_PASSWORD = testData.admin.password;
-
 test.setTimeout(90_000);
 test.describe.configure({ retries: 2 });
 
 async function waitForPageStable(page: import('@playwright/test').Page) {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(2000);
-}
-
-async function ensureLoggedIn(page: import('@playwright/test').Page) {
-  // Reuse the standard login helper which uses page.fill() (works with React)
-  await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 }
 
 async function toggleDarkMode(page: import('@playwright/test').Page) {
@@ -62,7 +52,7 @@ test.describe('DT-01: Em-dash w tabeli Zaliczek (#369)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('kolumna METODA nie zawiera literalnego \\u2014', async ({ page }) => {
@@ -133,7 +123,7 @@ test.describe('FM-02: Walidacja NIP klienta firma (#367)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('NIP ma czerwoną gwiazdkę (*) w trybie firma', async ({ page }) => {
@@ -229,7 +219,7 @@ test.describe('Dark Mode — wszystkie moduły (#371-#374)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   const modules = [
@@ -388,7 +378,7 @@ test.describe('Mobile responsywność (#377)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('screenshot: dashboard mobile 375px', async ({ page }) => {
@@ -444,7 +434,7 @@ test.describe('Light mode baseline screenshots', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   const pages = [
@@ -481,7 +471,7 @@ test.describe('SV-04: Przycisk "Zobacz Kalendarz" — spójny gradient (#394)', 
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('wszystkie karty sal mają taki sam gradient na przycisku CTA', async ({ page }) => {
@@ -512,7 +502,7 @@ test.describe('PE-06: Relative time w Kolejce (#395)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('timestamps w kolejce zawierają "temu" (relative time)', async ({ page }) => {
@@ -543,7 +533,7 @@ test.describe('SP-01/MB-02: StatCard responsive na mobile (#377, #383)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('StatCard value ma responsive font-size (text-2xl sm:text-3xl)', async ({ page }) => {
@@ -606,7 +596,7 @@ test.describe('SP-04: Email klienta z tooltip (#388)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('email klienta ma atrybut title (tooltip)', async ({ page }) => {
@@ -635,7 +625,7 @@ test.describe('MB-03: Dashboard events responsive na mobile (#384)', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('event cards mają flex-col na mobile', async ({ page }) => {
@@ -690,7 +680,7 @@ test.describe('#398: StatCard — line-clamp-2, responsive font, spacing', () =>
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('StatCard label i ikona w jednym wierszu (flex justify-between)', async ({ page }) => {
@@ -750,7 +740,7 @@ test.describe('#399: PageHero — graduated padding', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('PageHero ma graduated padding (p-4 sm:p-6 lg:p-8)', async ({ page }) => {
@@ -789,7 +779,7 @@ test.describe('#400: Szybkie akcje — spacing', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('Client detail: Szybkie akcje ma space-y-3 na przyciskach', async ({ page }) => {
@@ -823,7 +813,7 @@ test.describe('#401: Settings — tab bar responsive', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('Settings tab bar ma grid-cols-2 sm:grid-cols-4', async ({ page }) => {
@@ -844,7 +834,7 @@ test.describe('#402: ReservationCard — flex-wrap na ikonach', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('ReservationCard ikony mają flex-shrink-0', async ({ page }) => {
@@ -865,7 +855,7 @@ test.describe('#403: Client detail — tab bar i stats grid', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('Client detail tab bar ma w-full sm:w-fit', async ({ page }) => {
@@ -891,7 +881,7 @@ test.describe('#405: Halls — filter button height', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('Halls filter button ma h-12 (matching input)', async ({ page }) => {
@@ -912,7 +902,7 @@ test.describe('#406: Deposits — form card margin', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('screenshot: deposits z formularzem', async ({ page }) => {
@@ -930,7 +920,7 @@ test.describe('#407: Reservation detail — responsive padding', () => {
   test.beforeEach(async ({ page }) => {
     page.setDefaultTimeout(60_000);
     page.setDefaultNavigationTimeout(60_000);
-    await ensureLoggedIn(page);
+
   });
 
   test('Reservation detail ma graduated padding (p-4 sm:p-6 lg:p-8)', async ({ page }) => {

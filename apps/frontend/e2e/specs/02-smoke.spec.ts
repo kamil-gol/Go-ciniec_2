@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { manualLogin as login } from '../fixtures/auth.fixture';
 import { testData } from '../fixtures/test-data';
 
 /**
@@ -13,10 +12,6 @@ import { testData } from '../fixtures/test-data';
  */
 
 test.describe('Smoke Tests - Critical Paths', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page, testData.admin.email, testData.admin.password);
-  });
-
   test('should load dashboard successfully', async ({ page }) => {
     await page.goto('/dashboard');
 
@@ -93,8 +88,6 @@ test.describe('Smoke Tests - API Health', () => {
 
 test.describe('Smoke Tests - Performance', () => {
   test('should load dashboard in less than 5 seconds', async ({ page }) => {
-    await login(page, testData.admin.email, testData.admin.password);
-
     const startTime = Date.now();
     await page.goto('/dashboard');
     await page.waitForSelector('h1');
@@ -105,8 +98,6 @@ test.describe('Smoke Tests - Performance', () => {
   });
 
   test('should load reservations page in less than 5 seconds', async ({ page }) => {
-    await login(page, testData.admin.email, testData.admin.password);
-
     const startTime = Date.now();
     await page.goto('/dashboard/reservations');
     await page.waitForLoadState('networkidle');
@@ -121,8 +112,6 @@ test.describe('Smoke Tests - Mobile Responsive', () => {
   test.use({ viewport: { width: 375, height: 667 } }); // iPhone SE
 
   test('should be usable on mobile', async ({ page }) => {
-    await login(page, testData.admin.email, testData.admin.password);
-
     // Dashboard should load
     await page.goto('/dashboard');
     await expect(

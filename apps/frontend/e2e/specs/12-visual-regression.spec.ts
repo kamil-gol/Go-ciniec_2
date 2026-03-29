@@ -1,6 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { manualLogin as login } from '../fixtures/auth.fixture';
-import { testData } from '../fixtures/test-data';
 
 /**
  * VISUAL REGRESSION TESTS
@@ -41,10 +39,6 @@ test.describe('Visual Regression - Strona logowania', () => {
 });
 
 test.describe('Visual Regression - Dashboard', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page, testData.admin.email, testData.admin.password);
-  });
-
   test('dashboard renderuje sie poprawnie', async ({ page }) => {
     await page.goto('/dashboard');
     await waitForPageStable(page);
@@ -84,10 +78,6 @@ test.describe('Visual Regression - Dashboard', () => {
 });
 
 test.describe('Visual Regression - Rezerwacje', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page, testData.admin.email, testData.admin.password);
-  });
-
   test('kalendarz rezerwacji renderuje sie poprawnie', async ({ page }) => {
     await page.goto('/dashboard/reservations/calendar');
     await waitForPageStable(page);
@@ -124,10 +114,6 @@ test.describe('Visual Regression - Rezerwacje', () => {
 });
 
 test.describe('Visual Regression - Klienci', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page, testData.admin.email, testData.admin.password);
-  });
-
   test('lista klientow renderuje sie poprawnie', async ({ page }) => {
     await page.goto('/dashboard/clients');
     await waitForPageStable(page);
@@ -137,10 +123,6 @@ test.describe('Visual Regression - Klienci', () => {
 });
 
 test.describe('Visual Regression - Ustawienia', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page, testData.admin.email, testData.admin.password);
-  });
-
   test('panel ustawien - zakladka uzytkownicy', async ({ page }) => {
     await page.goto('/dashboard/settings');
     await waitForPageStable(page);
@@ -163,10 +145,6 @@ test.describe('Visual Regression - Ustawienia', () => {
 });
 
 test.describe('Visual Regression - Kolejka', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page, testData.admin.email, testData.admin.password);
-  });
-
   test('widok kolejki renderuje sie poprawnie', async ({ page }) => {
     await page.goto('/dashboard/queue');
     await waitForPageStable(page);
