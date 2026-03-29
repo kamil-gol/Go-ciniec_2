@@ -4,7 +4,7 @@ describe('ErrorCode', () => {
   describe('getStatusForErrorCode', () => {
     it('should return 400 for VALIDATION errors', () => {
       expect(getStatusForErrorCode(ErrorCode.VALIDATION_FAILED)).toBe(400);
-      expect(getStatusForErrorCode(ErrorCode.VALIDATION_GUEST_COUNT)).toBe(400);
+      expect(getStatusForErrorCode(ErrorCode.VALIDATION_GUESTS_REQUIRED)).toBe(400);
     });
 
     it('should return 404 for NOT_FOUND errors', () => {
@@ -15,11 +15,11 @@ describe('ErrorCode', () => {
 
     it('should return 409 for CONFLICT errors', () => {
       expect(getStatusForErrorCode(ErrorCode.CONFLICT_DUPLICATE)).toBe(409);
-      expect(getStatusForErrorCode(ErrorCode.CONFLICT_HALL_BOOKED)).toBe(409);
+      expect(getStatusForErrorCode(ErrorCode.CONFLICT_TIME_SLOT_BOOKED)).toBe(409);
     });
 
     it('should return 403 for FORBIDDEN errors', () => {
-      expect(getStatusForErrorCode(ErrorCode.FORBIDDEN_ROLE)).toBe(403);
+      expect(getStatusForErrorCode(ErrorCode.FORBIDDEN_ACCESS_DENIED)).toBe(403);
     });
 
     it('should return 401 for AUTH errors', () => {
@@ -28,7 +28,7 @@ describe('ErrorCode', () => {
     });
 
     it('should return 500 for INTERNAL errors', () => {
-      expect(getStatusForErrorCode(ErrorCode.INTERNAL_SERVER_ERROR)).toBe(500);
+      expect(getStatusForErrorCode(ErrorCode.INTERNAL_ERROR)).toBe(500);
     });
 
     it('should cover all ErrorCode values', () => {
