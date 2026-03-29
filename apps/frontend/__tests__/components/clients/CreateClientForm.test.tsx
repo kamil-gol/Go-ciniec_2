@@ -1,5 +1,5 @@
 /**
- * CreateClientForm Component Tests (#436)
+ * CreateClientForm Component Tests
  *
  * Tests client creation form:
  * - Form field rendering (individual vs company)
