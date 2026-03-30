@@ -39,7 +39,7 @@ import { MenuTemplateDialog } from '@/components/menu/MenuTemplateDialog'
 import { downloadMenuTemplatePDF } from '@/lib/api/menu-templates-api'
 import type { MenuTemplate } from '@/lib/api/menu-templates-api'
 import { toast } from 'sonner'
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState, EntityCard } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
@@ -183,17 +183,14 @@ export default function MenuTemplatesPage() {
           onAction={handleCreate}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {templates.map((template) => (
-            <Card
+        <div className={layout.entityGrid}>
+          {templates.map((template, index) => (
+            <EntityCard
               key={template.id}
-              className="hover:shadow-lg transition-shadow border-2"
-              style={{
-                borderColor: template.eventType?.color || undefined,
-                opacity: template.isActive ? 1 : 0.6,
-              }}
+              accentColor={template.eventType?.color || undefined}
+              dimmed={!template.isActive}
+              delay={index * 0.05}
             >
-              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base sm:text-lg font-bold mb-1 truncate">{template.name}</h3>
@@ -241,8 +238,7 @@ export default function MenuTemplatesPage() {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+            </EntityCard>
           ))}
         </div>
       )}

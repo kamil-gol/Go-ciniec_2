@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
@@ -15,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { EntityCard } from '@/components/shared'
 import { toast } from 'sonner'
 
 interface EventTypeCardProps {
@@ -59,17 +59,11 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
   }
 
   return (
-    <Card
-      className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border-neutral-200 dark:border-neutral-700 cursor-pointer"
+    <EntityCard
+      accentColor={eventType.color || '#9CA3AF'}
       onClick={handleCardClick}
     >
-      {/* Color bar at top */}
-      <div
-        className="h-2 w-full"
-        style={colorStyle}
-      />
-
-      <div className="p-6">
+      <div>
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
@@ -164,6 +158,6 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
           </div>
         </div>
       </div>
-    </Card>
+    </EntityCard>
   )
 }

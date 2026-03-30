@@ -20,6 +20,7 @@ import { entityLabels } from './audit-log.constants';
 import { groupLogEntries, isSystemAction, type LogGroup } from './audit-log.utils';
 import { LogActionBadge } from './LogActionBadge';
 import type { AuditLogEntry } from '@/types/audit-log.types';
+import { typography } from '@/lib/design-tokens';
 
 interface Props {
   data: AuditLogEntry[];
@@ -164,13 +165,13 @@ export function AuditLogTable({
       <div className="hidden md:block overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/30">
-              <TableHead className="w-[160px] font-semibold text-neutral-700 dark:text-neutral-300">Data</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Użytkownik</TableHead>
-              <TableHead className="w-[150px] font-semibold text-neutral-700 dark:text-neutral-300">Akcja</TableHead>
-              <TableHead className="w-[130px] font-semibold text-neutral-700 dark:text-neutral-300">Typ</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Opis</TableHead>
-              <TableHead className="w-[70px] font-semibold text-neutral-700 dark:text-neutral-300"></TableHead>
+            <TableRow className={typography.tableHeaderRow}>
+              <TableHead className={`w-[160px] ${typography.tableHeaderCell}`}>Data</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Użytkownik</TableHead>
+              <TableHead className={`w-[150px] ${typography.tableHeaderCell}`}>Akcja</TableHead>
+              <TableHead className={`w-[130px] ${typography.tableHeaderCell}`}>Typ</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Opis</TableHead>
+              <TableHead className={`w-[70px] ${typography.tableHeaderCell}`}></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

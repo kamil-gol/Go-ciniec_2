@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Pagination } from '@/components/shared/Pagination';
 import { formatCurrency as formatPrice, formatDateShort as formatDate } from '@/lib/utils';
+import { typography } from '@/lib/design-tokens';
 
 interface Props {
   orders: CateringOrderListItem[];
@@ -131,14 +132,14 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
       <div className="hidden md:block rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-neutral-50 dark:bg-neutral-900/50 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300 w-auto min-w-[6rem]">Numer</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Klient</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Wydarzenie</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Data</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Typ</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Status</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300 text-right">Kwota</TableHead>
+            <TableRow className={typography.tableHeaderRow}>
+              <TableHead className={`${typography.tableHeaderCell} w-auto min-w-[6rem]`}>Numer</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Klient</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Wydarzenie</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Data</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Typ</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Status</TableHead>
+              <TableHead className={`${typography.tableHeaderCell} text-right`}>Kwota</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

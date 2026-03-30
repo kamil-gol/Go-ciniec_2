@@ -172,6 +172,8 @@ export const layout = {
   statGrid3: 'grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6',
   statGrid6: 'grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-5',
   cardPadding: 'p-4 sm:p-6',
+  entityGrid: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5',
+  entityGrid4: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5',
   detailGrid: 'grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4',
 } as const
 
@@ -188,6 +190,8 @@ export const typography = {
   statValue: 'text-xl sm:text-2xl font-bold text-foreground',
   statLabel: 'text-xs sm:text-sm text-muted-foreground',
   tableHeader: 'text-xs font-medium uppercase tracking-wider text-muted-foreground',
+  tableHeaderCell: 'font-semibold text-neutral-700 dark:text-neutral-300',
+  tableHeaderRow: 'bg-neutral-50/50 dark:bg-neutral-800/50',
 } as const
 
 export const buttonTokens = {

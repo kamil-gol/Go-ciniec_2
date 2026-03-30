@@ -14,6 +14,7 @@ import { DepositActions } from './deposit-actions'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { typography } from '@/lib/design-tokens'
 
 interface DepositsListProps {
   deposits: Deposit[]
@@ -185,15 +186,15 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
       <div className="hidden md:block">
         <Table>
           <TableHeader>
-            <TableRow className="bg-neutral-50/50 dark:bg-neutral-800/50">
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Klient</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Wydarzenie</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Sala</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-right">Kwota</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-right">Wpłacono</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Termin</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Status</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Metoda</TableHead>
+            <TableRow className={typography.tableHeaderRow}>
+              <TableHead className={typography.tableHeaderCell}>Klient</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Wydarzenie</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Sala</TableHead>
+              <TableHead className={`${typography.tableHeaderCell} text-right`}>Kwota</TableHead>
+              <TableHead className={`${typography.tableHeaderCell} text-right`}>Wpłacono</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Termin</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Status</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Metoda</TableHead>
               <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>

@@ -7,9 +7,9 @@ import { getAllActivePackages, getPackagesByTemplate, deletePackage } from '@/li
 import type { MenuPackage } from '@/lib/api/menu-packages-api';
 import { toast } from 'sonner';
 import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState, EntityCard } from '@/components/shared';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -104,31 +104,14 @@ export default function PackagesListPage() {
             actionHref="/dashboard/menu/packages/new"
           />
         ) : (
-          <motion.div
-            key="grid"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-          >
+          <div className={layout.entityGrid}>
             {packages.map((pkg, index) => (
-              <motion.div
+              <EntityCard
                 key={pkg.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="group relative bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-white/60 dark:border-neutral-800 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                accentColor={pkg.color || undefined}
+                delay={index * 0.05}
+                noPadding
               >
-                {/* Gradient Border Top */}
-                <div
-                  className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
-                  style={{
-                    background: `linear-gradient(90deg, #${(pkg.color || '#3b82f6').replace('#', '')}, #${(pkg.color || '#8b5cf6').replace('#', '')})`
-                  }}
-                />
-
-                {/* Card Content */}
-                <div className="relative z-10">
                   {/* Header */}
                   <div className="p-4 sm:p-6 pb-3 sm:pb-4">
                     <div className="flex items-start justify-between mb-3 sm:mb-4">
@@ -165,7 +148,7 @@ export default function PackagesListPage() {
                     </div>
                   </div>
 
-                  {/* Pricing Section — responsive overflow fix */}
+                  {/* Pricing Section */}
                   <div className="px-4 sm:px-6 py-3 sm:py-5 bg-neutral-50/80 dark:bg-neutral-800/50 border-y border-neutral-100 dark:border-neutral-800 overflow-hidden">
                     <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                       <div className="min-w-0 bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-sm">
@@ -247,10 +230,9 @@ export default function PackagesListPage() {
                       )}
                     </button>
                   </div>
-                </div>
-              </motion.div>
+              </EntityCard>
             ))}
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </PageLayout>
