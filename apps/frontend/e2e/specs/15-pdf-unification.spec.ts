@@ -24,14 +24,19 @@ test.describe.configure({ retries: 2 });
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '');
 
 async function getAuthToken(): Promise<string> {
-  const response = await fetch(`${API_BASE}/api/auth/login`, {
+  const loginUrl = `${API_BASE}/api/auth/login`;
+  const response = await fetch(loginUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
   });
+  if (!response.ok) {
+    const text = await response.text().catch(() => '(no body)');
+    throw new Error(`Auth failed: ${response.status} at ${loginUrl} — ${text.substring(0, 200)}`);
+  }
   const data = await response.json();
   if (!data.success && !data.data?.token) {
-    throw new Error(`Auth failed: ${JSON.stringify(data)}`);
+    throw new Error(`Auth response missing token: ${JSON.stringify(data)}`);
   }
   return data.data?.token || data.token;
 }

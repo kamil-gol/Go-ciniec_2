@@ -28,13 +28,14 @@ test.describe.serial('Regression Tests — Known Bugs', () => {
   // ═══════════════════════════════════════════════════════════════════════
 
   test('login — obtain auth token', async ({ request }) => {
-    const res = await request.post(`${API_URL}/api/auth/login`, {
+    const loginUrl = `${API_URL}/api/auth/login`;
+    const res = await request.post(loginUrl, {
       data: {
         email: testData.admin.email,
         password: testData.admin.password,
       },
     });
-    expect(res.ok()).toBeTruthy();
+    expect(res.ok(), `Login failed: ${res.status()} ${res.statusText()} at ${loginUrl}`).toBeTruthy();
 
     const body = await res.json();
     expect(body.data).toHaveProperty('token');
