@@ -82,7 +82,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <Header user={user} onMenuClick={() => setSidebarOpen(true)} />
 
         {/* Page Content */}
-        <main className="min-h-[calc(100vh-4rem)]">
+        <main id="main-content" className="min-h-[calc(100vh-4rem)]">
           <motion.div
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
