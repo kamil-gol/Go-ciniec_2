@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Plus, Search, Edit, Trash2, Loader2, ChefHat, AlertTriangle } from 'lucide-react'
 import { useDishes, useDeleteDish } from '@/hooks/use-dishes'
+import { EntityCard, LoadingState, EmptyState } from '@/components/shared'
+import { layout } from '@/lib/design-tokens'
 import { DishDialog } from './DishDialog'
 import { toast } from 'sonner'
 import type { Dish } from '@/types'
@@ -167,7 +169,7 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
             </div>
           )}
           <Button 
-            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 h-12 px-6 shadow-lg"
+            className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 h-12 px-6 shadow-lg"
             onClick={() => setCreateOpen(true)}
           >
             <Plus className="mr-2 h-5 w-5" />
@@ -177,9 +179,9 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
 
         {/* Category Filters */}
         <Card className="border-0 shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 p-6">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <ChefHat className="h-5 w-5 text-emerald-600" />
+              <ChefHat className="h-5 w-5 text-blue-600" />
               Filtruj po kategorii
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -187,7 +189,7 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
                 variant={selectedCategoryId === 'ALL' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedCategoryId('ALL')}
-                className={selectedCategoryId === 'ALL' ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600' : ''}
+                className={selectedCategoryId === 'ALL' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600' : ''}
               >
                 Wszystkie
                 <Badge variant="secondary" className="ml-2">
@@ -200,7 +202,7 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
                   variant={selectedCategoryId === category.id ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSelectedCategoryId(category.id)}
-                  className={selectedCategoryId === category.id ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600' : ''}
+                  className={selectedCategoryId === category.id ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600' : ''}
                 >
                   {category.icon} {category.name}
                   <Badge variant="secondary" className="ml-2">
@@ -214,30 +216,14 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
 
         {/* Results */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <LoadingState rows={6} message="Ładowanie dań..." />
         ) : filteredDishes.length === 0 ? (
-          <Card className="border-0 shadow-xl">
-            <CardContent className="p-12 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-950/50 dark:to-teal-950/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ChefHat className="h-10 w-10 text-emerald-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Brak dań</h3>
-              <p className="text-muted-foreground mb-6">
-                {searchQuery ? 'Nie znaleziono dań pasujących do wyszukiwania' : 'Dodaj pierwsze danie do biblioteki'}
-              </p>
-              {!searchQuery && (
-                <Button 
-                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
-                  onClick={() => setCreateOpen(true)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Dodaj danie
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={ChefHat}
+            title="Brak dań"
+            description={searchQuery ? 'Nie znaleziono dań pasujących do wyszukiwania' : 'Dodaj pierwsze danie do biblioteki'}
+            {...(!searchQuery && { onAction: () => setCreateOpen(true), actionLabel: 'Dodaj danie' })}
+          />
         ) : (
           <div className="space-y-4">
             {/* Results header */}
@@ -251,69 +237,62 @@ export function DishLibraryManager({ searchQuery, setSearchQuery }: DishLibraryM
             </div>
 
             {/* Dishes Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredDishes.map((dish) => (
-                <Card key={dish.id} className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden group">
-                  <div className="relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-cyan-500/10 group-hover:from-emerald-500/20 group-hover:via-teal-500/20 group-hover:to-cyan-500/20 transition-all" />
-                    <CardHeader className="relative">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg">
-                            <ChefHat className="h-6 w-6 text-white" />
-                          </div>
-                          <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0">
-                            {dish.category?.icon} {dish.category?.name}
-                          </Badge>
-                        </div>
-                        {!dish.isActive && (
-                          <Badge variant="outline" className="border-red-200 text-red-600">
-                            Nieaktywne
-                          </Badge>
-                        )}
+            <div className={layout.entityGrid}>
+              {filteredDishes.map((dish, idx) => (
+                <EntityCard key={dish.id} accentGradient="from-blue-500 to-indigo-500" delay={idx * 0.05} dimmed={!dish.isActive}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-lg">
+                        <ChefHat className="h-5 w-5 text-white" />
                       </div>
-                      <CardTitle className="text-xl group-hover:text-emerald-600 transition-colors">
-                        {dish.name}
-                      </CardTitle>
-                      {dish.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{dish.description}</p>
-                      )}
-                    </CardHeader>
-                  </div>
-                  
-                  <CardContent className="space-y-3">
-                    {dish.allergens && dish.allergens.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {dish.allergens.map((allergen, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs border-orange-200 text-orange-600">
-                            {allergen}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex gap-2 pt-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="flex-1 border-2 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600 transition-colors"
-                        onClick={() => handleEdit(dish)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edytuj
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
-                        onClick={() => handleDeleteClick(dish.id, dish.name)}
-                        disabled={deleteDishMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-0">
+                        {dish.category?.icon} {dish.category?.name}
+                      </Badge>
                     </div>
-                  </CardContent>
-                </Card>
+                    {!dish.isActive && (
+                      <Badge variant="outline" className="border-red-200 text-red-600">
+                        Nieaktywne
+                      </Badge>
+                    )}
+                  </div>
+                  <h3 className="text-lg font-semibold group-hover:text-blue-600 transition-colors">
+                    {dish.name}
+                  </h3>
+                  {dish.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{dish.description}</p>
+                  )}
+
+                  {dish.allergens && dish.allergens.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {dish.allergens.map((allergen, aIdx) => (
+                        <Badge key={aIdx} variant="outline" className="text-xs border-orange-200 text-orange-600">
+                          {allergen}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-3 mt-3 border-t border-neutral-100 dark:border-neutral-700/50">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 border-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors"
+                      onClick={() => handleEdit(dish)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edytuj
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
+                      onClick={() => handleDeleteClick(dish.id, dish.name)}
+                      disabled={deleteDishMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </EntityCard>
               ))}
             </div>
           </div>

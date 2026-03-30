@@ -118,8 +118,6 @@ export default function MenuTemplatesPage() {
         title="Szablony Menu"
         subtitle="Konfiguruj szablony menu dla typów wydarzeń"
         icon={FileText}
-        backHref="/dashboard/menu"
-        backLabel="Powrót do Menu"
         action={
           <Button
             size="lg"

@@ -6,9 +6,11 @@ import { useSearchParams } from 'next/navigation';
 import { getAllActivePackages, getPackagesByTemplate, deletePackage } from '@/lib/api/menu-packages-api';
 import type { MenuPackage } from '@/lib/api/menu-packages-api';
 import { toast } from 'sonner';
-import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles } from 'lucide-react';
+import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles, Search } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { PageLayout, PageHero, StatCard, LoadingState, EmptyState, EntityCard } from '@/components/shared';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
@@ -23,6 +25,7 @@ export default function PackagesListPage() {
   const [packages, setPackages] = useState<MenuPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadPackages = useCallback(async () => {
     try {
@@ -74,8 +77,8 @@ export default function PackagesListPage() {
         title="Pakiety Menu"
         subtitle={templateId ? 'Pakiety dla wybranego szablonu' : 'Zarządzaj wszystkimi pakietami menu'}
         icon={Package}
-        backHref="/dashboard/menu"
-        backLabel="Powrót do Menu"
+        backHref="/dashboard/menu/templates"
+        backLabel="Szablony Menu"
         action={
           <Link href="/dashboard/menu/packages/new">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-white/90 shadow-xl">
@@ -93,6 +96,21 @@ export default function PackagesListPage() {
         <StatCard label="Popularne" value={packages.filter(p => p.isPopular).length} subtitle="Najczęściej wybierane" icon={TrendingUp} iconGradient={statGradients.financial} delay={0.3} />
       </div>
 
+      {/* Filter */}
+      <Card>
+        <CardContent className="p-4 sm:p-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Szukaj pakietów..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Packages Grid */}
       <AnimatePresence mode="wait">
         {packages.length === 0 ? (
@@ -105,7 +123,7 @@ export default function PackagesListPage() {
           />
         ) : (
           <div className={layout.entityGrid}>
-            {packages.map((pkg, index) => (
+            {packages.filter(pkg => pkg.name.toLowerCase().includes(searchQuery.toLowerCase())).map((pkg, index) => (
               <EntityCard
                 key={pkg.id}
                 accentColor={pkg.color || undefined}
