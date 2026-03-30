@@ -39,6 +39,17 @@ vi.mock('@/lib/design-tokens', () => ({
   motionTokens: { duration: { instant: 0.1, fast: 0.2, normal: 0.3, slow: 0.5 }, ease: { default: "easeOut", smooth: [0.4, 0, 0.2, 1] }, stagger: { cards: 0.06, list: 0.04 } },
 }))
 
+// Mock lucide-react — return simple SVG stubs for all icons
+vi.mock('lucide-react', () => {
+  const iconStub = (props: any) => <svg data-testid="icon" {...props} />
+  return new Proxy({}, {
+    get: (_target, prop) => {
+      if (prop === '__esModule') return true
+      return iconStub
+    },
+  })
+})
+
 vi.mock('@/components/ui/button', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
 }))
