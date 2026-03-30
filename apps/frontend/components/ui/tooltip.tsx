@@ -38,7 +38,7 @@ interface TooltipContentProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
-  ({ className, side = 'bottom', children, ...props }, ref) => {
+  ({ className, side = 'top', children, ...props }, ref) => {
     const positionClasses = {
       top: 'bottom-full left-1/2 -translate-x-1/2 mb-1.5',
       bottom: 'top-full left-1/2 -translate-x-1/2 mt-1.5',

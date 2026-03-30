@@ -90,7 +90,7 @@ export function EditableGuestsCard({
       {(editing) => {
         if (!editing) {
           return (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
                 <div>
                   <p className="text-sm text-muted-foreground">Dorośli</p>
@@ -112,7 +112,7 @@ export function EditableGuestsCard({
                 </div>
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500" />
               </div>
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+              <div className="flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-lg">
                 <div>
                   <p className="text-sm font-semibold">Razem</p>
                   <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">

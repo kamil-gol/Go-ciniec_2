@@ -185,7 +185,9 @@ export function ReservationCard({
           </div>
         </div>
 
-        {/* Actions Bar */}
+      </div>
+      {/* Actions Bar — outside overflow-hidden div so tooltips are visible */}
+      <div className="px-4 sm:px-6 pb-4 sm:pb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-3 border-t border-neutral-200/50 dark:border-neutral-700/30">
           {reservation.client && (
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 dark:text-neutral-300">
@@ -213,7 +215,7 @@ export function ReservationCard({
                     </Button>
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent><p>Podgląd szczegółów</p></TooltipContent>
+                <TooltipContent side="top"><p>Podgląd szczegółów</p></TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -232,7 +234,7 @@ export function ReservationCard({
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent><p>Generuj PDF</p></TooltipContent>
+                <TooltipContent side="top"><p>Generuj PDF</p></TooltipContent>
               </Tooltip>
               {!reservation.archivedAt ? (
                 <Tooltip>
@@ -248,7 +250,7 @@ export function ReservationCard({
                       <Archive className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Zarchiwizuj</p></TooltipContent>
+                  <TooltipContent side="top"><p>Zarchiwizuj</p></TooltipContent>
                 </Tooltip>
               ) : (
                 <Tooltip>
@@ -263,7 +265,7 @@ export function ReservationCard({
                       <ArchiveRestore className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Przywróć z archiwum</p></TooltipContent>
+                  <TooltipContent side="top"><p>Przywróć z archiwum</p></TooltipContent>
                 </Tooltip>
               )}
               <Tooltip>
@@ -279,7 +281,7 @@ export function ReservationCard({
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent><p>Anuluj rezerwację</p></TooltipContent>
+                <TooltipContent side="top"><p>Anuluj rezerwację</p></TooltipContent>
               </Tooltip>
             </div>
           </TooltipProvider>

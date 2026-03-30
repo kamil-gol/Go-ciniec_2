@@ -123,6 +123,10 @@ vi.mock('./components/QuickActionsCard', () => ({
   QuickActionsCard: () => <div data-testid="quick-actions" />,
 }))
 
+vi.mock('@/components/shared/GradientCard', () => ({
+  GradientCard: ({ title, children }: any) => <div data-testid={`gradient-card-${title}`}>{children}</div>,
+}))
+
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))

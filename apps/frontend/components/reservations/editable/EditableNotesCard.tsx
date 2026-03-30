@@ -63,6 +63,8 @@ export function EditableNotesCard({
       title="Notatki"
       icon={<FileText className="h-5 w-5 text-white" />}
       iconGradient="from-orange-500 to-amber-500"
+      gradientHeader
+      headerGradient="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30"
       onSave={handleSave}
       onCancel={handleCancel}
       disabled={disabled}
@@ -70,15 +72,17 @@ export function EditableNotesCard({
       {(editing) => {
         if (!editing) {
           return (
-            <div className="space-y-4">
-              {displayNotes ? (
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{displayNotes}</p>
-              ) : (
-                <p className="text-muted-foreground italic">Brak notatek</p>
-              )}
+            <div className="space-y-3">
+              <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
+                {displayNotes ? (
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{displayNotes}</p>
+                ) : (
+                  <p className="text-muted-foreground italic">Brak notatek</p>
+                )}
+              </div>
 
               {initialDeadline && (
-                <div className="flex items-center gap-2 pt-3 border-t">
+                <div className="flex items-center gap-2 p-3 bg-white dark:bg-black/20 rounded-lg">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Termin potwierdzenia</p>

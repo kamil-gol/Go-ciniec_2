@@ -1,8 +1,8 @@
 'use client'
 
-import { Trash2, Archive, ArchiveRestore, Download } from 'lucide-react'
+import { Trash2, Archive, ArchiveRestore, Download, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { GradientCard } from '@/components/shared/GradientCard'
 
 interface QuickActionsCardProps {
   isArchived: boolean
@@ -32,57 +32,60 @@ export function QuickActionsCard({
   onCancel,
 }: QuickActionsCardProps) {
   return (
-    <Card className="border-0 shadow-xl">
-      <div className="p-5 sm:p-6">
-        <h3 className="text-lg font-bold mb-3">Szybkie akcje</h3>
-        <div className="space-y-3">
+    <GradientCard
+      title="Szybkie akcje"
+      icon={<Zap className="h-5 w-5 text-white" />}
+      iconGradient="from-amber-500 to-orange-500"
+      headerGradient="from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-red-950/30"
+      headerSpacing="mb-4"
+    >
+      <div className="space-y-3">
+        <Button
+          variant="outline"
+          className="w-full justify-start"
+          size="lg"
+          onClick={onDownloadPDF}
+          disabled={downloading}
+        >
+          <Download className="mr-2 h-4 w-4 flex-shrink-0" />
+          {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
+        </Button>
+
+        {!isArchived ? (
           <Button
             variant="outline"
-            className="w-full justify-start"
+            className="w-full justify-start text-neutral-600 hover:text-neutral-700"
             size="lg"
-            onClick={onDownloadPDF}
-            disabled={downloading}
+            disabled={archivePending || isReadOnly}
+            onClick={onArchive}
           >
-            <Download className="mr-2 h-4 w-4 flex-shrink-0" />
-            {downloading ? 'Pobieranie...' : 'Pobierz PDF'}
+            <Archive className="mr-2 h-4 w-4 flex-shrink-0" />
+            {archivePending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwacje'}
           </Button>
-
-          {!isArchived ? (
-            <Button
-              variant="outline"
-              className="w-full justify-start text-neutral-600 hover:text-neutral-700"
-              size="lg"
-              disabled={archivePending || isReadOnly}
-              onClick={onArchive}
-            >
-              <Archive className="mr-2 h-4 w-4 flex-shrink-0" />
-              {archivePending ? 'Archiwizowanie...' : 'Zarchiwizuj rezerwacje'}
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              className="w-full justify-start text-green-600 hover:text-green-700"
-              size="lg"
-              disabled={unarchivePending}
-              onClick={onUnarchive}
-            >
-              <ArchiveRestore className="mr-2 h-4 w-4 flex-shrink-0" />
-              {unarchivePending ? 'Przywracanie...' : 'Przywroc z archiwum'}
-            </Button>
-          )}
-
+        ) : (
           <Button
             variant="outline"
-            className="w-full justify-start text-red-600 hover:text-red-700"
+            className="w-full justify-start text-green-600 hover:text-green-700"
             size="lg"
-            disabled={!isCancellable || cancelPending || isReadOnly}
-            onClick={onCancel}
+            disabled={unarchivePending}
+            onClick={onUnarchive}
           >
-            <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
-            {cancelPending ? 'Anulowanie...' : 'Anuluj rezerwacje'}
+            <ArchiveRestore className="mr-2 h-4 w-4 flex-shrink-0" />
+            {unarchivePending ? 'Przywracanie...' : 'Przywroc z archiwum'}
           </Button>
-        </div>
+        )}
+
+        <Button
+          variant="outline"
+          className="w-full justify-start text-red-600 hover:text-red-700"
+          size="lg"
+          disabled={!isCancellable || cancelPending || isReadOnly}
+          onClick={onCancel}
+        >
+          <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
+          {cancelPending ? 'Anulowanie...' : 'Anuluj rezerwacje'}
+        </Button>
       </div>
-    </Card>
+    </GradientCard>
   )
 }
