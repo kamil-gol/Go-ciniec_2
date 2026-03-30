@@ -13,7 +13,8 @@
 import { test, expect } from '@playwright/test';
 import { testData } from '../fixtures/test-data';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Strip trailing /api to avoid double /api/api/ when NEXT_PUBLIC_API_URL includes it
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '');
 
 let authToken: string;
 
@@ -27,13 +28,14 @@ test.describe.serial('Regression Tests — Known Bugs', () => {
   // ═══════════════════════════════════════════════════════════════════════
 
   test('login — obtain auth token', async ({ request }) => {
-    const res = await request.post(`${API_URL}/api/auth/login`, {
+    const loginUrl = `${API_URL}/api/auth/login`;
+    const res = await request.post(loginUrl, {
       data: {
         email: testData.admin.email,
         password: testData.admin.password,
       },
     });
-    expect(res.ok()).toBeTruthy();
+    expect(res.ok(), `Login failed: ${res.status()} ${res.statusText()} at ${loginUrl}`).toBeTruthy();
 
     const body = await res.json();
     expect(body.data).toHaveProperty('token');

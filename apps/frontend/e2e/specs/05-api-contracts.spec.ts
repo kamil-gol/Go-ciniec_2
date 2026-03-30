@@ -18,7 +18,8 @@
 import { test, expect } from '@playwright/test';
 import { testData } from '../fixtures/test-data';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Strip trailing /api to avoid double /api/api/ when NEXT_PUBLIC_API_URL includes it
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '');
 
 let authToken: string;
 
@@ -37,13 +38,14 @@ test.describe.serial('API Contract Validation', () => {
   // ═══════════════════════════════════════════════════════════════════════
 
   test('POST /api/auth/login — returns token with correct shape', async ({ request }) => {
-    const res = await request.post(`${API_URL}/api/auth/login`, {
+    const loginUrl = `${API_URL}/api/auth/login`;
+    const res = await request.post(loginUrl, {
       data: {
         email: testData.admin.email,
         password: testData.admin.password,
       },
     });
-    expect(res.ok()).toBeTruthy();
+    expect(res.ok(), `Login failed: ${res.status()} ${res.statusText()} at ${loginUrl} (email: ${testData.admin.email}, pw length: ${testData.admin.password?.length})`).toBeTruthy();
 
     const body = await res.json();
     expect(body).toHaveProperty('data');

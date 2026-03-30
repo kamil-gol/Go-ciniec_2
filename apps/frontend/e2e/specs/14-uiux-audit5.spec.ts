@@ -182,7 +182,7 @@ test.describe('#428 Queue aria-live', () => {
 // ==========================================
 test.describe('#434 Shadows CSS variables', () => {
   test('shadow-color CSS variable is defined', async ({ page }) => {
-
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await waitForPageStable(page);
 
     const shadowColor = await page.evaluate(() => {
@@ -194,7 +194,8 @@ test.describe('#434 Shadows CSS variables', () => {
   });
 
   test('shadow-color changes in dark mode', async ({ page }) => {
-
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+    await waitForPageStable(page);
 
     // Get light mode shadow-color
     const lightShadow = await page.evaluate(() => {

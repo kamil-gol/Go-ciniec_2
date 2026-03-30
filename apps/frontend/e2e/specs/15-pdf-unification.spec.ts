@@ -20,20 +20,31 @@ const ADMIN_PASSWORD = testData.admin.password;
 test.setTimeout(90_000);
 test.describe.configure({ retries: 2 });
 
-const BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
-const API_BASE = BASE_URL.replace(/\/$/, '');
+// Use backend URL directly — frontend has no API proxy, so fetch() to localhost:3000 returns HTML
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '');
+
+// Cache token to avoid hitting rate limit (10 req/15min on /api/auth/login)
+let cachedToken: string | null = null;
 
 async function getAuthToken(): Promise<string> {
-  const response = await fetch(`${API_BASE}/api/auth/login`, {
+  if (cachedToken) return cachedToken;
+
+  const loginUrl = `${API_BASE}/api/auth/login`;
+  const response = await fetch(loginUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
   });
+  if (!response.ok) {
+    const text = await response.text().catch(() => '(no body)');
+    throw new Error(`Auth failed: ${response.status} at ${loginUrl} — ${text.substring(0, 200)}`);
+  }
   const data = await response.json();
   if (!data.success && !data.data?.token) {
-    throw new Error(`Auth failed: ${JSON.stringify(data)}`);
+    throw new Error(`Auth response missing token: ${JSON.stringify(data)}`);
   }
-  return data.data?.token || data.token;
+  cachedToken = data.data?.token || data.token;
+  return cachedToken!;
 }
 
 async function apiGet(token: string, path: string): Promise<Response> {
