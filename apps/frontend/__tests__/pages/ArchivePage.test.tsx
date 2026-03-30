@@ -76,6 +76,7 @@ vi.mock('@/components/shared', () => ({
       <span>{description}</span>
     </div>
   ),
+  LoadingState: ({ variant, count }: any) => <div data-testid="loading-state">{variant} {count}</div>,
 }))
 
 vi.mock('@/components/shared/StatusBadge', () => ({
