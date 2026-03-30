@@ -88,7 +88,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
           JWT_SECRET: ${{ secrets.JWT_SECRET_CI || 'e2e-ci-jwt-placeholder-not-production' }}
-          NODE_ENV: test
+          NODE_ENV: development
+          DISABLE_RATE_LIMIT: 'true'
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
         run: |
           cd apps/backend && npx tsx src/index.ts &
@@ -188,7 +189,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://rezerwacje:rezerwacje_password@localhost:5432/rezerwacje_test
           JWT_SECRET: ${{ secrets.JWT_SECRET_CI || 'e2e-ci-jwt-placeholder-not-production' }}
-          NODE_ENV: test
+          NODE_ENV: development
+          DISABLE_RATE_LIMIT: 'true'
         run: |
           npx tsx src/index.ts &
           npx wait-on http://localhost:3001/api/health --timeout 60000
