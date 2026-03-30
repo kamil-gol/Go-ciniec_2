@@ -6,7 +6,9 @@
 
 import { describe, it, expect, vi } from 'vitest'
 
-const mockRedirect = vi.fn()
+const { mockRedirect } = vi.hoisted(() => ({
+  mockRedirect: vi.fn(),
+}))
 
 vi.mock('next/navigation', () => ({
   redirect: mockRedirect,
