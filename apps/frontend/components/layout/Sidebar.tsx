@@ -171,7 +171,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
   }
 
   const renderNavItem = (item: NavItem) => {
-    const s = iconStyle[item.accentKey] || iconStyle.settings
+    const s = iconStyle[item.accentKey] ?? iconStyle.settings ?? groupCfg
 
     const isItemActive = item.children
       ? item.children.some(child => pathname.startsWith(child.href))
