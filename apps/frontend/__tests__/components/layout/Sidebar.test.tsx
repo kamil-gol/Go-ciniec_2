@@ -39,15 +39,18 @@ vi.mock('@/lib/design-tokens', () => ({
   motionTokens: { duration: { instant: 0.1, fast: 0.2, normal: 0.3, slow: 0.5 }, ease: { default: "easeOut", smooth: [0.4, 0, 0.2, 1] }, stagger: { cards: 0.06, list: 0.04 } },
 }))
 
-// Mock lucide-react — return simple SVG stubs for all icons
+// Mock lucide-react — stub all icons used by Sidebar
+const IconStub = (props: any) => <svg data-testid="icon" {...props} />
 vi.mock('lucide-react', () => {
-  const iconStub = (props: any) => <svg data-testid="icon" {...props} />
-  return new Proxy({}, {
-    get: (_target, prop) => {
-      if (prop === '__esModule') return true
-      return iconStub
-    },
-  })
+  const stub = (props: any) => <svg data-testid="icon" {...props} />
+  return {
+    ChevronLeft: stub, ChevronDown: stub, LayoutDashboard: stub, Calendar: stub,
+    CalendarDays: stub, Users: stub, Building2: stub, ClipboardList: stub,
+    Settings: stub, UtensilsCrossed: stub, Clock: stub, LogOut: stub,
+    DollarSign: stub, Theater: stub, BarChart3: stub, Archive: stub,
+    FileText: stub, Gift: stub, ScrollText: stub, ShoppingBag: stub,
+    BookOpen: stub, Bell: stub, FolderTree: stub, Package: stub, Salad: stub,
+  }
 })
 
 vi.mock('@/components/ui/button', () => ({
