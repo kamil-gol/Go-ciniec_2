@@ -149,7 +149,7 @@ describe('EventTypeCard', () => {
           onDelete={mockOnDelete}
         />
       )
-      const colorBar = container.querySelector('.h-2.w-full')
+      const colorBar = container.querySelector('.h-1')
       expect(colorBar).toHaveStyle({ backgroundColor: '#3B82F6' })
     })
 
@@ -162,7 +162,7 @@ describe('EventTypeCard', () => {
           onDelete={mockOnDelete}
         />
       )
-      const colorBar = container.querySelector('.h-2.w-full')
+      const colorBar = container.querySelector('.h-1')
       expect(colorBar).toHaveStyle({ backgroundColor: '#9CA3AF' })
     })
   })

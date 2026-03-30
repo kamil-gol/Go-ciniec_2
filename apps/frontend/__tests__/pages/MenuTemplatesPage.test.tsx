@@ -81,6 +81,8 @@ vi.mock('@/components/shared', () => ({
       <span>{description}</span>
     </div>
   ),
+  EntityCard: ({ children, ...props }: any) => <div data-testid="entity-card" {...props}>{children}</div>,
+  Breadcrumb: () => <nav data-testid="breadcrumb" />,
 }))
 
 vi.mock('@/components/ui/button', () => ({
