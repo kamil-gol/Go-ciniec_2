@@ -137,8 +137,9 @@ test.describe('Smoke Tests - Accessibility', () => {
   test('should have keyboard navigation on login', async ({ page }) => {
     await page.goto('/login');
 
-    // Tab to email field and type
-    await page.keyboard.press('Tab');
+    // Tab past skip-to-content link, then to email field and type
+    await page.keyboard.press('Tab'); // skip-to-content link
+    await page.keyboard.press('Tab'); // email field
     await page.keyboard.type(testData.admin.email);
 
     // Tab to password field and type
