@@ -208,7 +208,7 @@ export default function QueuePage() {
             </Button>
             <Button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="bg-white text-amber-600 hover:bg-white/90 shadow-xl text-sm"
+              className="bg-white text-blue-700 hover:bg-white/90 shadow-xl text-sm"
             >
               <Plus className="h-4 w-4 mr-1.5 sm:mr-2" />
               <span className="hidden sm:inline">Dodaj do kolejki</span>
