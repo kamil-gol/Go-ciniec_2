@@ -20,8 +20,8 @@ const ADMIN_PASSWORD = testData.admin.password;
 test.setTimeout(90_000);
 test.describe.configure({ retries: 2 });
 
-const BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
-const API_BASE = BASE_URL.replace(/\/$/, '');
+// Use backend URL directly — frontend has no API proxy, so fetch() to localhost:3000 returns HTML
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '');
 
 async function getAuthToken(): Promise<string> {
   const response = await fetch(`${API_BASE}/api/auth/login`, {
