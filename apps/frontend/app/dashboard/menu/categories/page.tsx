@@ -238,7 +238,7 @@ export default function DishCategoriesPage() {
             <EntityCard key={category.id} delay={index * 0.05} dimmed={!category.isActive} noPadding>
               <div className="relative overflow-hidden">
                 <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
-                  <Badge className="bg-purple-600 text-white font-bold">#{index + 1}</Badge>
+                  <Badge className="bg-blue-600 text-white font-bold">#{index + 1}</Badge>
                 </div>
                 <div className="relative p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-2">
@@ -255,9 +255,9 @@ export default function DishCategoriesPage() {
                   </div>
                 </div>
               </div>
-              <div className="space-y-3 p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="space-y-3 p-4 sm:p-6 pt-0 sm:pt-0 border-t border-neutral-100 dark:border-neutral-800 mt-4">
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1 border-2 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600 transition-colors" onClick={() => handleEdit(category)}>
+                  <Button size="sm" variant="outline" className="flex-1 border-2 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors" onClick={() => handleEdit(category)}>
                     <Edit className="h-4 w-4 mr-1" />
                     Edytuj
                   </Button>

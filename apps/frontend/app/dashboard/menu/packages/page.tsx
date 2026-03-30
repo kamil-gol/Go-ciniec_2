@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { getAllActivePackages, getPackagesByTemplate, deletePackage } from '@/lib/api/menu-packages-api';
 import type { MenuPackage } from '@/lib/api/menu-packages-api';
 import { toast } from 'sonner';
-import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles, Search } from 'lucide-react';
+import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles, Search, Loader2 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -227,26 +227,15 @@ export default function PackagesListPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/50 dark:bg-neutral-800/30 flex items-center gap-2 sm:gap-3">
-                    <Link
-                      href={`/dashboard/menu/packages/${pkg.id}`}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg text-sm sm:text-base transition-all"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edytuj
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(pkg.id, pkg.name)}
-                      disabled={deletingId === pkg.id}
-                      className="p-2.5 sm:p-3 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-950/50 transition-all disabled:opacity-50"
-                      title="Usuń pakiet"
-                    >
-                      {deletingId === pkg.id ? (
-                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
+                  <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center gap-2">
+                    <Button size="sm" variant="outline" className="flex-1 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors" asChild>
+                      <Link href={`/dashboard/menu/packages/${pkg.id}`}>
+                        <Edit className="h-4 w-4 mr-1" /> Edytuj
+                      </Link>
+                    </Button>
+                    <Button size="sm" variant="outline" className="hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors" onClick={() => handleDelete(pkg.id, pkg.name)} disabled={deletingId === pkg.id}>
+                      {deletingId === pkg.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    </Button>
                   </div>
               </EntityCard>
             ))}

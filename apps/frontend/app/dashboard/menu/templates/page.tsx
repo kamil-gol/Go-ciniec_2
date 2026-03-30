@@ -224,15 +224,15 @@ export default function MenuTemplatesPage() {
                   )}
                 </div>
 
-                <div className="flex gap-2 pt-4 border-t">
-                  <Button size="sm" variant="outline" className="flex-1" onClick={() => handleEdit(template)}>
+                <div className="flex gap-2 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+                  <Button size="sm" variant="outline" className="flex-1 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors" onClick={() => handleEdit(template)}>
                     <Edit className="h-4 w-4 mr-1" />
                     <span className="hidden sm:inline">Edytuj</span>
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(template)} disabled={pdfLoading === template.id} title="Drukuj kartę menu">
+                  <Button size="sm" variant="outline" className="hover:bg-neutral-100 transition-colors" onClick={() => handleDownloadPdf(template)} disabled={pdfLoading === template.id} title="Drukuj kartę menu">
                     {pdfLoading === template.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDelete(template)}>
+                  <Button size="sm" variant="outline" className="hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors" onClick={() => handleDelete(template)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
