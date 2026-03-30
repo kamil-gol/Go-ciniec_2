@@ -32,7 +32,7 @@ import {
   Bell,
   FolderTree,
   Package,
-  Soup,
+  Salad,
 } from 'lucide-react'
 
 // ═══ NAV CONFIG ═══
@@ -66,7 +66,7 @@ const navGroups: NavGroup[] = [
           { name: 'Szablony Menu', href: '/dashboard/menu/templates', icon: BookOpen,        accentKey: 'menu' },
           { name: 'Pakiety',       href: '/dashboard/menu/packages',  icon: Package,         accentKey: 'menu' },
           { name: 'Kategorie Dań', href: '/dashboard/menu/categories', icon: FolderTree,     accentKey: 'menu' },
-          { name: 'Biblioteka Dań', href: '/dashboard/menu/dishes',   icon: Soup,            accentKey: 'menu' },
+          { name: 'Biblioteka Dań', href: '/dashboard/menu/dishes',   icon: Salad,            accentKey: 'menu' },
         ],
       },
       {
