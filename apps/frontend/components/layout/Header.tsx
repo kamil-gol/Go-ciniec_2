@@ -112,7 +112,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-neutral-200/80 dark:border-neutral-700/50 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 h-16 border-b border-neutral-200/60 dark:border-neutral-700/40 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-none">
       <div className="flex h-full items-center justify-between px-4 lg:px-6">
         {/* Left side: Hamburger (mobile) + Welcome */}
         <div className="flex items-center gap-3">
