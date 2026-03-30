@@ -10,13 +10,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { EntityCard } from '@/components/shared';
 import type { DocumentTemplate, TemplateCategory } from '@/types/document-template.types';
 import { CATEGORY_CONFIG } from './template-config';
 
@@ -32,18 +26,15 @@ export function TemplateCard({ template, catConfig, onEdit, onHistory, onDelete 
   const varCount = template.availableVars?.length || 0;
 
   return (
-    <Card className="group overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-1 border border-neutral-100 dark:border-neutral-700/50">
-      {/* Colored top accent bar */}
-      <div className={`h-1 bg-gradient-to-r ${catConfig.gradient}`} />
-
-      <CardHeader className="pb-3 pt-4">
+    <EntityCard accentGradient={catConfig.gradient}>
+      <div className="space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1 min-w-0">
-            <CardTitle className="text-base leading-tight">{template.name}</CardTitle>
+            <h3 className="text-base font-semibold leading-tight text-neutral-900 dark:text-neutral-100">{template.name}</h3>
             {template.description && (
-              <CardDescription className="text-sm line-clamp-2">
+              <p className="text-sm text-muted-foreground line-clamp-2">
                 {template.description}
-              </CardDescription>
+              </p>
             )}
           </div>
           {template.isRequired ? (
@@ -58,9 +49,9 @@ export function TemplateCard({ template, catConfig, onEdit, onHistory, onDelete 
             </Badge>
           )}
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-3">
+      <div className="space-y-3 mt-3">
         {/* Meta row */}
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Badge className={`${catConfig.badgeBg} ${catConfig.badgeText} text-[10px] border-0`}>
@@ -126,7 +117,7 @@ export function TemplateCard({ template, catConfig, onEdit, onHistory, onDelete 
             </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </EntityCard>
   );
 }

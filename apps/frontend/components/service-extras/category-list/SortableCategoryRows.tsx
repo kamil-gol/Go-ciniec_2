@@ -64,7 +64,7 @@ export function SortableCategoryRows({
             {...attributes}
             {...listeners}
           >
-            <GripVertical className="h-4 w-4 text-neutral-400" />
+            <GripVertical className="h-4 w-4 text-neutral-500" />
           </button>
         </TableCell>
 
@@ -72,9 +72,9 @@ export function SortableCategoryRows({
         <TableCell>
           <div className="flex items-center gap-3">
             {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+              <ChevronDown className="h-4 w-4 text-neutral-500 flex-shrink-0" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+              <ChevronRight className="h-4 w-4 text-neutral-500 flex-shrink-0" />
             )}
             <span
               className="h-3 w-3 rounded-full flex-shrink-0 ring-2 ring-white dark:ring-neutral-900"
@@ -196,7 +196,7 @@ export function SortableCategoryRows({
         <TableRow className="bg-neutral-50/30 dark:bg-neutral-800/20">
           <TableCell></TableCell>
           <TableCell colSpan={4}>
-            <div className="flex items-center gap-2 py-3 pl-8 text-sm text-neutral-400">
+            <div className="flex items-center gap-2 py-3 pl-8 text-sm text-neutral-500">
               <Package className="h-4 w-4" />
               Brak pozycji
               <Button variant="link" size="sm" className="h-auto p-0 text-purple-600" onClick={() => onCreateItem(category.id)}>

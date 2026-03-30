@@ -124,7 +124,7 @@ export default function DayDetailPanel({ date, reservations, onClose, onReservat
                                   </span>
                                 )}
                               </span>
-                              <ArrowRight className="h-3.5 w-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
+                              <ArrowRight className="h-3.5 w-3.5 text-neutral-500 group-hover:translate-x-0.5 transition-transform" />
                             </div>
                           </div>
                         </div>

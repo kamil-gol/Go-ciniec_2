@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
@@ -15,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { EntityCard } from '@/components/shared'
 import { toast } from 'sonner'
 
 interface EventTypeCardProps {
@@ -59,17 +59,11 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
   }
 
   return (
-    <Card
-      className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border-neutral-200 dark:border-neutral-700 cursor-pointer"
+    <EntityCard
+      accentColor={eventType.color || '#9CA3AF'}
       onClick={handleCardClick}
     >
-      {/* Color bar at top */}
-      <div
-        className="h-2 w-full"
-        style={colorStyle}
-      />
-
-      <div className="p-6">
+      <div>
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
@@ -141,18 +135,18 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
             <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-300">
               <Calendar className="h-4 w-4 shrink-0 text-violet-500" />
               <span className="font-medium">{reservationCount}</span>
-              <span className="text-neutral-400">{reservationCount === 1 ? 'rezerwacja' : 'rezerwacji'}</span>
+              <span className="text-neutral-500">{reservationCount === 1 ? 'rezerwacja' : 'rezerwacji'}</span>
             </div>
             <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-300">
               <FileText className="h-4 w-4 shrink-0 text-amber-500" />
               <span className="font-medium">{templateCount}</span>
-              <span className="text-neutral-400">{templateCount === 1 ? 'szablon' : 'szablonów'}</span>
+              <span className="text-neutral-500">{templateCount === 1 ? 'szablon' : 'szablonów'}</span>
             </div>
           </div>
 
           {/* Toggle row */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-400">
+            <span className="text-xs text-neutral-500">
               {eventType.isActive ? 'Aktywny' : 'Nieaktywny'}
             </span>
             <Switch
@@ -164,6 +158,6 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
           </div>
         </div>
       </div>
-    </Card>
+    </EntityCard>
   )
 }

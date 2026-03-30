@@ -56,7 +56,7 @@ export function AddDepositDialog({ orderId, open, onClose }: Props) {
           <div className="space-y-2">
             <Label>
               Tytuł{' '}
-              <span className="text-neutral-400 font-normal">(opcjonalnie)</span>
+              <span className="text-neutral-500 font-normal">(opcjonalnie)</span>
             </Label>
             <Input
               placeholder="np. Zaliczka 30%, Zadatek"
@@ -93,7 +93,7 @@ export function AddDepositDialog({ orderId, open, onClose }: Props) {
           <div className="space-y-2">
             <Label>
               Opis{' '}
-              <span className="text-neutral-400 font-normal">(opcjonalnie)</span>
+              <span className="text-neutral-500 font-normal">(opcjonalnie)</span>
             </Label>
             <Textarea
               placeholder="Dodatkowe informacje..."

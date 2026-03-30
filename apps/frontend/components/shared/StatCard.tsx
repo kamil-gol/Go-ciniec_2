@@ -134,7 +134,7 @@ export function StatCard({
               <>
                 {changeType === 'positive' && <TrendingUp className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />}
                 {changeType === 'negative' && <TrendingDown className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />}
-                {changeType === 'neutral' && <Minus className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />}
+                {changeType === 'neutral' && <Minus className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />}
                 <span
                   className={cn(
                     'text-xs font-medium',

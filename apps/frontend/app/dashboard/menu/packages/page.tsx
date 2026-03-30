@@ -6,10 +6,12 @@ import { useSearchParams } from 'next/navigation';
 import { getAllActivePackages, getPackagesByTemplate, deletePackage } from '@/lib/api/menu-packages-api';
 import type { MenuPackage } from '@/lib/api/menu-packages-api';
 import { toast } from 'sonner';
-import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles, Search, Loader2 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState, EntityCard } from '@/components/shared';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -23,6 +25,7 @@ export default function PackagesListPage() {
   const [packages, setPackages] = useState<MenuPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadPackages = useCallback(async () => {
     try {
@@ -74,8 +77,8 @@ export default function PackagesListPage() {
         title="Pakiety Menu"
         subtitle={templateId ? 'Pakiety dla wybranego szablonu' : 'Zarządzaj wszystkimi pakietami menu'}
         icon={Package}
-        backHref="/dashboard/menu"
-        backLabel="Powrót do Menu"
+        backHref="/dashboard/menu/templates"
+        backLabel="Szablony Menu"
         action={
           <Link href="/dashboard/menu/packages/new">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-white/90 shadow-xl">
@@ -93,6 +96,21 @@ export default function PackagesListPage() {
         <StatCard label="Popularne" value={packages.filter(p => p.isPopular).length} subtitle="Najczęściej wybierane" icon={TrendingUp} iconGradient={statGradients.financial} delay={0.3} />
       </div>
 
+      {/* Filter */}
+      <Card>
+        <CardContent className="p-4 sm:p-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Szukaj pakietów..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Packages Grid */}
       <AnimatePresence mode="wait">
         {packages.length === 0 ? (
@@ -104,31 +122,14 @@ export default function PackagesListPage() {
             actionHref="/dashboard/menu/packages/new"
           />
         ) : (
-          <motion.div
-            key="grid"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-          >
-            {packages.map((pkg, index) => (
-              <motion.div
+          <div className={layout.entityGrid}>
+            {packages.filter(pkg => pkg.name.toLowerCase().includes(searchQuery.toLowerCase())).map((pkg, index) => (
+              <EntityCard
                 key={pkg.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="group relative bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-white/60 dark:border-neutral-800 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                accentColor={pkg.color || undefined}
+                delay={index * 0.05}
+                noPadding
               >
-                {/* Gradient Border Top */}
-                <div
-                  className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
-                  style={{
-                    background: `linear-gradient(90deg, #${(pkg.color || '#3b82f6').replace('#', '')}, #${(pkg.color || '#8b5cf6').replace('#', '')})`
-                  }}
-                />
-
-                {/* Card Content */}
-                <div className="relative z-10">
                   {/* Header */}
                   <div className="p-4 sm:p-6 pb-3 sm:pb-4">
                     <div className="flex items-start justify-between mb-3 sm:mb-4">
@@ -165,7 +166,7 @@ export default function PackagesListPage() {
                     </div>
                   </div>
 
-                  {/* Pricing Section — responsive overflow fix */}
+                  {/* Pricing Section */}
                   <div className="px-4 sm:px-6 py-3 sm:py-5 bg-neutral-50/80 dark:bg-neutral-800/50 border-y border-neutral-100 dark:border-neutral-800 overflow-hidden">
                     <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                       <div className="min-w-0 bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-sm">
@@ -226,31 +227,19 @@ export default function PackagesListPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/50 dark:bg-neutral-800/30 flex items-center gap-2 sm:gap-3">
-                    <Link
-                      href={`/dashboard/menu/packages/${pkg.id}`}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg text-sm sm:text-base transition-all"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edytuj
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(pkg.id, pkg.name)}
-                      disabled={deletingId === pkg.id}
-                      className="p-2.5 sm:p-3 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-950/50 transition-all disabled:opacity-50"
-                      title="Usuń pakiet"
-                    >
-                      {deletingId === pkg.id ? (
-                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
+                  <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center gap-2">
+                    <Button size="sm" variant="outline" className="flex-1 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors" asChild>
+                      <Link href={`/dashboard/menu/packages/${pkg.id}`}>
+                        <Edit className="h-4 w-4 mr-1" /> Edytuj
+                      </Link>
+                    </Button>
+                    <Button size="sm" variant="outline" className="hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors" onClick={() => handleDelete(pkg.id, pkg.name)} disabled={deletingId === pkg.id}>
+                      {deletingId === pkg.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    </Button>
                   </div>
-                </div>
-              </motion.div>
+              </EntityCard>
             ))}
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </PageLayout>

@@ -97,7 +97,7 @@ export function UsersTab() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
           <Input
             placeholder="Szukaj użytkownika..."
             value={search}
@@ -143,7 +143,7 @@ export function UsersTab() {
               {/* Row 2: Role + Last Login */}
               <div className="flex items-center justify-between gap-2 text-xs text-neutral-500 dark:text-neutral-300">
                 <div className="flex items-center gap-2">
-                  <span className="text-neutral-400">Rola:</span>
+                  <span className="text-neutral-500">Rola:</span>
                   {user.role ? (
                     <Badge
                       className="font-semibold border-transparent text-white shadow-sm text-[10px] px-2 py-0.5"
@@ -191,7 +191,7 @@ export function UsersTab() {
                 >
                   {user.isActive
                     ? <ToggleRight className="h-4 w-4 text-green-600" />
-                    : <ToggleLeft className="h-4 w-4 text-neutral-400" />}
+                    : <ToggleLeft className="h-4 w-4 text-neutral-500" />}
                 </Button>
                 <Button
                   variant="ghost"
@@ -292,7 +292,7 @@ export function UsersTab() {
                       >
                         {user.isActive
                           ? <ToggleRight className="h-4 w-4 text-green-600" />
-                          : <ToggleLeft className="h-4 w-4 text-neutral-400" />}
+                          : <ToggleLeft className="h-4 w-4 text-neutral-500" />}
                       </Button>
                       <Button
                         variant="ghost"

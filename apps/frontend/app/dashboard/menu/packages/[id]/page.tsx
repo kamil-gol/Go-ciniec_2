@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { Package } from 'lucide-react';
 import PackageForm from '@/components/menu/PackageForm';
 import { getPackageById, type MenuPackage } from '@/lib/api/menu-packages-api';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { DetailHero } from '@/components/shared/DetailHero';
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 export default function EditPackagePage() {
@@ -59,14 +61,16 @@ export default function EditPackagePage() {
   }
 
   return (
-    <div className="p-8">
-      <Breadcrumb />
-
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-neutral-900">Edytuj pakiet</h1>
-        <p className="text-neutral-600 mt-2">{pkg.name}</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto py-8 px-4 space-y-8">
+        <DetailHero
+          gradient="from-amber-600 via-orange-600 to-yellow-600"
+          backHref="/dashboard/menu/packages"
+          backLabel="Powrót do pakietów"
+          icon={Package}
+          title={pkg.name}
+          subtitle="Edycja pakietu menu"
+        />
 
       {/* Form */}
       <PackageForm
@@ -76,6 +80,7 @@ export default function EditPackagePage() {
           router.push('/dashboard/menu/packages');
         }}
       />
+      </div>
     </div>
   );
 }

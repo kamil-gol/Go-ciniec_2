@@ -218,7 +218,7 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
                   {adults} dor.
                   {childrenCount > 0 && <> • {childrenCount} dz.</>}
                   {toddlers > 0 && <> • {toddlers} mal.</>}
-                  <span className="text-neutral-400"> ({totalGuests} os.)</span>
+                  <span className="text-neutral-500"> ({totalGuests} os.)</span>
                 </span>
               ) : (
                 <span>{totalGuests} os.</span>
@@ -352,7 +352,7 @@ export default function DailyReservationsSection({ date }: DailyReservationsSect
         <div className="flex items-center gap-2">
           <button
             onClick={() => refetch()}
-            className="rounded-lg p-1.5 text-neutral-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+            className="rounded-lg p-1.5 text-neutral-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
             title="Odśwież"
           >
             <RefreshCw className="h-4 w-4" />

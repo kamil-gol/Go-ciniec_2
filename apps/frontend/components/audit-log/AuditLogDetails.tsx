@@ -51,7 +51,7 @@ export function AuditLogDetails({ log, open, onClose }: Props) {
             <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
               <div className="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-700">
                 <h4 className="text-sm font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-200">
-                  <Hash className="h-4 w-4 text-zinc-400" />
+                  <Hash className="h-4 w-4 text-zinc-500" />
                   {'Szczegóły zmiany'}
                 </h4>
               </div>

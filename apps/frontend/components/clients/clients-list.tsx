@@ -1,10 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { User, Building2, Mail, Phone, Calendar, ChevronRight, ShieldCheck, ShieldAlert, Trash2, Star, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
-import { EmptyState } from '@/components/shared'
+import { EmptyState, EntityListItem } from '@/components/shared'
 import type { ClientType, ClientContact } from '@/types'
 
 const accent = moduleAccents.clients
@@ -70,11 +69,12 @@ export function ClientsList({ clients, searchQuery, rodoMap = {} }: ClientsListP
         const primaryContact = client.contacts?.find(c => c.isPrimary)
 
         return (
-          <Link key={client.id} href={`/dashboard/clients/${client.id}`}>
-            <div className={cn(
-              'group rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer p-5',
-              isDeleted && 'opacity-60 border-red-200/50 dark:border-red-800/30'
-            )}>
+          <EntityListItem
+            key={client.id}
+            href={`/dashboard/clients/${client.id}`}
+            dimmed={isDeleted}
+            className={cn(isDeleted && 'border-red-200/50 dark:border-red-800/30')}
+          >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   {/* Avatar */}
@@ -188,7 +188,7 @@ export function ClientsList({ clients, searchQuery, rodoMap = {} }: ClientsListP
                       )}
                       {!isDeleted && isCompany && client.nip && (
                         <div className="flex items-center gap-1">
-                          <span className="text-xs font-medium text-neutral-400">NIP:</span>
+                          <span className="text-xs font-medium text-neutral-500">NIP:</span>
                           <span>{client.nip}</span>
                         </div>
                       )}
@@ -212,13 +212,12 @@ export function ClientsList({ clients, searchQuery, rodoMap = {} }: ClientsListP
                   )}
 
                   <ChevronRight className={cn(
-                    'h-5 w-5 text-neutral-400 dark:text-neutral-500 group-hover:translate-x-1 transition-all',
+                    'h-5 w-5 text-neutral-500 dark:text-neutral-500 group-hover:translate-x-1 transition-all',
                     `group-hover:${accent.text} dark:group-hover:${accent.textDark}`
                   )} />
                 </div>
               </div>
-            </div>
-          </Link>
+          </EntityListItem>
         )
       })}
     </div>

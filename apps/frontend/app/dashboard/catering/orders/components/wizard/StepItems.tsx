@@ -81,7 +81,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
                 <Utensils className="w-7 h-7 text-green-400 dark:text-green-500" />
               </div>
               <p className="font-semibold text-neutral-500 dark:text-neutral-300">Brak dań</p>
-              <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-1">
+              <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-1">
                 Możesz dodać je teraz lub uzupełnić później
               </p>
             </div>
@@ -124,7 +124,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
 
                 <div className="flex items-center gap-3 bg-neutral-50 dark:bg-neutral-800/60 rounded-xl px-3 py-2.5 border border-neutral-100 dark:border-neutral-700/50">
                   <div className="flex items-center gap-2">
-                    <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Ilość</Label>
+                    <Label className="text-xs text-neutral-500 dark:text-neutral-500 whitespace-nowrap">Ilość</Label>
                     <Input
                       type="number" min={1} value={item.quantity}
                       onFocus={e => e.target.select()}
@@ -134,7 +134,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
                   </div>
                   <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
                   <div className="flex items-center gap-2 flex-1">
-                    <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Cena jedn.</Label>
+                    <Label className="text-xs text-neutral-500 dark:text-neutral-500 whitespace-nowrap">Cena jedn.</Label>
                     <Input
                       type="number" min={0} step="0.01" value={item.unitPrice}
                       onFocus={e => e.target.select()}
@@ -146,7 +146,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
                     <>
                       <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
                       <div className="text-right shrink-0">
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Razem</p>
+                        <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Razem</p>
                         <p className="text-sm font-bold text-green-700 dark:text-green-300">
                           {formatPln(item.quantity * item.unitPrice)}
                         </p>
@@ -190,7 +190,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
                 <Star className="w-7 h-7 text-amber-400 dark:text-amber-500" />
               </div>
               <p className="font-semibold text-neutral-500 dark:text-neutral-300">Brak usług dodatkowych</p>
-              <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-1">
+              <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-1">
                 Kelnerzy, wynajem sprzętu, dekoracje…
               </p>
             </div>
@@ -224,7 +224,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
 
                 <div className="flex items-center gap-3 bg-neutral-50 dark:bg-neutral-800/60 rounded-xl px-3 py-2.5 border border-neutral-100 dark:border-neutral-700/50">
                   <div className="flex items-center gap-2">
-                    <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Ilość</Label>
+                    <Label className="text-xs text-neutral-500 dark:text-neutral-500 whitespace-nowrap">Ilość</Label>
                     <Input
                       type="number" min={1} value={extra.quantity}
                       onFocus={e => e.target.select()}
@@ -234,7 +234,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
                   </div>
                   <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
                   <div className="flex items-center gap-2 flex-1">
-                    <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Cena jedn.</Label>
+                    <Label className="text-xs text-neutral-500 dark:text-neutral-500 whitespace-nowrap">Cena jedn.</Label>
                     <Input
                       type="number" min={0} step="0.01" value={extra.unitPrice}
                       onFocus={e => e.target.select()}
@@ -246,7 +246,7 @@ export function StepItems({ state, set, dishOptions, dishesArray }: StepItemsPro
                     <>
                       <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
                       <div className="text-right shrink-0">
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Razem</p>
+                        <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Razem</p>
                         <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
                           {formatPln(extra.quantity * extra.unitPrice)}
                         </p>

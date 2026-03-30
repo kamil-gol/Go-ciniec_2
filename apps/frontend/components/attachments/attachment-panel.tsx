@@ -84,7 +84,7 @@ export default function AttachmentPanel({
       {/* Filters — dynamic per entity type */}
       {hasAny && (
         <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-100 dark:border-neutral-700/30 overflow-x-auto">
-          <Filter className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+          <Filter className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
           {filterOptions.map((opt) => (
             <button
               key={opt}
@@ -106,7 +106,7 @@ export default function AttachmentPanel({
                 'ml-auto px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
                 showArchived
                   ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                  : 'text-neutral-400 hover:text-neutral-600'
+                  : 'text-neutral-500 hover:text-neutral-600'
               )}
             >
               {showArchived ? 'Ukryj archiwum' : `Archiwum (${archivedCount})`}

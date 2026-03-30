@@ -14,6 +14,7 @@ import { DepositActions } from './deposit-actions'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { typography } from '@/lib/design-tokens'
 
 interface DepositsListProps {
   deposits: Deposit[]
@@ -58,7 +59,7 @@ function getAmountColorClass(status: Deposit['status']): string {
     case 'OVERDUE': return 'text-red-600 dark:text-red-400'
     case 'PENDING':
     case 'PARTIALLY_PAID': return 'text-amber-600 dark:text-amber-400'
-    case 'CANCELLED': return 'text-neutral-400 dark:text-neutral-500'
+    case 'CANCELLED': return 'text-neutral-500 dark:text-neutral-500'
     default: return ''
   }
 }
@@ -185,15 +186,15 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
       <div className="hidden md:block">
         <Table>
           <TableHeader>
-            <TableRow className="bg-neutral-50/50 dark:bg-neutral-800/50">
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Klient</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Wydarzenie</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Sala</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-right">Kwota</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400 text-right">Wpłacono</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Termin</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Status</TableHead>
-              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Metoda</TableHead>
+            <TableRow className={typography.tableHeaderRow}>
+              <TableHead className={typography.tableHeaderCell}>Klient</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Wydarzenie</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Sala</TableHead>
+              <TableHead className={`${typography.tableHeaderCell} text-right`}>Kwota</TableHead>
+              <TableHead className={`${typography.tableHeaderCell} text-right`}>Wpłacono</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Termin</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Status</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Metoda</TableHead>
               <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
@@ -264,7 +265,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                   {/* Hall */}
                   <TableCell>
                     <div className="flex items-center gap-1.5 text-sm">
-                      <Building2 className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />
+                      <Building2 className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />
                       <span className="truncate">{hall?.name || 'Brak'}</span>
                     </div>
                   </TableCell>
@@ -321,7 +322,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                   <TableCell>
                     {deposit.paymentMethod ? (() => {
                       const config = paymentMethodConfig[deposit.paymentMethod as PaymentMethod]
-                      if (!config) return <span className="text-sm text-neutral-400 dark:text-neutral-500">—</span>
+                      if (!config) return <span className="text-sm text-neutral-500 dark:text-neutral-500">—</span>
                       const Icon = config.icon
                       return (
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`}>

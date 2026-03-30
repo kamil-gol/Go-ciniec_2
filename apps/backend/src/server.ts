@@ -98,7 +98,7 @@ const authLimiter = rateLimit({
   max: 10, // max 10 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
+  skip: () => process.env.NODE_ENV === 'test' || process.env.DISABLE_RATE_LIMIT === 'true',
   message: { success: false, error: 'Zbyt wiele prób — spróbuj ponownie za 15 minut' },
 });
 
@@ -107,7 +107,7 @@ const uploadLimiter = rateLimit({
   max: 20, // max 20 uploads per minute
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
+  skip: () => process.env.NODE_ENV === 'test' || process.env.DISABLE_RATE_LIMIT === 'true',
   message: { success: false, error: 'Zbyt wiele plików — spróbuj ponownie za chwilę' },
 });
 

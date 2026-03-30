@@ -46,7 +46,7 @@ vi.mock('@/lib/design-tokens', () => ({
     archive: {
       iconBg: 'bg-neutral-500',
       text: 'text-neutral-600',
-      textDark: 'text-neutral-400',
+      textDark: 'text-neutral-500',
       gradient: 'from-neutral-500 to-zinc-500',
       gradientSubtle: 'from-neutral-50 to-zinc-50',
     },

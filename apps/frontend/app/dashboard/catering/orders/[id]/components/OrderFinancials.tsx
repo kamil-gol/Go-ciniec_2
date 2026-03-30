@@ -204,7 +204,7 @@ export function OrderFinancials({
                   ? ` (${order.discountValue}%)`
                   : ''}
                 {order.discountReason && (
-                  <span className="block text-xs text-neutral-400 font-normal">{order.discountReason}</span>
+                  <span className="block text-xs text-neutral-500 font-normal">{order.discountReason}</span>
                 )}
               </span>
               <div className="flex items-center gap-1 shrink-0 ml-2">
@@ -241,7 +241,7 @@ export function OrderFinancials({
             </span>
           </div>
           {pricePerGuest !== null && (
-            <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1 text-right">
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1 text-right">
               {formatPrice(pricePerGuest)} / osobę
             </p>
           )}
@@ -250,7 +250,7 @@ export function OrderFinancials({
         {/* Zaliczki */}
         <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Zaliczki</p>
+            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider">Zaliczki</p>
             <Button
               size="sm" variant="ghost"
               className="h-7 px-2.5 text-xs gap-1 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
@@ -261,7 +261,7 @@ export function OrderFinancials({
           </div>
 
           {deposits.length === 0 ? (
-            <p className="text-xs text-neutral-400 dark:text-neutral-500 text-center py-3">Brak zaliczek</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 text-center py-3">Brak zaliczek</p>
           ) : (
             <div className="space-y-2">
               {deposits.map((d) => {
@@ -278,7 +278,7 @@ export function OrderFinancials({
                         {d.title ?? 'Zaliczka'}
                       </p>
                       {d.dueDate && (
-                        <p className="text-xs text-neutral-400 dark:text-neutral-500">{formatDatePl(d.dueDate)}</p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-500">{formatDatePl(d.dueDate)}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -326,7 +326,7 @@ export function OrderFinancials({
           {deposits.length > 0 && (
             <div className="mt-3 pt-3 border-t border-dashed border-neutral-200 dark:border-neutral-700 space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-neutral-400 dark:text-neutral-500">Wpłacono</span>
+                <span className="text-neutral-500 dark:text-neutral-500">Wpłacono</span>
                 <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                   {formatPrice(totalPaid)}
                 </span>

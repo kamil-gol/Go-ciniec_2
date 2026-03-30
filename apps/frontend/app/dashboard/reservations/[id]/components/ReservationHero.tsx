@@ -34,7 +34,7 @@ export function ReservationHero({
 }: ReservationHeroProps) {
   return (
     <DetailHero
-      gradient="from-blue-600 via-cyan-600 to-teal-600"
+      gradient="from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f]"
       backHref="/dashboard/reservations"
       backLabel="Powrót do listy"
       icon={Calendar}

@@ -34,40 +34,42 @@ export function TotalsSummary({
   return (
     <>
       {/* TOTAL */}
-      <div className="p-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl text-white mb-4 shadow-lg">
+      <div className="p-4 bg-white dark:bg-black/20 rounded-xl mb-4 border border-emerald-200 dark:border-emerald-800">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 opacity-80" />
-            <span className="font-bold">Razem do zapłaty</span>
+            <div className="p-1.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+              <DollarSign className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-bold text-emerald-700 dark:text-emerald-300">Razem do zapłaty</span>
           </div>
-          <span className="text-2xl font-bold" data-testid="final-total-price">{formatCurrency(finalTotalPrice)}</span>
+          <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-300" data-testid="final-total-price">{formatCurrency(finalTotalPrice)}</span>
         </div>
         {hasActiveDiscount && (
-          <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+          <div className="flex items-center justify-between mt-1 text-muted-foreground text-xs">
             <span>w tym rabat</span>
             <span>-{formatCurrency(activeDiscountAmount)}</span>
           </div>
         )}
         {hasVenueSurcharge && (
-          <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+          <div className="flex items-center justify-between mt-1 text-muted-foreground text-xs">
             <span>w tym dopłata za cały obiekt</span>
             <span>+{formatCurrency(effectiveVenueSurcharge)}</span>
           </div>
         )}
         {extrasTotalPrice > 0 && (
-          <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+          <div className="flex items-center justify-between mt-1 text-muted-foreground text-xs">
             <span>w tym usługi dodatkowe ({activeExtrasCount})</span>
             <span>+{formatCurrency(extrasTotalPrice)}</span>
           </div>
         )}
         {effectiveCategoryExtrasTotal > 0 && (
-          <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+          <div className="flex items-center justify-between mt-1 text-muted-foreground text-xs">
             <span>w tym dodatkowo płatne porcje ({activeCategoryExtrasCount})</span>
             <span>+{formatCurrency(effectiveCategoryExtrasTotal)}</span>
           </div>
         )}
         {extraHoursInfo && extraHoursInfo.extraCost > 0 && (
-          <div className="flex items-center justify-between mt-1 text-white/80 text-xs">
+          <div className="flex items-center justify-between mt-1 text-muted-foreground text-xs">
             <span>w tym dopłata za {extraHoursInfo.extraHours} dodatkow{extraHoursInfo.extraHours === 1 ? 'ą godzinę' : extraHoursInfo.extraHours < 5 ? 'e godziny' : 'ych godzin'}</span>
             <span>+{formatCurrency(extraHoursInfo.extraCost)}</span>
           </div>

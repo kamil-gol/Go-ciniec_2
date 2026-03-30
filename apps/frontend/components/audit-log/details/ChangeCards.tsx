@@ -28,7 +28,7 @@ export function DiffChangeRow({ fieldName, oldVal, newVal }: { fieldName: string
           </span>
         </div>
         {/* Arrow */}
-        <ArrowRight className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500 flex-shrink-0" />
+        <ArrowRight className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-500 flex-shrink-0" />
         {/* New value */}
         <div className="inline-flex items-center gap-1.5 max-w-[45%]">
           <span className="inline-block px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 text-sm font-medium border border-emerald-100 dark:border-emerald-900/50 break-words">
@@ -124,7 +124,7 @@ export function StatusChangeCard({ oldStatus, newStatus }: { oldStatus?: string;
           <span className="inline-block px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 text-sm font-medium border border-red-100 dark:border-red-900/50">
             {oldLabel}
           </span>
-          <ArrowRight className="h-4 w-4 text-zinc-400 dark:text-zinc-500 flex-shrink-0" />
+          <ArrowRight className="h-4 w-4 text-zinc-500 dark:text-zinc-500 flex-shrink-0" />
           <span className="inline-block px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 text-sm font-medium border border-emerald-100 dark:border-emerald-900/50">
             {newLabel}
           </span>

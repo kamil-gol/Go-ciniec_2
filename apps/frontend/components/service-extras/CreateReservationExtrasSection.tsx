@@ -166,7 +166,7 @@ export function CreateReservationExtrasSection({
                 {CATEGORY_ICONS[extra.serviceItem.category?.slug || ''] || '📦'}{' '}
                 {extra.serviceItem.name}
                 {extra.quantity > 1 && ` ×${extra.quantity}${extra.serviceItem.priceType === 'PER_UNIT' ? ' szt.' : ''}`}
-                {extra.note && <span className="text-neutral-400 dark:text-neutral-500 ml-1">— {extra.note}</span>}
+                {extra.note && <span className="text-neutral-500 dark:text-neutral-500 ml-1">— {extra.note}</span>}
               </span>
               <span className="font-medium">{getItemPrice(extra.serviceItem, totalGuests, extra.quantity)}</span>
             </div>
@@ -206,9 +206,9 @@ export function CreateReservationExtrasSection({
             </Badge>
           )}
           {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-neutral-400" />
+            <ChevronUp className="w-5 h-5 text-neutral-500" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-neutral-400" />
+            <ChevronDown className="w-5 h-5 text-neutral-500" />
           )}
         </div>
       </button>

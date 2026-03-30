@@ -19,7 +19,7 @@ export function InfoGrid({ log }: InfoGridProps) {
           <Calendar className="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-300" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Data i czas</p>
+          <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-500 uppercase tracking-wider">Data i czas</p>
           <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">
             {format(new Date(log.createdAt), 'd MMMM yyyy', { locale: pl })}
           </p>
@@ -34,7 +34,7 @@ export function InfoGrid({ log }: InfoGridProps) {
           <User className="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-300" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{'Użytkownik'}</p>
+          <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-500 uppercase tracking-wider">{'Użytkownik'}</p>
           <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">
             {log.user?.firstName || 'System'} {log.user?.lastName || ''}
           </p>
@@ -47,7 +47,7 @@ export function InfoGrid({ log }: InfoGridProps) {
           <Tag className="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-300" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Wykonana akcja</p>
+          <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-500 uppercase tracking-wider">Wykonana akcja</p>
           <Badge
             variant="outline"
             className={`mt-1.5 text-xs font-medium ${actionColors[log.action] || 'bg-zinc-100 text-zinc-600'}`}
@@ -62,7 +62,7 @@ export function InfoGrid({ log }: InfoGridProps) {
           <FileText className="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-300" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Typ obiektu</p>
+          <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-500 uppercase tracking-wider">Typ obiektu</p>
           <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">
             {entityLabels[log.entityType] || log.entityType}
           </p>

@@ -10,7 +10,8 @@
  */
 import { test, expect } from '@playwright/test';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Strip trailing /api to avoid double /api/api/ when NEXT_PUBLIC_API_URL includes it
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '');
 
 let authToken: string;
 let eventTypeId: string;

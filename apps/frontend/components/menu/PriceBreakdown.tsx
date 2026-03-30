@@ -63,9 +63,9 @@ export function PriceBreakdown({
                   {formatPrice(breakdown.packageCost.subtotal)}
                 </span>
                 {isPackageExpanded ? (
-                  <ChevronUp className="h-4 w-4 text-neutral-400" />
+                  <ChevronUp className="h-4 w-4 text-neutral-500" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-neutral-400" />
+                  <ChevronDown className="h-4 w-4 text-neutral-500" />
                 )}
               </div>
             </button>
@@ -155,9 +155,9 @@ export function PriceBreakdown({
                     {formatPrice(breakdown.optionsSubtotal)}
                   </span>
                   {isOptionsExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-neutral-400" />
+                    <ChevronUp className="h-4 w-4 text-neutral-500" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 text-neutral-400" />
+                    <ChevronDown className="h-4 w-4 text-neutral-500" />
                   )}
                 </div>
               </button>

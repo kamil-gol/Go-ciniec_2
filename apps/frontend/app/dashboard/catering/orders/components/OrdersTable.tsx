@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Pagination } from '@/components/shared/Pagination';
 import { formatCurrency as formatPrice, formatDateShort as formatDate } from '@/lib/utils';
+import { typography } from '@/lib/design-tokens';
 
 interface Props {
   orders: CateringOrderListItem[];
@@ -131,14 +132,14 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
       <div className="hidden md:block rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-neutral-50 dark:bg-neutral-900/50 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300 w-auto min-w-[6rem]">Numer</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Klient</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Wydarzenie</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Data</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Typ</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300">Status</TableHead>
-              <TableHead className="font-semibold text-neutral-700 dark:text-neutral-300 text-right">Kwota</TableHead>
+            <TableRow className={typography.tableHeaderRow}>
+              <TableHead className={`${typography.tableHeaderCell} w-auto min-w-[6rem]`}>Numer</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Klient</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Wydarzenie</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Data</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Typ</TableHead>
+              <TableHead className={typography.tableHeaderCell}>Status</TableHead>
+              <TableHead className={`${typography.tableHeaderCell} text-right`}>Kwota</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -166,10 +167,10 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
                   </div>
                 </TableCell>
                 <TableCell className="max-w-[180px] truncate text-sm text-neutral-700 dark:text-neutral-300">
-                  {order.eventName ?? <span className="text-neutral-400 dark:text-neutral-500">—</span>}
+                  {order.eventName ?? <span className="text-neutral-500 dark:text-neutral-500">—</span>}
                 </TableCell>
                 <TableCell className="text-sm text-neutral-600 dark:text-neutral-300">
-                  {order.eventDate ? formatDate(order.eventDate) : <span className="text-neutral-400 dark:text-neutral-500">—</span>}
+                  {order.eventDate ? formatDate(order.eventDate) : <span className="text-neutral-500 dark:text-neutral-500">—</span>}
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${DELIVERY_BADGE_COLOR[order.deliveryType]}`}>

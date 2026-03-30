@@ -316,7 +316,7 @@ export function MenuSelectionFlow({
                     !isClickable && 'cursor-not-allowed opacity-60',
                     isCompleted && 'border-green-500 bg-gradient-to-br from-green-500 to-emerald-500 text-white',
                     isActive && `border-white bg-gradient-to-br ${step.gradient} text-white shadow-xl`,
-                    !isActive && !isCompleted && 'border-neutral-300 bg-white text-neutral-400 dark:bg-neutral-800 dark:border-neutral-600'
+                    !isActive && !isCompleted && 'border-neutral-300 bg-white text-neutral-500 dark:bg-neutral-800 dark:border-neutral-600'
                   )}
                 >
                   {isCompleted ? <Check className="h-6 w-6" /> : <StepIcon className="h-6 w-6" />}

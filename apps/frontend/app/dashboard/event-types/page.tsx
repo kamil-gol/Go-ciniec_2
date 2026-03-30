@@ -139,7 +139,7 @@ export default function EventTypesPage() {
         <div className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400 h-5 w-5" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
               <Input
                 placeholder="Szukaj typu wydarzenia..."
                 value={search}

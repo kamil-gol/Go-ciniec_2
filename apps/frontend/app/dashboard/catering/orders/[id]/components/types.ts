@@ -22,6 +22,6 @@ export function getInitials(
 
 // Wspolne style ikon akcji
 export const iconBtnEdit =
-  'p-1 rounded text-neutral-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-colors';
+  'p-1 rounded text-neutral-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-colors';
 export const iconBtnDelete =
-  'p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50';
+  'p-1 rounded text-neutral-500 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50';

@@ -32,7 +32,7 @@ export function StepEventDetails({ state, set }: StepEventDetailsProps) {
             onChange={e => set({ eventDate: e.target.value })}
             className="h-11"
           />
-          <p className="text-xs text-neutral-400 dark:text-neutral-500">
+          <p className="text-xs text-neutral-500 dark:text-neutral-500">
             Ta data będzie użyta również jako data dostawy
           </p>
         </div>

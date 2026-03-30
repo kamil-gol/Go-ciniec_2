@@ -178,7 +178,7 @@ export function EventTypeFormDialog({ open, onOpenChange, eventType, onSuccess }
                 ))}
               </div>
               {color && (
-                <p className="text-xs text-neutral-400">Wybrany: {color}</p>
+                <p className="text-xs text-neutral-500">Wybrany: {color}</p>
               )}
             </div>
 

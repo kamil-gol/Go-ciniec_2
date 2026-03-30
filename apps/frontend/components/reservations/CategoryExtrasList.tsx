@@ -16,7 +16,7 @@ interface CategoryExtrasListProps {
 /** Short label for portionTarget */
 function PortionBadge({ target }: { target?: string }) {
   if (!target || target === 'ALL') {
-    return <span className="text-[10px] text-neutral-400">wszyscy</span>;
+    return <span className="text-[10px] text-neutral-500">wszyscy</span>;
   }
   const isAdults = target === 'ADULTS_ONLY';
   const Icon = isAdults ? User : Baby;

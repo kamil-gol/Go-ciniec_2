@@ -13,9 +13,9 @@ export function SummaryCard({ title, value, color }: {
   color: SummaryCardColor;
 }) {
   return (
-    <div className={`rounded-xl border p-3 sm:p-4 ${colorClasses[color]}`}>
-      <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300">{title}</p>
-      <p className="text-sm sm:text-lg font-bold text-neutral-900 dark:text-neutral-100 mt-1">{value}</p>
+    <div className={`rounded-2xl border p-4 sm:p-6 ${colorClasses[color]}`}>
+      <p className="text-xs sm:text-sm font-medium text-neutral-500 dark:text-neutral-300">{title}</p>
+      <p className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-2">{value}</p>
     </div>
   );
 }

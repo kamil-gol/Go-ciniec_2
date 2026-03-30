@@ -18,6 +18,7 @@ import { useState } from 'react'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
+import { EntityCard } from '@/components/shared'
 import { toast } from 'sonner'
 
 const accent = moduleAccents.halls
@@ -70,7 +71,7 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
   }
 
   return (
-    <div className="group rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+    <EntityCard noPadding className="h-full">
       {/* Header */}
       <div className="p-6 pb-4">
         <div className="flex justify-between items-start gap-4">
@@ -266,6 +267,6 @@ export function HallCard({ hall, onUpdate }: HallCardProps) {
         </div>
       </div>
       {ConfirmDialog}
-    </div>
+    </EntityCard>
   )
 }
