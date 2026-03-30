@@ -30,9 +30,9 @@ import {
   ShoppingBag,
   BookOpen,
   Bell,
-  FolderTree,
-  Package,
-  Salad,
+  Layers,
+  PackageOpen,
+  CookingPot,
 } from 'lucide-react'
 
 // ═══ NAV CONFIG ═══
@@ -75,9 +75,9 @@ const navGroups: NavGroup[] = [
         accentKey: 'menu',
         children: [
           { name: 'Szablony Menu',  href: '/dashboard/menu/templates',  icon: BookOpen,   accentKey: 'menu' },
-          { name: 'Pakiety',        href: '/dashboard/menu/packages',   icon: Package,    accentKey: 'menu' },
-          { name: 'Kategorie Dań',  href: '/dashboard/menu/categories', icon: FolderTree, accentKey: 'menu' },
-          { name: 'Biblioteka Dań', href: '/dashboard/menu/dishes',     icon: Salad,      accentKey: 'menu' },
+          { name: 'Pakiety',        href: '/dashboard/menu/packages',   icon: PackageOpen,    accentKey: 'menu' },
+          { name: 'Kategorie Dań',  href: '/dashboard/menu/categories', icon: Layers, accentKey: 'menu' },
+          { name: 'Biblioteka Dań', href: '/dashboard/menu/dishes',     icon: CookingPot,      accentKey: 'menu' },
         ],
       },
       { name: 'Typy Wydarzeń',    href: '/dashboard/event-types',    icon: Theater, accentKey: 'eventTypes' },

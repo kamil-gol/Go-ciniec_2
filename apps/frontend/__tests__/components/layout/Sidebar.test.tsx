@@ -49,7 +49,7 @@ vi.mock('lucide-react', () => {
     Settings: stub, UtensilsCrossed: stub, Clock: stub, LogOut: stub,
     DollarSign: stub, Theater: stub, BarChart3: stub, Archive: stub,
     FileText: stub, Gift: stub, ScrollText: stub, ShoppingBag: stub,
-    BookOpen: stub, Bell: stub, FolderTree: stub, Package: stub, Salad: stub,
+    BookOpen: stub, Bell: stub, Layers: stub, PackageOpen: stub, CookingPot: stub,
   }
 })
 
