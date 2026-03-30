@@ -111,7 +111,7 @@ export default function EditHallPage() {
       <Breadcrumb />
       <div className="container mx-auto py-8 px-4 max-w-4xl space-y-8">
         {/* Premium Hero */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-8 text-white shadow-2xl">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f] p-8 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
           
           <div className="relative z-10 space-y-4">

@@ -78,7 +78,7 @@ export function Field({
 }) {
   return (
     <div className={full ? 'col-span-2' : ''}>
-      <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-1">
+      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-1">
         {label}
       </p>
       <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">

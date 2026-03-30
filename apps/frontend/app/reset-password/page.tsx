@@ -205,7 +205,7 @@ function ResetPasswordContent() {
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
+                        <Lock className="h-5 w-5 text-neutral-500 dark:text-neutral-500" />
                       </div>
                       <input
                         id="newPassword"
@@ -224,7 +224,7 @@ function ResetPasswordContent() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
                       >
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
@@ -269,7 +269,7 @@ function ResetPasswordContent() {
                             ? passwordsMatch
                               ? 'text-emerald-500'
                               : 'text-error-500'
-                            : 'text-neutral-400 dark:text-neutral-500'
+                            : 'text-neutral-500 dark:text-neutral-500'
                         }`} />
                       </div>
                       <input
@@ -294,7 +294,7 @@ function ResetPasswordContent() {
                       <button
                         type="button"
                         onClick={() => setShowConfirm(!showConfirm)}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
                       >
                         {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>

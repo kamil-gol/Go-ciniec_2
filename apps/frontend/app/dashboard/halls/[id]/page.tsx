@@ -62,7 +62,7 @@ export default function HallDetailsPage() {
       <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Premium Hero Section */}
         <DetailHero
-          gradient="from-violet-600 via-purple-600 to-indigo-600"
+          gradient="from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f]"
           backHref="/dashboard/halls"
           backLabel="Powrót do listy"
           icon={Building2}
@@ -155,7 +155,7 @@ export default function HallDetailsPage() {
 
         {/* Calendar Section */}
         <Card className="border-0 shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-6 text-white">
+          <div className="bg-gradient-to-r from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f] p-6 text-white">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
                 <Calendar className="h-6 w-6" />

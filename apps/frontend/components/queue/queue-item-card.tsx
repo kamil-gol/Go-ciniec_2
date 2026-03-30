@@ -7,6 +7,7 @@ import { format, formatDistanceToNow, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
+import { EntityListItem } from '@/components/shared'
 
 const accent = moduleAccents.queue
 
@@ -40,12 +41,12 @@ export function QueueItemCard({
   }
 
   return (
-    <div
+    <EntityListItem
       role="listitem"
       tabIndex={0}
       onKeyDown={handleKeyDown}
       aria-label={`Pozycja ${item.position}: ${item.client.firstName} ${item.client.lastName}`}
-      className="group rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/50 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 p-5 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+      className="focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
     >
       <div className="flex items-start justify-between gap-4">
         {/* Position Badge */}
@@ -97,7 +98,7 @@ export function QueueItemCard({
             </p>
           )}
 
-          <div className="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
+          <div className="mt-2 text-xs text-neutral-500 dark:text-neutral-500">
             Dodane {formatDistanceToNow(parseISO(item.createdAt), { addSuffix: true, locale: pl })}
             {' przez '}
             {item.createdBy.firstName} {item.createdBy.lastName}
@@ -161,6 +162,6 @@ export function QueueItemCard({
           </div>
         </div>
       </div>
-    </div>
+    </EntityListItem>
   )
 }

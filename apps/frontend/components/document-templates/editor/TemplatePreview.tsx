@@ -93,7 +93,7 @@ export function TemplatePreview({
                                   'flex items-center gap-2 px-3 py-1.5 rounded text-xs',
                                   section.enabled
                                     ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                    : 'bg-neutral-100 text-neutral-400 line-through dark:bg-neutral-900 dark:text-neutral-500'
+                                    : 'bg-neutral-100 text-neutral-500 line-through dark:bg-neutral-900 dark:text-neutral-500'
                                 )}
                               >
                                 <span className="font-mono text-[10px] text-muted-foreground w-4">{section.order}.</span>

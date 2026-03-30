@@ -72,6 +72,7 @@ export default function ArchivePage() {
         title="Archiwum Rezerwacji"
         subtitle="Przeglądaj i zarządzaj zarchiwizowanymi rezerwacjami"
         icon={Archive}
+        compact
         action={
           <Link href="/dashboard/reservations">
             <Button
@@ -205,7 +206,7 @@ export default function ArchivePage() {
                         <div className="flex items-center gap-2 flex-wrap justify-end flex-shrink-0">
                           <StatusBadge type="reservation" status={reservation.status} />
                           {reservation.archivedAt && (
-                            <span className="text-xs text-neutral-400 dark:text-neutral-500 hidden sm:inline">
+                            <span className="text-xs text-neutral-500 dark:text-neutral-500 hidden sm:inline">
                               Zarchiwizowano:{' '}
                               {format(
                                 new Date(reservation.archivedAt),

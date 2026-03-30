@@ -85,7 +85,7 @@ export function EmptyState({
             : 'h-20 w-20 bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/50 shadow-soft'
         )}>
           <Icon className={cn(
-            'text-neutral-400 dark:text-neutral-500',
+            'text-neutral-500 dark:text-neutral-500',
             isCompact ? 'h-6 w-6' : 'h-10 w-10'
           )} />
         </div>

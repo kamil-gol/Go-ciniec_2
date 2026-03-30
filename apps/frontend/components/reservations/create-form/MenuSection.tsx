@@ -197,11 +197,11 @@ export function MenuSection({
           {/* Breadcrumb indicator */}
           {useMenuPackage && (
             <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-300 px-1">
-              <span className={menuTemplateId ? 'text-indigo-600 dark:text-indigo-400 font-medium' : 'text-neutral-400 dark:text-neutral-500'}>Szablon</span>
+              <span className={menuTemplateId ? 'text-indigo-600 dark:text-indigo-400 font-medium' : 'text-neutral-500 dark:text-neutral-500'}>Szablon</span>
               <ChevronRight className="w-3 h-3" />
-              <span className={menuPackageId ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-neutral-400 dark:text-neutral-500'}>Pakiet</span>
+              <span className={menuPackageId ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-neutral-500 dark:text-neutral-500'}>Pakiet</span>
               <ChevronRight className="w-3 h-3" />
-              <span className={selectedPackage ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-neutral-400 dark:text-neutral-500'}>Ceny</span>
+              <span className={selectedPackage ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-neutral-500 dark:text-neutral-500'}>Ceny</span>
             </div>
           )}
         </motion.div>

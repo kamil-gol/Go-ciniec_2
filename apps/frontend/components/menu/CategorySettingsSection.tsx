@@ -134,7 +134,7 @@ export default function CategorySettingsSection({
         <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600">
           <div className="text-4xl mb-3">{'\ud83d\udcc2'}</div>
           <p className="text-neutral-500 dark:text-neutral-300 font-medium">Brak kategorii dań</p>
-          <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-1">
+          <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-1">
             Dodaj kategorie dań w sekcji {'"'}Kategorie{'"'} aby móc je przypisywać do pakietów
           </p>
         </div>

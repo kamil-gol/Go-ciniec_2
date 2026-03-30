@@ -96,7 +96,7 @@ export default function EventTypeDetailPage() {
       <Breadcrumb />
       <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Hero */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-fuchsia-600 via-fuchsia-500 to-pink-600 p-8 text-white shadow-2xl">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f] p-8 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
 
           <div className="relative z-10 space-y-6">

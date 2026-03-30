@@ -235,7 +235,7 @@ export function EditableEventCard({
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Typ wydarzenia</label>
               <div className="flex items-center gap-2 h-11 px-3 rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
-                <Lock className="w-4 h-4 text-neutral-400" />
+                <Lock className="w-4 h-4 text-neutral-500" />
                 <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">{initialEventTypeName}</span>
               </div>
               <p className="text-xs text-muted-foreground">

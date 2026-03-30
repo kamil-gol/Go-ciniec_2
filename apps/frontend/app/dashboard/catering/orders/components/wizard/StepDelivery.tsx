@@ -32,7 +32,7 @@ export function StepDelivery({ state, set, isStep4Valid }: StepDeliveryProps) {
       </Label>
       <div className="grid grid-cols-[1fr_6rem] gap-2">
         <div className="space-y-1">
-          <Label className="text-xs text-neutral-400 dark:text-neutral-500 font-normal flex items-center gap-1">
+          <Label className="text-xs text-neutral-500 dark:text-neutral-500 font-normal flex items-center gap-1">
             Ulica <span className="text-red-500">*</span>
           </Label>
           <Input
@@ -43,7 +43,7 @@ export function StepDelivery({ state, set, isStep4Valid }: StepDeliveryProps) {
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs text-neutral-400 dark:text-neutral-500 font-normal flex items-center gap-1">
+          <Label className="text-xs text-neutral-500 dark:text-neutral-500 font-normal flex items-center gap-1">
             Numer <span className="text-red-500">*</span>
           </Label>
           <Input
@@ -55,7 +55,7 @@ export function StepDelivery({ state, set, isStep4Valid }: StepDeliveryProps) {
         </div>
       </div>
       <div className="space-y-1">
-        <Label className="text-xs text-neutral-400 dark:text-neutral-500 font-normal flex items-center gap-1">
+        <Label className="text-xs text-neutral-500 dark:text-neutral-500 font-normal flex items-center gap-1">
           Miasto <span className="text-red-500">*</span>
         </Label>
         <Input

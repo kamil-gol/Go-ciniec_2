@@ -104,6 +104,7 @@ export default function AuditLogPage() {
         title="Dziennik Audytu"
         subtitle="Historia wszystkich zmian w systemie"
         icon={FileText}
+        compact
       />
 
       {/* Statystyki */}

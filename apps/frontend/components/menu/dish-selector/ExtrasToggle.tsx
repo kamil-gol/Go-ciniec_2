@@ -43,7 +43,7 @@ export function ExtrasToggle({
           onChange={onToggle}
           className="w-4 h-4 rounded border-orange-300 text-orange-500 focus:ring-orange-500"
         />
-        <ShoppingCart className={`w-3.5 h-3.5 ${isExtrasOn ? 'text-orange-600' : 'text-neutral-400'}`} />
+        <ShoppingCart className={`w-3.5 h-3.5 ${isExtrasOn ? 'text-orange-600' : 'text-neutral-500'}`} />
         <span className={`text-xs font-semibold ${isExtrasOn ? 'text-orange-800 dark:text-orange-200' : 'text-neutral-600 dark:text-neutral-300'}`}>
           Dodatkowa płatna pozycja (+{maxExtra} porcji, {formatCurrency(extraItemPrice)}/os.)
         </span>

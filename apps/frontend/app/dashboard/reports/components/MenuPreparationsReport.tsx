@@ -117,11 +117,11 @@ export function MenuPreparationsTab({ query, view }: {
                         <div className="space-y-0.5">
                           {course.dishes.map((dish: any, di: number) => (
                             <div key={di} className="flex items-start gap-2 text-sm">
-                              <span className="text-neutral-400 mt-0.5">•</span>
+                              <span className="text-neutral-500 mt-0.5">•</span>
                               <div>
                                 <span className="text-neutral-900 dark:text-neutral-100">{dish.name}</span>
                                 {dish.description && (
-                                  <span className="text-neutral-400 dark:text-neutral-500 text-xs ml-1.5">— {dish.description}</span>
+                                  <span className="text-neutral-500 dark:text-neutral-500 text-xs ml-1.5">— {dish.description}</span>
                                 )}
                               </div>
                             </div>
@@ -130,7 +130,7 @@ export function MenuPreparationsTab({ query, view }: {
                       </div>
                     ))}
                     {res.courses.length === 0 && (
-                      <div className="px-4 py-3 text-xs text-neutral-400">Brak dań w menu</div>
+                      <div className="px-4 py-3 text-xs text-neutral-500">Brak dań w menu</div>
                     )}
                   </div>
                 </div>

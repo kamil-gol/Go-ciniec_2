@@ -39,6 +39,20 @@ vi.mock('@/lib/design-tokens', () => ({
   motionTokens: { duration: { instant: 0.1, fast: 0.2, normal: 0.3, slow: 0.5 }, ease: { default: "easeOut", smooth: [0.4, 0, 0.2, 1] }, stagger: { cards: 0.06, list: 0.04 } },
 }))
 
+// Mock lucide-react — stub all icons used by Sidebar
+const IconStub = (props: any) => <svg data-testid="icon" {...props} />
+vi.mock('lucide-react', () => {
+  const stub = (props: any) => <svg data-testid="icon" {...props} />
+  return {
+    ChevronLeft: stub, ChevronDown: stub, LayoutDashboard: stub, Calendar: stub,
+    CalendarDays: stub, Users: stub, Building2: stub, ClipboardList: stub,
+    Settings: stub, UtensilsCrossed: stub, Clock: stub, LogOut: stub,
+    DollarSign: stub, Theater: stub, BarChart3: stub, Archive: stub,
+    FileText: stub, Gift: stub, ScrollText: stub, ShoppingBag: stub,
+    BookOpen: stub, Bell: stub, Layers: stub, PackageOpen: stub, CookingPot: stub,
+  }
+})
+
 vi.mock('@/components/ui/button', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
 }))
@@ -179,6 +193,48 @@ describe('Sidebar', () => {
       render(<Sidebar {...defaultProps} user={null} />)
       // Should not crash
       expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1)
+    })
+  })
+
+  // ── Expandable Menu (#479) ─────────────────────────────────────────────
+
+  describe('Menu Expandable Submenu', () => {
+    it('should render Menu as expandable group with children', () => {
+      render(<Sidebar {...defaultProps} />)
+      // Menu should be visible as a group toggle button
+      const menuButtons = screen.getAllByText('Menu')
+      expect(menuButtons.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('should render Catering as expandable group with children', () => {
+      render(<Sidebar {...defaultProps} />)
+      const cateringButtons = screen.getAllByText('Catering')
+      expect(cateringButtons.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('should show Menu children when expanded via pathname', () => {
+      mockPathname.mockReturnValue('/dashboard/menu/templates')
+      render(<Sidebar {...defaultProps} />)
+      // When on a child route, children should be visible
+      expect(screen.getAllByText('Szablony Menu').length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('should show Menu children: Pakiety, Kategorie Dań, Biblioteka Dań', async () => {
+      mockPathname.mockReturnValue('/dashboard/menu/packages')
+      render(<Sidebar {...defaultProps} />)
+      expect(screen.getAllByText('Pakiety').length).toBeGreaterThanOrEqual(1)
+    })
+  })
+
+  // ── Icon Color Groups (#478) ───────────────────────────────────────────
+
+  describe('Icon Color Groups', () => {
+    it('should render all navigation group labels', () => {
+      render(<Sidebar {...defaultProps} />)
+      expect(screen.getAllByText('Operacje').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('Zarządzanie').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('Konfiguracja').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('Analiza').length).toBeGreaterThanOrEqual(1)
     })
   })
 })

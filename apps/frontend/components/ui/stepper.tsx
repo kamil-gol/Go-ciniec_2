@@ -63,7 +63,7 @@ export function Stepper({
                     isActive && 'border-primary-500 bg-primary-500 text-white shadow-lg shadow-primary-500/30',
                     isCompleted && 'border-success-500 bg-success-500 text-white',
                     isPast && !isCompleted && 'border-primary-300 bg-primary-100 text-primary-600',
-                    !isActive && !isCompleted && !isPast && 'border-secondary-300 bg-white dark:bg-neutral-900 text-neutral-400',
+                    !isActive && !isCompleted && !isPast && 'border-secondary-300 bg-white dark:bg-neutral-900 text-neutral-500',
                     isClickable && !isActive && 'group-hover:border-primary-400 group-hover:bg-primary-50'
                   )}
                   animate={isActive ? { scale: [1, 1.05, 1] } : {}}
@@ -89,7 +89,7 @@ export function Stepper({
                     {step.title}
                   </p>
                   {step.isOptional && (
-                    <p className="text-[10px] text-neutral-400">opcjonalny</p>
+                    <p className="text-[10px] text-neutral-500">opcjonalny</p>
                   )}
                 </div>
               </div>
@@ -159,7 +159,7 @@ export function Stepper({
                     isActive && 'bg-primary-500 text-white shadow-sm',
                     isCompleted && 'bg-success-500 text-white',
                     isPast && !isCompleted && 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400',
-                    !isActive && !isCompleted && !isPast && 'bg-secondary-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500'
+                    !isActive && !isCompleted && !isPast && 'bg-secondary-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-500'
                   )}
                 >
                   {isCompleted ? (
@@ -172,7 +172,7 @@ export function Stepper({
                   'text-[9px] font-medium truncate max-w-[48px] hidden xs:block',
                   isActive && 'text-primary-600',
                   isCompleted && 'text-success-600',
-                  !isActive && !isCompleted && 'text-neutral-400'
+                  !isActive && !isCompleted && 'text-neutral-500'
                 )}>
                   {step.title}
                 </span>

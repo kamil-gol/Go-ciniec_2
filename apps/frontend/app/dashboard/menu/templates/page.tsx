@@ -39,7 +39,7 @@ import { MenuTemplateDialog } from '@/components/menu/MenuTemplateDialog'
 import { downloadMenuTemplatePDF } from '@/lib/api/menu-templates-api'
 import type { MenuTemplate } from '@/lib/api/menu-templates-api'
 import { toast } from 'sonner'
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState, EntityCard } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
@@ -118,8 +118,6 @@ export default function MenuTemplatesPage() {
         title="Szablony Menu"
         subtitle="Konfiguruj szablony menu dla typów wydarzeń"
         icon={FileText}
-        backHref="/dashboard/menu"
-        backLabel="Powrót do Menu"
         action={
           <Button
             size="lg"
@@ -183,17 +181,14 @@ export default function MenuTemplatesPage() {
           onAction={handleCreate}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {templates.map((template) => (
-            <Card
+        <div className={layout.entityGrid}>
+          {templates.map((template, index) => (
+            <EntityCard
               key={template.id}
-              className="hover:shadow-lg transition-shadow border-2"
-              style={{
-                borderColor: template.eventType?.color || undefined,
-                opacity: template.isActive ? 1 : 0.6,
-              }}
+              accentColor={template.eventType?.color || undefined}
+              dimmed={!template.isActive}
+              delay={index * 0.05}
             >
-              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base sm:text-lg font-bold mb-1 truncate">{template.name}</h3>
@@ -229,20 +224,19 @@ export default function MenuTemplatesPage() {
                   )}
                 </div>
 
-                <div className="flex gap-2 pt-4 border-t">
-                  <Button size="sm" variant="outline" className="flex-1" onClick={() => handleEdit(template)}>
+                <div className="flex gap-2 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+                  <Button size="sm" variant="outline" className="flex-1 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors" onClick={() => handleEdit(template)}>
                     <Edit className="h-4 w-4 mr-1" />
                     <span className="hidden sm:inline">Edytuj</span>
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(template)} disabled={pdfLoading === template.id} title="Drukuj kartę menu">
+                  <Button size="sm" variant="outline" className="hover:bg-neutral-100 transition-colors" onClick={() => handleDownloadPdf(template)} disabled={pdfLoading === template.id} title="Drukuj kartę menu">
                     {pdfLoading === template.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDelete(template)}>
+                  <Button size="sm" variant="outline" className="hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors" onClick={() => handleDelete(template)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+            </EntityCard>
           ))}
         </div>
       )}

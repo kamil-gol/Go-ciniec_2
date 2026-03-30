@@ -29,7 +29,7 @@ vi.mock('@/lib/design-tokens', () => ({
     settings: {
       iconBg: 'bg-neutral-500',
       text: 'text-neutral-600',
-      textDark: 'text-neutral-400',
+      textDark: 'text-neutral-500',
       gradient: 'from-neutral-500 to-slate-500',
       gradientSubtle: 'from-neutral-50 to-slate-50',
     },

@@ -24,7 +24,7 @@ export function DetailsVisualization({ details, action }: { details: Record<stri
   if (details.description) {
     cards.push(
       <div key="desc" className="flex items-start gap-2.5 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-100 dark:border-zinc-700/50">
-        <Info className="h-4 w-4 text-zinc-400 mt-0.5 flex-shrink-0" />
+        <Info className="h-4 w-4 text-zinc-500 mt-0.5 flex-shrink-0" />
         <p className="text-sm text-zinc-700 dark:text-zinc-200 leading-relaxed">{details.description}</p>
       </div>
     );
@@ -110,7 +110,7 @@ export function DetailsVisualization({ details, action }: { details: Record<stri
     cards.push(
       <div key="extra" className="rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
         <div className="px-4 py-2 bg-zinc-50 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-700">
-          <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Szczegółowe dane</span>
+          <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-500 uppercase tracking-wider">Szczegółowe dane</span>
         </div>
         <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
           {remainingEntries.map(([key, value]) => (

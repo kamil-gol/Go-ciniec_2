@@ -267,7 +267,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                                 <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-0.5 line-clamp-2">
                                   {notif.message}
                                 </p>
-                                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                                <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
                                   {formatTimeAgo(notif.createdAt)}
                                 </p>
                               </div>

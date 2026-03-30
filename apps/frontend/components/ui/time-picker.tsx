@@ -90,7 +90,7 @@ export function TimePicker({
               'border-secondary-300 bg-white dark:bg-neutral-900 dark:border-neutral-700 hover:border-primary-400 hover:bg-primary-50/50 dark:hover:bg-neutral-800',
               'focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
               'transition-all duration-200',
-              !value && 'text-neutral-400',
+              !value && 'text-neutral-500',
               error && 'border-red-400 dark:border-red-500 focus:ring-red-400 dark:focus:ring-red-500',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
@@ -101,7 +101,7 @@ export function TimePicker({
         </PopoverTrigger>
         <PopoverContent className="w-[220px] p-0 bg-white dark:bg-neutral-900 dark:border-neutral-700" align="start">
           <div className="px-3 pt-3 pb-1">
-            <p className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+            <p className="text-[11px] font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider">
               Wybierz godzinę
             </p>
           </div>
@@ -128,7 +128,7 @@ export function TimePicker({
                       isSelected
                         ? 'bg-primary-600 text-white font-semibold hover:bg-primary-700 hover:text-white'
                         : isDimmed
-                          ? 'text-neutral-400 dark:text-neutral-500'
+                          ? 'text-neutral-500 dark:text-neutral-500'
                           : 'text-neutral-700 dark:text-neutral-300'
                     )}
                   >

@@ -113,7 +113,7 @@ export function DiscountDialog({ orderId, current, open, onClose }: Props) {
           <div className="space-y-2">
             <Label>
               Powód rabatu{' '}
-              <span className="text-neutral-400 font-normal">(opcjonalnie)</span>
+              <span className="text-neutral-500 font-normal">(opcjonalnie)</span>
             </Label>
             <Textarea
               placeholder="np. Stały klient, upust specjalny..."

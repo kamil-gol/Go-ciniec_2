@@ -86,17 +86,17 @@ export function EditPriceSidebar({
         </div>
         <div className="p-5 space-y-3 text-sm">
           <div>
-            <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider mb-0.5">Klient</p>
+            <p className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-0.5">Klient</p>
             <p className="font-medium text-neutral-900 dark:text-neutral-100">{clientName}</p>
           </div>
           <Separator />
           <div>
-            <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider mb-0.5">Numer zamówienia</p>
+            <p className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-0.5">Numer zamówienia</p>
             <p className="font-mono text-neutral-900 dark:text-neutral-100">{orderNumber}</p>
           </div>
           <Separator />
           <div>
-            <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider mb-0.5">Aktualna cena w bazie</p>
+            <p className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-0.5">Aktualna cena w bazie</p>
             <p className="font-mono text-neutral-500">{fmt(orderTotalPrice)}</p>
           </div>
         </div>

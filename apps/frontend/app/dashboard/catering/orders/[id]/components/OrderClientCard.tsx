@@ -48,36 +48,36 @@ export function OrderClientCard({ order, onViewProfile }: OrderClientCardProps) 
       <div className="space-y-2">
         {order.client.email && (
           <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-300">
-            <Mail className="w-4 h-4 shrink-0 text-neutral-400" />
+            <Mail className="w-4 h-4 shrink-0 text-neutral-500" />
             <span className="truncate">{order.client.email}</span>
           </div>
         )}
         {order.client.phone && (
           <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-300">
-            <Phone className="w-4 h-4 shrink-0 text-neutral-400" />
+            <Phone className="w-4 h-4 shrink-0 text-neutral-500" />
             <span>{order.client.phone}</span>
           </div>
         )}
       </div>
       {(order.contactName || order.contactPhone || order.contactEmail) && (
         <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-          <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-3">Kontakt do zamówienia</p>
+          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-3">Kontakt do zamówienia</p>
           <div className="space-y-2">
             {order.contactName && (
               <div className="flex items-center gap-2.5 text-sm">
-                <User className="w-4 h-4 shrink-0 text-neutral-400" />
+                <User className="w-4 h-4 shrink-0 text-neutral-500" />
                 <span className="font-medium text-neutral-900 dark:text-neutral-100">{order.contactName}</span>
               </div>
             )}
             {order.contactPhone && (
               <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-300">
-                <Phone className="w-4 h-4 shrink-0 text-neutral-400" />
+                <Phone className="w-4 h-4 shrink-0 text-neutral-500" />
                 <span>{order.contactPhone}</span>
               </div>
             )}
             {order.contactEmail && (
               <div className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-300">
-                <Mail className="w-4 h-4 shrink-0 text-neutral-400" />
+                <Mail className="w-4 h-4 shrink-0 text-neutral-500" />
                 <span className="truncate">{order.contactEmail}</span>
               </div>
             )}

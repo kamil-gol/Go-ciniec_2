@@ -27,6 +27,8 @@ export interface PageHeroProps {
   backHref?: string
   /** Optional back navigation label */
   backLabel?: string
+  /** Compact variant — smaller padding, no subtitle/stats. For table-heavy pages. */
+  compact?: boolean
 }
 
 /**
@@ -41,7 +43,7 @@ export interface PageHeroProps {
  * - Framer Motion entrance animation
  * - Full dark mode support
  */
-export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, backHref, backLabel }: PageHeroProps) {
+export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, backHref, backLabel, compact }: PageHeroProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -12 }}
@@ -60,7 +62,7 @@ export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, b
       <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
       <div className="absolute -bottom-12 -left-12 w-56 h-56 bg-white/5 rounded-full blur-3xl" />
 
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8">
+      <div className={cn('relative z-10', compact ? 'p-4 sm:p-5' : 'p-4 sm:p-6 lg:p-8')}>
         {/* Back navigation */}
         {backHref && (
           <Link
@@ -74,21 +76,27 @@ export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, b
 
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
           {/* Left: Icon + Title */}
-          <div className="space-y-4">
+          <div className={compact ? 'space-y-0' : 'space-y-4'}>
             <div className="flex items-center gap-3 sm:gap-5">
-              <div className="p-2.5 sm:p-3.5 bg-white/15 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg">
-                <Icon className="h-7 w-7 sm:h-9 sm:w-9" />
+              <div className={cn(
+                'bg-white/15 backdrop-blur-sm shadow-lg',
+                compact ? 'p-2 rounded-xl' : 'p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl'
+              )}>
+                <Icon className={compact ? 'h-5 w-5 sm:h-6 sm:w-6' : 'h-7 w-7 sm:h-9 sm:w-9'} />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">{title}</h1>
-                {subtitle && (
+                <h1 className={cn(
+                  'font-bold tracking-tight',
+                  compact ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-4xl'
+                )}>{title}</h1>
+                {subtitle && !compact && (
                   <p className="text-white/85 text-sm sm:text-lg mt-1">{subtitle}</p>
                 )}
               </div>
             </div>
 
             {/* Inline stats */}
-            {stats && stats.length > 0 && (
+            {!compact && stats && stats.length > 0 && (
               <div className="flex flex-wrap gap-3 sm:gap-4 mt-4 sm:mt-6">
                 {stats.map((stat) => {
                   const StatIcon = stat.icon

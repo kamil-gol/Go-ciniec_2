@@ -229,7 +229,7 @@ export default function ServiceExtrasPage() {
               </div>
               {/* Search */}
               <div className="relative w-full sm:w-64 min-w-0">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
                 <Input
                   placeholder="Szukaj..."
                   value={search}

@@ -143,7 +143,7 @@ export function Combobox({
             <span
               className={cn(
                 'truncate text-left flex-1',
-                !selectedOption && 'text-neutral-400'
+                !selectedOption && 'text-neutral-500'
               )}
             >
               {selectedOption ? (
@@ -151,7 +151,7 @@ export function Combobox({
                   {selectedOption.icon}
                   <span>{selectedOption.label}</span>
                   {selectedOption.secondaryLabel && (
-                    <span className="text-neutral-400 text-xs">
+                    <span className="text-neutral-500 text-xs">
                       {selectedOption.secondaryLabel}
                     </span>
                   )}
@@ -169,10 +169,10 @@ export function Combobox({
                   role="button"
                   aria-label="Wyczyść"
                 >
-                  <X className="h-3.5 w-3.5 text-neutral-400" />
+                  <X className="h-3.5 w-3.5 text-neutral-500" />
                 </span>
               )}
-              <ChevronsUpDown className="h-4 w-4 text-neutral-400" />
+              <ChevronsUpDown className="h-4 w-4 text-neutral-500" />
             </div>
           </button>
         </PopoverTrigger>
@@ -190,7 +190,7 @@ export function Combobox({
                   <Search className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
                   <p className="text-sm text-neutral-500">{emptyMessage}</p>
                   {searchQuery && (
-                    <p className="text-xs text-neutral-400 mt-1">
+                    <p className="text-xs text-neutral-500 mt-1">
                       Spróbuj zmienić frazę wyszukiwania
                     </p>
                   )}
@@ -227,7 +227,7 @@ export function Combobox({
                       )}
                     </div>
                     {option.secondaryLabel && (
-                      <span className="text-xs text-neutral-400 flex-shrink-0">
+                      <span className="text-xs text-neutral-500 flex-shrink-0">
                         {option.secondaryLabel}
                       </span>
                     )}
@@ -237,7 +237,7 @@ export function Combobox({
 
               {totalMatches > maxDisplayed && (
                 <div className="px-3 py-2 text-center">
-                  <p className="text-xs text-neutral-400">
+                  <p className="text-xs text-neutral-500">
                     Pokazano {filteredOptions.length} z {totalMatches} wyników.
                     Wpisz więcej aby zawęzić.
                   </p>

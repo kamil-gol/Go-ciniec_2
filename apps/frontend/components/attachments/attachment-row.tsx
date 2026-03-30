@@ -128,7 +128,7 @@ export default function AttachmentRow({ attachment, onDeleted, onArchived, onPre
         {canPreview && (
           <button
             onClick={handlePreview}
-            className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+            className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
             title="Podgląd"
           >
             <Eye className="w-4 h-4" />
@@ -136,7 +136,7 @@ export default function AttachmentRow({ attachment, onDeleted, onArchived, onPre
         )}
         <button
           onClick={handleDownload}
-          className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           title="Pobierz"
         >
           <Download className="w-4 h-4" />
@@ -144,7 +144,7 @@ export default function AttachmentRow({ attachment, onDeleted, onArchived, onPre
         {!attachment.isArchived && (
           <button
             onClick={handleArchive}
-            className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
             title="Archiwizuj"
           >
             <Archive className="w-4 h-4" />
@@ -152,7 +152,7 @@ export default function AttachmentRow({ attachment, onDeleted, onArchived, onPre
         )}
         <button
           onClick={handleDelete}
-          className="p-1.5 rounded-lg text-neutral-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors"
+          className="p-1.5 rounded-lg text-neutral-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors"
           title="Usuń"
         >
           <Trash2 className="w-4 h-4" />
