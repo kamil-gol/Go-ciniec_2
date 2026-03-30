@@ -197,7 +197,8 @@ describe('AuditLogPage', () => {
     mockUseAuditLogStatistics.mockReturnValue({ data: mockStats, isLoading: false })
 
     render(<AuditLogPage />)
-    expect(screen.getByTestId('loading-state')).toBeInTheDocument()
+    const loadingElements = screen.getAllByTestId('loading-state')
+    expect(loadingElements.length).toBeGreaterThan(0)
   })
 
   it('shows empty state when no logs', () => {

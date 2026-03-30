@@ -182,8 +182,7 @@ describe('ArchivePage', () => {
       refetch: vi.fn(),
     })
     render(<ArchivePage />)
-    const skeletons = screen.getAllByTestId('skeleton')
-    expect(skeletons.length).toBeGreaterThan(0)
+    expect(screen.getByTestId('loading-state')).toBeInTheDocument()
   })
 
   it('shows error state when API fails', () => {
