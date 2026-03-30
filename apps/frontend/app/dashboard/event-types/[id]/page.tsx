@@ -191,16 +191,16 @@ export default function EventTypeDetailPage() {
                 </div>
                 <h2 className="text-xl font-bold">Informacje</h2>
               </div>
-              <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                <div className="flex justify-between items-center py-3">
+              <div className="space-y-3">
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Nazwa</span>
                   <span className="font-semibold">{eventType.name}</span>
                 </div>
-                <div className="flex justify-between items-center py-3">
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Opis</span>
                   <span className="font-medium text-right max-w-[60%] text-sm">{eventType.description || '\u2014'}</span>
                 </div>
-                <div className="flex justify-between items-center py-3">
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Kolor</span>
                   <div className="flex items-center gap-2">
                     <div
@@ -212,7 +212,7 @@ export default function EventTypeDetailPage() {
                     <span className="font-mono text-sm text-muted-foreground">{eventType.color || 'Brak'}</span>
                   </div>
                 </div>
-                <div className="flex justify-between items-center py-3">
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Status</span>
                   <div className="flex items-center gap-3">
                     <Badge variant={eventType.isActive ? 'default' : 'secondary'}>
@@ -225,11 +225,11 @@ export default function EventTypeDetailPage() {
                     />
                   </div>
                 </div>
-                <div className="flex justify-between items-center py-3">
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Utworzony</span>
                   <span className="font-medium text-sm">{createdDate}</span>
                 </div>
-                <div className="flex justify-between items-center py-3">
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Aktualizacja</span>
                   <span className="font-medium text-sm">{updatedDate}</span>
                 </div>

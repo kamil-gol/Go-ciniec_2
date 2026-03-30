@@ -119,7 +119,9 @@ export default function HallDetailsPage() {
                   </div>
                   <h2 className="text-xl font-bold">Opis</h2>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">{hall.description}</p>
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
+                  <p className="text-muted-foreground leading-relaxed">{hall.description}</p>
+                </div>
               </div>
             </Card>
           )}
@@ -134,15 +136,17 @@ export default function HallDetailsPage() {
                   </div>
                   <h2 className="text-xl font-bold">Udogodnienia</h2>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {hall.amenities.map((amenity, idx) => (
-                    <Badge
-                      key={idx}
-                      className="text-sm py-2 px-3 border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300"
-                    >
-                      {amenity}
-                    </Badge>
-                  ))}
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
+                  <div className="flex flex-wrap gap-2">
+                    {hall.amenities.map((amenity, idx) => (
+                      <Badge
+                        key={idx}
+                        className="text-sm py-2 px-3 border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300"
+                      >
+                        {amenity}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
             </Card>
