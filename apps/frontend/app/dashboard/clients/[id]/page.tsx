@@ -207,7 +207,9 @@ export default function ClientDetailsPage() {
                       </div>
                       <h2 className="text-xl font-bold">Notatki</h2>
                     </div>
-                    <p className="text-muted-foreground leading-relaxed">{client.notes}</p>
+                    <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
+                      <p className="text-muted-foreground leading-relaxed">{client.notes}</p>
+                    </div>
                   </div>
                 </Card>
               )}
