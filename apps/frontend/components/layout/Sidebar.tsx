@@ -46,29 +46,10 @@ const navGroups: NavGroup[] = [
   {
     label: 'Operacje',
     items: [
-      { name: 'Dashboard',     href: '/dashboard',                icon: LayoutDashboard, accentKey: 'dashboard' },
-      { name: 'Widok Dzienny', href: '/dashboard/daily-view',     icon: CalendarDays,    accentKey: 'dailyView' },
-      { name: 'Rezerwacje',    href: '/dashboard/reservations',   icon: Calendar,        accentKey: 'reservations' },
-      { name: 'Kolejka',       href: '/dashboard/queue',          icon: Clock,           accentKey: 'queue' },
-    ],
-  },
-  {
-    label: 'Zarządzanie',
-    items: [
-      { name: 'Klienci',  href: '/dashboard/clients',  icon: Users,           accentKey: 'clients' },
-      { name: 'Sale',     href: '/dashboard/halls',    icon: Building2,       accentKey: 'halls' },
-      {
-        name: 'Menu',
-        href: '/dashboard/menu',
-        icon: UtensilsCrossed,
-        accentKey: 'menu',
-        children: [
-          { name: 'Szablony Menu', href: '/dashboard/menu/templates', icon: BookOpen,        accentKey: 'menu' },
-          { name: 'Pakiety',       href: '/dashboard/menu/packages',  icon: Package,         accentKey: 'menu' },
-          { name: 'Kategorie Dań', href: '/dashboard/menu/categories', icon: FolderTree,     accentKey: 'menu' },
-          { name: 'Biblioteka Dań', href: '/dashboard/menu/dishes',   icon: Salad,            accentKey: 'menu' },
-        ],
-      },
+      { name: 'Dashboard',     href: '/dashboard',              icon: LayoutDashboard, accentKey: 'dashboard' },
+      { name: 'Widok Dzienny', href: '/dashboard/daily-view',   icon: CalendarDays,    accentKey: 'dailyView' },
+      { name: 'Rezerwacje',    href: '/dashboard/reservations', icon: Calendar,        accentKey: 'reservations' },
+      { name: 'Kolejka',       href: '/dashboard/queue',        icon: Clock,           accentKey: 'queue' },
       {
         name: 'Catering',
         href: '/dashboard/catering',
@@ -83,12 +64,24 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Konfiguracja',
+    label: 'Zarządzanie',
     items: [
-      { name: 'Ustawienia',          href: '/dashboard/settings',           icon: Settings,  accentKey: 'settings' },
-      { name: 'Typy Wydarzeń',       href: '/dashboard/event-types',        icon: Theater,   accentKey: 'eventTypes' },
-      { name: 'Usługi dodatkowe',    href: '/dashboard/service-extras',     icon: Gift,      accentKey: 'serviceExtras' },
-      { name: 'Szablony dokumentów', href: '/dashboard/document-templates', icon: ScrollText, accentKey: 'documentTemplates' },
+      { name: 'Klienci',  href: '/dashboard/clients',  icon: Users,           accentKey: 'clients' },
+      { name: 'Sale',     href: '/dashboard/halls',    icon: Building2,       accentKey: 'halls' },
+      {
+        name: 'Menu',
+        href: '/dashboard/menu',
+        icon: UtensilsCrossed,
+        accentKey: 'menu',
+        children: [
+          { name: 'Szablony Menu',  href: '/dashboard/menu/templates',  icon: BookOpen,   accentKey: 'menu' },
+          { name: 'Pakiety',        href: '/dashboard/menu/packages',   icon: Package,    accentKey: 'menu' },
+          { name: 'Kategorie Dań',  href: '/dashboard/menu/categories', icon: FolderTree, accentKey: 'menu' },
+          { name: 'Biblioteka Dań', href: '/dashboard/menu/dishes',     icon: Salad,      accentKey: 'menu' },
+        ],
+      },
+      { name: 'Typy Wydarzeń',    href: '/dashboard/event-types',    icon: Theater, accentKey: 'eventTypes' },
+      { name: 'Usługi dodatkowe', href: '/dashboard/service-extras', icon: Gift,    accentKey: 'serviceExtras' },
     ],
   },
   {
@@ -98,6 +91,13 @@ const navGroups: NavGroup[] = [
       { name: 'Dziennik Audytu', href: '/dashboard/audit-log',     icon: FileText,  accentKey: 'auditLog' },
       { name: 'Powiadomienia',   href: '/dashboard/notifications', icon: Bell,      accentKey: 'notifications' },
       { name: 'Archiwum',        href: '/dashboard/archive',       icon: Archive,   accentKey: 'archive' },
+    ],
+  },
+  {
+    label: 'Konfiguracja',
+    items: [
+      { name: 'Szablony dokumentów', href: '/dashboard/document-templates', icon: ScrollText, accentKey: 'documentTemplates' },
+      { name: 'Ustawienia',          href: '/dashboard/settings',           icon: Settings,   accentKey: 'settings' },
     ],
   },
 ]
@@ -120,17 +120,14 @@ const iconStyle: Record<string, IconStyleConfig> = {
   dailyView: groupOps,
   reservations: groupOps,
   queue: groupOps,
+  catering: groupOps,
+  deposits: groupOps,
   // Zarządzanie
   clients: groupMgmt,
   halls: groupMgmt,
   menu: groupMgmt,
-  catering: groupMgmt,
-  deposits: groupMgmt,
-  // Konfiguracja
-  settings: groupCfg,
-  eventTypes: groupCfg,
-  serviceExtras: groupCfg,
-  documentTemplates: groupCfg,
+  eventTypes: groupMgmt,
+  serviceExtras: groupMgmt,
   // Analiza
   reports: groupAnalysis,
   auditLog: groupAnalysis,

@@ -106,6 +106,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="container mx-auto py-6 px-4 sm:py-8 sm:px-6 space-y-6 sm:space-y-8">
+      <Breadcrumb />
       {/* Hero */}
       <PageHero
         accent={accent}
@@ -182,7 +183,6 @@ export default function NotificationsPage() {
                   )}
                 >
                   <div className={cn('flex-shrink-0 p-2.5 rounded-xl', colorClass)}>
-                    <Breadcrumb />
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
