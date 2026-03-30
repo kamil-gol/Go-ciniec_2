@@ -251,7 +251,7 @@ export default function DocumentTemplatesPage() {
                 <Button
                   size="sm"
                   onClick={openCreateDialog}
-                  className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-sm h-9 gap-1.5"
+                  className="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white shadow-sm h-9 gap-1.5"
                 >
                   <Plus className="h-4 w-4" />
                   <span className="hidden sm:inline">Dodaj nowy blok tekstu</span>
