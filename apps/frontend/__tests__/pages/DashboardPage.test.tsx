@@ -264,6 +264,6 @@ describe('DashboardPage', () => {
     })
 
     render(<DashboardPage />)
-    expect(screen.getByText('Brak nadchodzących wydarzeń')).toBeInTheDocument()
+    expect(screen.getByText('Kalendarz jest wolny')).toBeInTheDocument()
   })
 })
