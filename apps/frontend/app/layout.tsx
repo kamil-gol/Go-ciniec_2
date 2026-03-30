@@ -1,10 +1,14 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 import { Providers } from './providers'
 import { Toaster } from '@/components/ui/toaster'
 
-const inter = Inter({ subsets: ['latin'] , display: 'swap', preload: false })
+const inter = localFont({
+  src: '../public/fonts/Inter-Variable.woff2',
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
   title: 'System Rezerwacji - Gościniec Rodzinny',
