@@ -138,7 +138,7 @@ export default function ServiceExtrasPage() {
           <div className="flex gap-2">
             <Button
               size="lg"
-              className="bg-white text-purple-600 hover:bg-white/90 shadow-xl"
+              className="bg-white text-amber-700 hover:bg-white/90 shadow-xl"
               onClick={handleCreateCategory}
             >
               <Plus className="mr-2 h-5 w-5" />
