@@ -52,13 +52,13 @@ describe('EntityListItem', () => {
     expect(screen.getByTestId('motion-div').className).toContain('opacity-60')
   })
 
-  it('should pass through HTML attributes', () => {
+  it('should pass through a11y attributes', () => {
     render(
-      <EntityListItem role="listitem" tabIndex={0} data-testid="custom">
+      <EntityListItem role="listitem" tabIndex={0}>
         Content
       </EntityListItem>
     )
-    const item = screen.getByTestId('custom')
+    const item = screen.getByTestId('motion-div')
     expect(item).toHaveAttribute('role', 'listitem')
     expect(item).toHaveAttribute('tabindex', '0')
   })

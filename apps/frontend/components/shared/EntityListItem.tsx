@@ -4,18 +4,28 @@ import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
-interface EntityListItemProps extends React.HTMLAttributes<HTMLDivElement> {
+interface EntityListItemProps {
   children: React.ReactNode
   /** Wrap in next/link */
   href?: string
   /** Click handler — adds cursor-pointer */
-  onClick?: () => void
+  onClick?: (e: React.MouseEvent) => void
   /** Stagger animation delay */
   delay?: number
   /** Show skeleton loading state */
   isLoading?: boolean
   /** Dim the item (e.g. deleted client) */
   dimmed?: boolean
+  /** Additional classes */
+  className?: string
+  /** A11y: role attribute */
+  role?: string
+  /** A11y: tabIndex */
+  tabIndex?: number
+  /** A11y: keyboard handler */
+  onKeyDown?: (e: React.KeyboardEvent) => void
+  /** A11y: aria-label */
+  'aria-label'?: string
 }
 
 export function EntityListItem({
@@ -26,7 +36,10 @@ export function EntityListItem({
   isLoading = false,
   dimmed = false,
   className,
-  ...rest
+  role,
+  tabIndex,
+  onKeyDown,
+  'aria-label': ariaLabel,
 }: EntityListItemProps) {
   if (isLoading) {
     return (
@@ -49,6 +62,10 @@ export function EntityListItem({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.35, ease: 'easeOut' }}
       onClick={!href ? onClick : undefined}
+      role={role}
+      tabIndex={tabIndex}
+      onKeyDown={onKeyDown}
+      aria-label={ariaLabel}
       className={cn(
         'group relative rounded-2xl',
         'bg-white dark:bg-neutral-800/80',
@@ -60,7 +77,6 @@ export function EntityListItem({
         dimmed && 'opacity-60',
         className
       )}
-      {...rest}
     >
       {children}
     </motion.div>

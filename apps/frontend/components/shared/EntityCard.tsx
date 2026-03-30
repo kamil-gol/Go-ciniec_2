@@ -10,7 +10,7 @@ interface EntityCardProps {
   /** Inline CSS color for accent bar (for dynamic colors like eventType.color) */
   accentColor?: string
   /** Click handler — adds cursor-pointer */
-  onClick?: () => void
+  onClick?: (e: React.MouseEvent) => void
   /** Stagger animation delay */
   delay?: number
   /** Show skeleton loading state */
