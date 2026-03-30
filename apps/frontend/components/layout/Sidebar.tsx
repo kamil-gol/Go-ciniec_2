@@ -105,27 +105,35 @@ const navGroups: NavGroup[] = [
 // Flat list for legacy helpers
 const navItems: NavItem[] = navGroups.flatMap(g => g.items)
 
-// ═══ ICON STYLE MAP ═══
-// 4 color groups: Operacje (blue), Zarządzanie (emerald), Konfiguracja (slate), Analiza (amber)
+// ═══ ICON STYLE ═══
+// 4 color groups: Operacje (blue), Zarządzanie (emerald), Analiza (amber), Konfiguracja (slate)
+// Inline objects only — no const refs to avoid Turbopack HMR initialization issues
 
-const DEFAULT_STYLE = { icon: 'text-slate-600 dark:text-slate-400', iconActive: 'text-white', pill: 'bg-slate-200 dark:bg-slate-700/50', pillActive: 'bg-gradient-to-br from-slate-500 to-slate-700 shadow-md shadow-slate-500/30', text: 'text-slate-700 dark:text-slate-300', activeBg: 'bg-slate-100 dark:bg-slate-800/50', border: 'border-l-slate-500' }
-
-function getIconStyle(accentKey: string) {
-  switch (accentKey) {
-    // Operacje (blue)
-    case 'dashboard': case 'dailyView': case 'reservations': case 'queue': case 'catering': case 'deposits':
-      return { icon: 'text-blue-600 dark:text-blue-400', iconActive: 'text-white', pill: 'bg-blue-100 dark:bg-blue-900/40', pillActive: 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/30', text: 'text-blue-700 dark:text-blue-300', activeBg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-l-blue-500' }
-    // Zarządzanie (emerald)
-    case 'clients': case 'halls': case 'menu': case 'eventTypes': case 'serviceExtras':
-      return { icon: 'text-emerald-600 dark:text-emerald-400', iconActive: 'text-white', pill: 'bg-emerald-100 dark:bg-emerald-900/40', pillActive: 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300', activeBg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-l-emerald-500' }
-    // Analiza (amber)
-    case 'reports': case 'auditLog': case 'notifications': case 'archive':
-      return { icon: 'text-amber-600 dark:text-amber-400', iconActive: 'text-white', pill: 'bg-amber-100 dark:bg-amber-900/40', pillActive: 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-md shadow-amber-500/30', text: 'text-amber-700 dark:text-amber-300', activeBg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-l-amber-500' }
-    // Konfiguracja (slate) + default
-    default:
-      return DEFAULT_STYLE
-  }
+const ICON_STYLES: Record<string, { icon: string; iconActive: string; pill: string; pillActive: string; text: string; activeBg: string; border: string }> = {
+  // Operacje (blue)
+  dashboard:    { icon: 'text-blue-600 dark:text-blue-400', iconActive: 'text-white', pill: 'bg-blue-100 dark:bg-blue-900/40', pillActive: 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/30', text: 'text-blue-700 dark:text-blue-300', activeBg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-l-blue-500' },
+  dailyView:    { icon: 'text-blue-600 dark:text-blue-400', iconActive: 'text-white', pill: 'bg-blue-100 dark:bg-blue-900/40', pillActive: 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/30', text: 'text-blue-700 dark:text-blue-300', activeBg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-l-blue-500' },
+  reservations: { icon: 'text-blue-600 dark:text-blue-400', iconActive: 'text-white', pill: 'bg-blue-100 dark:bg-blue-900/40', pillActive: 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/30', text: 'text-blue-700 dark:text-blue-300', activeBg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-l-blue-500' },
+  queue:        { icon: 'text-blue-600 dark:text-blue-400', iconActive: 'text-white', pill: 'bg-blue-100 dark:bg-blue-900/40', pillActive: 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/30', text: 'text-blue-700 dark:text-blue-300', activeBg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-l-blue-500' },
+  catering:     { icon: 'text-blue-600 dark:text-blue-400', iconActive: 'text-white', pill: 'bg-blue-100 dark:bg-blue-900/40', pillActive: 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/30', text: 'text-blue-700 dark:text-blue-300', activeBg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-l-blue-500' },
+  deposits:     { icon: 'text-blue-600 dark:text-blue-400', iconActive: 'text-white', pill: 'bg-blue-100 dark:bg-blue-900/40', pillActive: 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/30', text: 'text-blue-700 dark:text-blue-300', activeBg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-l-blue-500' },
+  // Zarządzanie (emerald)
+  clients:       { icon: 'text-emerald-600 dark:text-emerald-400', iconActive: 'text-white', pill: 'bg-emerald-100 dark:bg-emerald-900/40', pillActive: 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300', activeBg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-l-emerald-500' },
+  halls:         { icon: 'text-emerald-600 dark:text-emerald-400', iconActive: 'text-white', pill: 'bg-emerald-100 dark:bg-emerald-900/40', pillActive: 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300', activeBg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-l-emerald-500' },
+  menu:          { icon: 'text-emerald-600 dark:text-emerald-400', iconActive: 'text-white', pill: 'bg-emerald-100 dark:bg-emerald-900/40', pillActive: 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300', activeBg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-l-emerald-500' },
+  eventTypes:    { icon: 'text-emerald-600 dark:text-emerald-400', iconActive: 'text-white', pill: 'bg-emerald-100 dark:bg-emerald-900/40', pillActive: 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300', activeBg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-l-emerald-500' },
+  serviceExtras: { icon: 'text-emerald-600 dark:text-emerald-400', iconActive: 'text-white', pill: 'bg-emerald-100 dark:bg-emerald-900/40', pillActive: 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300', activeBg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-l-emerald-500' },
+  // Analiza (amber)
+  reports:       { icon: 'text-amber-600 dark:text-amber-400', iconActive: 'text-white', pill: 'bg-amber-100 dark:bg-amber-900/40', pillActive: 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-md shadow-amber-500/30', text: 'text-amber-700 dark:text-amber-300', activeBg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-l-amber-500' },
+  auditLog:      { icon: 'text-amber-600 dark:text-amber-400', iconActive: 'text-white', pill: 'bg-amber-100 dark:bg-amber-900/40', pillActive: 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-md shadow-amber-500/30', text: 'text-amber-700 dark:text-amber-300', activeBg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-l-amber-500' },
+  notifications: { icon: 'text-amber-600 dark:text-amber-400', iconActive: 'text-white', pill: 'bg-amber-100 dark:bg-amber-900/40', pillActive: 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-md shadow-amber-500/30', text: 'text-amber-700 dark:text-amber-300', activeBg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-l-amber-500' },
+  archive:       { icon: 'text-amber-600 dark:text-amber-400', iconActive: 'text-white', pill: 'bg-amber-100 dark:bg-amber-900/40', pillActive: 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-md shadow-amber-500/30', text: 'text-amber-700 dark:text-amber-300', activeBg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-l-amber-500' },
+  // Konfiguracja (slate)
+  documentTemplates: { icon: 'text-slate-600 dark:text-slate-400', iconActive: 'text-white', pill: 'bg-slate-200 dark:bg-slate-700/50', pillActive: 'bg-gradient-to-br from-slate-500 to-slate-700 shadow-md shadow-slate-500/30', text: 'text-slate-700 dark:text-slate-300', activeBg: 'bg-slate-100 dark:bg-slate-800/50', border: 'border-l-slate-500' },
+  settings:          { icon: 'text-slate-600 dark:text-slate-400', iconActive: 'text-white', pill: 'bg-slate-200 dark:bg-slate-700/50', pillActive: 'bg-gradient-to-br from-slate-500 to-slate-700 shadow-md shadow-slate-500/30', text: 'text-slate-700 dark:text-slate-300', activeBg: 'bg-slate-100 dark:bg-slate-800/50', border: 'border-l-slate-500' },
 }
+
+const FALLBACK_STYLE = { icon: 'text-slate-600 dark:text-slate-400', iconActive: 'text-white', pill: 'bg-slate-200 dark:bg-slate-700/50', pillActive: 'bg-gradient-to-br from-slate-500 to-slate-700 shadow-md shadow-slate-500/30', text: 'text-slate-700 dark:text-slate-300', activeBg: 'bg-slate-100 dark:bg-slate-800/50', border: 'border-l-slate-500' }
 
 // ═══ SIDEBAR NAV ═══
 
@@ -160,7 +168,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
   }
 
   const renderNavItem = (item: NavItem) => {
-    const s = getIconStyle(item.accentKey)
+    const s = ICON_STYLES[item.accentKey] || FALLBACK_STYLE
 
     const isItemActive = item.children
       ? item.children.some(child => pathname.startsWith(child.href))
@@ -197,7 +205,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
           {isOpen && (
             <ul className="mt-1 ml-5 pl-4 border-l-2 border-neutral-200/70 dark:border-neutral-700/50 space-y-0.5">
               {item.children.map(child => {
-                const cs = getIconStyle(child.accentKey)
+                const cs = ICON_STYLES[child.accentKey] || FALLBACK_STYLE
                 const childActive = pathname.startsWith(child.href)
                 return (
                   <li key={child.href}>
