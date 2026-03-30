@@ -133,6 +133,9 @@ const iconStyle: Record<string, IconStyleConfig> = {
   auditLog: groupAnalysis,
   notifications: groupAnalysis,
   archive: groupAnalysis,
+  // Konfiguracja
+  documentTemplates: groupCfg,
+  settings: groupCfg,
 }
 
 // ═══ SIDEBAR NAV ═══
