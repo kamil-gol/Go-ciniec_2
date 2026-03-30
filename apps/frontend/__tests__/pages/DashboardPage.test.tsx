@@ -67,6 +67,13 @@ vi.mock('@/components/shared', () => ({
       <span>{value}</span>
     </div>
   ),
+  EmptyState: ({ title, description, actionLabel }: any) => (
+    <div data-testid="empty-state">
+      <span>{title}</span>
+      <span>{description}</span>
+      {actionLabel && <button>{actionLabel}</button>}
+    </div>
+  ),
 }))
 
 // ── Import ───────────────────────────────────────────────────────────────────
