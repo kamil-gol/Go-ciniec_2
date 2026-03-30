@@ -171,7 +171,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
   }
 
   const renderNavItem = (item: NavItem) => {
-    const s = iconStyle[item.accentKey] ?? iconStyle.settings ?? groupCfg
+    const s = iconStyle[item.accentKey] || { icon: 'text-slate-600 dark:text-slate-400', iconActive: 'text-white', pill: 'bg-slate-200 dark:bg-slate-700/50', pillActive: 'bg-gradient-to-br from-slate-500 to-slate-700 shadow-md shadow-slate-500/30', text: 'text-slate-700 dark:text-slate-300', activeBg: 'bg-slate-100 dark:bg-slate-800/50', border: 'border-l-slate-500' }
 
     const isItemActive = item.children
       ? item.children.some(child => pathname.startsWith(child.href))
@@ -208,7 +208,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
           {isOpen && (
             <ul className="mt-1 ml-5 pl-4 border-l-2 border-neutral-200/70 dark:border-neutral-700/50 space-y-0.5">
               {item.children.map(child => {
-                const cs = iconStyle[child.accentKey] || iconStyle.settings
+                const cs = iconStyle[child.accentKey] || s
                 const childActive = pathname.startsWith(child.href)
                 return (
                   <li key={child.href}>
