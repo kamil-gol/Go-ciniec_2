@@ -298,10 +298,10 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
       {navGroups.map((group, groupIndex) => (
         <div key={group.label}>
           {groupIndex > 0 && (
-            <div className="my-2 mx-3 border-t border-neutral-200/50 dark:border-neutral-700/30" />
+            <div className="my-3 mx-3 h-px bg-gradient-to-r from-transparent via-neutral-200 dark:via-neutral-700/50 to-transparent" />
           )}
           {!collapsed && (
-            <span className="block px-3 py-2 text-[10px] font-semibold text-neutral-500 dark:text-neutral-500 uppercase tracking-wider">
+            <span className="block px-3 py-2 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
               {group.label}
             </span>
           )}
