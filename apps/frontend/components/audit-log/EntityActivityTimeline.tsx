@@ -46,7 +46,7 @@ function ChangeDetails({ details }: { details: AuditLogEntry['details'] }) {
                   </span>
                 )}
                 {oldFormatted !== null && newFormatted !== null && (
-                  <span className="text-neutral-400">→</span>
+                  <span className="text-neutral-500">→</span>
                 )}
                 {newFormatted !== null && (
                   <span className="text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-950/20 px-1.5 py-0.5 rounded">
@@ -253,7 +253,7 @@ export function EntityActivityTimeline({ entityType, entityId }: EntityActivityT
             <p className="text-lg font-semibold text-neutral-500 dark:text-neutral-300">
               Brak historii zmian
             </p>
-            <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-1">
+            <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-1">
               Zmiany dokonane na tym elemencie pojawią się tutaj
             </p>
           </div>

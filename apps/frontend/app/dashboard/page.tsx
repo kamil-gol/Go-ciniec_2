@@ -349,7 +349,7 @@ export default function DashboardPage() {
 
                   <ArrowRight
                     className={cn(
-                      'h-5 w-5 text-neutral-400 group-hover:translate-x-1 transition-all',
+                      'h-5 w-5 text-neutral-500 group-hover:translate-x-1 transition-all',
                       'group-hover:text-indigo-500'
                     )}
                   />

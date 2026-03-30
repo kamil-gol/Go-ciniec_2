@@ -97,7 +97,7 @@ export function QueueItemCard({
             </p>
           )}
 
-          <div className="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
+          <div className="mt-2 text-xs text-neutral-500 dark:text-neutral-500">
             Dodane {formatDistanceToNow(parseISO(item.createdAt), { addSuffix: true, locale: pl })}
             {' przez '}
             {item.createdBy.firstName} {item.createdBy.lastName}

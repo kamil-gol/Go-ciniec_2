@@ -50,7 +50,7 @@ export function OrdersFilters({ filter, onChange }: Props) {
       <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3">
         {/* Search */}
         <div className="relative flex-1 w-full sm:min-w-[220px] sm:w-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 dark:text-neutral-500 pointer-events-none" />
           <Input
             placeholder="Numer, klient, wydarzenie..."
             value={search}
@@ -60,7 +60,7 @@ export function OrdersFilters({ filter, onChange }: Props) {
           />
           {search && (
             <button
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300"
               onClick={() => { setSearch(''); onChange({ search: undefined }); }}
             >
               <X className="h-3.5 w-3.5" />

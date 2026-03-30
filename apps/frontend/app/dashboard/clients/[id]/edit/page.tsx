@@ -151,8 +151,8 @@ export default function EditClientPage() {
         {/* Premium Hero */}
         <div className={`relative overflow-hidden rounded-2xl p-8 text-white shadow-2xl bg-gradient-to-r ${
           isCompany
-            ? 'from-purple-600 via-indigo-600 to-blue-600'
-            : 'from-orange-600 via-pink-600 to-rose-600'
+            ? 'from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f]'
+            : 'from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f]'
         }`}>
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
           

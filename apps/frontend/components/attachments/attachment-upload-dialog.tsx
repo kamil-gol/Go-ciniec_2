@@ -133,12 +133,12 @@ export default function AttachmentUploadDialog({
             >
               <Upload className={cn(
                 'w-10 h-10 transition-colors',
-                dragOver ? 'text-violet-500' : 'text-neutral-400'
+                dragOver ? 'text-violet-500' : 'text-neutral-500'
               )} />
               <p className="text-sm text-neutral-600 dark:text-neutral-300 text-center">
                 <span className="font-medium text-violet-600 dark:text-violet-400">Kliknij</span> lub przeciągnij plik
               </p>
-              <p className="text-xs text-neutral-400">PDF, JPG, PNG, WebP · max 10 MB</p>
+              <p className="text-xs text-neutral-500">PDF, JPG, PNG, WebP · max 10 MB</p>
               <input
                 ref={inputRef}
                 type="file"
@@ -161,7 +161,7 @@ export default function AttachmentUploadDialog({
                 <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{file.name}</p>
                 <p className="text-xs text-neutral-500">{(file.size / 1024).toFixed(0)} KB</p>
               </div>
-              <button onClick={() => setFile(null)} className="p-1 text-neutral-400 hover:text-red-500">
+              <button onClick={() => setFile(null)} className="p-1 text-neutral-500 hover:text-red-500">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -192,7 +192,7 @@ export default function AttachmentUploadDialog({
           {/* Label */}
           <div>
             <Label htmlFor="att-label" className="text-sm font-medium mb-1.5 block">
-              Etykieta <span className="text-neutral-400 font-normal">(opcjonalnie)</span>
+              Etykieta <span className="text-neutral-500 font-normal">(opcjonalnie)</span>
             </Label>
             <Input
               id="att-label"
@@ -206,7 +206,7 @@ export default function AttachmentUploadDialog({
           {/* Description */}
           <div>
             <Label htmlFor="att-desc" className="text-sm font-medium mb-1.5 block">
-              Opis <span className="text-neutral-400 font-normal">(opcjonalnie)</span>
+              Opis <span className="text-neutral-500 font-normal">(opcjonalnie)</span>
             </Label>
             <Textarea
               id="att-desc"

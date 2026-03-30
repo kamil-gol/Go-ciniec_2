@@ -145,7 +145,7 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
             <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
               {formatCateringCurrency(order.totalPrice)}
             </p>
-            <p className="text-xs text-neutral-400 mt-0.5 whitespace-nowrap">{order.orderNumber}</p>
+            <p className="text-xs text-neutral-500 mt-0.5 whitespace-nowrap">{order.orderNumber}</p>
           </div>
 
           <ArrowRight className="h-4 w-4 text-neutral-300 group-hover:text-orange-500 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" />
@@ -238,7 +238,7 @@ export default function CateringDailyWidget({ date }: CateringDailyWidgetProps) 
         <div className="flex items-center gap-2">
           <button
             onClick={() => refetch()}
-            className="rounded-lg p-1.5 text-neutral-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+            className="rounded-lg p-1.5 text-neutral-500 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
             title="Odśwież"
           >
             <RefreshCw className="h-4 w-4" />

@@ -188,7 +188,7 @@ export function ClientsList({ clients, searchQuery, rodoMap = {} }: ClientsListP
                       )}
                       {!isDeleted && isCompany && client.nip && (
                         <div className="flex items-center gap-1">
-                          <span className="text-xs font-medium text-neutral-400">NIP:</span>
+                          <span className="text-xs font-medium text-neutral-500">NIP:</span>
                           <span>{client.nip}</span>
                         </div>
                       )}
@@ -212,7 +212,7 @@ export function ClientsList({ clients, searchQuery, rodoMap = {} }: ClientsListP
                   )}
 
                   <ChevronRight className={cn(
-                    'h-5 w-5 text-neutral-400 dark:text-neutral-500 group-hover:translate-x-1 transition-all',
+                    'h-5 w-5 text-neutral-500 dark:text-neutral-500 group-hover:translate-x-1 transition-all',
                     `group-hover:${accent.text} dark:group-hover:${accent.textDark}`
                   )} />
                 </div>

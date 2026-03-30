@@ -76,7 +76,7 @@ export function PreparationsTab({ query, view }: {
                               <div className="flex flex-col">
                                 <span className="truncate">{item.reservation.clientName} ({item.reservation.hallName})</span>
                                 {item.reservation.startTime && (
-                                  <span className="flex items-center gap-1 text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                  <span className="flex items-center gap-1 text-neutral-500 dark:text-neutral-500 mt-0.5">
                                     <Clock className="h-3 w-3 flex-shrink-0" />
                                     {formatTime(item.reservation.startTime)}{item.reservation.endTime ? ` – ${formatTime(item.reservation.endTime)}` : ''}
                                   </span>

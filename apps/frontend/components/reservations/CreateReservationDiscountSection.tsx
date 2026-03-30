@@ -113,7 +113,7 @@ export function CreateReservationDiscountSection({
               className="h-9 text-sm"
               {...register('discountReason')}
             />
-            <p className="text-[10px] text-neutral-400 dark:text-neutral-500">Min. 3 znaki</p>
+            <p className="text-[10px] text-neutral-500 dark:text-neutral-500">Min. 3 znaki</p>
           </div>
 
           {/* Live Preview */}

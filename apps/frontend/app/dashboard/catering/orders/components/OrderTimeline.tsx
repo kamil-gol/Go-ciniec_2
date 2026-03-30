@@ -146,7 +146,7 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-neutral-400 py-4">
+      <div className="flex items-center gap-2 text-neutral-500 py-4">
         <Loader2 className="h-4 w-4 animate-spin" />
         <span className="text-sm">Wczytywanie historii...</span>
       </div>
@@ -159,7 +159,7 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
         <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-2">
           <Circle className="w-5 h-5 text-neutral-300 dark:text-neutral-400" />
         </div>
-        <p className="text-sm text-neutral-400 dark:text-neutral-500">Brak wpisów w historii</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-500">Brak wpisów w historii</p>
       </div>
     );
   }
@@ -190,13 +190,13 @@ export function OrderTimeline({ orderId }: { orderId: string }) {
                 </p>
 
                 {entry.reason && (
-                  <p className="text-xs text-neutral-400 dark:text-neutral-500 italic mt-0.5">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-500 italic mt-0.5">
                     Powód: {entry.reason}
                   </p>
                 )}
 
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2">
-                  <span className="text-xs text-neutral-400 dark:text-neutral-500">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-500">
                     {formatDate(entry.createdAt)}
                   </span>
 

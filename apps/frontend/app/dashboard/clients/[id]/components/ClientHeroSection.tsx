@@ -32,8 +32,8 @@ export function ClientHeroSection({ client, isCompany, isDeleted, stats }: Clien
   return (
     <DetailHero
       gradient={isCompany
-        ? 'from-purple-600 via-indigo-600 to-blue-600'
-        : 'from-indigo-600 via-purple-600 to-pink-600'
+        ? 'from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f]'
+        : 'from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f]'
       }
       backHref="/dashboard/clients"
       backLabel="Powrót do listy"

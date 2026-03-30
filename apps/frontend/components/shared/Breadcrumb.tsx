@@ -62,7 +62,7 @@ export function Breadcrumb() {
         <span key={crumb.href} className="flex items-center gap-1.5">
           <ChevronRight className="h-3 w-3 text-neutral-300 dark:text-neutral-400" />
           {crumb.isLast ? (
-            <span className="font-medium text-neutral-900 dark:text-neutral-100">
+            <span className="font-semibold text-neutral-900 dark:text-neutral-100">
               {crumb.label}
             </span>
           ) : (

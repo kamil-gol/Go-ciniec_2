@@ -27,11 +27,11 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
           {(order.deliveryType === 'DELIVERY' || order.deliveryType === 'ON_SITE') &&
             order.deliveryAddress && (
               <div className="col-span-2">
-                <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-2">
+                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">
                   {order.deliveryType === 'DELIVERY' ? 'Adres dostawy' : 'Adres klienta'}
                 </p>
                 <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-neutral-500 shrink-0 mt-0.5" />
                   <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                     {order.deliveryAddress}
                   </p>
@@ -40,11 +40,11 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
             )}
           {order.deliveryTime && (
             <div>
-              <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-1">
+              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-1">
                 {order.deliveryType === 'PICKUP' ? 'Godzina odbioru' : 'Godzina'}
               </p>
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-neutral-400" />
+                <Clock className="w-4 h-4 text-neutral-500" />
                 <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                   {order.deliveryTime}
                 </p>
@@ -57,7 +57,7 @@ export function OrderDelivery({ order }: OrderDeliveryProps) {
         </div>
         {order.deliveryNotes && (
           <div className="p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg border border-neutral-200 dark:border-neutral-700">
-            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1">Uwagi</p>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-1">Uwagi</p>
             <p className="text-sm text-neutral-700 dark:text-neutral-300">{order.deliveryNotes}</p>
           </div>
         )}

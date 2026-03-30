@@ -30,6 +30,9 @@ import {
   ShoppingBag,
   BookOpen,
   Bell,
+  FolderTree,
+  Package,
+  Soup,
 } from 'lucide-react'
 
 // ═══ NAV CONFIG ═══
@@ -54,7 +57,18 @@ const navGroups: NavGroup[] = [
     items: [
       { name: 'Klienci',  href: '/dashboard/clients',  icon: Users,           accentKey: 'clients' },
       { name: 'Sale',     href: '/dashboard/halls',    icon: Building2,       accentKey: 'halls' },
-      { name: 'Menu',     href: '/dashboard/menu',     icon: UtensilsCrossed, accentKey: 'menu' },
+      {
+        name: 'Menu',
+        href: '/dashboard/menu',
+        icon: UtensilsCrossed,
+        accentKey: 'menu',
+        children: [
+          { name: 'Szablony Menu', href: '/dashboard/menu/templates', icon: BookOpen,        accentKey: 'menu' },
+          { name: 'Pakiety',       href: '/dashboard/menu/packages',  icon: Package,         accentKey: 'menu' },
+          { name: 'Kategorie Dań', href: '/dashboard/menu/categories', icon: FolderTree,     accentKey: 'menu' },
+          { name: 'Biblioteka Dań', href: '/dashboard/menu/dishes',   icon: Soup,            accentKey: 'menu' },
+        ],
+      },
       {
         name: 'Catering',
         href: '/dashboard/catering',
@@ -92,25 +106,36 @@ const navGroups: NavGroup[] = [
 const navItems: NavItem[] = navGroups.flatMap(g => g.items)
 
 // ═══ ICON STYLE MAP ═══
-// Each module gets a visible colored icon pill — always visible, stronger when active
-const iconStyle: Record<string, { icon: string; iconActive: string; pill: string; pillActive: string; text: string; activeBg: string; border: string }> = {
-  dashboard:         { icon: 'text-indigo-600 dark:text-indigo-400',  iconActive: 'text-white',                        pill: 'bg-indigo-100 dark:bg-indigo-900/40',  pillActive: 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md shadow-indigo-500/30', text: 'text-indigo-700 dark:text-indigo-300',  activeBg: 'bg-indigo-50 dark:bg-indigo-950/30',  border: 'border-l-indigo-500' },
-  dailyView:         { icon: 'text-violet-600 dark:text-violet-400',  iconActive: 'text-white',                        pill: 'bg-violet-100 dark:bg-violet-900/40',  pillActive: 'bg-gradient-to-br from-slate-600 to-violet-600 shadow-md shadow-violet-500/30',  text: 'text-violet-700 dark:text-violet-300',  activeBg: 'bg-violet-50 dark:bg-violet-950/30',  border: 'border-l-violet-500' },
-  reservations:      { icon: 'text-blue-600 dark:text-blue-400',      iconActive: 'text-white',                        pill: 'bg-blue-100 dark:bg-blue-900/40',      pillActive: 'bg-gradient-to-br from-blue-500 to-cyan-600 shadow-md shadow-blue-500/30',       text: 'text-blue-700 dark:text-blue-300',      activeBg: 'bg-blue-50 dark:bg-blue-950/30',      border: 'border-l-blue-500' },
-  archive:           { icon: 'text-neutral-600 dark:text-neutral-300', iconActive: 'text-white',                       pill: 'bg-neutral-200 dark:bg-neutral-700/50', pillActive: 'bg-gradient-to-br from-neutral-500 to-neutral-600 shadow-md shadow-neutral-500/30', text: 'text-neutral-700 dark:text-neutral-200', activeBg: 'bg-neutral-100 dark:bg-neutral-800/50', border: 'border-l-neutral-500' },
-  clients:           { icon: 'text-violet-600 dark:text-violet-400',  iconActive: 'text-white',                        pill: 'bg-violet-100 dark:bg-violet-900/40',  pillActive: 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-md shadow-violet-500/30', text: 'text-violet-700 dark:text-violet-300',  activeBg: 'bg-violet-50 dark:bg-violet-950/30',  border: 'border-l-violet-500' },
-  halls:             { icon: 'text-sky-600 dark:text-sky-400',        iconActive: 'text-white',                        pill: 'bg-sky-100 dark:bg-sky-900/40',        pillActive: 'bg-gradient-to-br from-sky-500 to-blue-600 shadow-md shadow-sky-500/30',         text: 'text-sky-700 dark:text-sky-300',        activeBg: 'bg-sky-50 dark:bg-sky-950/30',        border: 'border-l-sky-500' },
-  menu:              { icon: 'text-emerald-600 dark:text-emerald-400', iconActive: 'text-white',                       pill: 'bg-emerald-100 dark:bg-emerald-900/40', pillActive: 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300', activeBg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-l-emerald-500' },
-  catering:          { icon: 'text-orange-600 dark:text-orange-400',  iconActive: 'text-white',                        pill: 'bg-orange-100 dark:bg-orange-900/40',  pillActive: 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-md shadow-orange-500/30', text: 'text-orange-700 dark:text-orange-300',  activeBg: 'bg-orange-50 dark:bg-orange-950/30',  border: 'border-l-orange-500' },
-  queue:             { icon: 'text-amber-600 dark:text-amber-400',    iconActive: 'text-white',                        pill: 'bg-amber-100 dark:bg-amber-900/40',    pillActive: 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-md shadow-amber-500/30',   text: 'text-amber-700 dark:text-amber-300',    activeBg: 'bg-amber-50 dark:bg-amber-950/30',    border: 'border-l-amber-500' },
-  deposits:          { icon: 'text-rose-600 dark:text-rose-400',      iconActive: 'text-white',                        pill: 'bg-rose-100 dark:bg-rose-900/40',      pillActive: 'bg-gradient-to-br from-rose-500 to-pink-600 shadow-md shadow-rose-500/30',       text: 'text-rose-700 dark:text-rose-300',      activeBg: 'bg-rose-50 dark:bg-rose-950/30',      border: 'border-l-rose-500' },
-  serviceExtras:     { icon: 'text-purple-600 dark:text-purple-400',  iconActive: 'text-white',                        pill: 'bg-purple-100 dark:bg-purple-900/40',  pillActive: 'bg-gradient-to-br from-purple-500 to-fuchsia-600 shadow-md shadow-purple-500/30', text: 'text-purple-700 dark:text-purple-300',  activeBg: 'bg-purple-50 dark:bg-purple-950/30',  border: 'border-l-purple-500' },
-  eventTypes:        { icon: 'text-fuchsia-600 dark:text-fuchsia-400', iconActive: 'text-white',                       pill: 'bg-fuchsia-100 dark:bg-fuchsia-900/40', pillActive: 'bg-gradient-to-br from-fuchsia-500 to-pink-600 shadow-md shadow-fuchsia-500/30', text: 'text-fuchsia-700 dark:text-fuchsia-300', activeBg: 'bg-fuchsia-50 dark:bg-fuchsia-950/30', border: 'border-l-fuchsia-500' },
-  documentTemplates: { icon: 'text-cyan-600 dark:text-cyan-400',      iconActive: 'text-white',                        pill: 'bg-cyan-100 dark:bg-cyan-900/40',      pillActive: 'bg-gradient-to-br from-cyan-500 to-blue-600 shadow-md shadow-cyan-500/30',       text: 'text-cyan-700 dark:text-cyan-300',      activeBg: 'bg-cyan-50 dark:bg-cyan-950/30',      border: 'border-l-cyan-500' },
-  notifications:     { icon: 'text-yellow-600 dark:text-yellow-400',  iconActive: 'text-white',                        pill: 'bg-yellow-100 dark:bg-yellow-900/40',  pillActive: 'bg-gradient-to-br from-yellow-500 to-amber-600 shadow-md shadow-yellow-500/30',  text: 'text-yellow-700 dark:text-yellow-300',  activeBg: 'bg-yellow-50 dark:bg-yellow-950/30',  border: 'border-l-yellow-500' },
-  auditLog:          { icon: 'text-slate-600 dark:text-slate-400',    iconActive: 'text-white',                        pill: 'bg-slate-200 dark:bg-slate-700/60',    pillActive: 'bg-gradient-to-br from-slate-600 to-slate-800 shadow-md shadow-slate-500/30',    text: 'text-slate-700 dark:text-slate-300',    activeBg: 'bg-slate-100 dark:bg-slate-800/50',   border: 'border-l-slate-600' },
-  reports:           { icon: 'text-teal-600 dark:text-teal-400',      iconActive: 'text-white',                        pill: 'bg-teal-100 dark:bg-teal-900/40',      pillActive: 'bg-gradient-to-br from-teal-500 to-cyan-600 shadow-md shadow-teal-500/30',       text: 'text-teal-700 dark:text-teal-300',      activeBg: 'bg-teal-50 dark:bg-teal-950/30',      border: 'border-l-teal-500' },
-  settings:          { icon: 'text-neutral-600 dark:text-neutral-300', iconActive: 'text-white',                       pill: 'bg-neutral-200 dark:bg-neutral-700/50', pillActive: 'bg-gradient-to-br from-neutral-500 to-neutral-600 shadow-md shadow-neutral-500/30', text: 'text-neutral-700 dark:text-neutral-200', activeBg: 'bg-neutral-100 dark:bg-neutral-800/50', border: 'border-l-neutral-500' },
+// 4 color groups matching nav sections: Operacje (blue), Zarządzanie (emerald), Konfiguracja (slate), Analiza (amber)
+type IconStyleConfig = { icon: string; iconActive: string; pill: string; pillActive: string; text: string; activeBg: string; border: string }
+
+const groupOps: IconStyleConfig = { icon: 'text-blue-600 dark:text-blue-400', iconActive: 'text-white', pill: 'bg-blue-100 dark:bg-blue-900/40', pillActive: 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/30', text: 'text-blue-700 dark:text-blue-300', activeBg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-l-blue-500' }
+const groupMgmt: IconStyleConfig = { icon: 'text-emerald-600 dark:text-emerald-400', iconActive: 'text-white', pill: 'bg-emerald-100 dark:bg-emerald-900/40', pillActive: 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300', activeBg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-l-emerald-500' }
+const groupCfg: IconStyleConfig = { icon: 'text-slate-600 dark:text-slate-400', iconActive: 'text-white', pill: 'bg-slate-200 dark:bg-slate-700/50', pillActive: 'bg-gradient-to-br from-slate-500 to-slate-700 shadow-md shadow-slate-500/30', text: 'text-slate-700 dark:text-slate-300', activeBg: 'bg-slate-100 dark:bg-slate-800/50', border: 'border-l-slate-500' }
+const groupAnalysis: IconStyleConfig = { icon: 'text-amber-600 dark:text-amber-400', iconActive: 'text-white', pill: 'bg-amber-100 dark:bg-amber-900/40', pillActive: 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-md shadow-amber-500/30', text: 'text-amber-700 dark:text-amber-300', activeBg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-l-amber-500' }
+
+const iconStyle: Record<string, IconStyleConfig> = {
+  // Operacje
+  dashboard: groupOps,
+  dailyView: groupOps,
+  reservations: groupOps,
+  queue: groupOps,
+  // Zarządzanie
+  clients: groupMgmt,
+  halls: groupMgmt,
+  menu: groupMgmt,
+  catering: groupMgmt,
+  deposits: groupMgmt,
+  // Konfiguracja
+  settings: groupCfg,
+  eventTypes: groupCfg,
+  serviceExtras: groupCfg,
+  documentTemplates: groupCfg,
+  // Analiza
+  reports: groupAnalysis,
+  auditLog: groupAnalysis,
+  notifications: groupAnalysis,
+  archive: groupAnalysis,
 }
 
 // ═══ SIDEBAR NAV ═══
@@ -177,7 +202,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
               <item.icon className={cn('h-[18px] w-[18px]', isItemActive ? s.iconActive : s.icon)} />
             </div>
             <span className="flex-1 text-left">{item.name}</span>
-            <ChevronDown className={cn('h-4 w-4 flex-shrink-0 transition-transform duration-200 text-neutral-400', isOpen && 'rotate-180')} />
+            <ChevronDown className={cn('h-4 w-4 flex-shrink-0 transition-transform duration-200 text-neutral-500', isOpen && 'rotate-180')} />
           </button>
 
           {isOpen && (
@@ -279,7 +304,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
             <div className="my-2 mx-3 border-t border-neutral-200/50 dark:border-neutral-700/30" />
           )}
           {!collapsed && (
-            <span className="block px-3 py-2 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+            <span className="block px-3 py-2 text-[10px] font-semibold text-neutral-500 dark:text-neutral-500 uppercase tracking-wider">
               {group.label}
             </span>
           )}
@@ -322,7 +347,7 @@ function SidebarUser({
         {!collapsed && (
           <button
             onClick={onLogout}
-            className="rounded-lg p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="rounded-lg p-1.5 text-neutral-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             aria-label="Wyloguj"
           >
             <LogOut className="h-4 w-4" />
@@ -371,7 +396,7 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
                   <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent">
                     Gościniec
                   </h1>
-                  <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarządzania</p>
+                  <p className="text-[10px] text-neutral-500 -mt-0.5">Panel zarządzania</p>
                 </div>
               </div>
             )}
@@ -408,7 +433,7 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
                 <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   Gościniec
                 </h1>
-                <p className="text-[10px] text-neutral-400 -mt-0.5">Panel zarządzania</p>
+                <p className="text-[10px] text-neutral-500 -mt-0.5">Panel zarządzania</p>
               </div>
             </div>
 

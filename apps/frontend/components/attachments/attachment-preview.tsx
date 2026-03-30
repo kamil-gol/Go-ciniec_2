@@ -79,7 +79,7 @@ export default function AttachmentPreview({ attachment, open, onClose }: Attachm
             <span className="text-sm font-medium text-white truncate">
               {attachment.originalName}
             </span>
-            <span className="text-xs text-neutral-400 flex-shrink-0">
+            <span className="text-xs text-neutral-500 flex-shrink-0">
               {formatFileSize(attachment.sizeBytes)}
             </span>
           </div>
@@ -88,21 +88,21 @@ export default function AttachmentPreview({ attachment, open, onClose }: Attachm
               <>
                 <button
                   onClick={() => setZoom((z) => Math.min(z + 0.25, 3))}
-                  className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-700 transition-colors"
+                  className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-700 transition-colors"
                   title="Powiększ"
                 >
                   <ZoomIn className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setZoom((z) => Math.max(z - 0.25, 0.25))}
-                  className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-700 transition-colors"
+                  className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-700 transition-colors"
                   title="Pomniejsz"
                 >
                   <ZoomOut className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setRotation((r) => (r + 90) % 360)}
-                  className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-700 transition-colors"
+                  className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-700 transition-colors"
                   title="Obróć"
                 >
                   <RotateCw className="w-4 h-4" />
@@ -111,14 +111,14 @@ export default function AttachmentPreview({ attachment, open, onClose }: Attachm
             )}
             <button
               onClick={handleDownload}
-              className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-700 transition-colors"
+              className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-700 transition-colors"
               title="Pobierz"
             >
               <Download className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-700 transition-colors"
+              className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-700 transition-colors"
               title="Zamknij"
             >
               <X className="w-4 h-4" />
@@ -131,7 +131,7 @@ export default function AttachmentPreview({ attachment, open, onClose }: Attachm
           {loading ? (
             <div className="w-8 h-8 border-2 border-neutral-600 border-t-white rounded-full animate-spin" />
           ) : !blobUrl ? (
-            <p className="text-neutral-400 text-sm">Nie udało się załadować podglądu</p>
+            <p className="text-neutral-500 text-sm">Nie udało się załadować podglądu</p>
           ) : isImage ? (
             /* eslint-disable-next-line @next/next/no-img-element -- blob URL preview, not optimizable by next/image */
             <img
@@ -148,7 +148,7 @@ export default function AttachmentPreview({ attachment, open, onClose }: Attachm
               title={attachment.originalName}
             />
           ) : (
-            <p className="text-neutral-400 text-sm">
+            <p className="text-neutral-500 text-sm">
               Podgląd niedostępny dla tego typu pliku
             </p>
           )}

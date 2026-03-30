@@ -58,7 +58,7 @@ function getAmountColorClass(status: Deposit['status']): string {
     case 'OVERDUE': return 'text-red-600 dark:text-red-400'
     case 'PENDING':
     case 'PARTIALLY_PAID': return 'text-amber-600 dark:text-amber-400'
-    case 'CANCELLED': return 'text-neutral-400 dark:text-neutral-500'
+    case 'CANCELLED': return 'text-neutral-500 dark:text-neutral-500'
     default: return ''
   }
 }
@@ -264,7 +264,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                   {/* Hall */}
                   <TableCell>
                     <div className="flex items-center gap-1.5 text-sm">
-                      <Building2 className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />
+                      <Building2 className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />
                       <span className="truncate">{hall?.name || 'Brak'}</span>
                     </div>
                   </TableCell>
@@ -321,7 +321,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
                   <TableCell>
                     {deposit.paymentMethod ? (() => {
                       const config = paymentMethodConfig[deposit.paymentMethod as PaymentMethod]
-                      if (!config) return <span className="text-sm text-neutral-400 dark:text-neutral-500">—</span>
+                      if (!config) return <span className="text-sm text-neutral-500 dark:text-neutral-500">—</span>
                       const Icon = config.icon
                       return (
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`}>

@@ -60,7 +60,7 @@ export function MenuDishesPreview({ dishSelections, className }: MenuDishesPrevi
       <Card className={cn('border-dashed', className)}>
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <div className="w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-4">
-            <UtensilsCrossed className="h-8 w-8 text-neutral-400" />
+            <UtensilsCrossed className="h-8 w-8 text-neutral-500" />
           </div>
           <p className="text-sm text-muted-foreground">Brak wybranych dań</p>
         </CardContent>

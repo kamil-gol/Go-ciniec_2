@@ -68,7 +68,7 @@ export function DatePicker({
               'border-secondary-300 bg-white dark:bg-neutral-900 dark:border-neutral-700 hover:border-primary-400 hover:bg-primary-50/50 dark:hover:bg-neutral-800',
               'focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
               'transition-all duration-200',
-              !dateValue && 'text-neutral-400',
+              !dateValue && 'text-neutral-500',
               error && 'border-red-400 dark:border-red-500 focus:ring-red-400 dark:focus:ring-red-500',
               disabled && 'opacity-50 cursor-not-allowed'
             )}

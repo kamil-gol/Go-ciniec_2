@@ -79,7 +79,7 @@ function MobileDots({ reservations }: { reservations: CalendarReservation[] }) {
         />
       ))}
       {extra > 0 && (
-        <span className="text-[8px] text-neutral-400 font-medium leading-none">+{extra}</span>
+        <span className="text-[8px] text-neutral-500 font-medium leading-none">+{extra}</span>
       )}
     </div>
   )
@@ -306,7 +306,7 @@ export default function CalendarPage() {
 
         {halls && halls.length > 0 && (
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+            <Filter className="h-4 w-4 text-neutral-500 flex-shrink-0" />
             <Select value={hallFilter} onValueChange={setHallFilter}>
               <SelectTrigger className="w-auto min-w-[160px] h-9">
                 <SelectValue placeholder="Wszystkie sale" />
@@ -363,7 +363,7 @@ export default function CalendarPage() {
                             isTodayCell && 'bg-indigo-600 text-white font-bold'
                           )}>{dayInfo.day}</span>
                           {dayReservations.length > 0 && (
-                            <span className="text-[9px] sm:text-[10px] font-medium text-neutral-400 dark:text-neutral-500">{dayReservations.length}</span>
+                            <span className="text-[9px] sm:text-[10px] font-medium text-neutral-500 dark:text-neutral-500">{dayReservations.length}</span>
                           )}
                         </div>
 
@@ -381,7 +381,7 @@ export default function CalendarPage() {
                             />
                           ))}
                           {dayReservations.length > MAX_PILLS && (
-                            <div className="text-[10px] text-center text-neutral-400 dark:text-neutral-500 font-medium pt-0.5">
+                            <div className="text-[10px] text-center text-neutral-500 dark:text-neutral-500 font-medium pt-0.5">
                               +{dayReservations.length - MAX_PILLS} więcej
                             </div>
                           )}
@@ -426,7 +426,7 @@ export default function CalendarPage() {
                                 <div className="flex items-center justify-between">
                                   <Breadcrumb />
                                   <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                                    <Clock className="inline h-3.5 w-3.5 mr-1 text-neutral-400" />
+                                    <Clock className="inline h-3.5 w-3.5 mr-1 text-neutral-500" />
                                     {r.startTime} - {r.endTime}
                                   </span>
                                   {status && (

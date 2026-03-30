@@ -187,6 +187,7 @@ export default function DocumentTemplatesPage() {
         title="Szablony Dokumentów"
         subtitle="Zarządzanie treścią szablonów PDF, e-mail i regulaminów"
         icon={ScrollText}
+        compact
       />
 
       {/* Stats */}
@@ -239,7 +240,7 @@ export default function DocumentTemplatesPage() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative w-full max-w-xs">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
                   <Input
                     placeholder="Szukaj szablonów..."
                     value={search}

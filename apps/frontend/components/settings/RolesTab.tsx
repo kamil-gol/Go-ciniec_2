@@ -213,7 +213,7 @@ export function RolesTab() {
                             <span className="font-medium text-sm">
                               {MODULE_LABELS[group.module] || group.moduleLabel || group.module}
                             </span>
-                            <span className="text-xs text-neutral-400">
+                            <span className="text-xs text-neutral-500">
                               {checkedCount}/{modulePermIds2.length}
                             </span>
                           </div>

@@ -78,7 +78,7 @@ export function DishCard({
         <div className="flex-1 min-w-0">
           <h4 className={`font-semibold text-sm ${
             isDisabled
-              ? 'text-neutral-400 dark:text-neutral-500'
+              ? 'text-neutral-500 dark:text-neutral-500'
               : isSelected
                 ? 'text-blue-900 dark:text-blue-100'
                 : 'text-neutral-900 dark:text-neutral-100'
@@ -87,7 +87,7 @@ export function DishCard({
           </h4>
           {dish.description && (
             <p className={`text-xs mt-0.5 line-clamp-2 ${
-              isDisabled ? 'text-neutral-400' : 'text-muted-foreground'
+              isDisabled ? 'text-neutral-500' : 'text-muted-foreground'
             }`}>
               {dish.description}
             </p>

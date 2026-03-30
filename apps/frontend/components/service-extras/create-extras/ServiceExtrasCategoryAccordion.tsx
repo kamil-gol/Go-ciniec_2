@@ -61,7 +61,7 @@ export function ServiceExtrasCategoryAccordion({
           <span className="font-medium text-sm text-neutral-800 dark:text-neutral-200">
             {category.name}
           </span>
-          <span className="text-xs text-neutral-400">
+          <span className="text-xs text-neutral-500">
             ({categoryItems.length})
           </span>
           {isCategoryExclusive && (
@@ -77,9 +77,9 @@ export function ServiceExtrasCategoryAccordion({
           )}
         </div>
         {isOpen ? (
-          <ChevronUp className="w-4 h-4 text-neutral-400" />
+          <ChevronUp className="w-4 h-4 text-neutral-500" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-neutral-400" />
+          <ChevronDown className="w-4 h-4 text-neutral-500" />
         )}
       </button>
 
@@ -123,7 +123,7 @@ export function ServiceExtrasCategoryAccordion({
                             {item.name}
                           </span>
                           {item.requiresNote && (
-                            <MessageSquare className="w-3 h-3 text-neutral-400" />
+                            <MessageSquare className="w-3 h-3 text-neutral-500" />
                           )}
                         </div>
                         {item.description && (
@@ -144,10 +144,10 @@ export function ServiceExtrasCategoryAccordion({
                           : formatCurrency(item.basePrice)}
                       </span>
                       {item.priceType === 'PER_PERSON' && (
-                        <p className="text-[10px] text-neutral-400">/os</p>
+                        <p className="text-[10px] text-neutral-500">/os</p>
                       )}
                       {item.priceType === 'PER_UNIT' && (
-                        <p className="text-[10px] text-neutral-400">/szt.</p>
+                        <p className="text-[10px] text-neutral-500">/szt.</p>
                       )}
                     </div>
                   </div>
@@ -193,7 +193,7 @@ export function ServiceExtrasCategoryAccordion({
                       {/* Note field */}
                       {(item.requiresNote || editingNote === item.id) && (
                         <div className="flex items-center gap-2">
-                          <MessageSquare className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                          <MessageSquare className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
                           <input
                             type="text"
                             value={selected.note}
@@ -209,7 +209,7 @@ export function ServiceExtrasCategoryAccordion({
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); onSetEditingNote(item.id) }}
-                          className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 flex items-center gap-1"
+                          className="text-[10px] text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 flex items-center gap-1"
                         >
                           <MessageSquare className="w-3 h-3" />
                           Dodaj notatkę

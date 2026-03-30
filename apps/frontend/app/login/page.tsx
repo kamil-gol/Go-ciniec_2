@@ -171,7 +171,7 @@ export default function LoginPage() {
                   <Mail className={`h-5 w-5 ${
                     fieldErrors.email 
                       ? 'text-error-500' 
-                      : 'text-neutral-400 dark:text-neutral-500'
+                      : 'text-neutral-500 dark:text-neutral-500'
                   }`} />
                 </div>
                 <input
@@ -222,7 +222,7 @@ export default function LoginPage() {
                   <Lock className={`h-5 w-5 ${
                     fieldErrors.password
                       ? 'text-error-500'
-                      : 'text-neutral-400 dark:text-neutral-500'
+                      : 'text-neutral-500 dark:text-neutral-500'
                   }`} />
                 </div>
                 <input

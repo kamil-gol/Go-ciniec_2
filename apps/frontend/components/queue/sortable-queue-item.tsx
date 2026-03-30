@@ -68,7 +68,7 @@ export function SortableQueueItem({
             {...listeners}
           >
             <div className="flex flex-col items-center gap-1">
-              <GripVertical className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
+              <GripVertical className="h-5 w-5 text-neutral-500 dark:text-neutral-500" />
               <div className={cn(
                 'w-11 h-11 rounded-xl bg-gradient-to-br flex items-center justify-center text-white font-bold text-lg shadow-md',
                 accent.iconBg
@@ -117,7 +117,7 @@ export function SortableQueueItem({
               </p>
             )}
 
-            <div className="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
+            <div className="mt-2 text-xs text-neutral-500 dark:text-neutral-500">
               Dodane {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: pl })}
               {' przez '}
               {item.createdBy.firstName} {item.createdBy.lastName}

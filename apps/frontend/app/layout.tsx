@@ -9,6 +9,10 @@ const inter = Inter({ subsets: ['latin'] , display: 'swap', preload: false })
 export const metadata: Metadata = {
   title: 'System Rezerwacji - Gościniec Rodzinny',
   description: 'Profesjonalny system zarządzania rezerwacjami sal dla restauracji Gościniec Rodzinny',
+  icons: {
+    icon: '/icon',
+    apple: '/apple-icon',
+  },
 }
 
 export default function RootLayout({

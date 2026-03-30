@@ -22,13 +22,13 @@ export function OrderNotes({ order, orderId }: OrderNotesProps) {
           <div className="space-y-4">
             {order.notes && (
               <div>
-                <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1.5">Uwagi</p>
+                <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-1.5">Uwagi</p>
                 <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">{order.notes}</p>
               </div>
             )}
             {order.specialRequirements && (
               <div className={order.notes ? 'pt-3 border-t border-neutral-100 dark:border-neutral-800' : ''}>
-                <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1.5">Specjalne wymagania</p>
+                <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-1.5">Specjalne wymagania</p>
                 <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">{order.specialRequirements}</p>
               </div>
             )}

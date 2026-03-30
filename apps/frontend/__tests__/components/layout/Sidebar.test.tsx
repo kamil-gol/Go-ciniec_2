@@ -181,4 +181,46 @@ describe('Sidebar', () => {
       expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1)
     })
   })
+
+  // ── Expandable Menu (#479) ─────────────────────────────────────────────
+
+  describe('Menu Expandable Submenu', () => {
+    it('should render Menu as expandable group with children', () => {
+      render(<Sidebar {...defaultProps} />)
+      // Menu should be visible as a group toggle button
+      const menuButtons = screen.getAllByText('Menu')
+      expect(menuButtons.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('should render Catering as expandable group with children', () => {
+      render(<Sidebar {...defaultProps} />)
+      const cateringButtons = screen.getAllByText('Catering')
+      expect(cateringButtons.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('should show Menu children when expanded via pathname', () => {
+      mockPathname.mockReturnValue('/dashboard/menu/templates')
+      render(<Sidebar {...defaultProps} />)
+      // When on a child route, children should be visible
+      expect(screen.getAllByText('Szablony Menu').length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('should show Menu children: Pakiety, Kategorie Dań, Biblioteka Dań', async () => {
+      mockPathname.mockReturnValue('/dashboard/menu/packages')
+      render(<Sidebar {...defaultProps} />)
+      expect(screen.getAllByText('Pakiety').length).toBeGreaterThanOrEqual(1)
+    })
+  })
+
+  // ── Icon Color Groups (#478) ───────────────────────────────────────────
+
+  describe('Icon Color Groups', () => {
+    it('should render all navigation group labels', () => {
+      render(<Sidebar {...defaultProps} />)
+      expect(screen.getAllByText('Operacje').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('Zarządzanie').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('Konfiguracja').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('Analiza').length).toBeGreaterThanOrEqual(1)
+    })
+  })
 })

@@ -141,18 +141,18 @@ export function EventTypeCard({ eventType, stats, onUpdate, onEdit, onDelete }: 
             <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-300">
               <Calendar className="h-4 w-4 shrink-0 text-violet-500" />
               <span className="font-medium">{reservationCount}</span>
-              <span className="text-neutral-400">{reservationCount === 1 ? 'rezerwacja' : 'rezerwacji'}</span>
+              <span className="text-neutral-500">{reservationCount === 1 ? 'rezerwacja' : 'rezerwacji'}</span>
             </div>
             <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-300">
               <FileText className="h-4 w-4 shrink-0 text-amber-500" />
               <span className="font-medium">{templateCount}</span>
-              <span className="text-neutral-400">{templateCount === 1 ? 'szablon' : 'szablonów'}</span>
+              <span className="text-neutral-500">{templateCount === 1 ? 'szablon' : 'szablonów'}</span>
             </div>
           </div>
 
           {/* Toggle row */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-neutral-400">
+            <span className="text-xs text-neutral-500">
               {eventType.isActive ? 'Aktywny' : 'Nieaktywny'}
             </span>
             <Switch

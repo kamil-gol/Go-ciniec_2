@@ -20,12 +20,20 @@ export type ModuleAccent = {
   badgeText: string         // Badge text
 }
 
-// ── Group helpers ──────────────────────────────────────────────────────────────
+// ── Unified hero gradient ─────────────────────────────────────────────────────
+// Single cohesive gradient across all modules for visual consistency.
+// Subtle per-group identity preserved via text/badge/ring accent colors.
 
-const coreOps = {
+const heroGradient = {
   gradient: 'from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f]',
   gradientSubtle: 'from-blue-900/5 via-slate-800/5 to-blue-900/5',
   iconBg: 'from-[#2a4a70] to-[#1e3a5f]',
+} as const
+
+// ── Group accent helpers ──────────────────────────────────────────────────────
+
+const coreOps = {
+  ...heroGradient,
   text: 'text-[#1e3a5f]',
   textDark: 'dark:text-blue-300',
   ring: 'ring-blue-800/20',
@@ -34,9 +42,7 @@ const coreOps = {
 } as const
 
 const finance = {
-  gradient: 'from-[#1a4a4a] via-[#1f5c5c] to-[#1a4a4a]',
-  gradientSubtle: 'from-teal-900/5 via-emerald-900/5 to-teal-900/5',
-  iconBg: 'from-[#1f5c5c] to-[#1a4a4a]',
+  ...heroGradient,
   text: 'text-teal-700',
   textDark: 'dark:text-teal-300',
   ring: 'ring-teal-700/20',
@@ -45,9 +51,7 @@ const finance = {
 } as const
 
 const config = {
-  gradient: 'from-[#374151] via-[#475569] to-[#374151]',
-  gradientSubtle: 'from-neutral-800/5 via-slate-700/5 to-neutral-800/5',
-  iconBg: 'from-[#475569] to-[#374151]',
+  ...heroGradient,
   text: 'text-slate-600',
   textDark: 'dark:text-slate-300',
   ring: 'ring-slate-500/20',
@@ -56,9 +60,7 @@ const config = {
 } as const
 
 const culinary = {
-  gradient: 'from-[#7c4a15] via-[#92600a] to-[#7c4a15]',
-  gradientSubtle: 'from-amber-900/5 via-yellow-900/5 to-amber-900/5',
-  iconBg: 'from-[#92600a] to-[#7c4a15]',
+  ...heroGradient,
   text: 'text-amber-700',
   textDark: 'dark:text-amber-300',
   ring: 'ring-amber-700/20',

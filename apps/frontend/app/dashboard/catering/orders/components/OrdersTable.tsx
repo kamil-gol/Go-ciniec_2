@@ -166,10 +166,10 @@ export function OrdersTable({ orders, meta, onPageChange, onRowClick }: Props) {
                   </div>
                 </TableCell>
                 <TableCell className="max-w-[180px] truncate text-sm text-neutral-700 dark:text-neutral-300">
-                  {order.eventName ?? <span className="text-neutral-400 dark:text-neutral-500">—</span>}
+                  {order.eventName ?? <span className="text-neutral-500 dark:text-neutral-500">—</span>}
                 </TableCell>
                 <TableCell className="text-sm text-neutral-600 dark:text-neutral-300">
-                  {order.eventDate ? formatDate(order.eventDate) : <span className="text-neutral-400 dark:text-neutral-500">—</span>}
+                  {order.eventDate ? formatDate(order.eventDate) : <span className="text-neutral-500 dark:text-neutral-500">—</span>}
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${DELIVERY_BADGE_COLOR[order.deliveryType]}`}>

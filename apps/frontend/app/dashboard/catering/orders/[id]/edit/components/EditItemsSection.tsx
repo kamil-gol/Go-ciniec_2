@@ -52,7 +52,7 @@ export function EditItemsSection({
         {form.items.length === 0 && (
           <div className="text-center py-8">
             <Utensils className="h-8 w-8 text-green-300 mx-auto mb-2" />
-            <p className="text-sm text-neutral-400">Brak dań — kliknij &quot;Dodaj danie&quot; aby rozpocząć</p>
+            <p className="text-sm text-neutral-500">Brak dań — kliknij &quot;Dodaj danie&quot; aby rozpocząć</p>
           </div>
         )}
         <AnimatePresence mode="popLayout">
@@ -99,7 +99,7 @@ export function EditItemsSection({
               {/* Row 2: Quantity + Price + Total */}
               <div className="flex items-center gap-3 bg-neutral-50 dark:bg-neutral-800/60 rounded-xl px-3 py-2.5 border border-neutral-100 dark:border-neutral-700/50">
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Ilość</Label>
+                  <Label className="text-xs text-neutral-500 dark:text-neutral-500 whitespace-nowrap">Ilość</Label>
                   <Input
                     type="number"
                     min={1}
@@ -115,7 +115,7 @@ export function EditItemsSection({
                 </div>
                 <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
                 <div className="flex items-center gap-2 flex-1">
-                  <Label className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Cena jedn.</Label>
+                  <Label className="text-xs text-neutral-500 dark:text-neutral-500 whitespace-nowrap">Cena jedn.</Label>
                   <Input
                     type="number"
                     min={0}
@@ -134,7 +134,7 @@ export function EditItemsSection({
                   <>
                     <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
                     <div className="text-right shrink-0">
-                      <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Razem</p>
+                      <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Razem</p>
                       <p className="text-sm font-bold text-green-700 dark:text-green-300">
                         {fmt(item.quantity * item.unitPrice)}
                       </p>

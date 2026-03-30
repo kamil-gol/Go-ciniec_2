@@ -75,7 +75,7 @@ export default function MenuDashboardPage() {
                         </div>
                         <h3 className={`text-2xl font-bold group-hover:${card.hoverText} transition-colors mb-2 text-neutral-900 dark:text-neutral-100`}>{card.title}</h3>
                         <p className="text-neutral-500 dark:text-neutral-300 mb-4">{card.desc}</p>
-                        <p className="text-sm text-neutral-400 dark:text-neutral-500">{card.stat}</p>
+                        <p className="text-sm text-neutral-500 dark:text-neutral-500">{card.stat}</p>
                       </div>
                       <div className={`flex items-center gap-2 ${card.hoverText} font-medium mt-4 group-hover:gap-4 transition-all`}>
                         Otwórz <ArrowRight className="h-4 w-4" />
