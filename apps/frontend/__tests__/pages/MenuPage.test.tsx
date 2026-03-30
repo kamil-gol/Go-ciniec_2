@@ -23,6 +23,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
   usePathname: () => '/dashboard/menu',
   useSearchParams: () => new URLSearchParams(),
+  redirect: vi.fn(),
 }))
 
 vi.mock('next/link', () => ({
