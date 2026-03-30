@@ -68,6 +68,12 @@ const envOrigins = process.env.CORS_ORIGIN
 const allowedOrigins = [...new Set([...devOrigins, ...envOrigins])].filter(Boolean);
 
 /**
+ * Trust proxy — required when behind Docker/nginx reverse proxy.
+ * Ensures express-rate-limit reads the real client IP from X-Forwarded-For.
+ */
+app.set('trust proxy', 1);
+
+/**
  * Security Middleware
  */
 app.use(helmet());
