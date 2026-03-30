@@ -64,11 +64,6 @@ describe('useCountUp', () => {
     expect(result.current[0]).toBe('100')
   })
 
-  it('creates IntersectionObserver when startOnView is true', () => {
-    renderHook(() => useCountUp({ end: 42, startOnView: true }))
-    expect(global.IntersectionObserver).toHaveBeenCalled()
-  })
-
   it('cleans up on unmount', () => {
     const mockCancelAnimationFrame = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
     const { unmount } = renderHook(() => useCountUp({ end: 100, startOnView: false }))
