@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Plus, Calendar, CheckCircle2, Clock, TrendingUp, CalendarDays, List } from 'lucide-react'
+import { Plus, Calendar, CheckCircle2, Clock, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ReservationsList } from '@/components/reservations/reservations-list'
 import { getReservations } from '@/lib/api/reservations'
-import { PageLayout, PageHero, StatCard } from '@/components/shared'
+import { PageLayout, PageHero, StatCard, FilterTabs } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { toast } from 'sonner'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -95,24 +94,17 @@ export default function ReservationsListPage() {
         <StatCard label="Ten miesiąc" value={stats.thisMonth} subtitle="Wydarzeń w tym miesiącu" icon={TrendingUp} iconGradient={statGradients.info} delay={0.4} />
       </div>
 
-      {/* Controls bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 mr-3">
-            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-neutral-700 text-sm font-medium text-neutral-900 dark:text-neutral-100 shadow-sm">
-              <List className="h-3.5 w-3.5" />
-              Lista
-            </span>
-            <Link
-              href="/dashboard/reservations/calendar"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-neutral-500 dark:text-neutral-300 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
-            >
-              <CalendarDays className="h-3.5 w-3.5" />
-              Kalendarz
-            </Link>
-          </div>
-        </div>
-      </div>
+      {/* View toggle */}
+      <FilterTabs
+        tabs={[
+          { key: 'list', label: 'Lista' },
+          { key: 'calendar', label: 'Kalendarz' },
+        ]}
+        activeKey="list"
+        onChange={(key) => {
+          if (key === 'calendar') router.push('/dashboard/reservations/calendar')
+        }}
+      />
 
       {/* Reservations List */}
       <Card>
