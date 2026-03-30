@@ -52,7 +52,7 @@ const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
         role="tooltip"
         className={[
           'absolute z-50 hidden group-hover/tooltip:block group-focus-within/tooltip:block',
-          'rounded-md bg-neutral-900 dark:bg-neutral-100 px-2.5 py-1.5',
+          'rounded-lg bg-neutral-900 dark:bg-neutral-100 px-2.5 py-1.5',
           'text-xs text-white dark:text-neutral-900 whitespace-nowrap',
           'shadow-md pointer-events-none animate-fade-in',
           positionClasses[side],
