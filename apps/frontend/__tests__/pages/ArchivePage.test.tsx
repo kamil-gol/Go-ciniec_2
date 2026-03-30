@@ -76,6 +76,7 @@ vi.mock('@/components/shared', () => ({
       <span>{description}</span>
     </div>
   ),
+  LoadingState: ({ variant, count }: any) => <div data-testid="loading-state">{variant} {count}</div>,
 }))
 
 vi.mock('@/components/shared/StatusBadge', () => ({
@@ -181,8 +182,7 @@ describe('ArchivePage', () => {
       refetch: vi.fn(),
     })
     render(<ArchivePage />)
-    const skeletons = screen.getAllByTestId('skeleton')
-    expect(skeletons.length).toBeGreaterThan(0)
+    expect(screen.getByTestId('loading-state')).toBeInTheDocument()
   })
 
   it('shows error state when API fails', () => {

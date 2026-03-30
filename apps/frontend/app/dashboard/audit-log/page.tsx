@@ -9,8 +9,7 @@ import { AuditLogFilters } from '@/components/audit-log/AuditLogFilters';
 import { AuditLogTable } from '@/components/audit-log/AuditLogTable';
 import { useAuditLogs, useAuditLogStatistics } from '@/hooks/use-audit-log';
 import type { AuditLogFilters as Filters } from '@/types/audit-log.types';
-import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared';
-import { Skeleton } from '@/components/ui/skeleton';
+import { PageLayout, PageHero, StatCard, EmptyState, LoadingState } from '@/components/shared';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
@@ -148,7 +147,7 @@ export default function AuditLogPage() {
       {statsLoading && (
         <div className={layout.statGrid}>
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} data-testid="loading-state" className="h-24 rounded-xl" />
+            <StatCard key={i} label="" value="" icon={Activity} iconGradient={statGradients.neutral} isLoading />
           ))}
         </div>
       )}
@@ -208,10 +207,8 @@ export default function AuditLogPage() {
 
         <CardContent className="p-0">
           {isLoading ? (
-            <div data-testid="loading-state" className="p-4 sm:p-6 space-y-3">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 rounded-xl" />
-              ))}
+            <div data-testid="loading-state" className="p-4 sm:p-6">
+              <LoadingState variant="table-skeleton" count={8} />
             </div>
           ) : !data || data.data.length === 0 ? (
             <div className="p-4 sm:p-6">

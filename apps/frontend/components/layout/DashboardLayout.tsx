@@ -67,7 +67,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-100/80 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-800">
+    <div className="relative min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-100/80 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-800">
       {/* Sidebar — desktop: fixed 280px, mobile: Sheet */}
       <Sidebar
         user={user}
@@ -82,7 +82,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <Header user={user} onMenuClick={() => setSidebarOpen(true)} />
 
         {/* Page Content */}
-        <main className="min-h-[calc(100vh-4rem)]">
+        <main id="main-content" className="min-h-[calc(100vh-4rem)]">
           <motion.div
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}

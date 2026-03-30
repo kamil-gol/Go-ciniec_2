@@ -67,6 +67,13 @@ vi.mock('@/components/shared', () => ({
       <span>{value}</span>
     </div>
   ),
+  EmptyState: ({ title, description, actionLabel }: any) => (
+    <div data-testid="empty-state">
+      <span>{title}</span>
+      <span>{description}</span>
+      {actionLabel && <button>{actionLabel}</button>}
+    </div>
+  ),
 }))
 
 // ── Import ───────────────────────────────────────────────────────────────────
@@ -257,6 +264,6 @@ describe('DashboardPage', () => {
     })
 
     render(<DashboardPage />)
-    expect(screen.getByText('Brak nadchodzących wydarzeń')).toBeInTheDocument()
+    expect(screen.getByText('Kalendarz jest wolny')).toBeInTheDocument()
   })
 })

@@ -62,7 +62,7 @@ export default function ClientsPage() {
         action={
           <Button
             size="lg"
-            className="bg-white text-violet-600 hover:bg-white/90 shadow-xl"
+            className="bg-white text-blue-700 hover:bg-white/90 shadow-xl"
             onClick={() => setShowCreateForm(!showCreateForm)}
           >
             {showCreateForm ? (

@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { motionTokens } from '@/lib/design-tokens'
 import { type LucideIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 interface StatCardProps {
@@ -29,13 +30,15 @@ interface StatCardProps {
 
 /**
  * StatCard — Unified statistics card used across all modules.
- * 
+ *
  * Features:
- * - Gradient icon with shadow
- * - Subtle background gradient overlay
+ * - Gradient icon with shadow + scale on hover
+ * - Subtle gradient overlay on hover (accent tint)
  * - Change indicator with trending icon
  * - Framer Motion staggered entrance
- * - Hover lift effect
+ * - Hover lift effect with gradient border hint
+ * - Shimmer skeleton loading
+ * - tabular-nums for values
  * - Full dark mode support
  */
 export function StatCard({
@@ -53,16 +56,17 @@ export function StatCard({
   if (isLoading) {
     return (
       <div className={cn(
-        'rounded-2xl bg-white dark:bg-neutral-800/80 p-6 shadow-soft',
-        'border border-neutral-100 dark:border-neutral-700/50 animate-pulse'
+        'rounded-2xl bg-white dark:bg-neutral-800/80 p-5 sm:p-6 shadow-soft',
+        'border border-neutral-100 dark:border-neutral-700/50',
+        'overflow-hidden relative'
       )}>
         <div className="flex items-start justify-between">
           <div className="flex-1 space-y-3">
-            <div className="h-3 w-1/2 rounded bg-neutral-200 dark:bg-neutral-700" />
-            <div className="h-7 w-1/3 rounded bg-neutral-200 dark:bg-neutral-700" />
-            <div className="h-3 w-2/3 rounded bg-neutral-100 dark:bg-neutral-700/50" />
+            <div className="h-3 w-1/2 rounded-lg bg-neutral-200 dark:bg-neutral-700 animate-skeleton" />
+            <div className="h-7 w-1/3 rounded-lg bg-neutral-200 dark:bg-neutral-700 animate-skeleton" style={{ animationDelay: '150ms' }} />
+            <div className="h-3 w-2/3 rounded-lg bg-neutral-100 dark:bg-neutral-700/50 animate-skeleton" style={{ animationDelay: '300ms' }} />
           </div>
-          <div className="h-12 w-12 rounded-xl bg-neutral-200 dark:bg-neutral-700" />
+          <div className="h-10 w-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 animate-skeleton flex-shrink-0" />
         </div>
       </div>
     )
@@ -72,12 +76,12 @@ export function StatCard({
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4, ease: 'easeOut' }}
+      transition={{ delay, duration: motionTokens.duration.normal, ease: motionTokens.ease.default }}
       onClick={onClick}
       className={cn(
         'group relative overflow-hidden rounded-2xl',
         'bg-white dark:bg-neutral-800/80',
-        'p-6 shadow-soft hover:shadow-medium',
+        'p-5 sm:p-6 shadow-soft hover:shadow-medium',
         'transition-all duration-300 hover:-translate-y-1',
         'border border-neutral-100 dark:border-neutral-700/50',
         onClick && 'cursor-pointer'
@@ -86,12 +90,10 @@ export function StatCard({
       {/* Subtle gradient overlay on hover */}
       <div
         className={cn(
-          'absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300',
+          'absolute inset-0 opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300',
           'bg-gradient-to-br',
-          iconGradient.replace('from-', 'from-').replace('to-', 'to-'),
-          '[&]:opacity-0 group-hover:[&]:opacity-[0.04]'
+          iconGradient
         )}
-        style={{ opacity: 0 }}
       />
       {/* Decorative blob */}
       <div
@@ -121,7 +123,7 @@ export function StatCard({
         </div>
 
         {/* Row 2: Value */}
-        <p className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+        <p className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">
           {value}
         </p>
 

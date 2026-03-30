@@ -108,7 +108,7 @@ export default function DepositsPage() {
           <Button
             size="lg"
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="bg-white text-rose-600 hover:bg-white/90 shadow-xl"
+            className="bg-white text-teal-700 hover:bg-white/90 shadow-xl"
           >
             <Plus className="mr-2 h-5 w-5" />
             Nowa Zaliczka

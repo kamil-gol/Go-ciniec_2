@@ -87,6 +87,7 @@ vi.mock('@/components/shared', () => ({
       {action}
     </div>
   ),
+  LoadingState: ({ variant }: any) => <div data-testid="loading-state">{variant}</div>,
 }))
 
 vi.mock('@/components/ui/button', () => ({

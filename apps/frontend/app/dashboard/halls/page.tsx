@@ -60,7 +60,7 @@ export default function HallsPage() {
         icon={Building2}
         action={
           <Link href="/dashboard/halls/new">
-            <Button size="lg" className="bg-white text-sky-700 hover:bg-white/90 shadow-xl">
+            <Button size="lg" className="bg-white text-slate-700 hover:bg-white/90 shadow-xl">
               <Plus className="mr-2 h-5 w-5" />
               Dodaj Salę
             </Button>

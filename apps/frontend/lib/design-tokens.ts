@@ -171,10 +171,10 @@ export const layout = {
   statGrid: 'grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6',
   statGrid3: 'grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6',
   statGrid6: 'grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-5',
-  cardPadding: 'p-4 sm:p-6',
-  entityGrid: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5',
-  entityGrid4: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5',
+  cardPadding: 'p-5 sm:p-6',
   detailGrid: 'grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4',
+  entityGrid: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6',
+  entityGrid4: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6',
 } as const
 
 export const typography = {
@@ -246,4 +246,98 @@ export const motionTokens = {
     cards: 0.06,
     list: 0.04,
   },
+} as const
+
+// ── Surface colors ────────────────────────────────────────────────────────────
+
+export const surfaces = {
+  primary: 'bg-white dark:bg-neutral-900',
+  secondary: 'bg-neutral-50 dark:bg-neutral-800',
+  tertiary: 'bg-neutral-100 dark:bg-neutral-700',
+  elevated: 'bg-white dark:bg-neutral-800',
+  overlay: 'bg-white/80 backdrop-blur-xl dark:bg-neutral-900/80 dark:backdrop-blur-xl',
+} as const
+
+// ── Elevation system (3 levels) ───────────────────────────────────────────────
+
+export const elevation = {
+  /** Level 0 — Flat: border only, no shadow */
+  level0: {
+    base: 'border border-border shadow-none',
+    hover: 'hover:border-neutral-300 dark:hover:border-neutral-600',
+  },
+  /** Level 1 — Raised: subtle shadow, standard cards */
+  level1: {
+    base: 'shadow-soft border border-neutral-100 dark:border-neutral-700/50 dark:shadow-none',
+    hover: 'hover:shadow-medium hover:-translate-y-0.5 dark:hover:border-neutral-600',
+  },
+  /** Level 2 — Floating: prominent shadow, modals/dropdowns/popovers */
+  level2: {
+    base: 'shadow-lg border border-neutral-100 dark:border-neutral-700/50 dark:shadow-2xl dark:shadow-black/30',
+    hover: '',
+  },
+} as const
+
+// ── Semantic interaction states ───────────────────────────────────────────────
+
+export const states = {
+  hover: 'bg-neutral-50 dark:bg-neutral-700/50',
+  active: 'bg-neutral-100 dark:bg-neutral-600/50',
+  selected: 'bg-primary/5 dark:bg-primary/10 border-primary/20 dark:border-primary/30',
+  disabled: 'opacity-50 pointer-events-none',
+} as const
+
+// ── Feedback colors (success/warning/error/info) ─────────────────────────────
+
+export const feedback = {
+  success: {
+    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-200 dark:border-emerald-800',
+    icon: 'text-emerald-500 dark:text-emerald-400',
+    solid: 'bg-emerald-500 text-white',
+  },
+  warning: {
+    bg: 'bg-amber-50 dark:bg-amber-950/30',
+    text: 'text-amber-700 dark:text-amber-300',
+    border: 'border-amber-200 dark:border-amber-800',
+    icon: 'text-amber-500 dark:text-amber-400',
+    solid: 'bg-amber-500 text-white',
+  },
+  error: {
+    bg: 'bg-red-50 dark:bg-red-950/30',
+    text: 'text-red-700 dark:text-red-300',
+    border: 'border-red-200 dark:border-red-800',
+    icon: 'text-red-500 dark:text-red-400',
+    solid: 'bg-red-500 text-white',
+  },
+  info: {
+    bg: 'bg-blue-50 dark:bg-blue-950/30',
+    text: 'text-blue-700 dark:text-blue-300',
+    border: 'border-blue-200 dark:border-blue-800',
+    icon: 'text-blue-500 dark:text-blue-400',
+    solid: 'bg-blue-500 text-white',
+  },
+} as const
+
+// ── Icon container styles ─────────────────────────────────────────────────────
+
+export const iconContainer = {
+  sm: 'h-8 w-8 rounded-lg',
+  md: 'h-10 w-10 rounded-xl',
+  lg: 'h-12 w-12 rounded-xl',
+  /** Gradient variant — use with bg-gradient-to-br + module iconBg */
+  gradient: 'flex items-center justify-center shadow-lg',
+  /** Subtle variant — tinted bg without shadow */
+  subtle: 'flex items-center justify-center',
+} as const
+
+// ── Divider styles ────────────────────────────────────────────────────────────
+
+export const dividers = {
+  solid: 'border-t border-border',
+  /** Gradient fade — transparent at both ends */
+  gradientFade: 'h-px bg-gradient-to-r from-transparent via-border to-transparent',
+  /** Accent gradient fade — uses primary accent color */
+  accentFade: 'h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent',
 } as const

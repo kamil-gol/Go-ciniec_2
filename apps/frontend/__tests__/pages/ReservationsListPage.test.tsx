@@ -65,6 +65,15 @@ vi.mock('@/components/shared', () => ({
       <span>{value}</span>
     </div>
   ),
+  FilterTabs: ({ tabs, activeKey, onChange }: any) => (
+    <div data-testid="filter-tabs">
+      {tabs.map((t: any) => (
+        <button key={t.key} onClick={() => onChange(t.key)} data-active={t.key === activeKey}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  ),
 }))
 
 vi.mock('@/components/ui/button', () => ({
@@ -142,10 +151,11 @@ describe('ReservationsListPage', () => {
     expect(screen.getByText('Kalendarz')).toBeInTheDocument()
   })
 
-  it('calendar link points to calendar view', () => {
+  it('calendar button is present in filter tabs', () => {
     render(<ReservationsListPage />)
-    const calendarLink = screen.getByText('Kalendarz').closest('a')
-    expect(calendarLink).toHaveAttribute('href', '/dashboard/reservations/calendar')
+    const calendarButton = screen.getByText('Kalendarz')
+    expect(calendarButton).toBeInTheDocument()
+    expect(calendarButton.tagName).toBe('BUTTON')
   })
 
   it('renders reservations list component', () => {

@@ -131,7 +131,7 @@ export function Combobox({
             aria-required={ariaRequired ?? required}
             disabled={disabled}
             className={cn(
-              'flex h-10 w-full items-center justify-between rounded-md border px-3 py-2',
+              'flex h-10 w-full items-center justify-between rounded-lg border px-3 py-2',
               'text-sm bg-white transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent',
               'disabled:cursor-not-allowed disabled:opacity-50',

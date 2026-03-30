@@ -52,20 +52,20 @@ describe('LoadingState', () => {
   describe('Skeleton Variant', () => {
     it('should render default 3 skeleton rows', () => {
       const { container } = render(<LoadingState variant="skeleton" />)
-      const skeletons = container.querySelectorAll('.animate-skeleton')
-      expect(skeletons.length).toBe(3)
+      const rows = container.querySelectorAll('.space-y-3')
+      expect(rows.length).toBe(3)
     })
 
     it('should render custom number of rows', () => {
       const { container } = render(<LoadingState variant="skeleton" rows={5} />)
-      const skeletons = container.querySelectorAll('.animate-skeleton')
-      expect(skeletons.length).toBe(5)
+      const rows = container.querySelectorAll('.space-y-3')
+      expect(rows.length).toBe(5)
     })
 
     it('should support count prop as alias for rows', () => {
       const { container } = render(<LoadingState variant="skeleton" count={7} />)
-      const skeletons = container.querySelectorAll('.animate-skeleton')
-      expect(skeletons.length).toBe(7)
+      const rows = container.querySelectorAll('.space-y-3')
+      expect(rows.length).toBe(7)
     })
 
     it('should not show spinner message in skeleton mode', () => {

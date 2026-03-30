@@ -120,7 +120,7 @@ export default function NotificationsPage() {
           unreadCount > 0 ? (
             <Button
               size="lg"
-              className="bg-white text-amber-600 hover:bg-white/90 shadow-xl"
+              className="bg-white text-blue-700 hover:bg-white/90 shadow-xl"
               onClick={() => markAllAsRead.mutate()}
             >
               <CheckCheck className="mr-2 h-5 w-5" />

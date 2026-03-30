@@ -16,7 +16,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
-import { PageLayout, PageHero, StatCard } from '@/components/shared'
+import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { useDashboardOverview, useDashboardUpcoming } from '@/lib/api/stats-api'
 
@@ -64,29 +64,14 @@ function formatDate(dateStr: string | null): { day: string; month: string; full:
 // SKELETON COMPONENTS
 // ===============================================================
 
-function SkeletonCard() {
-  return (
-    <div className="rounded-2xl bg-white dark:bg-neutral-800/80 p-6 shadow-soft border border-neutral-100 dark:border-neutral-700/50 animate-pulse">
-      <div className="flex items-start justify-between">
-        <div className="flex-1 space-y-3">
-          <div className="h-4 w-28 rounded bg-neutral-200 dark:bg-neutral-700" />
-          <div className="h-9 w-20 rounded bg-neutral-200 dark:bg-neutral-700" />
-          <div className="h-3.5 w-36 rounded bg-neutral-200 dark:bg-neutral-700" />
-        </div>
-        <div className="h-12 w-12 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
-      </div>
-    </div>
-  )
-}
-
 function SkeletonEvent() {
   return (
-    <div className="flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 border border-neutral-100 dark:border-neutral-700/50 animate-pulse">
-      <div className="h-16 w-16 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
+    <div className="flex items-center gap-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 p-4 border border-neutral-100 dark:border-neutral-700/50">
+      <div className="h-16 w-16 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0 animate-skeleton" />
       <div className="flex-1 space-y-2">
-        <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-neutral-700" />
-        <div className="h-3 w-56 rounded bg-neutral-200 dark:bg-neutral-700" />
-        <div className="h-3 w-28 rounded bg-neutral-200 dark:bg-neutral-700" />
+        <div className="h-4 w-40 rounded-lg bg-neutral-200 dark:bg-neutral-700 animate-skeleton" />
+        <div className="h-3 w-56 rounded-lg bg-neutral-200 dark:bg-neutral-700 animate-skeleton" style={{ animationDelay: '150ms' }} />
+        <div className="h-3 w-28 rounded-lg bg-neutral-200 dark:bg-neutral-700 animate-skeleton" style={{ animationDelay: '300ms' }} />
       </div>
     </div>
   )
@@ -238,7 +223,9 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className={layout.statGrid6}>
         {isLoadingOverview
-          ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <StatCard key={i} label="" value="" icon={Calendar} iconGradient={statGradients.count} isLoading />
+            ))
           : stats.map((stat, index) => (
               <StatCard
                 key={stat.name}
@@ -357,20 +344,14 @@ export default function DashboardPage() {
               )
             })
           ) : (
-            <div className="text-center py-8 text-neutral-500 dark:text-neutral-300">
-              <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Brak nadchodzących wydarzeń</p>
-              <Link
-                href="/dashboard/reservations/new"
-                className={cn(
-                  'text-sm font-medium mt-2 inline-block',
-                  accent.text,
-                  accent.textDark
-                )}
-              >
-                Utwórz nową rezerwację →
-              </Link>
-            </div>
+            <EmptyState
+              icon={Calendar}
+              title="Kalendarz jest wolny"
+              description="Nie masz nadchodzących wydarzeń. Czas na nowe rezerwacje!"
+              actionLabel="Utwórz rezerwację"
+              actionHref="/dashboard/reservations/new"
+              variant="compact"
+            />
           )}
         </div>
       </motion.div>

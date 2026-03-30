@@ -60,11 +60,13 @@ vi.mock('@/components/shared', () => ({
       <p>{subtitle}</p>
     </div>
   ),
-  StatCard: ({ label, value }: any) => (
-    <div data-testid={`stat-${label}`}>
-      <span>{label}</span>
-      <span>{value}</span>
-    </div>
+  StatCard: ({ label, value, isLoading }: any) => (
+    isLoading
+      ? <div data-testid="loading-state">loading</div>
+      : <div data-testid={`stat-${label}`}>
+          <span>{label}</span>
+          <span>{value}</span>
+        </div>
   ),
   EmptyState: ({ title, description }: any) => (
     <div data-testid="empty-state">
@@ -72,6 +74,7 @@ vi.mock('@/components/shared', () => ({
       <p>{description}</p>
     </div>
   ),
+  LoadingState: ({ variant }: any) => <div data-testid="loading-state">{variant}</div>,
 }))
 
 vi.mock('@/components/ui/card', () => ({
@@ -194,7 +197,8 @@ describe('AuditLogPage', () => {
     mockUseAuditLogStatistics.mockReturnValue({ data: mockStats, isLoading: false })
 
     render(<AuditLogPage />)
-    expect(screen.getByTestId('loading-state')).toBeInTheDocument()
+    const loadingElements = screen.getAllByTestId('loading-state')
+    expect(loadingElements.length).toBeGreaterThan(0)
   })
 
   it('shows empty state when no logs', () => {

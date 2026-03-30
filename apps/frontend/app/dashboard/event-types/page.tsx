@@ -89,7 +89,7 @@ export default function EventTypesPage() {
         action={
           <Button
             size="lg"
-            className="bg-white text-fuchsia-600 hover:bg-white/90 shadow-xl"
+            className="bg-white text-slate-700 hover:bg-white/90 shadow-xl"
             onClick={handleCreate}
           >
             <Plus className="mr-2 h-5 w-5" />

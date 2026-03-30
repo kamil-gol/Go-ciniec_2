@@ -4,7 +4,6 @@ import { useState, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { BarChart3, FileSpreadsheet, FileText, DollarSign, Building2, ClipboardList, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   useRevenueReport,
   useOccupancyReport,
@@ -26,7 +25,7 @@ import type {
   MenuPreparationsReportFilters,
   GroupByPeriod,
 } from '@/types/reports.types';
-import { PageLayout, PageHero } from '@/components/shared';
+import { PageLayout, PageHero, LoadingState } from '@/components/shared';
 import { moduleAccents } from '@/lib/design-tokens';
 import { toast } from 'sonner';
 
@@ -36,14 +35,7 @@ import { ReportFilters } from './components/ReportFilters';
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
 const ReportTabSkeleton = () => (
-  <div className="space-y-4 sm:space-y-6">
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-24 w-full rounded-xl" />
-      ))}
-    </div>
-    <Skeleton className="h-64 w-full rounded-xl" />
-  </div>
+  <LoadingState variant="card-skeleton" columns={4} count={4} />
 );
 
 const RevenueTab = dynamic(

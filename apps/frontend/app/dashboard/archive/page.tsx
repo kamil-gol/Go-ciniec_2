@@ -23,8 +23,7 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
-import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared'
-import { Skeleton } from '@/components/ui/skeleton'
+import { PageLayout, PageHero, StatCard, EmptyState, LoadingState } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
@@ -118,18 +117,7 @@ export default function ArchivePage() {
       <Card>
         <CardContent className="p-4 sm:p-6">
           {isLoading ? (
-            <div className="space-y-4">
-              {/* Stats skeleton */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-6 rounded-lg" />
-                ))}
-              </div>
-              {/* Card skeletons */}
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-44 rounded-2xl" />
-              ))}
-            </div>
+            <LoadingState variant="skeleton" count={5} />
           ) : error ? (
             <div className="flex items-center justify-center py-12">
               <p className="text-red-600 dark:text-red-400">

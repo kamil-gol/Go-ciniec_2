@@ -7,7 +7,8 @@ import { getMenuTemplates, type MenuTemplate } from '@/lib/api/menu-templates-ap
 import { Package, Calendar, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { PageLayout, LoadingState } from '@/components/shared';
+import { PageLayout, LoadingState, EmptyState } from '@/components/shared';
+import { moduleAccents } from '@/lib/design-tokens';
 import { Breadcrumb } from '@/components/shared/Breadcrumb';
 
 export default function NewPackagePage() {
@@ -111,26 +112,13 @@ export default function NewPackagePage() {
 
       {/* Templates Grid */}
       {templates.length === 0 ? (
-        <div className="bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-neutral-200/60 dark:border-neutral-700/50 p-8 sm:p-16 text-center">
-          <div className="max-w-md mx-auto">
-            <div className="inline-flex p-6 bg-blue-50 dark:bg-blue-900/30 rounded-full mb-6">
-              <Calendar className="w-12 h-12 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-3">
-              Brak aktywnych szablonów
-            </h3>
-            <p className="text-neutral-600 dark:text-neutral-300 mb-6">
-              Przed utworzeniem pakietu musisz utworzyć szablon menu.
-            </p>
-            <Link
-              href="/dashboard/menu/templates/new"
-              className="inline-flex items-center gap-2 h-10 px-8 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-            >
-              <Calendar className="w-5 h-5" />
-              Utwórz szablon menu
-            </Link>
-          </div>
-        </div>
+        <EmptyState
+          icon={Calendar}
+          title="Brak aktywnych szablonów"
+          description="Przed utworzeniem pakietu musisz utworzyć szablon menu."
+          actionLabel="Utwórz szablon menu"
+          actionHref="/dashboard/menu/templates/new"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {templates.map((template) => (
