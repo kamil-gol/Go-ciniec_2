@@ -362,11 +362,12 @@ interface SidebarProps {
   onLogout: () => void
   mobileOpen: boolean
   onMobileClose: () => void
+  collapsed: boolean
+  onCollapsedChange: (collapsed: boolean) => void
 }
 
-export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
+export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose, collapsed, onCollapsedChange }: SidebarProps) {
   const pathname = usePathname()
-  const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
     onMobileClose()
@@ -400,7 +401,7 @@ export default function Sidebar({ user, onLogout, mobileOpen, onMobileClose }: S
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setCollapsed(!collapsed)}
+              onClick={() => onCollapsedChange(!collapsed)}
               className="h-8 w-8 p-0 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
               aria-label={collapsed ? 'Rozwiń sidebar' : 'Zwiń sidebar'}
             >

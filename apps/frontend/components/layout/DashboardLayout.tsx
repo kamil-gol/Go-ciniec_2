@@ -18,6 +18,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const handleMobileClose = useCallback(() => setSidebarOpen(false), [])
 
   const fetchUser = useCallback(async () => {
@@ -74,10 +75,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         onLogout={handleLogout}
         mobileOpen={sidebarOpen}
         onMobileClose={handleMobileClose}
+        collapsed={sidebarCollapsed}
+        onCollapsedChange={setSidebarCollapsed}
       />
 
       {/* Main Content Area — no left padding on mobile */}
-      <div className="pl-0 lg:pl-[280px] transition-all duration-300">
+      <div className={`pl-0 transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-[280px]'}`}>
         {/* Header with hamburger on mobile */}
         <Header user={user} onMenuClick={() => setSidebarOpen(true)} />
 
