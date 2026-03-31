@@ -5,7 +5,7 @@ import {
   Users, Mail, Phone, Star, Plus, Pencil, Trash2, X, Save, Briefcase, MoreHorizontal,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { GradientCard } from '@/components/shared/GradientCard'
+import { SectionCard } from '@/components/shared/SectionCard'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -154,7 +154,8 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
   }
 
   return (
-    <GradientCard
+    <SectionCard
+      variant="gradient"
       title="Osoby kontaktowe"
       icon={<Users className="h-5 w-5 text-white" />}
       iconGradient="from-amber-500 to-orange-500"
@@ -328,6 +329,6 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
           </div>
         )}
       {ConfirmDialog}
-    </GradientCard>
+    </SectionCard>
   )
 }

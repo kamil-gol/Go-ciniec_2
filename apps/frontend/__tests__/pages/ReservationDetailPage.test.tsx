@@ -123,8 +123,11 @@ vi.mock('./components/QuickActionsCard', () => ({
   QuickActionsCard: () => <div data-testid="quick-actions" />,
 }))
 
-vi.mock('@/components/shared/GradientCard', () => ({
-  GradientCard: ({ title, children }: any) => <div data-testid={`gradient-card-${title}`}>{children}</div>,
+vi.mock('@/components/shared/SectionCard', () => ({
+  SectionCard: ({ title, children }: any) => <div data-testid={`section-card-${title}`}>{children}</div>,
+  Field: ({ label, value }: any) => <div data-testid={`field-${label}`}>{value}</div>,
+  CountBadge: ({ count }: any) => <span>{count}</span>,
+  StatPill: () => <div />,
 }))
 
 vi.mock('sonner', () => ({

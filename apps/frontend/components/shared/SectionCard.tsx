@@ -25,36 +25,81 @@ export function StatPill({
 
 // ═══ SectionCard ═══
 
-export function SectionCard({
-  icon: Icon,
-  iconBg,
-  iconColor,
-  title,
-  badge,
-  action,
-  accentGradient,
-  children,
-  className,
-}: {
-  icon: React.ElementType
-  iconBg: string
-  iconColor: string
+interface SectionCardProps {
   title: string
+  /** ElementType for default variant, ReactNode for gradient variant */
+  icon: React.ElementType | React.ReactNode
   badge?: React.ReactNode
   /** Optional action slot (e.g. button) rendered on the right side of header */
   action?: React.ReactNode
-  /** Optional accent gradient stripe at top, e.g. "from-blue-500 to-cyan-500" */
-  accentGradient?: string
   children: React.ReactNode
   className?: string
-}) {
+  /** 'default' = flat header with colored icon pill; 'gradient' = gradient background header */
+  variant?: 'default' | 'gradient'
+  /** Optional accent gradient stripe at top, e.g. "from-blue-500 to-cyan-500" */
+  accentGradient?: string
+  // ── Default variant props ──
+  /** Background class for the icon pill (default variant) */
+  iconBg?: string
+  /** Color class for the icon (default variant) */
+  iconColor?: string
+  // ── Gradient variant props ──
+  /** Gradient classes for the icon pill, e.g. "from-blue-500 to-cyan-500" */
+  iconGradient?: string
+  /** Gradient classes for the header background, e.g. "from-blue-50 via-cyan-50 to-teal-50" */
+  headerGradient?: string
+  /** Spacing below the header row inside gradient variant */
+  headerSpacing?: 'mb-4' | 'mb-6'
+}
+
+export function SectionCard({
+  title,
+  icon,
+  badge,
+  action,
+  children,
+  className,
+  variant = 'default',
+  accentGradient,
+  // default variant
+  iconBg,
+  iconColor,
+  // gradient variant
+  iconGradient,
+  headerGradient,
+  headerSpacing = 'mb-6',
+}: SectionCardProps) {
+  // ── Gradient variant ──
+  if (variant === 'gradient') {
+    return (
+      <Card className={cn('border-0 shadow-soft overflow-hidden', className)}>
+        <div className={cn('bg-gradient-to-br p-5', headerGradient)}>
+          <div className={cn('flex items-center gap-3', headerSpacing)}>
+            <div
+              className={cn(
+                'p-2 bg-gradient-to-br rounded-lg shadow-lg',
+                iconGradient
+              )}
+            >
+              {icon as React.ReactNode}
+            </div>
+            <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
+              {title}
+            </h2>
+            {badge && <div className="ml-auto">{badge}</div>}
+            {action && <div className={badge ? '' : 'ml-auto'}>{action}</div>}
+          </div>
+          {children}
+        </div>
+      </Card>
+    )
+  }
+
+  // ── Default variant ──
+  const Icon = icon as React.ElementType
+
   return (
-    <Card
-      className={cn(
-        'overflow-hidden',
-        className
-      )}
-    >
+    <Card className={cn('overflow-hidden', className)}>
       {/* Optional accent gradient stripe */}
       {accentGradient && (
         <div className={cn('h-1 bg-gradient-to-r', accentGradient)} />

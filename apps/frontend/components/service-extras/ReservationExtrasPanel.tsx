@@ -12,7 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { GradientCard } from '@/components/shared/GradientCard';
+import { SectionCard } from '@/components/shared/SectionCard';
 import {
   Select,
   SelectContent,
@@ -131,7 +131,8 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
 
   return (
     <>
-      <GradientCard
+      <SectionCard
+        variant="gradient"
         title="Usługi dodatkowe"
         icon={<Gift className="h-5 w-5 text-white" />}
         iconGradient="from-violet-500 to-purple-500"
@@ -340,7 +341,7 @@ export function ReservationExtrasPanel({ reservationId, readOnly = false }: Rese
               </div>
             )}
         </div>
-      </GradientCard>
+      </SectionCard>
 
       {/* Add Extra Dialog — only render when not readOnly */}
       {!readOnly && (
