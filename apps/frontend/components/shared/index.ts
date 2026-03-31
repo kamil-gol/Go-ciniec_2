@@ -16,3 +16,12 @@ export type { DetailHeroProps, StatPillDef } from './DetailHero'
 export { SectionCard, Field, CountBadge, StatPill } from './SectionCard'
 export { EntityCard } from './EntityCard'
 export { EntityListItem } from './EntityListItem'
+export { UnifiedFinancialSummary } from './UnifiedFinancialSummary'
+export type {
+  FinancialLineItem,
+  FinancialLineGroup,
+  FinancialDiscount,
+  FinancialDeposit,
+  FinancialBalance,
+  UnifiedFinancialSummaryProps,
+} from './UnifiedFinancialSummary'

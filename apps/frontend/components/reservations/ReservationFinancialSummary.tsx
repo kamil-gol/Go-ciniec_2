@@ -1,17 +1,20 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Receipt, Package, ChevronDown, ChevronUp } from 'lucide-react'
-import { SectionCard } from '@/components/shared/SectionCard'
+import {
+  Users, ShoppingCart, Gift, Building2, Timer,
+  Package, ChevronDown, ChevronUp,
+} from 'lucide-react'
+import { UnifiedFinancialSummary } from '@/components/shared/UnifiedFinancialSummary'
+import type { FinancialLineGroup, FinancialBalance, FinancialDiscount } from '@/components/shared/UnifiedFinancialSummary'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { useReservationMenu } from '@/hooks/use-menu'
 import { useReservationExtras } from '@/hooks/use-service-extras'
 import { toast } from 'sonner'
 import { DiscountSection } from '@/components/reservations/DiscountSection'
+import { formatCurrency } from '@/lib/utils'
 
-import { PriceBreakdown } from './financial/PriceBreakdown'
-import { TotalsSummary } from './financial/TotalsSummary'
 import { DepositSummary } from './financial/DepositSummary'
 import { CreateDepositModal, PayDepositModal, DeleteDepositModal } from './financial/DepositModals'
 import {
@@ -20,10 +23,8 @@ import {
   type ReservationFinancialSummaryProps,
   type Financials,
 } from './financial/types'
-import { formatCurrency } from '@/lib/utils'
 import { suggestDueDate } from './financial/utils'
 
-// Component
 export function ReservationFinancialSummary({
   reservationId,
   adults,
@@ -120,7 +121,6 @@ export function ReservationFinancialSummary({
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showPayModal, setShowPayModal] = useState(false)
   const [selectedDeposit, setSelectedDeposit] = useState<Deposit | null>(null)
-  const [showCostDetails, setShowCostDetails] = useState(false)
   const [showDepositsDetails, setShowDepositsDetails] = useState(true)
 
   // #deposits-fix (P4): delete confirmation state
@@ -186,6 +186,197 @@ export function ReservationFinancialSummary({
       depositsCount: activeDeposits.length,
     }
   }, [deposits, finalTotalPrice, priceBreakdown])
+
+  // Build line groups for UnifiedFinancialSummary
+  const lineGroups = useMemo((): FinancialLineGroup[] => {
+    const groups: FinancialLineGroup[] = []
+
+    // 1. Package / Base pricing
+    const packageItems = []
+    if (adults > 0) {
+      packageItems.push({
+        id: 'adults',
+        label: `Dorośli (${adults} × ${formatCurrency(effectivePricePerAdult)})`,
+        amount: adults * effectivePricePerAdult,
+      })
+    }
+    if (childrenCount > 0) {
+      packageItems.push({
+        id: 'children',
+        label: `Dzieci (${childrenCount} × ${formatCurrency(effectivePricePerChild)})`,
+        amount: childrenCount * effectivePricePerChild,
+      })
+    }
+    if (toddlers > 0 && effectivePricePerToddler > 0) {
+      packageItems.push({
+        id: 'toddlers',
+        label: `Maluchy (${toddlers} × ${formatCurrency(effectivePricePerToddler)})`,
+        amount: toddlers * effectivePricePerToddler,
+      })
+    }
+    if (toddlers > 0 && effectivePricePerToddler === 0) {
+      packageItems.push({
+        id: 'toddlers-free',
+        label: `Maluchy (${toddlers})`,
+        amount: 0,
+        amountColor: 'text-emerald-600',
+      })
+    }
+    if (packageItems.length > 0) {
+      const packageSubtotal = hasMenu && priceBreakdown
+        ? priceBreakdown.packageCost.subtotal
+        : (adults * effectivePricePerAdult + childrenCount * effectivePricePerChild + toddlers * effectivePricePerToddler)
+      groups.push({
+        id: 'package',
+        icon: <Users className="h-4 w-4 text-purple-600" />,
+        title: hasMenu ? 'Pakiet gastronomiczny' : 'Cennik za osobę',
+        items: packageItems,
+        subtotal: packageSubtotal,
+      })
+    }
+
+    // 2. Menu options
+    if (hasMenu && priceBreakdown?.optionsCost && priceBreakdown.optionsCost.length > 0) {
+      groups.push({
+        id: 'menu-options',
+        icon: <ShoppingCart className="h-4 w-4 text-amber-600" />,
+        title: 'Opcje dodatkowe',
+        items: priceBreakdown.optionsCost.map((opt: any, idx: number) => ({
+          id: `opt-${idx}`,
+          label: opt.option,
+          detail: opt.priceType === 'PER_PERSON'
+            ? `(${opt.quantity} × ${formatCurrency(opt.priceEach)})`
+            : '(stała kwota)',
+          amount: opt.total,
+        })),
+        subtotal: priceBreakdown.optionsSubtotal,
+      })
+    }
+
+    // 3. Service Extras
+    if (activeExtras.length > 0) {
+      groups.push({
+        id: 'service-extras',
+        icon: <Gift className="h-4 w-4 text-violet-600" />,
+        title: 'Usługi dodatkowe',
+        items: activeExtras.map((extra: any) => ({
+          id: extra.id,
+          icon: <span className="shrink-0 text-sm">{extra.serviceItem?.icon || '📦'}</span>,
+          label: `${extra.serviceItem?.name || 'Pozycja'}${extra.quantity > 1 ? ` (×${extra.quantity})` : ''}`,
+          amount: Number(extra.totalPrice),
+        })),
+        subtotal: extrasTotalPrice,
+      })
+    }
+
+    // 4. Category Extras (#216)
+    if (activeCategoryExtras.length > 0) {
+      groups.push({
+        id: 'category-extras',
+        icon: <ShoppingCart className="h-4 w-4 text-emerald-600" />,
+        title: 'Dodatkowo płatne porcje',
+        items: activeCategoryExtras.map((extra) => {
+          const qty = Number(extra.quantity)
+          const guestCount = extra.guestCount ?? 1
+          const qtyLabel = qty === Math.floor(qty) ? String(qty) : qty.toFixed(1)
+          return {
+            id: extra.id,
+            icon: <span className="shrink-0 text-sm">{extra.packageCategory?.category?.icon || '🍽️'}</span>,
+            label: `${extra.packageCategory?.category?.name || 'Kategoria'} (${qtyLabel} × ${formatCurrency(Number(extra.pricePerItem))} × ${guestCount} os.)`,
+            amount: Number(extra.totalPrice),
+          }
+        }),
+        subtotal: effectiveCategoryExtrasTotal,
+      })
+    }
+
+    // 5. Venue Surcharge
+    if (hasVenueSurcharge) {
+      groups.push({
+        id: 'venue-surcharge',
+        icon: <Building2 className="h-4 w-4 text-orange-600" />,
+        title: 'Dopłata za cały obiekt',
+        items: [{
+          id: 'surcharge',
+          label: venueSurchargeLabel || 'Dopłata za wynajem całego obiektu',
+          amount: effectiveVenueSurcharge,
+          amountColor: 'text-orange-700 dark:text-orange-400',
+        }],
+      })
+    }
+
+    // 6. Extra hours
+    if (extraHoursInfo && extraHoursInfo.extraHours > 0) {
+      const extraItems = [
+        {
+          id: 'duration',
+          label: 'Czas trwania wydarzenia',
+          amount: 0, // informational
+          detail: `${extraHoursInfo.durationHours}h`,
+        },
+        {
+          id: 'included',
+          label: `Czas w cenie (${standardHours !== STANDARD_HOURS ? 'typ wydarzenia' : 'standard'})`,
+          amount: 0,
+          detail: `${standardHours}h`,
+          amountColor: 'text-emerald-600',
+        },
+      ]
+      if (isExtraHoursExempt) {
+        extraItems.push({
+          id: 'extra-exempt',
+          label: `Dodatkowe godziny (${extraHoursInfo.extraHours}h)`,
+          amount: 0,
+          amountColor: 'text-emerald-600',
+          detail: undefined as any,
+        })
+      } else {
+        extraItems.push({
+          id: 'extra-cost',
+          label: `Dodatkowe godziny (${extraHoursInfo.extraHours} × ${formatCurrency(extraHourRate)}/h)`,
+          amount: extraHoursInfo.extraCost,
+          amountColor: 'text-blue-700',
+          detail: undefined as any,
+        })
+      }
+      groups.push({
+        id: 'extra-hours',
+        icon: <Timer className="h-4 w-4 text-blue-600" />,
+        title: 'Dodatkowe godziny',
+        items: extraItems,
+      })
+    }
+
+    return groups
+  }, [
+    adults, childrenCount, toddlers,
+    effectivePricePerAdult, effectivePricePerChild, effectivePricePerToddler,
+    hasMenu, priceBreakdown, activeExtras, extrasTotalPrice,
+    activeCategoryExtras, effectiveCategoryExtrasTotal,
+    hasVenueSurcharge, effectiveVenueSurcharge, venueSurchargeLabel,
+    extraHoursInfo, isExtraHoursExempt, standardHours, extraHourRate,
+  ])
+
+  // Build balance for UnifiedFinancialSummary
+  const balance: FinancialBalance | null = useMemo(() => ({
+    totalPaid: financials.totalPaid,
+    totalCommitted: financials.totalCommitted,
+    totalPending: financials.totalPending,
+    remaining: financials.remaining,
+    percentPaid: financials.percentPaid,
+    percentCommitted: financials.percentCommitted,
+    depositsCount: financials.depositsCount,
+  }), [financials])
+
+  // Build discount for UnifiedFinancialSummary
+  const discount: FinancialDiscount | null = hasActiveDiscount
+    ? {
+        type: discountType!,
+        value: discountValue,
+        amount: activeDiscountAmount,
+        reason: discountReason,
+      }
+    : null
 
   // Deposit handlers
   const handleOpenCreate = () => {
@@ -286,110 +477,48 @@ export function ReservationFinancialSummary({
 
   return (
     <>
-      <SectionCard
-        variant="gradient"
-        title="Podsumowanie finansowe"
-        icon={<Receipt className="h-5 w-5 text-white" />}
-        iconGradient="from-emerald-500 to-teal-500"
-        headerGradient="from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/30 dark:to-cyan-950/30"
-        headerSpacing="mb-4"
-      >
-          {/* COST BREAKDOWN */}
-          <div>
-            <button
-              onClick={() => setShowCostDetails(!showCostDetails)}
-              className="w-full flex items-center justify-between p-3 bg-white dark:bg-black/20 rounded-xl mb-3 hover:bg-white/80 dark:hover:bg-black/30 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-emerald-600" />
-                <span className="text-sm font-semibold">Koszty usług</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold">{formatCurrency(effectiveTotalPrice)}</span>
-                {showCostDetails ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-              </div>
-            </button>
-
-            {showCostDetails && (
-              <PriceBreakdown
-                adults={adults}
-                childrenCount={childrenCount}
-                toddlers={toddlers}
-                effectivePricePerAdult={effectivePricePerAdult}
-                effectivePricePerChild={effectivePricePerChild}
-                effectivePricePerToddler={effectivePricePerToddler}
-                hasMenu={hasMenu}
-                priceBreakdown={priceBreakdown}
-                activeExtras={activeExtras}
-                extrasTotalPrice={extrasTotalPrice}
-                activeCategoryExtras={activeCategoryExtras}
-                effectiveCategoryExtrasTotal={effectiveCategoryExtrasTotal}
-                hasVenueSurcharge={hasVenueSurcharge}
-                effectiveVenueSurcharge={effectiveVenueSurcharge}
-                venueSurchargeLabel={venueSurchargeLabel}
-                extraHoursInfo={extraHoursInfo}
-                isExtraHoursExempt={isExtraHoursExempt}
-                standardHours={standardHours}
-                extraHourRate={extraHourRate}
-              />
-            )}
-
-            {/* DISCOUNT SECTION */}
-            {status && (
-              <div className="mb-3">
-                <DiscountSection
-                  reservation={{
-                    id: reservationId,
-                    status,
-                    totalPrice: effectiveTotalPrice,
-                    discountType: discountType || null,
-                    discountValue: discountValue ?? null,
-                    discountAmount: discountAmount ?? null,
-                    discountReason: discountReason || null,
-                    priceBeforeDiscount: priceBeforeDiscount ?? null,
-                  }}
-                  readOnly={readOnly}
-                />
-              </div>
-            )}
-
-            {/* TOTAL + BALANCE */}
-            <TotalsSummary
-              finalTotalPrice={finalTotalPrice}
-              hasActiveDiscount={hasActiveDiscount}
-              activeDiscountAmount={activeDiscountAmount}
-              hasVenueSurcharge={hasVenueSurcharge}
-              effectiveVenueSurcharge={effectiveVenueSurcharge}
-              extrasTotalPrice={extrasTotalPrice}
-              activeExtrasCount={activeExtras.length}
-              effectiveCategoryExtrasTotal={effectiveCategoryExtrasTotal}
-              activeCategoryExtrasCount={activeCategoryExtras.length}
-              extraHoursInfo={extraHoursInfo}
-              financials={financials}
-            />
-          </div>
-
-          {/* DEPOSITS */}
-          <div>
-            <DepositSummary
-              deposits={deposits}
-              depositsLoading={depositsLoading}
-              financials={financials}
+      <UnifiedFinancialSummary
+        lineGroups={lineGroups}
+        discount={discount}
+        totalPrice={finalTotalPrice}
+        balance={balance}
+        discountSlot={
+          status ? (
+            <DiscountSection
+              reservation={{
+                id: reservationId,
+                status,
+                totalPrice: effectiveTotalPrice,
+                discountType: discountType || null,
+                discountValue: discountValue ?? null,
+                discountAmount: discountAmount ?? null,
+                discountReason: discountReason || null,
+                priceBeforeDiscount: priceBeforeDiscount ?? null,
+              }}
               readOnly={readOnly}
-              showDepositsDetails={showDepositsDetails}
-              onToggleDepositsDetails={() => setShowDepositsDetails(!showDepositsDetails)}
-              pdfLoading={pdfLoading}
-              actionLoading={actionLoading}
-              onOpenCreate={handleOpenCreate}
-              onOpenPay={handleOpenPay}
-              onMarkUnpaid={handleMarkUnpaid}
-              onDownloadPdf={handleDownloadPdf}
-              onSendEmail={handleSendEmail}
-              onCancel={handleCancel}
-              onOpenDelete={handleOpenDelete}
             />
-          </div>
-      </SectionCard>
+          ) : undefined
+        }
+        depositsSlot={
+          <DepositSummary
+            deposits={deposits}
+            depositsLoading={depositsLoading}
+            financials={financials}
+            readOnly={readOnly}
+            showDepositsDetails={showDepositsDetails}
+            onToggleDepositsDetails={() => setShowDepositsDetails(!showDepositsDetails)}
+            pdfLoading={pdfLoading}
+            actionLoading={actionLoading}
+            onOpenCreate={handleOpenCreate}
+            onOpenPay={handleOpenPay}
+            onMarkUnpaid={handleMarkUnpaid}
+            onDownloadPdf={handleDownloadPdf}
+            onSendEmail={handleSendEmail}
+            onCancel={handleCancel}
+            onOpenDelete={handleOpenDelete}
+          />
+        }
+      />
 
       {/* Deposit Modals */}
       {!readOnly && (
