@@ -25,7 +25,8 @@ import { Label } from '@/components/ui/label';
 import {
   useUpdateCateringDeposit,
 } from '@/hooks/use-catering-orders';
-import { SectionCard } from '@/components/shared/SectionCard';
+import { UnifiedFinancialSummary } from '@/components/shared/UnifiedFinancialSummary';
+import type { FinancialLineItem, FinancialBalance, FinancialDiscount } from '@/components/shared/UnifiedFinancialSummary';
 import { formatPrice, formatDatePl, iconBtnEdit, iconBtnDelete } from './types';
 import type { CateringOrder, CateringDeposit } from './types';
 
@@ -117,6 +118,131 @@ function EditDepositDialog({ orderId, deposit, open, onClose }: EditDepositDialo
   );
 }
 
+// ═══ CATERING DEPOSITS SECTION ═══
+
+interface CateringDepositsSectionProps {
+  deposits: CateringDeposit[];
+  totalPaid: number;
+  remaining: number;
+  fullyPaid: boolean;
+  isDeletingDeposit: boolean;
+  onOpenDepositDialog: () => void;
+  onDeleteDeposit: (depositId: string, isPaid?: boolean) => void;
+  onPayDeposit: (deposit: Pick<CateringDeposit, 'id' | 'amount' | 'title'>) => void;
+  onEditDeposit: (deposit: CateringDeposit) => void;
+}
+
+function CateringDepositsSection({
+  deposits,
+  totalPaid,
+  remaining,
+  fullyPaid,
+  isDeletingDeposit,
+  onOpenDepositDialog,
+  onDeleteDeposit,
+  onPayDeposit,
+  onEditDeposit,
+}: CateringDepositsSectionProps) {
+  return (
+    <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Zaliczki</p>
+        <Button
+          size="sm" variant="ghost"
+          className="h-7 px-2.5 text-xs gap-1 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+          onClick={onOpenDepositDialog}
+        >
+          <Plus className="w-3 h-3" /> Dodaj
+        </Button>
+      </div>
+
+      {deposits.length === 0 ? (
+        <p className="text-xs text-neutral-400 dark:text-neutral-500 text-center py-3">Brak zaliczek</p>
+      ) : (
+        <div className="space-y-2">
+          {deposits.map((d) => {
+            const paid = d.paid || d.status === 'PAID';
+            return (
+              <div key={d.id} className="flex items-center gap-2">
+                <div className="shrink-0">
+                  {paid
+                    ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    : <Circle className="w-4 h-4 text-neutral-300 dark:text-neutral-400" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-medium truncate ${paid ? 'text-emerald-700 dark:text-emerald-300' : 'text-neutral-600 dark:text-neutral-300'}`}>
+                    {d.title ?? 'Zaliczka'}
+                  </p>
+                  {d.dueDate && (
+                    <p className="text-xs text-neutral-400 dark:text-neutral-500">{formatDatePl(d.dueDate)}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {!paid && (
+                    <button
+                      onClick={() => onEditDeposit(d)}
+                      className={iconBtnEdit}
+                      title="Edytuj zaliczkę"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onDeleteDeposit(d.id, paid)}
+                    disabled={isDeletingDeposit}
+                    className={iconBtnDelete}
+                    title="Usuń zaliczkę"
+                  >
+                    {isDeletingDeposit
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <Trash2 className="w-3 h-3" />}
+                  </button>
+                  {!paid && (
+                    <Button
+                      size="sm" variant="ghost"
+                      className="h-6 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                      onClick={() => onPayDeposit({ id: d.id, amount: d.amount, title: d.title })}
+                    >
+                      Opłać
+                    </Button>
+                  )}
+                </div>
+                <span className={`text-xs font-bold shrink-0 ${paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-700 dark:text-neutral-300'}`}>
+                  {formatPrice(d.amount)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Podsumowanie rozliczeń */}
+      {deposits.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-dashed border-neutral-200 dark:border-neutral-700 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-neutral-400 dark:text-neutral-500">Wpłacono</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+              {formatPrice(totalPaid)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className={`font-semibold ${fullyPaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+              Pozostało do zapłaty
+            </span>
+            <span className={`font-bold ${
+              fullyPaid
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-amber-600 dark:text-amber-400'
+            }`}>
+              {fullyPaid ? 'Opłacone ✓' : formatPrice(remaining)}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ═══ ORDER FINANCIALS ═══
 
 interface OrderFinancialsProps {
@@ -157,14 +283,82 @@ export function OrderFinancials({
   const remaining = Math.max(0, Number(order.totalPrice) - totalPaid);
   const fullyPaid = deposits.length > 0 && remaining === 0;
 
+  // Build line items for UnifiedFinancialSummary
+  const lineItems: FinancialLineItem[] = [];
+  if (Number(order.subtotal) > 0) {
+    lineItems.push({
+      id: 'dishes',
+      icon: <Utensils className="w-3.5 h-3.5" />,
+      label: 'Dania',
+      amount: Number(order.subtotal),
+    });
+  }
+  if (Number(order.extrasTotalPrice) > 0) {
+    lineItems.push({
+      id: 'extras',
+      icon: <Star className="w-3.5 h-3.5" />,
+      label: 'Usługi dodatkowe',
+      amount: Number(order.extrasTotalPrice),
+    });
+  }
+
+  // Build discount for display
+  const discount: FinancialDiscount | null = hasDiscount && order.discountAmount
+    ? {
+        type: order.discountType || 'FIXED',
+        value: order.discountValue,
+        amount: Number(order.discountAmount),
+        reason: order.discountReason,
+      }
+    : null;
+
+  // Discount inline display (catering-style with edit/remove buttons)
+  const discountSlot = hasDiscount ? (
+    <div className="flex items-start justify-between text-sm text-emerald-600 dark:text-emerald-400">
+      <span>
+        Rabat
+        {order.discountType === 'PERCENTAGE' && order.discountValue
+          ? ` (${order.discountValue}%)`
+          : ''}
+        {order.discountReason && (
+          <span className="block text-xs text-neutral-400 font-normal">{order.discountReason}</span>
+        )}
+      </span>
+      <div className="flex items-center gap-1 shrink-0 ml-2">
+        <button
+          onClick={onOpenDiscountDialog}
+          disabled={isRemovingDiscount}
+          className={iconBtnEdit}
+          title="Edytuj rabat"
+        >
+          <Pencil className="w-3 h-3" />
+        </button>
+        <button
+          onClick={onRemoveDiscount}
+          disabled={isRemovingDiscount}
+          className={iconBtnDelete}
+          title="Usuń rabat"
+        >
+          {isRemovingDiscount
+            ? <Loader2 className="w-3 h-3 animate-spin" />
+            : <Trash2 className="w-3 h-3" />}
+        </button>
+        <span className="font-medium ml-1">−{formatPrice(order.discountAmount)}</span>
+      </div>
+    </div>
+  ) : undefined;
+
   return (
     <>
-      <SectionCard
-        icon={Receipt}
-        iconBg="bg-emerald-100 dark:bg-emerald-900/30"
-        iconColor="text-emerald-600 dark:text-emerald-400"
+      <UnifiedFinancialSummary
         title="Rozliczenie"
-        badge={
+        lineItems={lineItems}
+        discount={discount}
+        totalPrice={Number(order.totalPrice)}
+        pricePerPerson={pricePerGuest}
+        pricePerPersonLabel="/ osobę"
+        discountSlot={discountSlot}
+        headerAction={
           !hasDiscount ? (
             <Button
               size="sm" variant="ghost"
@@ -175,178 +369,20 @@ export function OrderFinancials({
             </Button>
           ) : undefined
         }
-      >
-        {/* Pozycje */}
-        <div className="space-y-2.5">
-          {Number(order.subtotal) > 0 && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2 text-neutral-500 dark:text-neutral-300">
-                <Utensils className="w-3.5 h-3.5" /> Dania
-              </span>
-              <span className="font-medium">{formatPrice(order.subtotal)}</span>
-            </div>
-          )}
-          {Number(order.extrasTotalPrice) > 0 && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2 text-neutral-500 dark:text-neutral-300">
-                <Star className="w-3.5 h-3.5" /> Usługi dodatkowe
-              </span>
-              <span className="font-medium">{formatPrice(order.extrasTotalPrice)}</span>
-            </div>
-          )}
-
-          {/* Rabat */}
-          {hasDiscount && (
-            <div className="flex items-start justify-between text-sm text-emerald-600 dark:text-emerald-400">
-              <span>
-                Rabat
-                {order.discountType === 'PERCENTAGE' && order.discountValue
-                  ? ` (${order.discountValue}%)`
-                  : ''}
-                {order.discountReason && (
-                  <span className="block text-xs text-neutral-500 font-normal">{order.discountReason}</span>
-                )}
-              </span>
-              <div className="flex items-center gap-1 shrink-0 ml-2">
-                <button
-                  onClick={onOpenDiscountDialog}
-                  disabled={isRemovingDiscount}
-                  className={iconBtnEdit}
-                  title="Edytuj rabat"
-                >
-                  <Pencil className="w-3 h-3" />
-                </button>
-                <button
-                  onClick={onRemoveDiscount}
-                  disabled={isRemovingDiscount}
-                  className={iconBtnDelete}
-                  title="Usuń rabat"
-                >
-                  {isRemovingDiscount
-                    ? <Loader2 className="w-3 h-3 animate-spin" />
-                    : <Trash2 className="w-3 h-3" />}
-                </button>
-                <span className="font-medium ml-1">−{formatPrice(order.discountAmount)}</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Łącznie */}
-        <div className="mt-4 pt-4 border-t-2 border-dashed border-neutral-200 dark:border-neutral-700">
-          <div className="flex items-center justify-between">
-            <span className="text-base font-bold text-neutral-900 dark:text-neutral-100">Łącznie</span>
-            <span className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">
-              {formatPrice(order.totalPrice)}
-            </span>
-          </div>
-          {pricePerGuest !== null && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1 text-right">
-              {formatPrice(pricePerGuest)} / osobę
-            </p>
-          )}
-        </div>
-
-        {/* Zaliczki */}
-        <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider">Zaliczki</p>
-            <Button
-              size="sm" variant="ghost"
-              className="h-7 px-2.5 text-xs gap-1 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
-              onClick={onOpenDepositDialog}
-            >
-              <Plus className="w-3 h-3" /> Dodaj
-            </Button>
-          </div>
-
-          {deposits.length === 0 ? (
-            <p className="text-xs text-neutral-500 dark:text-neutral-500 text-center py-3">Brak zaliczek</p>
-          ) : (
-            <div className="space-y-2">
-              {deposits.map((d) => {
-                const paid = d.paid || d.status === 'PAID';
-                return (
-                  <div key={d.id} className="flex items-center gap-2">
-                    <div className="shrink-0">
-                      {paid
-                        ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        : <Circle className="w-4 h-4 text-neutral-300 dark:text-neutral-400" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-medium truncate ${paid ? 'text-emerald-700 dark:text-emerald-300' : 'text-neutral-600 dark:text-neutral-300'}`}>
-                        {d.title ?? 'Zaliczka'}
-                      </p>
-                      {d.dueDate && (
-                        <p className="text-xs text-neutral-500 dark:text-neutral-500">{formatDatePl(d.dueDate)}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {!paid && (
-                        <>
-                          <button
-                            onClick={() => { setEditDeposit(d); setEditDepositOpen(true); }}
-                            className={iconBtnEdit}
-                            title="Edytuj zaliczkę"
-                          >
-                            <Pencil className="w-3 h-3" />
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={() => onDeleteDeposit(d.id, paid)}
-                        disabled={isDeletingDeposit}
-                        className={iconBtnDelete}
-                        title="Usuń zaliczkę"
-                      >
-                        {isDeletingDeposit
-                          ? <Loader2 className="w-3 h-3 animate-spin" />
-                          : <Trash2 className="w-3 h-3" />}
-                      </button>
-                      {!paid && (
-                        <Button
-                          size="sm" variant="ghost"
-                          className="h-6 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                          onClick={() => onPayDeposit({ id: d.id, amount: d.amount, title: d.title })}
-                        >
-                          Opłać
-                        </Button>
-                      )}
-                    </div>
-                    <span className={`text-xs font-bold shrink-0 ${paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-700 dark:text-neutral-300'}`}>
-                      {formatPrice(d.amount)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Podsumowanie rozliczeń */}
-          {deposits.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-dashed border-neutral-200 dark:border-neutral-700 space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-neutral-500 dark:text-neutral-500">Wpłacono</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                  {formatPrice(totalPaid)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className={`font-semibold ${fullyPaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                  Pozostało do zapłaty
-                </span>
-                <span className={`font-bold ${
-                  fullyPaid
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-amber-600 dark:text-amber-400'
-                }`}>
-                  {fullyPaid ? 'Opłacone ✓' : formatPrice(remaining)}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </SectionCard>
+        depositsSlot={
+          <CateringDepositsSection
+            deposits={deposits}
+            totalPaid={totalPaid}
+            remaining={remaining}
+            fullyPaid={fullyPaid}
+            isDeletingDeposit={isDeletingDeposit}
+            onOpenDepositDialog={onOpenDepositDialog}
+            onDeleteDeposit={onDeleteDeposit}
+            onPayDeposit={onPayDeposit}
+            onEditDeposit={(d) => { setEditDeposit(d); setEditDepositOpen(true); }}
+          />
+        }
+      />
 
       <EditDepositDialog
         orderId={orderId}
