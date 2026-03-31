@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { getHallById, updateHall } from '@/lib/api/halls'
+import { moduleAccents } from '@/lib/design-tokens'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -111,7 +112,7 @@ export default function EditHallPage() {
       <Breadcrumb />
       <div className="container mx-auto py-8 px-4 max-w-4xl space-y-8">
         {/* Premium Hero */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f] p-8 text-white shadow-2xl">
+        <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${moduleAccents.halls.gradient} p-8 text-white shadow-2xl`}>
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
           
           <div className="relative z-10 space-y-4">

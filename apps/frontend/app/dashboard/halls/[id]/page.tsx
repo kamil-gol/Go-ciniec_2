@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { getHallById, type Hall } from '@/lib/api/halls'
 import { HallReservationsCalendar } from '@/components/halls/hall-reservations-calendar'
 import { DetailHero } from '@/components/shared/DetailHero'
+import { moduleAccents } from '@/lib/design-tokens'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -62,7 +63,7 @@ export default function HallDetailsPage() {
       <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Premium Hero Section */}
         <DetailHero
-          gradient="from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f]"
+          gradient={moduleAccents.halls.gradient}
           backHref="/dashboard/halls"
           backLabel="Powrót do listy"
           icon={Building2}
@@ -155,7 +156,7 @@ export default function HallDetailsPage() {
 
         {/* Calendar Section */}
         <Card className="border-0 shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f] p-6 text-white">
+          <div className={`bg-gradient-to-r ${moduleAccents.halls.gradient} p-6 text-white`}>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
                 <Calendar className="h-6 w-6" />

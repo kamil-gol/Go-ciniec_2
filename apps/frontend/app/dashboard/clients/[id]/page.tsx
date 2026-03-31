@@ -8,10 +8,12 @@ import {
   Building2, Sparkles, FileText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingState } from '@/components/shared/LoadingState'
+import { DetailHero } from '@/components/shared/DetailHero'
 import { StatCard } from '@/components/shared/StatCard'
-import { statGradients, layout } from '@/lib/design-tokens'
+import { statGradients, layout, moduleAccents } from '@/lib/design-tokens'
 import { getClientById, deleteClient } from '@/lib/api/clients'
 import type { Client, Reservation } from '@/types'
 import Link from 'next/link'
@@ -21,9 +23,10 @@ import { GradientCard } from '@/components/shared/GradientCard'
 import { DeleteClientModal } from '@/components/clients/delete-client-modal'
 import { ContactsManager } from '@/components/clients/contacts-manager'
 import { toast } from 'sonner'
+import { format } from 'date-fns'
+import { pl } from 'date-fns/locale'
 
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
-import { ClientHeroSection } from './components/ClientHeroSection'
 import { CompanyInfoCard, ContactInfoCard } from './components/ClientInfoCards'
 import { ClientReservationsHistory } from './components/ClientReservationsHistory'
 
@@ -116,11 +119,50 @@ export default function ClientDetailsPage() {
         )}
 
         {/* Premium Hero Section */}
-        <ClientHeroSection
-          client={client}
-          isCompany={isCompany}
-          isDeleted={isDeleted}
-          stats={stats}
+        <DetailHero
+          gradient={moduleAccents.clients.gradient}
+          backHref="/dashboard/clients"
+          backLabel="Powrót do listy"
+          icon={isCompany ? Building2 : User}
+          title={isCompany && client.companyName ? client.companyName : `${client.firstName} ${client.lastName}`}
+          extraLine={isCompany ? `${client.firstName} ${client.lastName}` : undefined}
+          subtitle={isCompany ? 'Profil firmy' : 'Profil klienta'}
+          badges={
+            <>
+              {isCompany && (
+                <Badge className="bg-purple-500/80 backdrop-blur-sm border-purple-300/30 text-white">
+                  <Building2 className="h-3 w-3 mr-1" />
+                  Firma
+                </Badge>
+              )}
+              <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
+                <Calendar className="h-3 w-3 mr-1" />
+                Dodano {format(new Date(client.createdAt), 'dd MMMM yyyy', { locale: pl })}
+              </Badge>
+              {stats.total > 0 && (
+                <Badge className="bg-green-500 text-white border-0">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  {stats.total} {stats.total === 1 ? 'rezerwacja' : 'rezerwacji'}
+                </Badge>
+              )}
+              {isDeleted && (
+                <Badge className="bg-red-500 text-white border-0">
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Usunięty
+                </Badge>
+              )}
+            </>
+          }
+          actions={!isDeleted ? (
+            <Button
+              size="lg"
+              onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
+              className="flex-1 sm:flex-none bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
+            >
+              <Edit className="mr-2 h-5 w-5" />
+              Edytuj
+            </Button>
+          ) : undefined}
         />
 
         {/* Stats Grid — shared StatCard */}

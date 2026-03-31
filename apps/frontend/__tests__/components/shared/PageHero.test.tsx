@@ -26,17 +26,11 @@ vi.mock('next/link', () => ({
 }))
 
 import { PageHero } from '@/components/shared/PageHero'
+import { moduleAccents } from '@/lib/design-tokens'
 
 const mockAccent = {
+  ...moduleAccents.reservations,
   name: 'Test',
-  gradient: 'from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f]',
-  gradientSubtle: 'from-blue-900/5 via-slate-800/5 to-blue-900/5',
-  iconBg: 'from-[#2a4a70] to-[#1e3a5f]',
-  text: 'text-blue-700',
-  textDark: 'dark:text-blue-300',
-  ring: 'ring-blue-800/20',
-  badge: 'bg-blue-50',
-  badgeText: 'text-blue-800',
 }
 
 describe('PageHero', () => {

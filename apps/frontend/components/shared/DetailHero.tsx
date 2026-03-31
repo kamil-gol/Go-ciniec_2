@@ -7,6 +7,12 @@ import { cn } from '@/lib/utils'
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+export interface StatPillDef {
+  icon: React.ElementType
+  label?: string
+  value: string
+}
+
 export interface DetailHeroProps {
   /** Gradient classes, e.g. "from-blue-600 via-cyan-600 to-teal-600" */
   gradient: string
@@ -22,9 +28,13 @@ export interface DetailHeroProps {
   subtitle?: string
   /** Additional line below subtitle (e.g. company contact person) */
   extraLine?: string
+  /** Small text above the title (e.g. order number), rendered in mono font */
+  orderNumber?: string
   /** Badges rendered below title area */
   badges?: ReactNode
-  /** Action buttons rendered on the right */
+  /** Stat pills row below badges */
+  statPills?: StatPillDef[]
+  /** Action buttons rendered on the right (flex row) */
   actions?: ReactNode
   /** Additional className */
   className?: string
@@ -37,6 +47,7 @@ export interface DetailHeroProps {
  * - Back navigation
  * - Icon + Title + Subtitle
  * - Badges row
+ * - Stat pills row
  * - Action buttons
  * - Decorative grid pattern + blur blobs
  */
@@ -48,7 +59,9 @@ export function DetailHero({
   title,
   subtitle,
   extraLine,
+  orderNumber,
   badges,
+  statPills,
   actions,
   className,
 }: DetailHeroProps) {
@@ -61,39 +74,56 @@ export function DetailHero({
       <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
 
       <div className="relative z-10 space-y-4 sm:space-y-6">
-        <Link href={backHref}>
-          <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {backLabel}
-          </Button>
-        </Link>
-
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <Icon className="h-6 w-6 sm:h-8 sm:w-8" />
-              </div>
-              <div>
-                <h1 className="text-2xl sm:text-4xl font-bold">{title}</h1>
-                {extraLine && (
-                  <p className="text-white/80 text-base mt-0.5">{extraLine}</p>
-                )}
-                {subtitle && (
-                  <p className="text-white/90 text-base sm:text-lg mt-1">{subtitle}</p>
-                )}
-              </div>
-            </div>
-            {badges && (
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                {badges}
-              </div>
-            )}
-          </div>
+        <div className="flex items-center justify-between">
+          <Link href={backHref}>
+            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {backLabel}
+            </Button>
+          </Link>
 
           {actions && (
-            <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {actions}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          {orderNumber && (
+            <span className="font-mono text-white/60 text-sm tracking-wide">{orderNumber}</span>
+          )}
+          <div className="flex items-center gap-3">
+            <div className="p-2 sm:p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+              <Icon className="h-6 w-6 sm:h-8 sm:w-8" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-4xl font-bold">{title}</h1>
+              {extraLine && (
+                <p className="text-white/80 text-base mt-0.5">{extraLine}</p>
+              )}
+              {subtitle && (
+                <p className="text-white/90 text-base sm:text-lg mt-1">{subtitle}</p>
+              )}
+            </div>
+          </div>
+          {badges && (
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {badges}
+            </div>
+          )}
+          {statPills && statPills.length > 0 && (
+            <div className="flex flex-wrap gap-3">
+              {statPills.map((pill, i) => {
+                const PillIcon = pill.icon
+                return (
+                  <div key={i} className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
+                    <PillIcon className="w-4 h-4 shrink-0" />
+                    {pill.label && <span className="text-xs text-white/70">{pill.label}</span>}
+                    <span className="text-sm font-semibold">{pill.value}</span>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>

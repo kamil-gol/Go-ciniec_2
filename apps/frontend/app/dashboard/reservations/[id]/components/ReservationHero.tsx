@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusChanger } from '@/components/reservations/editable'
 import { DetailHero } from '@/components/shared/DetailHero'
+import { moduleAccents } from '@/lib/design-tokens'
 import type { ReservationStatus } from '@/types'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
@@ -34,7 +35,7 @@ export function ReservationHero({
 }: ReservationHeroProps) {
   return (
     <DetailHero
-      gradient="from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f]"
+      gradient={moduleAccents.reservations.gradient}
       backHref="/dashboard/reservations"
       backLabel="Powrót do listy"
       icon={Calendar}
