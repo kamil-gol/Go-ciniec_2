@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Receipt, Package, ChevronDown, ChevronUp } from 'lucide-react'
-import { GradientCard } from '@/components/shared/GradientCard'
+import { SectionCard } from '@/components/shared/SectionCard'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { useReservationMenu } from '@/hooks/use-menu'
@@ -286,7 +286,8 @@ export function ReservationFinancialSummary({
 
   return (
     <>
-      <GradientCard
+      <SectionCard
+        variant="gradient"
         title="Podsumowanie finansowe"
         icon={<Receipt className="h-5 w-5 text-white" />}
         iconGradient="from-emerald-500 to-teal-500"
@@ -388,7 +389,7 @@ export function ReservationFinancialSummary({
               onOpenDelete={handleOpenDelete}
             />
           </div>
-      </GradientCard>
+      </SectionCard>
 
       {/* Deposit Modals */}
       {!readOnly && (

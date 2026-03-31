@@ -2,7 +2,7 @@
 
 import { Trash2, Archive, ArchiveRestore, Download, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { GradientCard } from '@/components/shared/GradientCard'
+import { SectionCard } from '@/components/shared/SectionCard'
 
 interface QuickActionsCardProps {
   isArchived: boolean
@@ -32,7 +32,8 @@ export function QuickActionsCard({
   onCancel,
 }: QuickActionsCardProps) {
   return (
-    <GradientCard
+    <SectionCard
+      variant="gradient"
       title="Szybkie akcje"
       icon={<Zap className="h-5 w-5 text-white" />}
       iconGradient="from-amber-500 to-orange-500"
@@ -86,6 +87,6 @@ export function QuickActionsCard({
           {cancelPending ? 'Anulowanie...' : 'Anuluj rezerwacje'}
         </Button>
       </div>
-    </GradientCard>
+    </SectionCard>
   )
 }

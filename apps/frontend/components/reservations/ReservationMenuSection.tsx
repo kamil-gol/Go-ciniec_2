@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { GradientCard } from '@/components/shared/GradientCard'
+import { SectionCard } from '@/components/shared/SectionCard'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
@@ -141,7 +141,8 @@ export function ReservationMenuSection({
     <>
       {/* No menu selected */}
       {!hasMenu && (
-        <GradientCard
+        <SectionCard
+          variant="gradient"
           title="Menu"
           icon={<UtensilsCrossed className="h-5 w-5 text-white" />}
           iconGradient="from-orange-500 to-amber-500"
@@ -169,12 +170,13 @@ export function ReservationMenuSection({
               </Button>
             )}
           </div>
-        </GradientCard>
+        </SectionCard>
       )}
 
       {/* Menu selected - compact view */}
       {hasMenu && (
-        <GradientCard
+        <SectionCard
+          variant="gradient"
           title="Menu"
           icon={<UtensilsCrossed className="h-5 w-5 text-white" />}
           iconGradient="from-orange-500 to-amber-500"
@@ -292,7 +294,7 @@ export function ReservationMenuSection({
                 </div>
               </div>
             )}
-        </GradientCard>
+        </SectionCard>
       )}
 
       {/* Selection Dialog — only render when not readOnly */}

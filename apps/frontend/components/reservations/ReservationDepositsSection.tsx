@@ -15,7 +15,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { GradientCard } from '@/components/shared/GradientCard'
+import { SectionCard } from '@/components/shared/SectionCard'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import { toast } from 'sonner'
@@ -223,7 +223,8 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
   // ── Render ──
   return (
     <>
-      <GradientCard
+      <SectionCard
+        variant="gradient"
         title="Zaliczki"
         icon={<DollarSign className="h-5 w-5 text-white" />}
         iconGradient="from-rose-500 to-pink-500"
@@ -415,7 +416,7 @@ export function ReservationDepositsSection({ reservationId, totalPrice }: Reserv
               </Link>
             </div>
           )}
-      </GradientCard>
+      </SectionCard>
 
       {/* Dialogs */}
       <DeletePaidDepositDialog

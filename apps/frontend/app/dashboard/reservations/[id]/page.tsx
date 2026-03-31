@@ -29,7 +29,7 @@ import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTim
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
-import { GradientCard } from '@/components/shared/GradientCard'
+import { SectionCard } from '@/components/shared/SectionCard'
 import { ReservationTimeline } from '@/components/reservations/ReservationTimeline'
 import { ReservationHero } from './components/ReservationHero'
 import { QuickActionsCard } from './components/QuickActionsCard'
@@ -267,7 +267,8 @@ export default function ReservationDetailsPage() {
             {/* Left Column - Main Info */}
             <div className="lg:col-span-2 space-y-6">
               {/* Client Info (read-only) */}
-              <GradientCard
+              <SectionCard
+                variant="gradient"
                 title="Klient"
                 icon={<User className="h-5 w-5 text-white" />}
                 iconGradient="from-blue-600 to-indigo-600"
@@ -302,7 +303,7 @@ export default function ReservationDetailsPage() {
                     </div>
                   )}
                 </div>
-              </GradientCard>
+              </SectionCard>
 
               {/* Hall Info */}
               <EditableHallCard
