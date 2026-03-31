@@ -341,7 +341,7 @@ export default function DailyReservationsSection({ date }: DailyReservationsSect
           </div>
           <div>
             <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-              📅 Rezerwacje
+              <Calendar className="inline h-4 w-4 mr-1 -mt-0.5" />Rezerwacje
             </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-300">
               Zaplanowane na ten dzień

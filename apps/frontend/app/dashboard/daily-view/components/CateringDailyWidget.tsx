@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Utensils,
   AlertTriangle,
+  PartyPopper,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -106,7 +107,7 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
             {/* Linia 4: nazwa wydarzenia */}
             {order.eventName && (
               <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 truncate">
-                🎉 {order.eventName}
+                <PartyPopper className="inline h-3 w-3 mr-0.5 -mt-0.5" />{order.eventName}
               </p>
             )}
 
@@ -227,7 +228,7 @@ export default function CateringDailyWidget({ date }: CateringDailyWidgetProps) 
           </div>
           <div>
             <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-              🍱 Catering
+              <UtensilsCrossed className="inline h-4 w-4 mr-1 -mt-0.5" />Catering
             </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-300">
               Zamówienia na ten dzień

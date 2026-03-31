@@ -61,11 +61,6 @@
     --surface-tertiary: 0 0% 96%;
     --surface-elevated: 0 0% 100%;
 
-    /* === Elevation Shadows === */
-    --elevation-0-shadow: none;
-    --elevation-1-shadow: 0 1px 3px 0 hsl(var(--shadow-color) / 0.06), 0 1px 2px -1px hsl(var(--shadow-color) / 0.06);
-    --elevation-2-shadow: 0 10px 15px -3px hsl(var(--shadow-color) / 0.08), 0 4px 6px -4px hsl(var(--shadow-color) / 0.08);
-
     /* === Radius System === */
     --radius-interactive: 0.5rem;
     --radius-card: 0.75rem;
@@ -144,11 +139,6 @@
     --surface-secondary: 0 0% 7%;
     --surface-tertiary: 0 0% 11%;
     --surface-elevated: 0 0% 9%;
-
-    /* === Elevation Shadows (Dark — glow-based) === */
-    --elevation-0-shadow: none;
-    --elevation-1-shadow: 0 0 0 1px hsl(0 0% 100% / 0.05);
-    --elevation-2-shadow: 0 0 0 1px hsl(0 0% 100% / 0.06), 0 8px 24px hsl(0 0% 0% / 0.4);
 
     /* === Radius System (same as light) === */
     --radius-interactive: 0.5rem;
