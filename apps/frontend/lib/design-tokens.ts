@@ -212,12 +212,14 @@ export const buttonTokens = {
 export const radius = {
   container: 'rounded-2xl',
   interactive: 'rounded-xl',
+  card: 'rounded-lg',
   pill: 'rounded-full',
 } as const
 
 export const shadows = {
   card: 'shadow-sm dark:shadow-none dark:ring-1 dark:ring-neutral-700/50',
   cardHover: 'hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/30',
+  elevated: 'shadow-md dark:shadow-lg dark:shadow-black/30',
   modal: 'shadow-lg dark:shadow-2xl dark:shadow-black/40',
   hero: 'shadow-none',
 } as const
@@ -236,11 +238,16 @@ export const motionTokens = {
     instant: 0.1,
     fast: 0.2,
     normal: 0.3,
+    medium: 0.4,
     slow: 0.5,
   },
   ease: {
     default: 'easeOut' as const,
     smooth: [0.4, 0, 0.2, 1] as const,
+  },
+  spring: {
+    stiffness: 360,
+    damping: 28,
   },
   stagger: {
     cards: 0.06,
@@ -256,26 +263,6 @@ export const surfaces = {
   tertiary: 'bg-neutral-100 dark:bg-neutral-700',
   elevated: 'bg-white dark:bg-neutral-800',
   overlay: 'bg-white/80 backdrop-blur-xl dark:bg-neutral-900/80 dark:backdrop-blur-xl',
-} as const
-
-// ── Elevation system (3 levels) ───────────────────────────────────────────────
-
-export const elevation = {
-  /** Level 0 — Flat: border only, no shadow */
-  level0: {
-    base: 'border border-border shadow-none',
-    hover: 'hover:border-neutral-300 dark:hover:border-neutral-600',
-  },
-  /** Level 1 — Raised: subtle shadow, standard cards */
-  level1: {
-    base: 'shadow-soft border border-neutral-100 dark:border-neutral-700/50 dark:shadow-none',
-    hover: 'hover:shadow-medium hover:-translate-y-0.5 dark:hover:border-neutral-600',
-  },
-  /** Level 2 — Floating: prominent shadow, modals/dropdowns/popovers */
-  level2: {
-    base: 'shadow-lg border border-neutral-100 dark:border-neutral-700/50 dark:shadow-2xl dark:shadow-black/30',
-    hover: '',
-  },
 } as const
 
 // ── Semantic interaction states ───────────────────────────────────────────────
