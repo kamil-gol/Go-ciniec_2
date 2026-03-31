@@ -116,7 +116,9 @@ export function UnifiedFinancialSummary({
 
   const hasLineGroups = lineGroups && lineGroups.length > 0
   const hasLineItems = lineItems && lineItems.length > 0
-  const hasBreakdown = hasLineGroups || hasLineItems
+  // Toggle is shown only when there are line groups (complex breakdown mode).
+  // Simple lineItems-only mode renders directly without a toggle.
+  const hasBreakdown = !!hasLineGroups
 
   // Calculate pre-discount subtotal from groups for the toggle button
   const groupsSubtotal = lineGroups
