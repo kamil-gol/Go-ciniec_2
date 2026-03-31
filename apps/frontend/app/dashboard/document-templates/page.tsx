@@ -292,6 +292,7 @@ export default function DocumentTemplatesPage() {
             />
           ) : (
             <div className="space-y-8">
+              <Breadcrumb />
               {filteredCategories.map((cat) => {
                 const catConfig = CATEGORY_CONFIG[cat];
                 const catTemplates = getFilteredTemplates(cat);
@@ -299,7 +300,6 @@ export default function DocumentTemplatesPage() {
 
                 return (
                   <div key={cat}>
-                    <Breadcrumb />
                     {/* Category header */}
                     <div className="flex items-center gap-2.5 mb-4">
                       <div className={`p-1.5 bg-gradient-to-br ${catConfig.gradient} rounded-lg`}>
