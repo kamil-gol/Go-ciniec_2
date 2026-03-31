@@ -1,5 +1,3 @@
-export { PriceBreakdown } from './PriceBreakdown'
-export { TotalsSummary } from './TotalsSummary'
 export { DepositSummary } from './DepositSummary'
 export { CreateDepositModal, PayDepositModal, DeleteDepositModal } from './DepositModals'
 export * from './types'
