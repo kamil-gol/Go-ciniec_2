@@ -19,7 +19,7 @@ import type { Client, Reservation } from '@/types'
 import Link from 'next/link'
 import AttachmentPanel from '@/components/attachments/attachment-panel'
 import { EntityActivityTimeline } from '@/components/audit-log/EntityActivityTimeline'
-import { GradientCard } from '@/components/shared/GradientCard'
+import { SectionCard } from '@/components/shared/SectionCard'
 import { DeleteClientModal } from '@/components/clients/delete-client-modal'
 import { ContactsManager } from '@/components/clients/contacts-manager'
 import { toast } from 'sonner'
@@ -256,7 +256,8 @@ export default function ClientDetailsPage() {
                 </Card>
               )}
 
-              <GradientCard
+              <SectionCard
+                variant="gradient"
                 title="Szybkie akcje"
                 icon={<Sparkles className="h-5 w-5 text-white" />}
                 iconGradient="from-amber-500 to-orange-500"
@@ -295,12 +296,13 @@ export default function ClientDetailsPage() {
                       </Button>
                     )}
                   </div>
-              </GradientCard>
+              </SectionCard>
             </div>
 
             {/* Right Column - Reservations History + Attachments */}
             <div className="lg:col-span-2 space-y-6 min-w-0">
-              <GradientCard
+              <SectionCard
+                variant="gradient"
                 title="Historia rezerwacji"
                 icon={<Sparkles className="h-5 w-5 text-white" />}
                 iconGradient="from-blue-500 to-cyan-500"
@@ -311,7 +313,7 @@ export default function ClientDetailsPage() {
                     clientId={client.id}
                     isDeleted={isDeleted}
                   />
-              </GradientCard>
+              </SectionCard>
 
               {/* Attachments Panel */}
               <AttachmentPanel

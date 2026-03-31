@@ -3,7 +3,7 @@
 import {
   User, Mail, Phone, MapPin, Building2, Globe, Hash, Briefcase,
 } from 'lucide-react'
-import { GradientCard } from '@/components/shared/GradientCard'
+import { SectionCard } from '@/components/shared/SectionCard'
 
 interface ClientInfoCardsProps {
   client: any
@@ -12,7 +12,8 @@ interface ClientInfoCardsProps {
 
 export function CompanyInfoCard({ client }: { client: any }) {
   return (
-    <GradientCard
+    <SectionCard
+      variant="gradient"
       title="Dane firmy"
       icon={<Building2 className="h-5 w-5 text-white" />}
       iconGradient="from-purple-500 to-indigo-500"
@@ -84,13 +85,14 @@ export function CompanyInfoCard({ client }: { client: any }) {
           </div>
         )}
       </div>
-    </GradientCard>
+    </SectionCard>
   )
 }
 
 export function ContactInfoCard({ client, isCompany }: ClientInfoCardsProps) {
   return (
-    <GradientCard
+    <SectionCard
+      variant="gradient"
       title={isCompany ? 'Osoba reprezentująca' : 'Dane kontaktowe'}
       icon={<User className="h-5 w-5 text-white" />}
       iconGradient="from-indigo-500 to-purple-500"
@@ -137,6 +139,6 @@ export function ContactInfoCard({ client, isCompany }: ClientInfoCardsProps) {
           </div>
         )}
       </div>
-    </GradientCard>
+    </SectionCard>
   )
 }
