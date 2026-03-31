@@ -2,24 +2,34 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AlertCircle } from 'lucide-react';
+import {
+  AlertCircle, Edit, MoreVertical, Trash2,
+  CalendarDays, Users, Truck, Receipt, Sparkles, Download, UtensilsCrossed,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { apiClient } from '@/lib/api-client';
+import { moduleAccents } from '@/lib/design-tokens';
 import {
   useCateringOrder,
   useDeleteCateringOrder,
   useUpdateCateringOrder,
   useDeleteCateringDeposit,
 } from '@/hooks/use-catering-orders';
-import { LoadingState, EmptyState } from '@/components/shared';
+import { LoadingState, EmptyState, DetailHero } from '@/components/shared';
+import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { ChangeStatusDialog } from '../components/ChangeStatusDialog';
 import { DiscountDialog } from '../components/DiscountDialog';
 import { AddDepositDialog } from '../components/AddDepositDialog';
 import { MarkDepositPaidDialog } from '../components/MarkDepositPaidDialog';
+import { DELIVERY_TYPE_LABEL } from '@/types/catering-order.types';
 import type { CateringDeposit } from '@/types/catering-order.types';
+import { formatCurrency, formatDateLong } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
-
-import { OrderHeader } from './components/OrderHeader';
 import { OrderItems } from './components/OrderItems';
 import { OrderDelivery } from './components/OrderDelivery';
 import { OrderFinancials } from './components/OrderFinancials';
@@ -117,15 +127,62 @@ export default function CateringOrderDetailPage() {
     <div className="min-h-0">
       <Breadcrumb />
       {/* ═══ HERO ═══ */}
-      <OrderHeader
-        order={order}
-        pricePerGuest={pricePerGuest}
-        canDelete={canDelete}
-        onBack={() => router.push('/dashboard/catering/orders')}
-        onEdit={() => router.push(`/dashboard/catering/orders/${id}/edit`)}
-        onChangeStatus={() => setStatusDialogOpen(true)}
-        onDelete={handleDelete}
-        onDownloadPDF={handleDownloadPDF}
+      <DetailHero
+        gradient={moduleAccents.catering.gradient}
+        backHref="/dashboard/catering/orders"
+        backLabel="Powrót"
+        icon={UtensilsCrossed}
+        orderNumber={order.orderNumber}
+        title={order.eventName ?? 'Zamówienie cateringowe'}
+        badges={<OrderStatusBadge status={order.status} />}
+        statPills={[
+          ...(order.eventDate ? [{ icon: CalendarDays, label: 'Data', value: formatDateLong(order.eventDate) }] : []),
+          { icon: Users, label: 'Osób', value: String(order.guestsCount) },
+          { icon: Receipt, label: 'Wartość', value: formatCurrency(order.totalPrice) },
+          ...(pricePerGuest !== null ? [{ icon: Sparkles, label: '/ os.', value: formatCurrency(pricePerGuest) }] : []),
+          { icon: Truck, value: DELIVERY_TYPE_LABEL[order.deliveryType] },
+        ]}
+        actions={
+          <>
+            <Button size="sm" variant="ghost"
+              className="text-white/90 hover:text-white hover:bg-white/20 border border-white/30 h-9 px-4"
+              onClick={handleDownloadPDF}
+            >
+              <Download className="mr-1.5 h-3.5 w-3.5" /> Pobierz PDF
+            </Button>
+            <Button size="sm" variant="ghost"
+              className="text-white/90 hover:text-white hover:bg-white/20 border border-white/30 h-9 px-4"
+              onClick={() => setStatusDialogOpen(true)}
+            >
+              Zmień status
+            </Button>
+            <Button size="sm" variant="ghost"
+              className="text-white/90 hover:text-white hover:bg-white/20 border border-white/30 h-9 px-4"
+              onClick={() => router.push(`/dashboard/catering/orders/${id}/edit`)}
+            >
+              <Edit className="mr-1.5 h-3.5 w-3.5" /> Edytuj
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost"
+                  className="text-white/90 hover:text-white hover:bg-white/20 border border-white/30 h-9 w-9 p-0"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={!canDelete}
+                  className="text-destructive focus:text-destructive"
+                  onClick={handleDelete}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Usuń zamówienie
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
       />
 
       {/* ═══ CONTENT ═══ */}
