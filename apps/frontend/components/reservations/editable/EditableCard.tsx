@@ -145,14 +145,14 @@ export function EditableCard({
 
   if (gradientHeader) {
     return (
-      <Card className={`border-0 shadow-xl overflow-hidden ${className}`}>
-        <div className={`${headerGradient} p-6`}>
+      <Card className={`border-0 shadow-soft overflow-hidden ${className}`}>
+        <div className={`bg-gradient-to-br ${headerGradient} p-5`}>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className={`p-2 bg-gradient-to-br ${iconGradient} rounded-lg shadow-lg`}>
                 {icon}
               </div>
-              <h2 className="text-xl font-bold">{title}</h2>
+              <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{title}</h2>
             </div>
             {editButton}
           </div>
@@ -188,11 +188,11 @@ export function EditableCard({
   }
 
   return (
-    <Card className={`border-0 shadow-xl ${className}`}>
-      <CardHeader className="border-b">
+    <Card className={`border-0 shadow-soft overflow-hidden ${className}`}>
+      <CardHeader className="pb-3 pt-5 px-5">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <div className={`p-2 bg-gradient-to-br ${iconGradient} rounded-lg`}>
+          <CardTitle className="flex items-center gap-3 text-base font-semibold text-neutral-900 dark:text-neutral-100">
+            <div className={`p-2 bg-gradient-to-br ${iconGradient} rounded-lg shadow-lg`}>
               {icon}
             </div>
             {title}
@@ -200,7 +200,7 @@ export function EditableCard({
           {editButton}
         </div>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="px-5 pb-5">
         <AnimatePresence mode="wait">
           <motion.div
             key={editing ? 'edit' : 'view'}
