@@ -622,6 +622,36 @@ describe('pdf-catering.builder', () => {
       expect(clientLines).toContain('jan@test.pl');
       expect(clientLines).toContain('ul. Firmowa 10');
     });
+
+    it('powinno wyrenderować sekcję usług dodatkowych gdy extras niepuste', () => {
+      const data = createBaseOrderData({
+        extras: [{ name: 'Obsługa kelnerska', quantity: 2, unitPrice: 200, totalPrice: 400 }],
+        extrasTotalPrice: 400,
+      });
+      buildCateringOrderPDF(doc, data, ctx, false);
+
+      const textCalls = doc.text.mock.calls.map((c: any[]) => c[0]);
+      expect(textCalls).toContain('USŁUGI DODATKOWE');
+    });
+
+    it('powinno pominąć sekcję usług dodatkowych gdy extras puste', () => {
+      const data = createBaseOrderData({ extras: [] });
+      buildCateringOrderPDF(doc, data, ctx, false);
+
+      const textCalls = doc.text.mock.calls.map((c: any[]) => c[0]);
+      expect(textCalls).not.toContain('USŁUGI DODATKOWE');
+    });
+
+    it('powinno pokazać linię usług dodatkowych w podsumowaniu gdy extrasTotalPrice > 0', () => {
+      const data = createBaseOrderData({
+        extras: [{ name: 'Dekoracja', quantity: 1, unitPrice: 300, totalPrice: 300 }],
+        extrasTotalPrice: 300,
+      });
+      buildCateringOrderPDF(doc, data, ctx, false);
+
+      const textCalls = doc.text.mock.calls.map((c: any[]) => c[0]);
+      expect(textCalls.some((t: string) => typeof t === 'string' && t.includes('Usługi dodatkowe'))).toBe(true);
+    });
   });
 
   // ═══════════════ buildCateringInvoicePDF ═══════════════

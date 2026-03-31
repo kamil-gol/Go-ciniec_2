@@ -251,6 +251,14 @@ export interface CateringOrderItemForPDF {
   note?: string;
 }
 
+export interface CateringExtraItemForPDF {
+  name: string;
+  description?: string | null;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
 export interface CateringQuotePDFData {
   id: string;
   orderNumber: string;
@@ -326,6 +334,8 @@ export interface CateringOrderPDFData {
   guestsCount?: number;
   guests?: number;
   items: CateringOrderItemForPDF[];
+  extras?: CateringExtraItemForPDF[];
+  extrasTotalPrice?: number;
   subtotal: number;
   discountAmount?: number;
   totalPrice: number;
