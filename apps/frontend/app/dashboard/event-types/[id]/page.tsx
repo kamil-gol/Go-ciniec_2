@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Edit, Trash2, Calendar, FileText, Theater, CheckCircle2, Clock, Timer } from 'lucide-react'
+import { Edit, Trash2, Calendar, FileText, Theater, CheckCircle2, Clock, Timer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { LoadingState } from '@/components/shared/LoadingState'
+import { DetailHero } from '@/components/shared/DetailHero'
+import { moduleAccents } from '@/lib/design-tokens'
 import { Switch } from '@/components/ui/switch'
 import {
   getEventTypeById,
@@ -96,89 +98,65 @@ export default function EventTypeDetailPage() {
       <Breadcrumb />
       <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Hero */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1e3a5f] via-[#2a4a70] to-[#1e3a5f] p-8 text-white shadow-2xl">
-          <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
-
-          <div className="relative z-10 space-y-6">
-            {/* Back */}
-            <Link href="/dashboard/event-types">
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Powrót do listy
+        <DetailHero
+          gradient={moduleAccents.eventTypes.gradient}
+          backHref="/dashboard/event-types"
+          backLabel="Powrót do listy"
+          icon={Theater}
+          title={eventType.name}
+          subtitle={eventType.description || undefined}
+          badges={
+            <>
+              <div
+                className="h-6 w-6 rounded-full border-2 border-white/50 shadow-lg"
+                style={{ backgroundColor: color }}
+                role="img"
+                aria-label={`Kolor typu wydarzenia: ${color}`}
+                title={`Kolor: ${color}`}
+              />
+              <span className="text-sm font-mono text-white/70">{color}</span>
+              {eventType.isActive ? (
+                <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Aktywny
+                </Badge>
+              ) : (
+                <Badge className="bg-red-500/80 backdrop-blur-sm border-red-400/30 text-white">
+                  Nieaktywny
+                </Badge>
+              )}
+              <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
+                <Calendar className="h-3 w-3 mr-1" />
+                {reservationCount} {reservationCount === 1 ? 'rezerwacja' : 'rezerwacji'}
+              </Badge>
+              <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
+                <FileText className="h-3 w-3 mr-1" />
+                {templateCount} {templateCount === 1 ? 'szablon' : 'szablonów'} menu
+              </Badge>
+            </>
+          }
+          actions={
+            <>
+              <Button
+                size="lg"
+                variant="ghost"
+                className="text-white hover:bg-white/20 border border-white/30"
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 className="mr-2 h-5 w-5" />
+                Usuń
               </Button>
-            </Link>
-
-            {/* Title + Actions */}
-            <div className="flex justify-between items-start">
-              <div className="space-y-3">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                    <Theater className="h-8 w-8" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h1 className="text-4xl font-bold">{eventType.name}</h1>
-                      <div
-                        className="h-6 w-6 rounded-full border-2 border-white/50 shadow-lg"
-                        style={{ backgroundColor: color }}
-                        role="img"
-                        aria-label={`Kolor typu wydarzenia: ${color}`}
-                        title={`Kolor: ${color}`}
-                      />
-                      <span className="text-sm font-mono text-white/70">{color}</span>
-                    </div>
-                    {eventType.description && (
-                      <p className="text-white/80 text-lg mt-1">{eventType.description}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  {eventType.isActive ? (
-                    <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Aktywny
-                    </Badge>
-                  ) : (
-                    <Badge className="bg-red-500/80 backdrop-blur-sm border-red-400/30 text-white">
-                      Nieaktywny
-                    </Badge>
-                  )}
-                  <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    {reservationCount} {reservationCount === 1 ? 'rezerwacja' : 'rezerwacji'}
-                  </Badge>
-                  <Badge className="bg-white/20 backdrop-blur-sm border-white/30 text-white">
-                    <FileText className="h-3 w-3 mr-1" />
-                    {templateCount} {templateCount === 1 ? 'szablon' : 'szablonów'} menu
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  size="lg"
-                  variant="ghost"
-                  className="text-white hover:bg-white/20 border border-white/30"
-                  onClick={() => setDeleteOpen(true)}
-                >
-                  <Trash2 className="mr-2 h-5 w-5" />
-                  Usuń
-                </Button>
-                <Button
-                  size="lg"
-                  className="bg-white text-fuchsia-600 hover:bg-white/90 shadow-xl"
-                  onClick={() => setFormOpen(true)}
-                >
-                  <Edit className="mr-2 h-5 w-5" />
-                  Edytuj
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
-        </div>
+              <Button
+                size="lg"
+                className="bg-white text-fuchsia-600 hover:bg-white/90 shadow-xl"
+                onClick={() => setFormOpen(true)}
+              >
+                <Edit className="mr-2 h-5 w-5" />
+                Edytuj
+              </Button>
+            </>
+          }
+        />
 
         {/* Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
