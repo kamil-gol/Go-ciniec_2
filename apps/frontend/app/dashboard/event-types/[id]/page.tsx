@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { LoadingState } from '@/components/shared/LoadingState'
 import { DetailHero } from '@/components/shared/DetailHero'
+import { SectionCard } from '@/components/shared/SectionCard'
 import { moduleAccents } from '@/lib/design-tokens'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -161,130 +162,129 @@ export default function EventTypeDetailPage() {
         {/* Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Info Card */}
-          <Card className="border-0 shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-br from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-fuchsia-500 to-pink-500 rounded-lg shadow-lg">
-                  <Theater className="h-5 w-5 text-white" />
-                </div>
-                <h2 className="text-xl font-bold">Informacje</h2>
+          <SectionCard
+            variant="gradient"
+            title="Informacje"
+            icon={<Theater className="h-5 w-5 text-white" />}
+            iconGradient="from-fuchsia-500 to-pink-500"
+            headerGradient="from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10"
+            headerSpacing="mb-4"
+          >
+            <div className="space-y-3">
+              <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Nazwa</span>
+                <span className="font-semibold">{eventType.name}</span>
               </div>
-              <div className="space-y-3">
-                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Nazwa</span>
-                  <span className="font-semibold">{eventType.name}</span>
+              <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Opis</span>
+                <span className="font-medium text-right max-w-[60%] text-sm">{eventType.description || '\u2014'}</span>
+              </div>
+              <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Kolor</span>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="h-6 w-6 rounded-full shadow-sm border border-neutral-200 dark:border-neutral-700"
+                    style={{ backgroundColor: color }}
+                    role="img"
+                    aria-label={`Kolor typu wydarzenia: ${color}`}
+                  />
+                  <span className="font-mono text-sm text-muted-foreground">{eventType.color || 'Brak'}</span>
                 </div>
-                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Opis</span>
-                  <span className="font-medium text-right max-w-[60%] text-sm">{eventType.description || '\u2014'}</span>
+              </div>
+              <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Status</span>
+                <div className="flex items-center gap-3">
+                  <Badge variant={eventType.isActive ? 'default' : 'secondary'}>
+                    {eventType.isActive ? 'Aktywny' : 'Nieaktywny'}
+                  </Badge>
+                  <Switch
+                    checked={eventType.isActive}
+                    onCheckedChange={handleToggleActive}
+                    disabled={toggling}
+                  />
                 </div>
-                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Kolor</span>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-6 w-6 rounded-full shadow-sm border border-neutral-200 dark:border-neutral-700"
-                      style={{ backgroundColor: color }}
-                      role="img"
-                      aria-label={`Kolor typu wydarzenia: ${color}`}
-                    />
-                    <span className="font-mono text-sm text-muted-foreground">{eventType.color || 'Brak'}</span>
-                  </div>
-                </div>
-                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Status</span>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={eventType.isActive ? 'default' : 'secondary'}>
-                      {eventType.isActive ? 'Aktywny' : 'Nieaktywny'}
-                    </Badge>
-                    <Switch
-                      checked={eventType.isActive}
-                      onCheckedChange={handleToggleActive}
-                      disabled={toggling}
-                    />
-                  </div>
-                </div>
-                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Utworzony</span>
-                  <span className="font-medium text-sm">{createdDate}</span>
-                </div>
-                <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Aktualizacja</span>
-                  <span className="font-medium text-sm">{updatedDate}</span>
-                </div>
+              </div>
+              <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Utworzony</span>
+                <span className="font-medium text-sm">{createdDate}</span>
+              </div>
+              <div className="p-3 bg-white dark:bg-black/20 rounded-lg flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Aktualizacja</span>
+                <span className="font-medium text-sm">{updatedDate}</span>
               </div>
             </div>
-          </Card>
+          </SectionCard>
 
           {/* Pricing / Extra Hours Card */}
-          <Card className="border-0 shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-br from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg">
-                  <Timer className="h-5 w-5 text-white" />
+          <SectionCard
+            variant="gradient"
+            title="Czas &amp; dodatkowe godziny"
+            icon={<Timer className="h-5 w-5 text-white" />}
+            iconGradient="from-blue-500 to-cyan-500"
+            headerGradient="from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10"
+            headerSpacing="mb-4"
+          >
+            <div className="space-y-4">
+              {/* Standard hours */}
+              <div className="rounded-xl bg-gradient-to-br from-blue-500/5 to-cyan-500/5 border border-blue-100 dark:border-blue-900/30 p-5">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+                      <Clock className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-semibold">Godziny w cenie</span>
+                  </div>
+                  <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">{effectiveStandardHours}h</span>
                 </div>
-                <h2 className="text-xl font-bold">Czas &amp; dodatkowe godziny</h2>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Ilość godzin wliczonych w cenę podstawową rezerwacji
+                </p>
               </div>
-              <div className="space-y-4">
-                {/* Standard hours */}
-                <div className="rounded-xl bg-gradient-to-br from-blue-500/5 to-cyan-500/5 border border-blue-100 dark:border-blue-900/30 p-5">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
-                        <Clock className="h-4 w-4 text-white" />
-                      </div>
-                      <span className="font-semibold">Godziny w cenie</span>
-                    </div>
-                    <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">{effectiveStandardHours}h</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Ilość godzin wliczonych w cenę podstawową rezerwacji
-                  </p>
-                </div>
 
-                {/* Extra hour rate */}
-                <div className="rounded-xl bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border border-emerald-100 dark:border-emerald-900/30 p-5">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
-                        <Timer className="h-4 w-4 text-white" />
-                      </div>
-                      <span className="font-semibold">Stawka za dodatkową godzinę</span>
+              {/* Extra hour rate */}
+              <div className="rounded-xl bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border border-emerald-100 dark:border-emerald-900/30 p-5">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+                      <Timer className="h-4 w-4 text-white" />
                     </div>
-                    <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{effectiveExtraHourRate} zł</span>
+                    <span className="font-semibold">Stawka za dodatkową godzinę</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Koszt każdej godziny powyżej {effectiveStandardHours}h wliczonych w cenę
-                  </p>
+                  <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{effectiveExtraHourRate} zł</span>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Koszt każdej godziny powyżej {effectiveStandardHours}h wliczonych w cenę
+                </p>
+              </div>
 
-                {/* Example calculation */}
-                <div className="rounded-lg bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 p-4">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Przykład kalkulacji</p>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Wydarzenie {effectiveStandardHours + 2}h</span>
-                      <span className="font-medium">2 dodatkowe godziny</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Dopłata</span>
-                      <span className="font-bold text-blue-600 dark:text-blue-400">+{effectiveExtraHourRate * 2} zł</span>
-                    </div>
+              {/* Example calculation */}
+              <div className="rounded-lg bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 p-4">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Przykład kalkulacji</p>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Wydarzenie {effectiveStandardHours + 2}h</span>
+                    <span className="font-medium">2 dodatkowe godziny</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Dopłata</span>
+                    <span className="font-bold text-blue-600 dark:text-blue-400">+{effectiveExtraHourRate * 2} zł</span>
                   </div>
                 </div>
               </div>
             </div>
-          </Card>
+          </SectionCard>
 
           {/* Relations Card */}
-          <Card className="border-0 shadow-xl overflow-hidden md:col-span-2">
-            <div className="bg-gradient-to-br from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg shadow-lg">
-                  <Calendar className="h-5 w-5 text-white" />
-                </div>
-                <h2 className="text-xl font-bold">Powiązania</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SectionCard
+            variant="gradient"
+            title="Powiązania"
+            icon={<Calendar className="h-5 w-5 text-white" />}
+            iconGradient="from-violet-500 to-purple-500"
+            headerGradient="from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10"
+            headerSpacing="mb-4"
+            className="md:col-span-2"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Reservations */}
                 <div className="rounded-xl bg-gradient-to-br from-violet-500/5 to-purple-500/5 border border-violet-100 dark:border-violet-900/30 p-5">
                   <div className="flex items-center justify-between mb-3">
@@ -339,8 +339,7 @@ export default function EventTypeDetailPage() {
                   </p>
                 </div>
               )}
-            </div>
-          </Card>
+          </SectionCard>
         </div>
       </div>
 
