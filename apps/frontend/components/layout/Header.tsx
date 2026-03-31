@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Bell, Search, Moon, Sun, Menu, CheckCheck } from 'lucide-react'
+import { Bell, Search, Moon, Sun, Menu, CheckCheck, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import GlobalSearch from '@/components/search/GlobalSearch'
@@ -129,7 +129,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
           {/* Welcome Message — responsive */}
           <div>
             <h1 className="text-lg lg:text-xl font-bold text-neutral-900 dark:text-neutral-100">
-              Witaj, {user?.firstName}! 👋
+              Witaj, {user?.firstName}! <Sparkles className="inline h-4 w-4 ml-0.5 -mt-0.5 text-amber-500" />
             </h1>
             <p className="hidden sm:block text-sm text-neutral-500 dark:text-neutral-300">
               {new Date().toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
