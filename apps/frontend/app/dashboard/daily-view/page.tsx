@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CalendarDays, ChevronLeft, ChevronRight, CalendarCheck, TrendingUp } from 'lucide-react'
 import { PageLayout, PageHero } from '@/components/shared'
-import { moduleAccents } from '@/lib/design-tokens'
+import { moduleAccents, motionTokens } from '@/lib/design-tokens'
 import { useReservations } from '@/lib/api/reservations'
 import DailyReservationsSection from './components/DailyReservationsSection'
 import CateringDailyWidget from './components/CateringDailyWidget'
@@ -165,7 +165,7 @@ export default function DailyViewPage() {
           initial={{ opacity: 0, x: direction === 'right' ? 24 : -24 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: direction === 'right' ? -24 : 24 }}
-          transition={{ duration: 0.22, ease: 'easeInOut' }}
+          transition={{ duration: motionTokens.duration.fast, ease: 'easeInOut' }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6"
         >
           <DailyReservationsSection date={selectedDate} />

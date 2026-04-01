@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { motionTokens } from '@/lib/design-tokens'
 
 interface EntityCardProps {
   children: React.ReactNode
@@ -57,7 +58,7 @@ export function EntityCard({
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4, ease: 'easeOut' }}
+      transition={{ delay, duration: motionTokens.duration.medium, ease: motionTokens.ease.default }}
       onClick={onClick}
       className={cn(
         'group relative overflow-hidden rounded-2xl',

@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
+import { motionTokens } from '@/lib/design-tokens'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Stepper, StepNavigation, StepConfig } from '@/components/ui/stepper'
 import { useCreateReservation } from '@/hooks/use-reservations'
@@ -351,7 +352,7 @@ export function CreateReservationForm({
       ref={formRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: motionTokens.duration.normal }}
     >
       <Card className="overflow-hidden">
         {!isPromotingFromQueue && (
@@ -377,7 +378,7 @@ export function CreateReservationForm({
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                transition={{ duration: motionTokens.duration.fast, ease: 'easeInOut' }}
               >
                 {renderStep(currentStep)}
               </motion.div>

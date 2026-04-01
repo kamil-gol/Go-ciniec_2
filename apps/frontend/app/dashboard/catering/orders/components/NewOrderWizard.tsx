@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { motionTokens } from '@/lib/design-tokens';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useCreateCateringOrder } from '@/hooks/use-catering-orders';
@@ -248,7 +249,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
 
   return (
     <>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: motionTokens.duration.normal }}>
         <Card className="overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-b border-neutral-200 dark:border-neutral-700">
             <CardTitle className="text-xl">Nowe zamówienie cateringowe</CardTitle>
@@ -268,7 +269,7 @@ export function NewOrderWizard({ onSuccess }: Props) {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                transition={{ duration: motionTokens.duration.fast, ease: 'easeInOut' }}
               >
                 {stepRenderers[step]()}
               </motion.div>

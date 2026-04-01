@@ -10,7 +10,7 @@ import { MenuPackage } from '@/types/menu.types';
 import { Check, Users, DollarSign, CheckCircle2, Baby, Smile } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { moduleAccents } from '@/lib/design-tokens';
+import { moduleAccents, motionTokens } from '@/lib/design-tokens';
 
 const accent = moduleAccents.menu;
 
@@ -31,7 +31,7 @@ export function PackageCard({
     <motion.div
       whileHover={{ y: -4 }}
       whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: motionTokens.duration.fast }}
     >
       <div
         className={cn(

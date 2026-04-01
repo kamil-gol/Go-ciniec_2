@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { Bell, Search, Moon, Sun, Menu, CheckCheck, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { motionTokens } from '@/lib/design-tokens'
 import { cn } from '@/lib/utils'
 import GlobalSearch from '@/components/search/GlobalSearch'
 import { useNotifications, useUnreadCount, useMarkAsRead, useMarkAllAsRead } from '@/hooks/use-notifications'
@@ -166,7 +167,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                     initial={{ rotate: -90, opacity: 0, scale: 0.5 }}
                     animate={{ rotate: 0, opacity: 1, scale: 1 }}
                     exit={{ rotate: 90, opacity: 0, scale: 0.5 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: motionTokens.duration.fast }}
                   >
                     <Sun className="h-[18px] w-[18px] text-amber-500" />
                   </motion.div>
@@ -176,7 +177,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                     initial={{ rotate: 90, opacity: 0, scale: 0.5 }}
                     animate={{ rotate: 0, opacity: 1, scale: 1 }}
                     exit={{ rotate: -90, opacity: 0, scale: 0.5 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: motionTokens.duration.fast }}
                   >
                     <Moon className="h-[18px] w-[18px] text-neutral-600 dark:text-neutral-300" />
                   </motion.div>
@@ -219,7 +220,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                     initial={{ opacity: 0, y: 8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: motionTokens.duration.fast }}
                     className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-neutral-800 shadow-xl border border-neutral-200/80 dark:border-neutral-700/50 overflow-hidden z-50"
                   >
                     <div className="p-4 border-b border-neutral-100 dark:border-neutral-700/50">

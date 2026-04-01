@@ -9,6 +9,7 @@
 import { PriceBreakdown as PriceBreakdownType } from '@/types/menu.types';
 import { Users, Package, Plus, Calculator, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { motionTokens } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -76,7 +77,7 @@ export function PriceBreakdown({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: motionTokens.duration.fast }}
                   className="overflow-hidden"
                 >
                   <div className="space-y-2 border-t border-neutral-200 p-4 dark:border-neutral-700">
@@ -168,7 +169,7 @@ export function PriceBreakdown({
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: motionTokens.duration.fast }}
                     className="overflow-hidden"
                   >
                     <div className="space-y-2 border-t border-neutral-200 p-4 dark:border-neutral-700">

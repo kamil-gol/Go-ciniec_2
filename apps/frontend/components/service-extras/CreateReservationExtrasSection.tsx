@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { motionTokens } from '@/lib/design-tokens'
 import { useServiceCategories, useServiceItems } from '@/hooks/use-service-extras'
 import type { ServiceItem } from '@/types/service-extra.types'
 import { formatCurrency } from '@/lib/utils'
@@ -220,7 +221,7 @@ export function CreateReservationExtrasSection({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: motionTokens.duration.fast }}
             className="overflow-hidden"
           >
             {isLoading ? (

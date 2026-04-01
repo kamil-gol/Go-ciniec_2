@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
+import { motionTokens } from '@/lib/design-tokens'
 import { LogIn, Mail, Lock, AlertCircle, Building2 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -84,7 +85,7 @@ export default function LoginPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: motionTokens.duration.slow }}
         className="relative max-w-md w-full"
       >
         {/* Logo & Header Card */}
@@ -123,7 +124,7 @@ export default function LoginPage() {
             ? { opacity: 1, y: 0, x: [0, -8, 8, -4, 4, 0] }
             : { opacity: 1, y: 0 }
           }
-          transition={{ delay: errorCount > 0 ? 0 : 0.3, duration: error ? 0.4 : 0.5 }}
+          transition={{ delay: errorCount > 0 ? 0 : 0.3, duration: error ? motionTokens.duration.medium : motionTokens.duration.slow }}
           className="relative bg-white/80 dark:bg-neutral-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-8"
         >
           <div className="mb-6">

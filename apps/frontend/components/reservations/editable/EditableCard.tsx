@@ -2,6 +2,7 @@
 
 import { useState, useCallback, ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { motionTokens } from '@/lib/design-tokens'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Edit, X, Save, AlertCircle, Loader2 } from 'lucide-react'
@@ -163,7 +164,7 @@ export function EditableCard({
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: motionTokens.duration.fast }}
             >
               {children(editing)}
             </motion.div>
@@ -175,7 +176,7 @@ export function EditableCard({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: motionTokens.duration.fast }}
                 className="mt-6 space-y-3"
               >
                 {reasonBlock}
@@ -207,7 +208,7 @@ export function EditableCard({
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: motionTokens.duration.fast }}
           >
             {children(editing)}
           </motion.div>
@@ -219,7 +220,7 @@ export function EditableCard({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: motionTokens.duration.fast }}
               className="mt-6 space-y-3"
             >
               {reasonBlock}
