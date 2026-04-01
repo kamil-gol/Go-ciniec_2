@@ -90,6 +90,15 @@ vi.mock('@/components/shared', () => ({
       <span>{value}</span>
     </div>
   ),
+  FilterTabs: ({ tabs, activeKey, onChange }: any) => (
+    <div data-testid="filter-tabs">
+      {tabs.map((t: any) => (
+        <button key={t.key} onClick={() => onChange(t.key)} data-active={t.key === activeKey}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  ),
   ErrorState: ({ message }: any) => <div data-testid="error-state">{message}</div>,
 }))
 

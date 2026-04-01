@@ -107,7 +107,7 @@ function TimelineItem({ log, index, isLast }: { log: AuditLogEntry; index: numbe
           <div className="flex items-center gap-2 flex-wrap">
             <Badge
               variant="outline"
-              className={`text-xs font-medium ${actionColors[log.action] || 'bg-neutral-100 text-neutral-700'}`}
+              className={`text-xs font-medium ${actionColors[log.action] || 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'}`}
             >
               {actionLabels[log.action] || log.action}
             </Badge>

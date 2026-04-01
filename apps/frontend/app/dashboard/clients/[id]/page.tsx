@@ -28,6 +28,8 @@ import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
+import { FilterTabs } from '@/components/shared/FilterTabs'
+import { GradientDivider } from '@/components/shared/GradientDivider'
 import { CompanyInfoCard, ContactInfoCard } from './components/ClientInfoCards'
 import { ClientReservationsHistory } from './components/ClientReservationsHistory'
 
@@ -194,31 +196,18 @@ export default function ClientDetailsPage() {
           />
         </div>
 
+        <GradientDivider />
+
         {/* Tab bar */}
-        <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-full sm:w-fit">
-          <button
-            onClick={() => setActiveTab('details')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'details'
-                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
-            }`}
-          >
-            {isCompany ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
-            {isCompany ? 'Dane firmy' : 'Dane klienta'}
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'history'
-                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
-            }`}
-          >
-            <History className="h-4 w-4" />
-            Historia zmian
-          </button>
-        </div>
+        <FilterTabs
+          tabs={[
+            { key: 'details', label: isCompany ? 'Dane firmy' : 'Dane klienta', icon: isCompany ? Building2 : User },
+            { key: 'history', label: 'Historia zmian', icon: History },
+          ]}
+          activeKey={activeTab}
+          onChange={(key) => setActiveTab(key as TabType)}
+          width="full"
+        />
 
         {/* Tab: Dane klienta / firmy */}
         {activeTab === 'details' && (

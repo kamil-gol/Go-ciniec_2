@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { motionTokens } from '@/lib/design-tokens'
 import { type LucideIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { AnimatedCounter } from './AnimatedCounter'
 
 interface StatCardProps {
   /** Card title / label */
@@ -122,9 +123,13 @@ export function StatCard({
           </div>
         </div>
 
-        {/* Row 2: Value */}
+        {/* Row 2: Value — animated count-up for pure numbers */}
         <p className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">
-          {value}
+          {typeof value === 'number' ? (
+            <AnimatedCounter value={value} duration={800} />
+          ) : (
+            value
+          )}
         </p>
 
         {/* Row 3: Change indicator */}

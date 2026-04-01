@@ -21,7 +21,9 @@ export function ReportFilters({
   const showViewToggle = activeTab === 'preparations' || activeTab === 'menu-preparations';
   const currentView = activeTab === 'menu-preparations' ? menuPrepView : prepView;
   const setCurrentView = activeTab === 'menu-preparations' ? setMenuPrepView : setPrepView;
-  const viewColor = activeTab === 'menu-preparations' ? 'amber' : 'purple';
+  const viewActiveClass = activeTab === 'menu-preparations'
+    ? 'bg-amber-600 text-white'
+    : 'bg-purple-600 text-white';
 
   return (
     <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
@@ -44,12 +46,12 @@ export function ReportFilters({
             <div>
               <label className="block text-xs text-neutral-500 dark:text-neutral-300 mb-1">Od</label>
               <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-blue-500" />
+                className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-blue-500 dark:focus:border-blue-400" />
             </div>
             <div>
               <label className="block text-xs text-neutral-500 dark:text-neutral-300 mb-1">Do</label>
               <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-blue-500" />
+                className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-blue-500 dark:focus:border-blue-400" />
             </div>
           </div>
           {activeTab === 'revenue' && (
@@ -73,11 +75,11 @@ export function ReportFilters({
               <label className="block text-xs text-neutral-500 dark:text-neutral-300 mb-1">Widok</label>
               <div className="flex rounded-lg border border-neutral-300 dark:border-neutral-600 overflow-hidden">
                 <button onClick={() => setCurrentView('detailed')}
-                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'detailed' ? `bg-${viewColor}-600 text-white` : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'detailed' ? viewActiveClass : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
                   {"Szczegółowy"}
                 </button>
                 <button onClick={() => setCurrentView('summary')}
-                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'summary' ? `bg-${viewColor}-600 text-white` : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'summary' ? viewActiveClass : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
                   Zbiorczy
                 </button>
               </div>

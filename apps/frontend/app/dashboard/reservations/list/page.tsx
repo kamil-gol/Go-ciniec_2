@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Plus, Calendar, CheckCircle2, Clock, TrendingUp } from 'lucide-react'
+import { Plus, Calendar, CalendarDays, CheckCircle2, Clock, List, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ReservationsList } from '@/components/reservations/reservations-list'
@@ -85,8 +85,8 @@ export default function ReservationsListPage() {
       {/* View toggle */}
       <FilterTabs
         tabs={[
-          { key: 'list', label: 'Lista' },
-          { key: 'calendar', label: 'Kalendarz' },
+          { key: 'list', label: 'Lista', icon: List },
+          { key: 'calendar', label: 'Kalendarz', icon: CalendarDays },
         ]}
         activeKey="list"
         onChange={(key) => {

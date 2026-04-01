@@ -30,6 +30,8 @@ import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 import { SectionCard } from '@/components/shared/SectionCard'
+import { FilterTabs } from '@/components/shared/FilterTabs'
+import { GradientDivider } from '@/components/shared/GradientDivider'
 import { ReservationTimeline } from '@/components/reservations/ReservationTimeline'
 import { ReservationHero } from './components/ReservationHero'
 import { QuickActionsCard } from './components/QuickActionsCard'
@@ -235,31 +237,17 @@ export default function ReservationDetailsPage() {
         {/* Status Timeline */}
         <ReservationTimeline status={reservation.status} />
 
+        <GradientDivider />
+
         {/* US-9.8: Tab bar */}
-        <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
-          <button
-            onClick={() => setActiveTab('details')}
-            className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'details'
-                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
-            }`}
-          >
-            <Calendar className="h-4 w-4" />
-            Szczegóły
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'history'
-                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-200'
-            }`}
-          >
-            <History className="h-4 w-4" />
-            Historia
-          </button>
-        </div>
+        <FilterTabs
+          tabs={[
+            { key: 'details', label: 'Szczegóły', icon: Calendar },
+            { key: 'history', label: 'Historia', icon: History },
+          ]}
+          activeKey={activeTab}
+          onChange={(key) => setActiveTab(key as TabType)}
+        />
 
         {/* Tab: Szczegóły */}
         {activeTab === 'details' && (

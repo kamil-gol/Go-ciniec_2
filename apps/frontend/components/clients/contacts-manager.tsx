@@ -184,7 +184,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
               <h3 className="font-semibold text-amber-700 dark:text-amber-400 text-sm">
                 {editingId ? 'Edytuj osobę kontaktową' : 'Nowa osoba kontaktowa'}
               </h3>
-              <Button type="button" variant="ghost" size="sm" onClick={closeForm} className="h-7 w-7 p-0">
+              <Button type="button" variant="ghost" size="icon" onClick={closeForm}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -270,7 +270,7 @@ export function ContactsManager({ clientId, contacts, readOnly = false, onUpdate
                   {!readOnly && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-foreground">
+                        <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-foreground">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>

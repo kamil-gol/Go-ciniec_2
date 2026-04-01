@@ -176,7 +176,7 @@ export function DepositActions({ deposit, onUpdate }: DepositActionsProps) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="Akcje zaliczki">
+          <Button variant="ghost" size="icon" className="hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="Akcje zaliczki">
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>

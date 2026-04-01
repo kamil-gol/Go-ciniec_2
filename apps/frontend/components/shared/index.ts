@@ -1,4 +1,6 @@
+export { AnimatedCounter } from './AnimatedCounter'
 export { AnimatedSection } from './AnimatedSection'
+export { GradientDivider } from './GradientDivider'
 export { PageLayout } from './PageLayout'
 export { PageHero } from './PageHero'
 export { StatCard } from './StatCard'
