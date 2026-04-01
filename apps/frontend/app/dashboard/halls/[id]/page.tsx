@@ -191,7 +191,7 @@ export default function HallDetailsPage() {
         {/* Quick Stats */}
         <AnimatedSection index={3}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg">
@@ -205,7 +205,7 @@ export default function HallDetailsPage() {
             </div>
           </Card>
 
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg">
@@ -220,7 +220,7 @@ export default function HallDetailsPage() {
           </Card>
 
           {/* #165: Booking mode stat card */}
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <div className="bg-gradient-to-br from-violet-500/10 to-purple-500/10 p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-500 rounded-xl shadow-lg">
