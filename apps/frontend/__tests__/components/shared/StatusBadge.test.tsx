@@ -66,9 +66,12 @@ describe('StatusBadge', () => {
     expect(screen.queryByText('CONFIRMED-label')).not.toBeInTheDocument()
   })
 
-  it('should show icon in dot variant when showIcon is true', () => {
-    render(<StatusBadge type="reservation" status="CONFIRMED" variant="dot" showIcon />)
-    expect(screen.getByTestId('status-icon')).toBeInTheDocument()
+  it('should render dot element in dot variant', () => {
+    const { container } = render(
+      <StatusBadge type="reservation" status="COMPLETED" variant="dot" />
+    )
+    const dotEl = container.querySelector('.bg-dot-test')
+    expect(dotEl).toBeInTheDocument()
   })
 
   it('should apply custom className', () => {

@@ -1,8 +1,11 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// Mock framer-motion useInView to always return true (element visible)
-const mockUseInView = vi.fn()
+// Must use vi.hoisted so the mock fn is available before vi.mock runs
+const { mockUseInView } = vi.hoisted(() => ({
+  mockUseInView: vi.fn(),
+}))
+
 vi.mock('framer-motion', () => ({
   useInView: mockUseInView,
 }))
@@ -12,9 +15,7 @@ import { AnimatedCounter } from '@/components/shared/AnimatedCounter'
 describe('AnimatedCounter', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Default: element is in view
     mockUseInView.mockReturnValue(true)
-    // Use fake timers for requestAnimationFrame control
     vi.useFakeTimers()
   })
 
@@ -41,10 +42,8 @@ describe('AnimatedCounter', () => {
   })
 
   it('should display the target value after animation completes', async () => {
-    // useInView returns true, animation should start
     render(<AnimatedCounter value={50} duration={100} />)
 
-    // Advance timers to let requestAnimationFrame callbacks fire
     vi.useRealTimers()
     await new Promise((r) => setTimeout(r, 200))
 
