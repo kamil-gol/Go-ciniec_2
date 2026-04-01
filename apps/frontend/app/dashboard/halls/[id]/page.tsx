@@ -62,7 +62,7 @@ export default function HallDetailsPage() {
       <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Premium Hero Section */}
         <DetailHero
-          gradient="from-violet-600 via-purple-600 to-indigo-600"
+          gradient="from-primary-600 to-primary-700"
           backHref="/dashboard/halls"
           backLabel="Powrót do listy"
           icon={Building2}
@@ -129,7 +129,7 @@ export default function HallDetailsPage() {
             <Card className="border-0 shadow-xl overflow-hidden">
               <div className="bg-gradient-to-br from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10 p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-lg">
+                  <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-lg">
                     <CheckCircle2 className="h-5 w-5 text-white" />
                   </div>
                   <h2 className="text-xl font-bold">Udogodnienia</h2>
@@ -151,7 +151,7 @@ export default function HallDetailsPage() {
 
         {/* Calendar Section */}
         <Card className="border-0 shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-6 text-white">
+          <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-6 text-white">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
                 <Calendar className="h-6 w-6" />
@@ -209,9 +209,9 @@ export default function HallDetailsPage() {
 
           {/* #165: Booking mode stat card */}
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-            <div className="bg-gradient-to-br from-violet-500/10 to-purple-500/10 p-6">
+            <div className="bg-gradient-to-br from-primary-500/10 to-primary-600/10 p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-500 rounded-xl shadow-lg">
+                <div className="p-3 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
                   {hall.allowMultipleBookings
                     ? <UsersRound className="h-6 w-6 text-white" />
                     : <UserCheck className="h-6 w-6 text-white" />}

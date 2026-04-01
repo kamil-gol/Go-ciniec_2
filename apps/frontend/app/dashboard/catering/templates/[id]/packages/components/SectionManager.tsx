@@ -41,7 +41,7 @@ import { OptionManager } from './OptionManager';
 import type { CateringPackage, CateringPackageSection } from '@/types/catering.types';
 
 const SECTION_COLORS = [
-  'from-violet-500 to-purple-600',
+  'from-primary-500 to-primary-600',
   'from-blue-500 to-indigo-600',
   'from-emerald-500 to-teal-600',
   'from-orange-500 to-amber-600',

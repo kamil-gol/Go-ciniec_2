@@ -170,7 +170,7 @@ export default function PackagesListPage() {
                     <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                       <div className="min-w-0 bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-sm">
                         <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-2 overflow-hidden">
-                          <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded sm:rounded-lg flex-shrink-0">
+                          <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-primary-500 to-primary-600 rounded sm:rounded-lg flex-shrink-0">
                             <Users className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
                           <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-300 truncate">Dorośli</span>

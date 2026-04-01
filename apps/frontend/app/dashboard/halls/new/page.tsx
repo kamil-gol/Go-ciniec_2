@@ -28,7 +28,7 @@ export default function NewHallPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.name || formData.capacity <= 0) {
       toast.error('Wypełnij wszystkie wymagane pola')
       return
@@ -69,9 +69,9 @@ export default function NewHallPage() {
       <Breadcrumb />
       <div className="container mx-auto py-8 px-4 max-w-4xl space-y-8">
         {/* Premium Hero */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 p-8 text-white shadow-2xl">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600 to-primary-700 p-8 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
-          
+
           <div className="relative z-10 space-y-4">
             <Link href="/dashboard/halls">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 -ml-2">
@@ -101,7 +101,7 @@ export default function NewHallPage() {
           <Card className="border-0 shadow-xl p-8">
             <div className="space-y-6">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+                <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg">
                   <Sparkles className="h-5 w-5 text-white" />
                 </div>
                 <h2 className="text-2xl font-bold">Podstawowe informacje</h2>
@@ -212,7 +212,7 @@ export default function NewHallPage() {
               type="submit"
               disabled={saving}
               size="lg"
-              className="flex-1 h-14 text-lg bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 hover:from-emerald-700 hover:via-green-700 hover:to-teal-700 shadow-xl"
+              className="flex-1 h-14 text-lg bg-primary-600 hover:bg-primary-700 shadow-xl"
             >
               <Plus className="mr-2 h-5 w-5" />
               {saving ? 'Tworzenie...' : 'Utwórz Salę'}
