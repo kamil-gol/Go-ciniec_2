@@ -4,6 +4,8 @@
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -25,7 +27,7 @@ export function AuditLogDetails({ log, open, onClose }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl !p-0 overflow-hidden max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl !p-0 overflow-hidden max-h-[90vh] flex flex-col" aria-describedby={undefined}>
         {/* Gradient Header */}
         <div className="relative bg-gradient-to-r from-zinc-800 via-zinc-700 to-neutral-700 dark:from-zinc-900 dark:via-zinc-800 dark:to-neutral-800 px-6 py-5 flex-shrink-0">
           <div className="flex items-center gap-3 pr-8">
@@ -33,7 +35,7 @@ export function AuditLogDetails({ log, open, onClose }: Props) {
               <FileText className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">{'Szczegóły wpisu'}</h2>
+              <DialogTitle className="text-lg font-semibold text-white">Szczegóły wpisu</DialogTitle>
               <p className="text-sm text-white/60">
                 {format(new Date(log.createdAt), 'd MMMM yyyy, HH:mm:ss', { locale: pl })}
               </p>
