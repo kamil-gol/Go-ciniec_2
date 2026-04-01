@@ -32,6 +32,9 @@ interface Props {
   onPageChange: (page: number) => void;
 }
 
+// ── Hover accent consistent with Configuration module (slate) ────────────────
+const ROW_HOVER = 'hover:bg-slate-50/60 dark:hover:bg-slate-900/10 border-l-2 border-l-transparent hover:border-l-slate-400 dark:hover:border-l-slate-500';
+
 export function AuditLogTable({
   data,
   page,
@@ -162,7 +165,7 @@ export function AuditLogTable({
       </div>
 
       {/* ===== DESKTOP TABLE VIEW ===== */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className={typography.tableHeaderRow}>
@@ -235,7 +238,7 @@ function DesktopGroupRows({
   return (
     <>
       <TableRow
-        className="group cursor-pointer transition-colors hover:bg-muted/50"
+        className={`group cursor-pointer transition-colors ${ROW_HOVER}`}
         onClick={() => (hasRelated ? onToggle() : onSelect(log))}
       >
         <TableCell className="whitespace-nowrap">
