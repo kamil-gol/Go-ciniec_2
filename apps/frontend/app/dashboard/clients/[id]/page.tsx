@@ -29,6 +29,7 @@ import { pl } from 'date-fns/locale'
 
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 import { FilterTabs } from '@/components/shared/FilterTabs'
+import { GradientDivider } from '@/components/shared/GradientDivider'
 import { CompanyInfoCard, ContactInfoCard } from './components/ClientInfoCards'
 import { ClientReservationsHistory } from './components/ClientReservationsHistory'
 
@@ -194,6 +195,8 @@ export default function ClientDetailsPage() {
             iconGradient={statGradients.financial}
           />
         </div>
+
+        <GradientDivider />
 
         {/* Tab bar */}
         <FilterTabs

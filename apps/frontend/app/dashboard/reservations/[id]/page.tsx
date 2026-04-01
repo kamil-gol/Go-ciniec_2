@@ -31,6 +31,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 import { SectionCard } from '@/components/shared/SectionCard'
 import { FilterTabs } from '@/components/shared/FilterTabs'
+import { GradientDivider } from '@/components/shared/GradientDivider'
 import { ReservationTimeline } from '@/components/reservations/ReservationTimeline'
 import { ReservationHero } from './components/ReservationHero'
 import { QuickActionsCard } from './components/QuickActionsCard'
@@ -235,6 +236,8 @@ export default function ReservationDetailsPage() {
 
         {/* Status Timeline */}
         <ReservationTimeline status={reservation.status} />
+
+        <GradientDivider />
 
         {/* US-9.8: Tab bar */}
         <FilterTabs
