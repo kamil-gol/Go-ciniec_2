@@ -41,13 +41,13 @@ export const depositStatsService = {
         COUNT(*) FILTER (WHERE status IN ('PENDING','PAID','OVERDUE','PARTIALLY_PAID'))::int as total,
         COUNT(*) FILTER (WHERE status = 'PENDING')::int as pending,
         COUNT(*) FILTER (WHERE status = 'PAID')::int as paid,
-        COUNT(*) FILTER (WHERE status = 'PENDING' AND "dueDate" < ${todayStr})::int as overdue,
+        COUNT(*) FILTER (WHERE status = 'OVERDUE')::int as overdue,
         COUNT(*) FILTER (WHERE status = 'PARTIALLY_PAID')::int as "partiallyPaid",
         COUNT(*) FILTER (WHERE status = 'CANCELLED')::int as cancelled,
         COUNT(*) FILTER (WHERE status = 'PENDING' AND "dueDate" >= ${todayStr} AND "dueDate" <= ${futureStr})::int as "upcomingIn7Days",
         COALESCE(SUM(amount) FILTER (WHERE status IN ('PENDING','PAID','OVERDUE','PARTIALLY_PAID')), 0)::numeric as "totalAmount",
         COALESCE(SUM(amount) FILTER (WHERE paid = true), 0)::numeric as "paidAmountSum",
-        COALESCE(SUM(amount) FILTER (WHERE status = 'PENDING' AND "dueDate" < ${todayStr}), 0)::numeric as "overdueAmount"
+        COALESCE(SUM(amount) FILTER (WHERE status = 'OVERDUE'), 0)::numeric as "overdueAmount"
       FROM "Deposit"`;
 
     const row = stats[0] || {};

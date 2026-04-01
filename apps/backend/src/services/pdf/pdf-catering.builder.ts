@@ -14,6 +14,7 @@ import type {
   CateringKitchenPrintData,
   CateringInvoicePDFData,
   CateringOrderPDFData,
+  CateringExtraItemForPDF,
 } from './pdf.types';
 
 import {
@@ -250,9 +251,33 @@ export function buildCateringOrderPDF(
 
   doc.moveDown(0.4);
 
+  // Extras table
+  const extras: CateringExtraItemForPDF[] = (data.extras ?? []).map(e => ({
+    name: e.name,
+    description: (e as any).description,
+    quantity: Number(e.quantity),
+    unitPrice: Number(e.unitPrice),
+    totalPrice: Number(e.totalPrice),
+  }));
+  if (extras.length > 0) {
+    doc.fontSize(11).font(getBoldFont(useCustomFonts)).fillColor(COLORS.textDark);
+    doc.text('USŁUGI DODATKOWE', left, doc.y);
+    doc.moveDown(0.3);
+    const extraRows = extras.map(e => [
+      e.name + (e.description ? ` (${e.description})` : ''),
+      `${e.quantity}`,
+      formatCurrency(e.unitPrice),
+      formatCurrency(e.totalPrice),
+    ]);
+    drawCompactTable(doc, ctx, ['Usługa', 'Ilość', 'Cena jedn.', 'Razem'], extraRows, colWidths, left);
+    doc.moveDown(0.4);
+  }
+
   // Financial summary
   doc.fontSize(10).font(getBoldFont(useCustomFonts)).fillColor(COLORS.textDark);
   doc.text(`Suma częściowa: ${formatCurrency(data.subtotal)}`, left, doc.y, { align: 'right', width: pageWidth });
+  if (data.extrasTotalPrice && data.extrasTotalPrice > 0)
+    doc.text(`Usługi dodatkowe: ${formatCurrency(data.extrasTotalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
   if (data.discountAmount && data.discountAmount > 0)
     doc.text(`Rabat: -${formatCurrency(data.discountAmount)}`, left, doc.y, { align: 'right', width: pageWidth });
   doc.text(`DO ZAPŁATY: ${formatCurrency(data.totalPrice)}`, left, doc.y, { align: 'right', width: pageWidth });
