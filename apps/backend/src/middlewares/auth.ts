@@ -114,26 +114,6 @@ export const authMiddleware = (
   }
 };
 
-/**
- * Role-based access control middleware (legacy)
- * @deprecated Use requirePermission from permissions.ts instead
- */
-export const requireRole = (...roles: string[]) => {
-  return (req: AuthenticatedRequest, _res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      next(new AppError(401, AUTH.AUTH_REQUIRED));
-      return;
-    }
-
-    if (!roles.includes(req.user.role)) {
-      logger.warn(`Unauthorized access attempt by ${req.user.email} (${req.user.role})`);
-      next(new AppError(403, AUTH.INSUFFICIENT_PERMISSIONS));
-      return;
-    }
-
-    next();
-  };
-};
 
 // Aliases for backward compatibility with newer code
 export { authMiddleware as authenticate };

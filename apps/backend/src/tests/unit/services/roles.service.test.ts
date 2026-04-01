@@ -32,7 +32,7 @@ jest.mock('@utils/AppError', () => ({
   },
 }));
 jest.mock('@utils/audit-logger', () => ({
-  logActivity: jest.fn(),
+  logChange: jest.fn(),
 }));
 jest.mock('@middlewares/permissions', () => ({
   invalidateAllPermissionCaches: jest.fn(),
@@ -43,7 +43,7 @@ jest.mock('@utils/logger', () => ({
 
 import RolesService from '@services/roles.service';
 import { invalidateAllPermissionCaches } from '@middlewares/permissions';
-import { logActivity } from '@utils/audit-logger';
+import { logChange } from '@utils/audit-logger';
 
 // ── Fixtures ─────────────────────────────────────────────
 const mockPermission = {
@@ -140,7 +140,7 @@ describe('RolesService', () => {
 
       expect(result.name).toBe('Kelner');
       expect(result.isSystem).toBe(false);
-      expect(logActivity).toHaveBeenCalledWith(
+      expect(logChange).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'ROLE_CREATED' })
       );
     });
@@ -187,7 +187,7 @@ describe('RolesService', () => {
 
       expect(result.name).toBe('Super Admin');
       expect(invalidateAllPermissionCaches).toHaveBeenCalled();
-      expect(logActivity).toHaveBeenCalledWith(
+      expect(logChange).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'ROLE_UPDATED' })
       );
     });
@@ -215,7 +215,7 @@ describe('RolesService', () => {
 
       expect(mockPrisma.$transaction).toHaveBeenCalled();
       expect(invalidateAllPermissionCaches).toHaveBeenCalled();
-      expect(logActivity).toHaveBeenCalledWith(
+      expect(logChange).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'ROLE_PERMISSIONS_UPDATED' })
       );
     });
@@ -239,7 +239,7 @@ describe('RolesService', () => {
 
       expect(mockPrisma.role.delete).toHaveBeenCalledWith({ where: { id: 'role-custom' } });
       expect(invalidateAllPermissionCaches).toHaveBeenCalled();
-      expect(logActivity).toHaveBeenCalledWith(
+      expect(logChange).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'ROLE_DELETED' })
       );
     });

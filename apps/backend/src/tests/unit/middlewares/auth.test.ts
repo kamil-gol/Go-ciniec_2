@@ -9,7 +9,7 @@ jest.mock('../../../utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-import { generateToken, verifyToken, authMiddleware, requireRole } from '../../../middlewares/auth';
+import { generateToken, verifyToken, authMiddleware } from '../../../middlewares/auth';
 import { AppError } from '../../../utils/AppError';
 
 describe('auth middleware', () => {
@@ -163,60 +163,6 @@ describe('auth middleware', () => {
     });
   });
 
-  describe('requireRole (legacy from auth.ts)', () => {
-    let req: any;
-    let res: Partial<Response>;
-    let next: jest.Mock;
-
-    beforeEach(() => {
-      req = {};
-      res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
-      };
-      next = jest.fn();
-    });
-
-    it('should call next when user has required role', () => {
-      req.user = { id: '1', email: 'a@b.com', role: 'ADMIN' };
-      const middleware = requireRole('ADMIN');
-
-      middleware(req, res as Response, next);
-
-      expect(next).toHaveBeenCalledWith();
-    });
-
-    it('should call next with 403 when user lacks role', () => {
-      req.user = { id: '1', email: 'a@b.com', role: 'EMPLOYEE' };
-      const middleware = requireRole('ADMIN');
-
-      middleware(req, res as Response, next);
-
-      expect(next).toHaveBeenCalledWith(expect.any(AppError));
-      const error = next.mock.calls[0][0];
-      expect(error.statusCode).toBe(403);
-    });
-
-    it('should call next with 401 when no user', () => {
-      req.user = undefined;
-      const middleware = requireRole('ADMIN');
-
-      middleware(req, res as Response, next);
-
-      expect(next).toHaveBeenCalledWith(expect.any(AppError));
-      const error = next.mock.calls[0][0];
-      expect(error.statusCode).toBe(401);
-    });
-
-    it('should accept user with one of multiple roles', () => {
-      req.user = { id: '1', email: 'a@b.com', role: 'EMPLOYEE' };
-      const middleware = requireRole('ADMIN', 'EMPLOYEE');
-
-      middleware(req, res as Response, next);
-
-      expect(next).toHaveBeenCalledWith();
-    });
-  });
 
   // ═══════════ edge cases / branch coverage ═══════════
   describe('edge cases / branch coverage', () => {
@@ -244,18 +190,6 @@ describe('auth middleware', () => {
       });
     });
 
-    describe('requireRole — single role', () => {
-      it('should work with single role', () => {
-        const req = { user: { id: '1', email: 'a@b.com', role: 'EMPLOYEE' } } as any;
-        const res = {} as any;
-        const next = jest.fn();
-        const middleware = requireRole('EMPLOYEE');
-
-        middleware(req, res, next);
-
-        expect(next).toHaveBeenCalledWith();
-      });
-    });
 
     describe('verifyToken — expired token', () => {
       it('should throw on expired token with negative expiry', () => {

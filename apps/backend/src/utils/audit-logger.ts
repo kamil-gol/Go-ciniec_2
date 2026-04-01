@@ -71,11 +71,6 @@ export async function logChange(params: LogChangeParams): Promise<void> {
   }
 }
 
-/**
- * Backward-compatible alias for logChange.
- * @deprecated Use logChange instead.
- */
-export const logActivity = logChange;
 
 /**
  * Porównuje dwa obiekty i zwraca różnice

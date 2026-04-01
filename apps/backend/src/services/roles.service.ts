@@ -3,7 +3,7 @@
  */
 import { prisma } from '@/lib/prisma';
 import { AppError } from '@utils/AppError';
-import { logActivity } from '@utils/audit-logger';
+import { logChange } from '@utils/audit-logger';
 import { invalidateAllPermissionCaches } from '@middlewares/permissions';
 import logger from '@utils/logger';
 
@@ -117,7 +117,7 @@ class RolesService {
       },
     });
 
-    await logActivity({
+    await logChange({
       userId: actorId,
       action: 'ROLE_CREATED',
       entityType: 'Role',
@@ -162,7 +162,7 @@ class RolesService {
 
     invalidateAllPermissionCaches();
 
-    await logActivity({
+    await logChange({
       userId: actorId,
       action: 'ROLE_UPDATED',
       entityType: 'Role',
@@ -205,7 +205,7 @@ class RolesService {
       },
     });
 
-    await logActivity({
+    await logChange({
       userId: actorId,
       action: 'ROLE_PERMISSIONS_UPDATED',
       entityType: 'Role',
@@ -241,7 +241,7 @@ class RolesService {
 
     invalidateAllPermissionCaches();
 
-    await logActivity({
+    await logChange({
       userId: actorId,
       action: 'ROLE_DELETED',
       entityType: 'Role',
