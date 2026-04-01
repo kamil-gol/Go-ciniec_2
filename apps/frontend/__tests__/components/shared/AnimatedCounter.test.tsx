@@ -18,18 +18,18 @@ describe('AnimatedCounter', () => {
     vi.clearAllMocks()
     mockUseInView.mockReturnValue(true)
     rafCallbacks = []
-    // Mock requestAnimationFrame to capture callbacks
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
       rafCallbacks.push(cb)
       return rafCallbacks.length
     })
+    // Pin performance.now to 0 so rAF timestamps are relative to start
+    vi.spyOn(performance, 'now').mockReturnValue(0)
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  /** Flush all queued rAF callbacks with a given timestamp */
   function flushRAF(timestamp: number) {
     const cbs = [...rafCallbacks]
     rafCallbacks = []
@@ -52,32 +52,21 @@ describe('AnimatedCounter', () => {
     mockUseInView.mockReturnValue(false)
     render(<AnimatedCounter value={100} />)
     expect(screen.getByText('0')).toBeInTheDocument()
-    // No rAF should have been called
     expect(rafCallbacks.length).toBe(0)
   })
 
   it('should animate toward target value via requestAnimationFrame', () => {
-    // performance.now returns 0 on first call (start), then we simulate time passing
-    const perfSpy = vi.spyOn(performance, 'now').mockReturnValue(0)
-
     render(<AnimatedCounter value={100} duration={800} />)
 
-    // First rAF was queued when isInView became true
     expect(rafCallbacks.length).toBe(1)
 
-    // Simulate the first rAF tick at t=0 (start)
+    // t=0: progress=0 → value=0
     act(() => flushRAF(0))
-
-    // Value at t=0 should be 0 (progress=0)
     expect(screen.getByText('0')).toBeInTheDocument()
 
-    // Simulate completion at t=800 (duration)
+    // t=800: progress=1 → value=100
     act(() => flushRAF(800))
-
-    // Value should be 100 (progress=1)
     expect(screen.getByText('100')).toBeInTheDocument()
-
-    perfSpy.mockRestore()
   })
 
   it('should use formatFn when provided', () => {
@@ -85,10 +74,10 @@ describe('AnimatedCounter', () => {
 
     render(<AnimatedCounter value={50} duration={500} formatFn={formatFn} />)
 
-    // Initial state with formatFn
+    // Initial state
     expect(screen.getByText('0 zł')).toBeInTheDocument()
 
-    // Complete the animation
+    // Complete the animation: t=0, then t=500 (= duration)
     act(() => flushRAF(0))
     act(() => flushRAF(500))
 
