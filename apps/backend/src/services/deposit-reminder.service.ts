@@ -14,6 +14,7 @@ import emailService from './email.service';
 import logger from '@utils/logger';
 import type { DepositReminderData, DepositOverdueData } from './email.service';
 import notificationService from './notification.service';
+import { getTodayISO, formatDateISO, addDays } from '../utils/date.utils';
 
 const REMINDER_DAYS = [7, 3, 1]; // days before due date
 const OVERDUE_DAILY_LIMIT = 3;    // send daily for first N days overdue
@@ -191,13 +192,11 @@ const depositReminderService = {
 // ═══════════════════════════════════════════
 
 function getTodayStr(): string {
-  return new Date().toISOString().substring(0, 10);
+  return getTodayISO();
 }
 
 function getDatePlusDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().substring(0, 10);
+  return formatDateISO(addDays(new Date(), days));
 }
 
 function daysBetween(dateStr1: string, dateStr2: string): number {

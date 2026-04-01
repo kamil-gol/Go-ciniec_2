@@ -5,6 +5,7 @@
 
 import { prisma } from '../../lib/prisma';
 import notificationService from '../notification.service';
+import { formatDateISO, getTodayISO, addDays } from '../../utils/date.utils';
 
 /** Raw row shape returned by getStats $queryRaw */
 export interface DepositStatsRow {
@@ -26,14 +27,12 @@ export interface CountRow {
 }
 
 export function getDatePlusDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().substring(0, 10);
+  return formatDateISO(addDays(new Date(), days));
 }
 
 export const depositStatsService = {
   async getStats() {
-    const todayStr = new Date().toISOString().substring(0, 10);
+    const todayStr = getTodayISO();
 
     const futureStr = getDatePlusDays(7);
     const stats: DepositStatsRow[] = await prisma.$queryRaw<DepositStatsRow[]>`
@@ -74,7 +73,7 @@ export const depositStatsService = {
   },
 
   async getOverdue() {
-    const todayStr = new Date().toISOString().substring(0, 10);
+    const todayStr = getTodayISO();
 
     const deposits = await prisma.deposit.findMany({
       where: {
@@ -97,7 +96,7 @@ export const depositStatsService = {
   },
 
   async autoMarkOverdue() {
-    const todayStr = new Date().toISOString().substring(0, 10);
+    const todayStr = getTodayISO();
 
     const result: CountRow[] = await prisma.$queryRaw<CountRow[]>`
       WITH updated AS (

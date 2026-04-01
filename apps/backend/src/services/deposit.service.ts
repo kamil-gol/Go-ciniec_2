@@ -15,6 +15,7 @@ import { DEPOSIT } from '../i18n/pl';
 import { depositStatsService } from './deposits/deposit-stats.service';
 import { depositNotificationsService } from './deposits/deposit-notifications.service';
 import { DEPOSIT_INCLUDE, getFullReservationPrice } from './deposits/deposit.helpers';
+import { getTodayISO } from '../utils/date.utils';
 
 export type DepositStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'PARTIALLY_PAID';
 export type PaymentMethod = 'CASH' | 'TRANSFER' | 'BLIK' | 'CARD' | 'BANK_TRANSFER';
@@ -169,7 +170,7 @@ const depositService = {
 
     if (overdue) {
       where.status = { equals: 'PENDING' };
-      const todayStr = new Date().toISOString().substring(0, 10);
+      const todayStr = getTodayISO();
       where.dueDate = { lt: todayStr };
     }
 

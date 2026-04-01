@@ -20,6 +20,7 @@ jest.mock('../../../../services/notification.service', () => ({
 import { depositStatsService, getDatePlusDays } from '../../../../services/deposits/deposit-stats.service';
 import { prisma } from '../../../../lib/prisma';
 import notificationService from '../../../../services/notification.service';
+import { getTodayISO } from '../../../../utils/date.utils';
 
 const db = prisma as any;
 
@@ -39,7 +40,7 @@ describe('getDatePlusDays', () => {
   });
 
   it('returns today for 0 days', () => {
-    const today = new Date().toISOString().substring(0, 10);
+    const today = getTodayISO();
     expect(getDatePlusDays(0)).toBe(today);
   });
 });

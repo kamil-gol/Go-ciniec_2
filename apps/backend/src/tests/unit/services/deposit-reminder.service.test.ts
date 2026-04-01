@@ -26,6 +26,7 @@ jest.mock('@utils/logger', () => ({
 }));
 
 import depositReminderService from '@services/deposit-reminder.service';
+import { formatDateISO, subtractDays } from '@utils/date.utils';
 
 // ── Fixtures ─────────────────────────────────────
 const mockClient = {
@@ -89,9 +90,8 @@ describe('DepositReminderService', () => {
     it('should aggregate sent counts from all reminder types', async () => {
       // Use yesterday's date so overdue throttle allows sending
       // (daysOverdue=1, within OVERDUE_DAILY_LIMIT=3)
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().substring(0, 10);
+      const yesterday = subtractDays(new Date(), 1);
+      const yesterdayStr = formatDateISO(yesterday);
 
       mockPrisma.deposit.findMany.mockResolvedValue([
         createMockDeposit({ dueDate: yesterdayStr }),
@@ -164,9 +164,8 @@ describe('DepositReminderService', () => {
   // ═══════════════ sendOverdueNotices ═══════════════
   describe('sendOverdueNotices', () => {
     it('should send overdue notice for past-due deposits', async () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const dep = createMockDeposit({ dueDate: yesterday.toISOString().substring(0, 10) });
+      const yesterday = subtractDays(new Date(), 1);
+      const dep = createMockDeposit({ dueDate: formatDateISO(yesterday) });
       mockPrisma.deposit.findMany.mockResolvedValue([dep]);
       mockEmailService.sendDepositOverdueNotice.mockResolvedValue(true);
 
@@ -196,9 +195,8 @@ describe('DepositReminderService', () => {
     });
 
     it('should throttle: skip day 5 overdue (> daily limit, not divisible by 3)', async () => {
-      const fiveDaysAgo = new Date();
-      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-      const dep = createMockDeposit({ dueDate: fiveDaysAgo.toISOString().substring(0, 10) });
+      const fiveDaysAgo = subtractDays(new Date(), 5);
+      const dep = createMockDeposit({ dueDate: formatDateISO(fiveDaysAgo) });
       mockPrisma.deposit.findMany.mockResolvedValue([dep]);
 
       const count = await depositReminderService.sendOverdueNotices();
@@ -208,9 +206,8 @@ describe('DepositReminderService', () => {
     });
 
     it('should send on day 6 overdue (> daily limit, divisible by 3)', async () => {
-      const sixDaysAgo = new Date();
-      sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
-      const dep = createMockDeposit({ dueDate: sixDaysAgo.toISOString().substring(0, 10) });
+      const sixDaysAgo = subtractDays(new Date(), 6);
+      const dep = createMockDeposit({ dueDate: formatDateISO(sixDaysAgo) });
       mockPrisma.deposit.findMany.mockResolvedValue([dep]);
       mockEmailService.sendDepositOverdueNotice.mockResolvedValue(true);
 
@@ -231,9 +228,7 @@ describe('DepositReminderService', () => {
   describe('edge cases / branch coverage', () => {
     /** Helper: return YYYY-MM-DD for N days ago */
     function daysAgo(n: number): string {
-      const d = new Date();
-      d.setDate(d.getDate() - n);
-      return d.toISOString().substring(0, 10);
+      return formatDateISO(subtractDays(new Date(), n));
     }
 
     const makeDeposit = (overrides: any = {}) => ({
