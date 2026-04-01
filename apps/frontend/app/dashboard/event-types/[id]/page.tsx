@@ -264,10 +264,10 @@ export default function EventTypeDetailPage() {
                 </div>
 
                 {/* Extra hour rate */}
-                <div className="rounded-xl bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border border-emerald-100 dark:border-emerald-900/30 p-5">
+                <div className="rounded-xl bg-gradient-to-br from-primary-500/5 to-primary-600/5 border border-primary-100 dark:border-primary-900/30 p-5">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+                      <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg">
                         <Timer className="h-4 w-4 text-white" />
                       </div>
                       <span className="font-semibold">Stawka za dodatkową godzinę</span>
@@ -330,10 +330,10 @@ export default function EventTypeDetailPage() {
                 </div>
 
                 {/* Menu Templates */}
-                <div className="rounded-xl bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-100 dark:border-amber-900/30 p-5">
+                <div className="rounded-xl bg-gradient-to-br from-primary-500/5 to-primary-600/5 border border-primary-100 dark:border-primary-900/30 p-5">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
+                      <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg">
                         <FileText className="h-4 w-4 text-white" />
                       </div>
                       <span className="font-semibold">Szablony menu</span>
