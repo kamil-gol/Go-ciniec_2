@@ -44,7 +44,7 @@ export function ReservationHero({
       badges={
         <>
           {isArchived && reservation.status !== 'ARCHIVED' && (
-            <Badge className="bg-neutral-200 text-neutral-800 border-neutral-300">
+            <Badge className="bg-neutral-200 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border-neutral-300 dark:border-neutral-600">
               <Archive className="h-3 w-3 mr-1" />
               Zarchiwizowane
             </Badge>

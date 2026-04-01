@@ -243,7 +243,7 @@ export function StepNavigation({
   const isFirstStep = currentStep === 0
 
   return (
-    <div className={cn('flex items-center justify-between pt-6 border-t border-secondary-200', className)}>
+    <div className={cn('flex items-center justify-between pt-6 border-t border-secondary-200 dark:border-neutral-700', className)}>
       <button
         type="button"
         onClick={onPrev}
@@ -251,8 +251,8 @@ export function StepNavigation({
         className={cn(
           'flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors',
           isFirstStep
-            ? 'text-neutral-300 cursor-not-allowed'
-            : 'text-neutral-700 hover:bg-secondary-100'
+            ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
+            : 'text-neutral-700 dark:text-neutral-300 hover:bg-secondary-100 dark:hover:bg-neutral-800'
         )}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

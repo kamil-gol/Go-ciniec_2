@@ -193,7 +193,7 @@ export function AddToQueueForm({ clients, onSubmit, onCancel, onClientAdded }: A
                         {filteredClients.map((client) => (
                           <div
                             key={client.id}
-                            className="px-3 py-2 cursor-pointer hover:bg-neutral-100"
+                            className="px-3 py-2 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700"
                             onClick={() => handleClientSelect(client)}
                           >
                             {client.firstName} {client.lastName} ({client.phone})
