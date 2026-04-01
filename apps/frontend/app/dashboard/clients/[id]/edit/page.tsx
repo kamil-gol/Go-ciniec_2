@@ -151,7 +151,7 @@ export default function EditClientPage() {
         {/* Premium Hero */}
         <div className={`relative overflow-hidden rounded-2xl p-8 text-white shadow-2xl bg-gradient-to-r ${
           isCompany
-            ? 'from-purple-600 via-indigo-600 to-blue-600'
+            ? 'from-primary-600 to-primary-700'
             : 'from-orange-600 via-pink-600 to-rose-600'
         }`}>
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
@@ -207,7 +207,7 @@ export default function EditClientPage() {
                   onClick={() => setClientType('COMPANY')}
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 rounded-xl border-2 font-semibold text-lg transition-all ${
                     clientType === 'COMPANY'
-                      ? 'border-purple-500 bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-500'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/30 dark:text-primary-400 dark:border-primary-500'
                       : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
                   }`}
                 >
@@ -221,9 +221,9 @@ export default function EditClientPage() {
           {/* Company Info - only for COMPANY */}
           {isCompany && (
             <Card className="border-0 shadow-xl">
-              <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-purple-950/30 dark:via-indigo-950/30 dark:to-blue-950/30 p-8">
+              <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950/30 dark:to-primary-900/20 p-8">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg shadow-lg">
+                  <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-lg">
                     <Building2 className="h-5 w-5 text-white" />
                   </div>
                   <h2 className="text-2xl font-bold">Dane firmy</h2>
@@ -239,7 +239,7 @@ export default function EditClientPage() {
                       value={formData.companyName}
                       onChange={handleChange}
                       placeholder="np. Budimex S.A."
-                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
+                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-primary-500"
                     />
                   </div>
 
@@ -253,7 +253,7 @@ export default function EditClientPage() {
                       value={formData.nip}
                       onChange={handleChange}
                       placeholder="1234567890"
-                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
+                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-primary-500"
                     />
                   </div>
 
@@ -267,7 +267,7 @@ export default function EditClientPage() {
                       value={formData.regon}
                       onChange={handleChange}
                       placeholder="123456789"
-                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
+                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-primary-500"
                     />
                   </div>
 
@@ -281,7 +281,7 @@ export default function EditClientPage() {
                       value={formData.industry}
                       onChange={handleChange}
                       placeholder="np. Budownictwo"
-                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
+                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-primary-500"
                     />
                   </div>
 
@@ -295,7 +295,7 @@ export default function EditClientPage() {
                       value={formData.website}
                       onChange={handleChange}
                       placeholder="https://www.firma.pl"
-                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
+                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-primary-500"
                     />
                   </div>
 
@@ -309,7 +309,7 @@ export default function EditClientPage() {
                       value={formData.companyAddress}
                       onChange={handleChange}
                       placeholder="ul. Przykładowa 1, 00-001 Warszawa"
-                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500"
+                      className="h-12 text-base border-2 focus-visible:ring-2 focus-visible:ring-primary-500"
                     />
                   </div>
                 </div>
@@ -408,9 +408,9 @@ export default function EditClientPage() {
 
           {/* Notes */}
           <Card className="border-0 shadow-xl">
-            <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 dark:from-purple-950/30 dark:via-pink-950/30 dark:to-indigo-950/30 p-8">
+            <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950/30 dark:to-primary-900/20 p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-lg">
+                <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-lg">
                   <FileText className="h-5 w-5 text-white" />
                 </div>
                 <h2 className="text-2xl font-bold">Notatki</h2>
@@ -424,7 +424,7 @@ export default function EditClientPage() {
                   onChange={handleChange}
                   placeholder="Dodatkowe informacje o kliencie..."
                   rows={6}
-                  className="text-base border-2 focus-visible:ring-2 focus-visible:ring-purple-500 resize-none"
+                  className="text-base border-2 focus-visible:ring-2 focus-visible:ring-primary-500 resize-none"
                 />
               </div>
             </div>
@@ -443,7 +443,7 @@ export default function EditClientPage() {
               size="lg"
               className={`flex-1 h-14 text-lg shadow-xl bg-gradient-to-r ${
                 isCompany
-                  ? 'from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700'
+                  ? 'from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800'
                   : 'from-orange-600 via-pink-600 to-rose-600 hover:from-orange-700 hover:via-pink-700 hover:to-rose-700'
               }`}
             >
