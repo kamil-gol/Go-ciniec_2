@@ -1,3 +1,4 @@
+import { Sparkles, UtensilsCrossed } from 'lucide-react';
 import { SummaryCard, ReportLoadingState, ReportErrorState, ReportEmptyState } from './ReportSummaryCards';
 import { formatCurrency, formatPercent } from './chart-utils';
 import type { RevenueQueryResult } from './types';
@@ -31,14 +32,14 @@ export function RevenueTab({ query }: { query: RevenueQueryResult }) {
         </div>
                 {summary.extrasRevenue != null && summary.extrasRevenue > 0 && (
                 <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
-                              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-300">✨ Przychody z usług dodatkowych</p>
+                              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-300 flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5" /> Przychody z usług dodatkowych</p>
                               <p className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100">{formatCurrency(summary.extrasRevenue)}</p>
                               <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Usługi dodatkowe</p>
                             </div>
               )}
                 {summary.categoryExtrasRevenue != null && summary.categoryExtrasRevenue > 0 && (
                 <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
-                              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-300">🍽️ Dodatkowo płatne porcje</p>
+                              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-300 flex items-center gap-1.5"><UtensilsCrossed className="h-3.5 w-3.5" /> Dodatkowo płatne porcje</p>
                               <p className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100">{formatCurrency(summary.categoryExtrasRevenue)}</p>
                               <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">Porcje dodatkowe</p>
                             </div>
@@ -136,7 +137,7 @@ export function RevenueTab({ query }: { query: RevenueQueryResult }) {
       {byCategoryExtra && byCategoryExtra.length > 0 && (
         <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
           <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">🍽️ Dodatkowo płatne porcje</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-1.5"><UtensilsCrossed className="h-4 w-4" /> Dodatkowo płatne porcje</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

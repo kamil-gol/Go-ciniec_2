@@ -4,6 +4,11 @@ import type { GroupByPeriod } from '@/types/reports.types';
 import type { ReportFiltersProps } from './types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+const VIEW_COLOR_CLASSES = {
+  amber: 'bg-amber-600 text-white',
+  purple: 'bg-purple-600 text-white',
+};
+
 export function ReportFilters({
   presets,
   dateFrom,
@@ -21,7 +26,8 @@ export function ReportFilters({
   const showViewToggle = activeTab === 'preparations' || activeTab === 'menu-preparations';
   const currentView = activeTab === 'menu-preparations' ? menuPrepView : prepView;
   const setCurrentView = activeTab === 'menu-preparations' ? setMenuPrepView : setPrepView;
-  const viewColor = activeTab === 'menu-preparations' ? 'amber' : 'purple';
+  const viewColorKey = activeTab === 'menu-preparations' ? 'amber' : 'purple';
+  const viewColorClass = VIEW_COLOR_CLASSES[viewColorKey as keyof typeof VIEW_COLOR_CLASSES];
 
   return (
     <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
@@ -73,11 +79,11 @@ export function ReportFilters({
               <label className="block text-xs text-neutral-500 dark:text-neutral-300 mb-1">Widok</label>
               <div className="flex rounded-lg border border-neutral-300 dark:border-neutral-600 overflow-hidden">
                 <button onClick={() => setCurrentView('detailed')}
-                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'detailed' ? `bg-${viewColor}-600 text-white` : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'detailed' ? viewColorClass : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
                   {"Szczegółowy"}
                 </button>
                 <button onClick={() => setCurrentView('summary')}
-                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'summary' ? `bg-${viewColor}-600 text-white` : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === 'summary' ? viewColorClass : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}>
                   Zbiorczy
                 </button>
               </div>
