@@ -1,19 +1,7 @@
 ---
 name: ui-audit
 description: >
-  Audyt UI/UX i ujednolicenie modułu frontendu Next.js (Tailwind + shadcn/ui + Radix).
-  Analizuje wskazany moduł lub stronę pod kątem zgodności z systemem designu projektu:
-  tokeny z design-tokens.ts, PageHero / DetailHero / SectionCard / Breadcrumb / EntityCard / StatCard,
-  animacje Framer Motion, empty states, loading states, responsywność, dark mode.
-  Generuje priorytetowy raport (Krytyczne / Ważne / Kosmetyczne), pokazuje dokładny plan zmian
-  i — po potwierdzeniu użytkownika — edytuje pliki bezpośrednio w worktree.
-
-  UŻYWAJ tego skilla gdy: fragment UI wygląda inaczej niż reszta aplikacji, brakuje breadcrumbów,
-  hero jest niestandardowy (hardkodowany zamiast PageHero/DetailHero), moduł nie używa design tokenów,
-  kolory są hardkodowane (hex / bg-blue-600 zamiast accent.gradient), brakuje empty state / loading state,
-  animacje Framer Motion są niespójne lub ich brak, użytkownik mówi "upiększ", "ujednolij", "zaudytuj UI",
-  "popraw wygląd", "spójność wizualna", "coś wygląda inaczej niż reszta". Dla projektów React/Next.js
-  z Tailwind i systemem design tokenów jest to narzędzie pierwszego wyboru.
+  Audyt UI/UX modułu frontendu Next.js — zgodność z design systemem (design-tokens.ts, PageHero, DetailHero, SectionCard, Breadcrumb, EntityCard, StatCard, Framer Motion, empty/loading states, dark mode). Generuje raport Krytyczne/Ważne/Kosmetyczne, plan zmian per plik, edytuje po potwierdzeniu. Trigger: "upiększ", "ujednolij", "zaudytuj UI", "popraw wygląd", "spójność wizualna", brakujące breadcrumby, niestandardowy hero, hardkodowane kolory, brak animacji.
 ---
 
 # Audyt UI/UX — ujednolicenie z systemem designu
