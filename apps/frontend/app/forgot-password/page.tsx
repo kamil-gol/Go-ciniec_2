@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
+import { motionTokens } from '@/lib/design-tokens'
 import { Mail, ArrowLeft, AlertCircle, Building2, Send, CheckCircle2 } from 'lucide-react'
 
 export default function ForgotPasswordPage() {
@@ -55,7 +56,7 @@ export default function ForgotPasswordPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: motionTokens.duration.slow }}
         className="relative max-w-md w-full"
       >
         {/* Logo & Header */}
@@ -82,7 +83,7 @@ export default function ForgotPasswordPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
+          transition={{ delay: 0.3, duration: motionTokens.duration.slow }}
           className="relative bg-white/80 dark:bg-neutral-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-8"
         >
           <AnimatePresence mode="wait">

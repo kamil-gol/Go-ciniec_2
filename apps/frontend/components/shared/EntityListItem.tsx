@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { motionTokens } from '@/lib/design-tokens'
 import Link from 'next/link'
 
 interface EntityListItemProps {
@@ -60,7 +61,7 @@ export function EntityListItem({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.35, ease: 'easeOut' }}
+      transition={{ delay, duration: motionTokens.duration.normal, ease: motionTokens.ease.default }}
       onClick={!href ? onClick : undefined}
       role={role}
       tabIndex={tabIndex}

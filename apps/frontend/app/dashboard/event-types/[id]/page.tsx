@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { LoadingState } from '@/components/shared/LoadingState'
 import { DetailHero } from '@/components/shared/DetailHero'
 import { SectionCard } from '@/components/shared/SectionCard'
+import { AnimatedSection } from '@/components/shared/AnimatedSection'
 import { moduleAccents } from '@/lib/design-tokens'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -162,6 +163,7 @@ export default function EventTypeDetailPage() {
         {/* Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Info Card */}
+          <AnimatedSection index={0}>
           <SectionCard
             variant="gradient"
             title="Informacje"
@@ -214,8 +216,10 @@ export default function EventTypeDetailPage() {
               </div>
             </div>
           </SectionCard>
+          </AnimatedSection>
 
           {/* Pricing / Extra Hours Card */}
+          <AnimatedSection index={1}>
           <SectionCard
             variant="gradient"
             title="Czas &amp; dodatkowe godziny"
@@ -273,8 +277,10 @@ export default function EventTypeDetailPage() {
               </div>
             </div>
           </SectionCard>
+          </AnimatedSection>
 
           {/* Relations Card */}
+          <AnimatedSection index={2} className="md:col-span-2">
           <SectionCard
             variant="gradient"
             title="Powiązania"
@@ -340,6 +346,7 @@ export default function EventTypeDetailPage() {
                 </div>
               )}
           </SectionCard>
+          </AnimatedSection>
         </div>
       </div>
 

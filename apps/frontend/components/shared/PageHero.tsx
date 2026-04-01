@@ -88,7 +88,7 @@ export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, b
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.1, duration: 0.3, ease: 'easeOut' }}
+                transition={{ delay: 0.1, duration: motionTokens.duration.normal, ease: motionTokens.ease.default }}
                 className={cn(
                   'bg-white/15 backdrop-blur-sm shadow-lg border border-white/10',
                   compact ? 'p-2 rounded-xl' : 'p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl'
@@ -117,7 +117,7 @@ export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, b
                       key={stat.label}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 + index * motionTokens.stagger.cards, duration: 0.3 }}
+                      transition={{ delay: 0.2 + index * motionTokens.stagger.cards, duration: motionTokens.duration.normal }}
                       className="flex items-center gap-2 sm:gap-3 bg-white/10 backdrop-blur-sm px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-white/15 hover:bg-white/15 transition-colors"
                     >
                       <StatIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white/80" />
@@ -137,7 +137,7 @@ export function PageHero({ accent, title, subtitle, icon: Icon, action, stats, b
             <motion.div
               initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.3 }}
+              transition={{ delay: 0.2, duration: motionTokens.duration.normal }}
               className="flex-shrink-0 self-end sm:self-auto sm:pt-1"
             >
               {action}

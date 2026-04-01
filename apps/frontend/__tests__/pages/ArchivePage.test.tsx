@@ -53,6 +53,12 @@ vi.mock('@/lib/design-tokens', () => ({
   },
   statGradients: { financial: '', count: '', alert: '', success: '', neutral: '', info: '' },
   layout: { statGrid: '', statGrid3: 'grid grid-cols-3 gap-4', statGrid6: '', containerClass: '', cardPadding: '', sectionGap: '', maxWidth: '', narrowWidth: '', cardHover: '', detailGrid: '' },
+  motionTokens: {
+    duration: { instant: 0.1, fast: 0.2, normal: 0.3, medium: 0.4, slow: 0.5 },
+    ease: { default: 'easeOut', smooth: [0.4, 0, 0.2, 1] },
+    spring: { stiffness: 360, damping: 28 },
+    stagger: { cards: 0.06, list: 0.04 },
+  },
 }))
 
 vi.mock('@/components/shared', () => ({

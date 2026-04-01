@@ -4,6 +4,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { motionTokens } from '@/lib/design-tokens'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { Clock, ChevronDown, ChevronUp, History, AlertCircle } from 'lucide-react'
@@ -154,7 +155,7 @@ function TimelineItem({ log, index, isLast }: { log: AuditLogEntry; index: numbe
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: motionTokens.duration.fast }}
               className="overflow-hidden"
             >
               <div className="mt-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg p-4 border border-neutral-200/50 dark:border-neutral-700/30">

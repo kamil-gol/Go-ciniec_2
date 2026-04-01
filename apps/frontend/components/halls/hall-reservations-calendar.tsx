@@ -313,7 +313,7 @@ export function HallReservationsCalendar({
                         key={reservation.id}
                         href={`/dashboard/reservations/${reservation.id}`}
                       >
-                        <Card className="border-0 shadow-md hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer overflow-hidden">
+                        <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden">
                           <div className="bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-indigo-500/10 p-4">
                             <div className="flex items-start justify-between gap-4">
                               {/* Left: Time & Position */}

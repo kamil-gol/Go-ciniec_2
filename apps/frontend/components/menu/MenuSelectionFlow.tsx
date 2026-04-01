@@ -31,6 +31,7 @@ import type { DishSelectorResult, CategoryExtraResult } from '@/components/menu/
 import { Check, Users, Sparkles, UtensilsCrossed, RefreshCw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { motionTokens } from '@/lib/design-tokens';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner'
 
@@ -343,7 +344,7 @@ export function MenuSelectionFlow({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
+          transition={{ duration: motionTokens.duration.medium, ease: motionTokens.ease.default }}
         >
           {currentStep === 'template' && (
             <div className="space-y-6">

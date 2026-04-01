@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { moduleAccents } from '@/lib/design-tokens';
+import { moduleAccents, motionTokens } from '@/lib/design-tokens';
 import { useCallback } from 'react';
 
 const accent = moduleAccents.menu;
@@ -41,7 +41,7 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
     <motion.div
       whileHover={{ y: -4 }}
       whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: motionTokens.duration.fast }}
     >
       <div
         role="button"

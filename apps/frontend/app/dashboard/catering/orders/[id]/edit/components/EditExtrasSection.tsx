@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { motionTokens } from '@/lib/design-tokens';
 import { Plus, Trash2, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,7 +58,7 @@ export function EditExtrasSection({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: motionTokens.duration.fast }}
               className="relative p-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-sm transition-all"
             >
               {/* Position badge */}

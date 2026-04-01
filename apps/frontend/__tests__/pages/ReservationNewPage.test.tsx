@@ -38,6 +38,12 @@ vi.mock('@/lib/design-tokens', () => ({
       gradientSubtle: 'from-blue-50 to-cyan-50',
     },
   },
+  motionTokens: {
+    duration: { instant: 0.1, fast: 0.2, normal: 0.3, medium: 0.4, slow: 0.5 },
+    ease: { default: 'easeOut', smooth: [0.4, 0, 0.2, 1] },
+    spring: { stiffness: 360, damping: 28 },
+    stagger: { cards: 0.06, list: 0.04 },
+  },
 }))
 
 vi.mock('@/components/shared', () => ({

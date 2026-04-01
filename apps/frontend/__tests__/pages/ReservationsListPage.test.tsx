@@ -15,8 +15,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── Hoisted mocks ────────────────────────────────────────────────────────────
 
-const { mockGetReservations } = vi.hoisted(() => ({
-  mockGetReservations: vi.fn(),
+const { mockUseReservations } = vi.hoisted(() => ({
+  mockUseReservations: vi.fn(),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -30,7 +30,7 @@ vi.mock('next/link', () => ({
 }))
 
 vi.mock('@/lib/api/reservations', () => ({
-  getReservations: mockGetReservations,
+  useReservations: mockUseReservations,
 }))
 
 vi.mock('@/lib/design-tokens', () => ({
@@ -47,7 +47,7 @@ vi.mock('@/lib/design-tokens', () => ({
   statGradients: { financial: "from-amber-500 to-yellow-600", count: "from-blue-600 to-blue-800", alert: "from-rose-500 to-red-600", success: "from-emerald-500 to-teal-600", neutral: "from-zinc-500 to-neutral-600", info: "from-violet-500 to-purple-600" },
   typography: { pageTitle: "", sectionTitle: "", cardTitle: "", body: "", muted: "", smallMuted: "", label: "", heroSubtitle: "", statValue: "", statLabel: "", tableHeader: "", pageTitleStandalone: "" },
   animations: { fadeIn: "", slideUp: "", scaleIn: "", cardHover: "", buttonPress: "", pageEnter: "" },
-  motionTokens: { duration: { instant: 0.1, fast: 0.2, normal: 0.3, slow: 0.5 }, ease: { default: "easeOut", smooth: [0.4, 0, 0.2, 1] }, stagger: { cards: 0.06, list: 0.04 } },
+  motionTokens: { duration: { instant: 0.1, fast: 0.2, normal: 0.3, medium: 0.4, slow: 0.5 }, ease: { default: "easeOut", smooth: [0.4, 0, 0.2, 1] }, spring: { stiffness: 360, damping: 28 }, stagger: { cards: 0.06, list: 0.04 } },
 }))
 
 vi.mock('@/components/shared', () => ({
@@ -85,6 +85,10 @@ vi.mock('@/components/ui/card', () => ({
   CardContent: ({ children, ...props }: any) => <div {...props}>{children}</div>,
 }))
 
+vi.mock('@/components/shared/Breadcrumb', () => ({
+  Breadcrumb: () => <nav data-testid="breadcrumb" />,
+}))
+
 vi.mock('@/components/reservations/reservations-list', () => ({
   ReservationsList: () => <div data-testid="reservations-list">Lista rezerwacji</div>,
 }))
@@ -102,22 +106,32 @@ import ReservationsListPage from '@/app/dashboard/reservations/list/page'
 describe('ReservationsListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetReservations.mockResolvedValue([
-      {
-        id: 'res-1',
-        status: 'CONFIRMED',
-        startDateTime: '2026-03-15T14:00:00Z',
-        guests: 120,
-        client: { firstName: 'Jan', lastName: 'Kowalski' },
+    mockUseReservations.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: 'res-1',
+            status: 'CONFIRMED',
+            startDateTime: '2026-03-15T14:00:00Z',
+            guests: 120,
+            client: { firstName: 'Jan', lastName: 'Kowalski' },
+          },
+          {
+            id: 'res-2',
+            status: 'PENDING',
+            startDateTime: '2026-03-16T12:00:00Z',
+            guests: 50,
+            client: { firstName: 'Anna', lastName: 'Nowak' },
+          },
+        ],
+        total: 2,
+        page: 1,
+        pageSize: 200,
+        totalPages: 1,
       },
-      {
-        id: 'res-2',
-        status: 'PENDING',
-        startDateTime: '2026-03-16T12:00:00Z',
-        guests: 50,
-        client: { firstName: 'Anna', lastName: 'Nowak' },
-      },
-    ])
+      isLoading: false,
+      error: null,
+    })
   })
 
   it('renders page hero with title', async () => {
@@ -163,10 +177,8 @@ describe('ReservationsListPage', () => {
     expect(screen.getByTestId('reservations-list')).toBeInTheDocument()
   })
 
-  it('calls getReservations on mount', async () => {
+  it('calls useReservations hook on mount', () => {
     render(<ReservationsListPage />)
-    await waitFor(() => {
-      expect(mockGetReservations).toHaveBeenCalled()
-    })
+    expect(mockUseReservations).toHaveBeenCalled()
   })
 })

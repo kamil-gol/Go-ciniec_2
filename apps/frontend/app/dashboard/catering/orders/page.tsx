@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ShoppingBag,
@@ -28,8 +28,8 @@ export default function CateringOrdersPage() {
   const [filter, setFilter] = useState<CateringOrdersFilter>({ page: 1, limit: 20 });
   const wizardRef = useRef<HTMLDivElement>(null);
 
-  // Duży limit dla statystyk
-  const { data: statsData } = useCateringOrders({ page: 1, limit: 100 });
+  // Single query for stats — fetch all orders without status/search filters
+  const { data: statsData } = useCateringOrders({ page: 1, limit: 500 });
   const { data, isLoading } = useCateringOrders(filter);
 
   // Auto-scroll do wizarda po otwarciu
@@ -42,23 +42,26 @@ export default function CateringOrdersPage() {
     }
   }, [showWizard]);
 
-  const allOrders = statsData?.data ?? [];
-  const now = new Date();
+  const stats = useMemo(() => {
+    const allOrders = statsData?.data ?? [];
+    const total = statsData?.meta?.total ?? allOrders.length;
+    const now = new Date();
 
-  const stats = {
-    total: statsData?.meta?.total ?? 0,
-    confirmed: allOrders.filter(
-      o => o.status === 'CONFIRMED' || o.status === 'IN_PREPARATION' || o.status === 'READY'
-    ).length,
-    pending: allOrders.filter(
-      o => o.status === 'DRAFT' || o.status === 'INQUIRY' || o.status === 'QUOTED'
-    ).length,
-    thisMonth: allOrders.filter(o => {
-      if (!o.eventDate) return false;
-      const d = new Date(o.eventDate);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    }).length,
-  };
+    return {
+      total,
+      confirmed: allOrders.filter(
+        o => o.status === 'CONFIRMED' || o.status === 'IN_PREPARATION' || o.status === 'READY'
+      ).length,
+      pending: allOrders.filter(
+        o => o.status === 'DRAFT' || o.status === 'INQUIRY' || o.status === 'QUOTED'
+      ).length,
+      thisMonth: allOrders.filter(o => {
+        if (!o.eventDate) return false;
+        const d = new Date(o.eventDate);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }).length,
+    };
+  }, [statsData]);
 
   const handleFilterChange = (partial: Partial<CateringOrdersFilter>) =>
     setFilter(prev => ({ ...prev, ...partial, page: 1 }));

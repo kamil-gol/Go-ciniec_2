@@ -4,6 +4,7 @@ import * as React from 'react'
 import { motion } from 'framer-motion'
 import { Check, LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { motionTokens } from '@/lib/design-tokens'
 
 export interface StepConfig {
   id: string
@@ -67,7 +68,7 @@ export function Stepper({
                     isClickable && !isActive && 'group-hover:border-primary-400 group-hover:bg-primary-50'
                   )}
                   animate={isActive ? { scale: [1, 1.05, 1] } : {}}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration: motionTokens.duration.normal }}
                 >
                   {isCompleted ? (
                     <Check className="w-5 h-5" />
@@ -104,7 +105,7 @@ export function Stepper({
                       animate={{
                         width: isPast || isCompleted ? '100%' : isActive ? '50%' : '0%',
                       }}
-                      transition={{ duration: 0.4, ease: 'easeInOut' }}
+                      transition={{ duration: motionTokens.duration.medium, ease: 'easeInOut' }}
                     />
                   </div>
                 </div>
@@ -130,7 +131,7 @@ export function Stepper({
           <motion.div
             className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full"
             animate={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-            transition={{ duration: 0.4, ease: 'easeInOut' }}
+            transition={{ duration: motionTokens.duration.medium, ease: 'easeInOut' }}
           />
         </div>
 
@@ -202,7 +203,7 @@ export function StepContent({ children, stepIndex, currentStep, className }: Ste
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      transition={{ duration: motionTokens.duration.normal, ease: 'easeInOut' }}
       className={cn('w-full', className)}
     >
       {children}
