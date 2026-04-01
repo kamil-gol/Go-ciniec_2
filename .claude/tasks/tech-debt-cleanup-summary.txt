@@ -1,0 +1,36 @@
+TECH DEBT CLEANUP TASK SUMMARY
+==============================
+
+Backlog Item: Tech Debt Cleanup Sprint
+Status: Ready for implementation
+Estimated: 8.5h
+Priority: Medium
+Created: 2026-04-01
+
+QUICK REFERENCE:
+
+Phase 1 (0.5h) — Cleanup
+  Remove: 11x fix-*.js/.sh scripts from apps/backend/
+
+Phase 2 (2h) — Logging
+  Replace: 57x console.log/warn/error → logger in middleware/controllers
+  Main files: errorHandler.ts (13x), menu-calculator.controller.ts, menuTemplate.controller.ts
+
+Phase 3 (1h) — Deprecated
+  Remove: 3x deprecated symbols (auth.ts, audit-logger.ts, i18n.ts comments)
+  Migrate: all callsites to new APIs
+
+Phase 4 (1.5h) — Tests
+  Complete: 4x [AUDIT] TODO tests in reservationCategoryExtra, auth, security
+
+Phase 5 (2h) — Refactor (optional)
+  Extract: date helpers to shared utils/date.utils.ts
+  Replace: 10+ toISOString().substring patterns
+
+FULL CONTEXT:
+See: .claude/tasks/tech-debt-cleanup.md
+
+HOW TO RUN:
+@"developer-agent (agent)" wykonaj Phase 1 i 2 z .claude/tasks/tech-debt-cleanup.md
+
+OR copy prompt from tech-debt-cleanup.md section "PROMPT DO AGENTA"

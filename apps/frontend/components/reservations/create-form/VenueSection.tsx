@@ -200,7 +200,7 @@ export function VenueSection({
               )}
               {availableCapacity.availableCapacity === 0 && (
                 <p className="text-xs font-medium text-red-600 dark:text-red-400">
-                  ⚠ Sala jest całkowicie zajęta — brak wolnych miejsc
+                  <AlertTriangle className="h-3.5 w-3.5 inline mr-1" /> Sala jest całkowicie zajęta — brak wolnych miejsc
                 </p>
               )}
             </div>

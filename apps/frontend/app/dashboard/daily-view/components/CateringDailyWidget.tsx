@@ -12,6 +12,9 @@ import {
   RefreshCw,
   Utensils,
   AlertTriangle,
+  Sparkles,
+  Wallet,
+  CheckCircle2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -106,7 +109,7 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
             {/* Linia 4: nazwa wydarzenia */}
             {order.eventName && (
               <p className="text-xs text-neutral-500 dark:text-neutral-300 mt-0.5 truncate">
-                🎉 {order.eventName}
+                <Sparkles className="h-3.5 w-3.5 inline mr-1" /> {order.eventName}
               </p>
             )}
 
@@ -128,7 +131,7 @@ function OrderRow({ order, index }: { order: CateringOrderListItem; index: numbe
               <div className="flex flex-wrap gap-2 mt-1">
                 {pendingDeposits > 0 && (
                   <span className="text-xs text-amber-600 dark:text-amber-400">
-                    💰 Zaliczka: {formatCateringCurrency(pendingDeposits)}
+                    <Wallet className="h-3.5 w-3.5 inline mr-1" /> Zaliczka: {formatCateringCurrency(pendingDeposits)}
                   </span>
                 )}
                 {hasSpecialReq && (
@@ -180,7 +183,7 @@ function SummaryFooter({ orders }: { orders: CateringOrderListItem[] }) {
         </span>
         {confirmedCount > 0 && (
           <span className="text-emerald-600 dark:text-emerald-400 text-xs">
-            ✅ {confirmedCount} potw.
+            <CheckCircle2 className="h-3.5 w-3.5 inline mr-1" /> {confirmedCount} potw.
           </span>
         )}
         {specialCount > 0 && (

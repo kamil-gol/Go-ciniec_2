@@ -9,6 +9,8 @@ import {
   Building2,
   RefreshCw,
   AlertTriangle,
+  Wallet,
+  CheckCircle2,
 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import { moduleAccents } from '@/lib/design-tokens'
@@ -240,7 +242,7 @@ function ReservationRow({ reservation, index }: { reservation: Reservation; inde
               )}
               {pendingDeposits > 0 && (
                 <span className="text-xs text-amber-600 dark:text-amber-400">
-                  💰 Zaliczka: {formatCurrency(pendingDeposits)}
+                  <Wallet className="h-3.5 w-3.5 inline mr-1" /> Zaliczka: {formatCurrency(pendingDeposits)}
                 </span>
               )}
             </div>
@@ -288,7 +290,7 @@ function SummaryFooter({ reservations }: { reservations: Reservation[] }) {
         </span>
         {confirmedCount > 0 && (
           <span className="text-emerald-600 dark:text-emerald-400 text-xs">
-            ✅ {confirmedCount} potw.
+            <CheckCircle2 className="h-3.5 w-3.5 inline mr-1" /> {confirmedCount} potw.
           </span>
         )}
         {deadlineCount > 0 && (
@@ -341,7 +343,7 @@ export default function DailyReservationsSection({ date }: DailyReservationsSect
           </div>
           <div>
             <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-              📅 Rezerwacje
+              <Calendar className="h-5 w-5 inline mr-2" /> Rezerwacje
             </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-300">
               Zaplanowane na ten dzień
