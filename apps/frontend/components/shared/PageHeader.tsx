@@ -1,7 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { type LucideIcon } from 'lucide-react'
+import { type LucideIcon, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { typography } from '@/lib/design-tokens'
 import { pageVariants } from '@/lib/motion-tokens'
@@ -22,6 +23,10 @@ interface PageHeaderProps {
     label: string
     value: string | number
   }>
+  /** Opcjonalny link do powrotu */
+  backHref?: string
+  /** Etykieta dla linka powrotu */
+  backLabel?: string
   /** Pokaż breadcrumbs nad tytułem */
   showBreadcrumb?: boolean
   className?: string
@@ -42,6 +47,8 @@ interface PageHeaderProps {
  *   stats={[
  *     { icon: Users, label: 'Klienci', value: 42 },
  *   ]}
+ *   backHref="/dashboard/menu"
+ *   backLabel="Powrót do Menu"
  * />
  * ```
  */
@@ -51,6 +58,8 @@ export function PageHeader({
   icon: Icon,
   actions,
   stats,
+  backHref,
+  backLabel,
   showBreadcrumb = true,
   className,
 }: PageHeaderProps) {
@@ -62,6 +71,18 @@ export function PageHeader({
       className={cn('space-y-4', className)}
     >
       {showBreadcrumb && <Breadcrumb />}
+      
+      {/* Back navigation link */}
+      {backHref && (
+        <Link
+          href={backHref}
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {backLabel || 'Powrót'}
+        </Link>
+      )}
+      
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-3">
