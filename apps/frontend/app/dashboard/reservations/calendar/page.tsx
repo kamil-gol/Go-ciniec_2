@@ -421,7 +421,6 @@ export default function CalendarPage() {
                                 className="block p-3 rounded-xl border border-neutral-200 dark:border-neutral-700/50 bg-white dark:bg-neutral-800/80 hover:shadow-md transition-shadow"
                               >
                                 <div className="flex items-center justify-between">
-                                  <Breadcrumb />
                                   <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                                     <Clock className="inline h-3.5 w-3.5 mr-1 text-neutral-500" />
                                     {r.startTime} - {r.endTime}

@@ -126,10 +126,10 @@ export function SortableCategoryRows({
             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => onCreateItem(category.id)}>
               <Plus className="mr-1 h-3.5 w-3.5" />Dodaj
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditCategory(category)} aria-label="Edytuj kategorię">
+            <Button variant="ghost" size="icon" onClick={() => onEditCategory(category)} aria-label="Edytuj kategorię">
               <Edit className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDeleteCategory(category)} aria-label="Usuń kategorię">
+            <Button variant="ghost" size="icon" onClick={() => onDeleteCategory(category)} aria-label="Usuń kategorię">
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>
@@ -180,10 +180,10 @@ export function SortableCategoryRows({
           </TableCell>
           <TableCell>
             <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)} aria-label="Edytuj pozycję">
+              <Button variant="ghost" size="icon" onClick={() => onEditItem(item)} aria-label="Edytuj pozycję">
                 <Edit className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDeleteItem(item)} aria-label="Usuń pozycję">
+              <Button variant="ghost" size="icon" onClick={() => onDeleteItem(item)} aria-label="Usuń pozycję">
                 <Trash2 className="h-3.5 w-3.5 text-destructive" />
               </Button>
             </div>
