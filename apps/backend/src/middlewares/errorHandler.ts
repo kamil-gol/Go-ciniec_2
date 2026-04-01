@@ -12,6 +12,7 @@ import { asyncHandler } from './asyncHandler';
 import { Prisma } from '@/prisma-client';
 import { z } from 'zod';
 import { ERRORS } from '../i18n/pl';
+import { logger } from '../services/logger.service';
 
 // Re-export for backward compatibility (auth.controller imports from here)
 export { AppError, asyncHandler };
@@ -29,7 +30,7 @@ export function errorHandler(
     const logPrefix = err.errorCode
       ? `[APP_ERROR ${err.statusCode} ${err.errorCode}]`
       : `[APP_ERROR ${err.statusCode}]`;
-    console.warn(`${logPrefix} ${_req.method} ${_req.path}: ${err.message}`);
+    logger.warn(`${logPrefix} ${_req.method} ${_req.path}: ${err.message}`);
 
     res.status(err.statusCode).json({
       success: false,
@@ -46,7 +47,7 @@ export function errorHandler(
     const logPrefix = errorCode
       ? `[APP_ERROR ${statusCode} ${errorCode}]`
       : `[APP_ERROR ${statusCode}]`;
-    console.warn(`${logPrefix} ${_req.method} ${_req.path}: ${err.message}`);
+    logger.warn(`${logPrefix} ${_req.method} ${_req.path}: ${err.message}`);
 
     res.status(statusCode).json({
       success: false,
@@ -189,7 +190,7 @@ export function errorHandler(
 
   // ——— Unknown errors (500) ———
   // Always log full stack trace for unexpected errors
-  console.error(`[ERROR 500] ${_req.method} ${_req.path}:`, err.stack || err);
+  logger.error(`[ERROR 500] ${_req.method} ${_req.path}:`, err.stack || err);
 
   const isProduction = process.env.NODE_ENV === 'production';
 

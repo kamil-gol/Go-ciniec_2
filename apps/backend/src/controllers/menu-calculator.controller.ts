@@ -9,6 +9,7 @@
 
 import { Request, Response } from 'express';
 import prisma from '@/lib/prisma';
+import { logger } from '../services/logger.service';
 
 interface CalculatePriceRequest {
   packageId: string;
@@ -116,7 +117,7 @@ export async function calculatePrice(req: Request, res: Response) {
 
     res.json(response);
   } catch (error: any) {
-    console.error('Error calculating menu price:', error);
+    logger.error('Error calculating menu price:', error);
     /* istanbul ignore next -- error.message fallback */
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
@@ -175,7 +176,7 @@ export async function getAvailablePackages(req: Request, res: Response) {
       packages,
     });
   } catch (error: any) {
-    console.error('Error getting available packages:', error);
+    logger.error('Error getting available packages:', error);
     /* istanbul ignore next -- error.message fallback */
     res.status(500).json({ error: error.message || 'Internal server error' });
   }

@@ -10,6 +10,7 @@ import { pdfService } from '../services/pdf.service';
 import type { MenuCardPDFData } from '../services/pdf.service';
 import { prisma } from '@/lib/prisma';
 import { AppError } from '../utils/AppError';
+import { logger } from '../services/logger.service';
 import { CreateMenuTemplateInput, UpdateMenuTemplateInput } from '../types/menu.types';
 import {
   createMenuTemplateSchema,
@@ -227,7 +228,7 @@ export class MenuTemplateController {
     try {
       const { id } = req.params;
 
-      console.log(`[MenuTemplate PDF] Starting PDF generation for template ${id}`);
+      logger.info(`[MenuTemplate PDF] Starting PDF generation for template ${id}`);
 
       const template = await menuService.getMenuTemplateById(id);
       // Template includes packages with nested data from Prisma query
@@ -245,11 +246,11 @@ export class MenuTemplateController {
         }>;
         eventType?: { name: string; color?: string | null } | null;
       };
-      console.log(`[MenuTemplate PDF] Template found: ${template.name}, packages: ${templateData.packages?.length || 0}`);
+      logger.info(`[MenuTemplate PDF] Template found: ${template.name}, packages: ${templateData.packages?.length || 0}`);
 
       const packagesWithCourses = await Promise.all(
         (templateData.packages || []).map(async (pkg) => {
-          console.log(`[MenuTemplate PDF] Fetching categories for package: ${pkg.name} (${pkg.id})`);
+          logger.info(`[MenuTemplate PDF] Fetching categories for package: ${pkg.name} (${pkg.id})`);
 
           const categorySettings = await prisma.packageCategorySettings.findMany({
             where: { packageId: pkg.id, isEnabled: true },
@@ -266,7 +267,7 @@ export class MenuTemplateController {
             orderBy: { displayOrder: 'asc' }
           });
 
-          console.log(`[MenuTemplate PDF] Package ${pkg.name}: ${categorySettings.length} categories found`);
+          logger.info(`[MenuTemplate PDF] Package ${pkg.name}: ${categorySettings.length} categories found`);
 
           return {
             name: pkg.name,
@@ -304,11 +305,11 @@ export class MenuTemplateController {
         packages: packagesWithCourses,
       };
 
-      console.log(`[MenuTemplate PDF] Generating PDF with ${packagesWithCourses.length} packages`);
+      logger.info(`[MenuTemplate PDF] Generating PDF with ${packagesWithCourses.length} packages`);
 
       const pdfBuffer = await pdfService.generateMenuCardPDF(pdfData);
 
-      console.log(`[MenuTemplate PDF] PDF generated successfully, size: ${pdfBuffer.length} bytes`);
+      logger.info(`[MenuTemplate PDF] PDF generated successfully, size: ${pdfBuffer.length} bytes`);
 
       // RFC 5987 encoding for Polish characters in filename
       const safeFilename = `Karta_menu_${template.name.replace(/\s+/g, '_')}.pdf`;
@@ -322,7 +323,7 @@ export class MenuTemplateController {
       res.setHeader('Content-Length', pdfBuffer.length);
       return res.send(pdfBuffer);
     } catch (error) {
-      console.error('[MenuTemplate PDF] Error:', error);
+      logger.error('[MenuTemplate PDF] Error:', error);
 
       if (error instanceof Error && (error.message.includes('nie znaleziono') || (error.message.toLowerCase().includes('nie znaleziono') || error.message.toLowerCase().includes('not found')))) {
         return res.status(404).json({
