@@ -55,8 +55,8 @@ vi.mock('@/lib/design-tokens', () => ({
 }))
 
 vi.mock('@/components/shared', () => ({
-  PageHero: ({ title, subtitle, action }: any) => (
-    <div data-testid="page-hero">
+  PageHeader: ({ title, subtitle, action }: any) => (
+    <div data-testid="page-header">
       <h1>{title}</h1>
       <p>{subtitle}</p>
       {action}

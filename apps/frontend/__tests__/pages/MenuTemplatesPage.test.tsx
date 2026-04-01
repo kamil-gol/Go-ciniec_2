@@ -61,8 +61,8 @@ vi.mock('@/lib/design-tokens', () => ({
 
 vi.mock('@/components/shared', () => ({
   PageLayout: ({ children }: any) => <div data-testid="page-layout">{children}</div>,
-  PageHero: ({ title, subtitle, action }: any) => (
-    <div data-testid="page-hero">
+  PageHeader: ({ title, subtitle, action }: any) => (
+    <div data-testid="page-header">
       <h1>{title}</h1>
       <p>{subtitle}</p>
       {action}
@@ -244,7 +244,7 @@ describe('MenuTemplatesPage', () => {
   it('renders back link to menu', () => {
     mockUseMenuTemplates.mockReturnValue({ data: mockTemplates, isLoading: false })
     render(<MenuTemplatesPage />)
-    // PageHero has backHref="/dashboard/menu" — rendered by our mock as part of action/title
+    // PageHeader has backHref="/dashboard/menu" — rendered by our mock as part of action/title
     expect(screen.getByText('Szablony Menu')).toBeInTheDocument()
   })
 })

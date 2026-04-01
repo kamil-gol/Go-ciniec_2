@@ -55,8 +55,8 @@ vi.mock('@/lib/design-tokens', () => ({
 
 vi.mock('@/components/shared', () => ({
   PageLayout: ({ children }: any) => <div data-testid="page-layout">{children}</div>,
-  PageHero: ({ title, subtitle, stats }: any) => (
-    <div data-testid="page-hero">
+  PageHeader: ({ title, subtitle, stats }: any) => (
+    <div data-testid="page-header">
       <h1>{title}</h1>
       <p>{subtitle}</p>
       {stats?.map((s: any) => (

@@ -71,8 +71,8 @@ vi.mock('@/lib/status-colors', () => ({
 
 vi.mock('@/components/shared', () => ({
   PageLayout: ({ children }: any) => <div data-testid="page-layout">{children}</div>,
-  PageHero: ({ title, subtitle, action }: any) => (
-    <div data-testid="page-hero">
+  PageHeader: ({ title, subtitle, action }: any) => (
+    <div data-testid="page-header">
       <h1>{title}</h1>
       <p>{subtitle}</p>
       {action}
