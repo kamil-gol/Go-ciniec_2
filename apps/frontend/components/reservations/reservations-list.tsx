@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -95,7 +95,7 @@ export function ReservationsList() {
     ...(showArchived ? [{ value: 'ARCHIVED', label: 'Zarchiwizowane' }] : []),
   ]
 
-  const handleGeneratePDF = async (reservationId: string) => {
+  const handleGeneratePDF = useCallback(async (reservationId: string) => {
     try {
       setGeneratingPdfId(reservationId)
       toast.info('Generowanie PDF...')
@@ -138,9 +138,9 @@ export function ReservationsList() {
     } finally {
       setGeneratingPdfId(null)
     }
-  }
+  }, [])
 
-  const handleArchive = async (reservationId: string) => {
+  const handleArchive = useCallback(async (reservationId: string) => {
     toast.promise(
       archiveMutation.mutateAsync({ id: reservationId, reason: 'Zarchiwizowano przez użytkownika' }),
       {
@@ -152,9 +152,9 @@ export function ReservationsList() {
         error: 'Błąd podczas archiwizacji rezerwacji',
       }
     )
-  }
+  }, [archiveMutation, refetch])
 
-  const handleUnarchive = async (reservationId: string) => {
+  const handleUnarchive = useCallback(async (reservationId: string) => {
     toast.promise(
       unarchiveMutation.mutateAsync({ id: reservationId, reason: 'Przywrócono z archiwum' }),
       {
@@ -166,9 +166,9 @@ export function ReservationsList() {
         error: 'Błąd podczas przywracania rezerwacji',
       }
     )
-  }
+  }, [unarchiveMutation, refetch])
 
-  const handleDelete = async (reservationId: string, status: string) => {
+  const handleDelete = useCallback(async (reservationId: string, status: string) => {
     if (status === 'CONFIRMED') {
       toast.error('Nie można usunąć potwierdzonej rezerwacji. Anuluj ją najpierw.')
       return
@@ -184,14 +184,14 @@ export function ReservationsList() {
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Błąd podczas anulowania rezerwacji')
     }
-  }
+  }, [confirm, refetch])
 
   const cardHandlers: ReservationCardHandlers = useMemo(() => ({
     onPdf: handleGeneratePDF,
     onArchive: handleArchive,
     onUnarchive: handleUnarchive,
     onDelete: handleDelete,
-  }), []) // eslint-disable-line react-hooks/exhaustive-deps
+  }), [handleGeneratePDF, handleArchive, handleUnarchive, handleDelete])
 
   if (isLoading) {
     return <LoadingState variant="skeleton" count={5} />

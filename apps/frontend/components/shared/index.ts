@@ -17,6 +17,12 @@ export type { DetailHeroProps, StatPillDef } from './DetailHero'
 export { SectionCard, Field, CountBadge, StatPill } from './SectionCard'
 export { EntityCard } from './EntityCard'
 export { EntityListItem } from './EntityListItem'
+export { UnifiedDataTable } from './UnifiedDataTable'
+export type {
+  UnifiedDataTableProps,
+  DataTableColumn,
+  HoverAccent,
+} from './UnifiedDataTable'
 export { UnifiedFinancialSummary } from './UnifiedFinancialSummary'
 export type {
   FinancialLineItem,

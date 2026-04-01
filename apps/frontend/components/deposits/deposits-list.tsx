@@ -1,20 +1,13 @@
 'use client'
 
 import { CalendarDays, Building2, ExternalLink, Clock, Banknote, Smartphone, CreditCard, ArrowDownUp } from 'lucide-react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { DepositStatusBadge } from './deposit-status-badge'
 import { DepositActions } from './deposit-actions'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { typography } from '@/lib/design-tokens'
+import { UnifiedDataTable } from '@/components/shared/UnifiedDataTable'
+import type { DataTableColumn } from '@/components/shared/UnifiedDataTable'
 
 interface DepositsListProps {
   deposits: Deposit[]
@@ -49,7 +42,6 @@ function getDaysInfo(dateStr: string): { text: string; className: string } | nul
  */
 function resolveEventDate(reservation: Deposit['reservation']): string | undefined {
   if (!reservation) return undefined
-  // New reservations use startDateTime; legacy ones may only have date
   return (reservation as any).startDateTime ?? reservation.date ?? undefined
 }
 
@@ -75,276 +67,289 @@ function getProgressBarColor(status: Deposit['status']): string {
   }
 }
 
-export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
+// ── Mobile card renderer ─────────────────────────────────────────────────────
+
+function MobileDepositCard({ deposit, onUpdate }: { deposit: Deposit; onUpdate: () => void }) {
+  const client = deposit.reservation?.client
+  const hall = deposit.reservation?.hall
+  const eventType = deposit.reservation?.eventType
+  const eventDate = resolveEventDate(deposit.reservation)
+  const paidAmount = Number(deposit.paidAmount || 0)
+  const amount = Number(deposit.amount)
+  const daysInfo = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
+    ? getDaysInfo(deposit.dueDate)
+    : null
+  const initials = client
+    ? `${client.firstName?.[0] ?? '?'}${client.lastName?.[0] ?? '?'}`.toUpperCase()
+    : '??'
+  const reservationLink = `/dashboard/reservations/${deposit.reservationId}`
+
   return (
-    <>
-      {/* ===== MOBILE CARD VIEW (<md) ===== */}
-      <div className="md:hidden divide-y divide-neutral-200/80 dark:divide-neutral-700/50">
-        {deposits.map((deposit) => {
-          const client = deposit.reservation?.client
-          const hall = deposit.reservation?.hall
-          const eventType = deposit.reservation?.eventType
-          // #deposits-fix (5/5): use startDateTime with date fallback
-          const eventDate = resolveEventDate(deposit.reservation)
-          const paidAmount = Number(deposit.paidAmount || 0)
-          const amount = Number(deposit.amount)
-          const daysInfo = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
-            ? getDaysInfo(deposit.dueDate)
-            : null
-          const initials = client
-            ? `${client.firstName?.[0] ?? '?'}${client.lastName?.[0] ?? '?'}`.toUpperCase()
-            : '??'
-          const reservationLink = `/dashboard/reservations/${deposit.reservationId}`
+    <div className="p-4 space-y-3">
+      {/* Row 1: Client + Amount */}
+      <div className="flex items-start justify-between gap-3">
+        <Link href={reservationLink} className="flex items-center gap-3 min-w-0">
+          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
+              {client ? `${client.firstName} ${client.lastName}` : 'Brak danych'}
+            </p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-300 truncate">
+              {eventType?.name || 'Brak'}
+              {hall?.name && ` \u00b7 ${hall.name}`}
+            </p>
+          </div>
+        </Link>
+        <div className="text-right flex-shrink-0">
+          <p className={cn("font-bold text-sm tabular-nums", getAmountColorClass(deposit.status))}>
+            {amount.toLocaleString('pl-PL')} zł
+          </p>
+          {paidAmount > 0 && paidAmount < amount && (
+            <p className="text-xs tabular-nums text-emerald-600 dark:text-emerald-400">
+              wpłacono {paidAmount.toLocaleString('pl-PL')} zł
+            </p>
+          )}
+        </div>
+      </div>
 
-          return (
-            <div key={deposit.id} className="p-4 space-y-3">
-              {/* Row 1: Client + Amount */}
-              <div className="flex items-start justify-between gap-3">
-                <Link href={reservationLink} className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                    {initials}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
-                      {client ? `${client.firstName} ${client.lastName}` : 'Brak danych'}
-                    </p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-300 truncate">
-                      {eventType?.name || 'Brak'}
-                      {hall?.name && ` \u00b7 ${hall.name}`}
-                    </p>
-                  </div>
-                </Link>
-                <div className="text-right flex-shrink-0">
-                  <p className={cn("font-bold text-sm tabular-nums", getAmountColorClass(deposit.status))}>
-                    {amount.toLocaleString('pl-PL')} zł
-                  </p>
-                  {paidAmount > 0 && paidAmount < amount && (
-                    <p className="text-xs tabular-nums text-emerald-600 dark:text-emerald-400">
-                      wpłacono {paidAmount.toLocaleString('pl-PL')} zł
-                    </p>
-                  )}
-                </div>
-              </div>
+      {/* Payment progress */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1 bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5">
+          <div
+            className={cn(
+              "h-1.5 rounded-full transition-all duration-500",
+              getProgressBarColor(deposit.status)
+            )}
+            style={{ width: `${Math.min((paidAmount / amount) * 100, 100)}%` }}
+          />
+        </div>
+        <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 whitespace-nowrap tabular-nums">
+          {paidAmount.toLocaleString('pl-PL')} / {amount.toLocaleString('pl-PL')} zł
+        </span>
+      </div>
 
-              {/* Payment progress */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5">
-                  <div
-                    className={cn(
-                      "h-1.5 rounded-full transition-all duration-500",
-                      getProgressBarColor(deposit.status)
-                    )}
-                    style={{ width: `${Math.min((paidAmount / amount) * 100, 100)}%` }}
-                  />
-                </div>
-                <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 whitespace-nowrap tabular-nums">
-                  {paidAmount.toLocaleString('pl-PL')} / {amount.toLocaleString('pl-PL')} zł
-                </span>
-              </div>
+      {/* Row 2: Status + Due Date + Method + Actions */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <DepositStatusBadge status={deposit.status} />
+          {deposit.paymentMethod && (() => {
+            const config = paymentMethodConfig[deposit.paymentMethod as PaymentMethod]
+            if (!config) return null
+            const Icon = config.icon
+            return (
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${config.className}`}>
+                <Icon className="h-3 w-3" />
+                {config.label}
+              </span>
+            )
+          })()}
+        </div>
+        <DepositActions deposit={deposit} onUpdate={onUpdate} />
+      </div>
 
-              {/* Row 2: Status + Due Date + Method + Actions */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <DepositStatusBadge status={deposit.status} />
-                  {deposit.paymentMethod && (() => {
-                    const config = paymentMethodConfig[deposit.paymentMethod as PaymentMethod]
-                    if (!config) return null
-                    const Icon = config.icon
-                    return (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${config.className}`}>
-                        <Icon className="h-3 w-3" />
-                        {config.label}
-                      </span>
-                    )
-                  })()}
-                </div>
-                <DepositActions deposit={deposit} onUpdate={onUpdate} />
-              </div>
+      {/* Row 3: Due date info */}
+      <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-300">
+        <div className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          <span>Termin: {new Date(deposit.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}</span>
+          {daysInfo && (
+            <span className={`font-medium ${daysInfo.className}`}>({daysInfo.text})</span>
+          )}
+        </div>
+        {eventDate && (
+          <div className="flex items-center gap-1">
+            <CalendarDays className="h-3 w-3" />
+            <span>{new Date(eventDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
-              {/* Row 3: Due date info */}
-              <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-300">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>Termin: {new Date(deposit.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}</span>
-                  {daysInfo && (
-                    <span className={`font-medium ${daysInfo.className}`}>({daysInfo.text})</span>
-                  )}
-                </div>
-                {eventDate && (
-                  <div className="flex items-center gap-1">
-                    <CalendarDays className="h-3 w-3" />
-                    <span>{new Date(eventDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}</span>
-                  </div>
-                )}
-              </div>
+// ── Column definitions ───────────────────────────────────────────────────────
+
+function buildColumns(onUpdate: () => void): DataTableColumn<Deposit>[] {
+  return [
+    {
+      key: 'client',
+      header: 'Klient',
+      render: (deposit) => {
+        const client = deposit.reservation?.client
+        const initials = client
+          ? `${client.firstName?.[0] ?? '?'}${client.lastName?.[0] ?? '?'}`.toUpperCase()
+          : '?'
+        const reservationLink = `/dashboard/reservations/${deposit.reservationId}`
+        return (
+          <Link href={reservationLink} className="flex items-center gap-3 group/link">
+            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              {initials}
             </div>
-          )
-        })}
-      </div>
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate group-hover/link:text-teal-600 dark:group-hover/link:text-teal-400 transition-colors">
+                {client ? `${client.firstName} ${client.lastName}` : 'Brak danych'}
+                <ExternalLink className="inline h-3 w-3 ml-1 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+              </p>
+              <p className="text-xs text-neutral-500 truncate">
+                {client?.phone || ''}
+              </p>
+            </div>
+          </Link>
+        )
+      },
+    },
+    {
+      key: 'event',
+      header: 'Wydarzenie',
+      render: (deposit) => {
+        const eventType = deposit.reservation?.eventType
+        const eventDate = resolveEventDate(deposit.reservation)
+        const reservationLink = `/dashboard/reservations/${deposit.reservationId}`
+        return (
+          <Link href={reservationLink} className="flex items-center gap-2 group/link">
+            {eventType && (
+              <span
+                className="h-2.5 w-2.5 rounded-full flex-shrink-0 ring-2 ring-white dark:ring-neutral-900"
+                style={{ backgroundColor: eventType.color || '#6b7280' }}
+              />
+            )}
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate group-hover/link:text-teal-600 dark:group-hover/link:text-teal-400 transition-colors">
+                {eventType?.name || 'Brak'}
+              </p>
+              {eventDate && (
+                <p className="text-xs text-neutral-500 flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3" />
+                  {new Date(eventDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+              )}
+            </div>
+          </Link>
+        )
+      },
+    },
+    {
+      key: 'hall',
+      header: 'Sala',
+      render: (deposit) => {
+        const hall = deposit.reservation?.hall
+        return (
+          <div className="flex items-center gap-1.5 text-sm">
+            <Building2 className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />
+            <span className="truncate">{hall?.name || 'Brak'}</span>
+          </div>
+        )
+      },
+    },
+    {
+      key: 'amount',
+      header: 'Kwota',
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+      render: (deposit) => (
+        <span className={cn("font-semibold tabular-nums text-sm", getAmountColorClass(deposit.status))}>
+          {Number(deposit.amount).toLocaleString('pl-PL')} zł
+        </span>
+      ),
+    },
+    {
+      key: 'paid',
+      header: 'Wpłacono',
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+      render: (deposit) => {
+        const paidAmount = Number(deposit.paidAmount || 0)
+        return (
+          <div className="space-y-1">
+            <span className={`font-semibold tabular-nums text-sm ${paidAmount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-400'}`}>
+              {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} zł` : `0 zł`}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <div className="flex-1 bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5 min-w-[60px]">
+                <div
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-500",
+                    getProgressBarColor(deposit.status)
+                  )}
+                  style={{ width: `${Math.min((paidAmount / Number(deposit.amount)) * 100, 100)}%` }}
+                />
+              </div>
+              <span className="text-[10px] text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
+                {Number(deposit.amount) > 0 ? Math.round((paidAmount / Number(deposit.amount)) * 100) : 0}%
+              </span>
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      key: 'dueDate',
+      header: 'Termin',
+      render: (deposit) => {
+        const daysInfo = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
+          ? getDaysInfo(deposit.dueDate)
+          : null
+        return (
+          <div>
+            <p className={`text-sm tabular-nums ${daysInfo && deposit.status === 'OVERDUE' ? 'text-red-600 dark:text-red-400 font-medium' : ''}`}>
+              {new Date(deposit.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </p>
+            {daysInfo && (
+              <p className={`text-xs ${daysInfo.className}`}>{daysInfo.text}</p>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (deposit) => <DepositStatusBadge status={deposit.status} />,
+    },
+    {
+      key: 'method',
+      header: 'Metoda',
+      render: (deposit) => {
+        if (!deposit.paymentMethod) {
+          return <span className="text-sm text-neutral-300 dark:text-neutral-400">&mdash;</span>
+        }
+        const config = paymentMethodConfig[deposit.paymentMethod as PaymentMethod]
+        if (!config) return <span className="text-sm text-neutral-500 dark:text-neutral-500">&mdash;</span>
+        const Icon = config.icon
+        return (
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`}>
+            <Icon className="h-3 w-3" />
+            {config.label}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'actions',
+      header: '',
+      headerClassName: 'w-10',
+      render: (deposit) => <DepositActions deposit={deposit} onUpdate={onUpdate} />,
+    },
+  ]
+}
 
-      {/* ===== DESKTOP TABLE VIEW (md+) ===== */}
-      <div className="hidden md:block">
-        <Table>
-          <TableHeader>
-            <TableRow className={typography.tableHeaderRow}>
-              <TableHead className={typography.tableHeaderCell}>Klient</TableHead>
-              <TableHead className={typography.tableHeaderCell}>Wydarzenie</TableHead>
-              <TableHead className={typography.tableHeaderCell}>Sala</TableHead>
-              <TableHead className={`${typography.tableHeaderCell} text-right`}>Kwota</TableHead>
-              <TableHead className={`${typography.tableHeaderCell} text-right`}>Wpłacono</TableHead>
-              <TableHead className={typography.tableHeaderCell}>Termin</TableHead>
-              <TableHead className={typography.tableHeaderCell}>Status</TableHead>
-              <TableHead className={typography.tableHeaderCell}>Metoda</TableHead>
-              <TableHead className="w-10"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {deposits.map((deposit) => {
-              const client = deposit.reservation?.client
-              const hall = deposit.reservation?.hall
-              const eventType = deposit.reservation?.eventType
-              // #deposits-fix (5/5): use startDateTime with date fallback
-              const eventDate = resolveEventDate(deposit.reservation)
-              const paidAmount = Number(deposit.paidAmount || 0)
-              const daysInfo = deposit.status === 'PENDING' || deposit.status === 'OVERDUE'
-                ? getDaysInfo(deposit.dueDate)
-                : null
+// ── Component ────────────────────────────────────────────────────────────────
 
-              const initials = client
-                ? `${client.firstName?.[0] ?? '?'}${client.lastName?.[0] ?? '?'}`.toUpperCase()
-                : '?'
+export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
+  const columns = buildColumns(onUpdate)
 
-              const reservationLink = `/dashboard/reservations/${deposit.reservationId}`
-
-              return (
-                <TableRow
-                  key={deposit.id}
-                  className="group hover:bg-rose-50/40 dark:hover:bg-rose-900/10 transition-colors"
-                >
-                  {/* Client */}
-                  <TableCell>
-                    <Link href={reservationLink} className="flex items-center gap-3 group/link">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                        {initials}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate group-hover/link:text-rose-600 dark:group-hover/link:text-rose-400 transition-colors">
-                          {client ? `${client.firstName} ${client.lastName}` : 'Brak danych'}
-                          <ExternalLink className="inline h-3 w-3 ml-1 opacity-0 group-hover/link:opacity-100 transition-opacity" />
-                        </p>
-                        <p className="text-xs text-neutral-500 truncate">
-                          {client?.phone || ''}
-                        </p>
-                      </div>
-                    </Link>
-                  </TableCell>
-
-                  {/* Event */}
-                  <TableCell>
-                    <Link href={reservationLink} className="flex items-center gap-2 group/link">
-                      {eventType && (
-                        <span
-                          className="h-2.5 w-2.5 rounded-full flex-shrink-0 ring-2 ring-white dark:ring-neutral-900"
-                          style={{ backgroundColor: eventType.color || '#6b7280' }}
-                        />
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate group-hover/link:text-rose-600 dark:group-hover/link:text-rose-400 transition-colors">
-                          {eventType?.name || 'Brak'}
-                        </p>
-                        {eventDate && (
-                          <p className="text-xs text-neutral-500 flex items-center gap-1">
-                            <CalendarDays className="h-3 w-3" />
-                            {new Date(eventDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </p>
-                        )}
-                      </div>
-                    </Link>
-                  </TableCell>
-
-                  {/* Hall */}
-                  <TableCell>
-                    <div className="flex items-center gap-1.5 text-sm">
-                      <Building2 className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />
-                      <span className="truncate">{hall?.name || 'Brak'}</span>
-                    </div>
-                  </TableCell>
-
-                  {/* Amount */}
-                  <TableCell className="text-right">
-                    <span className={cn("font-semibold tabular-nums text-sm", getAmountColorClass(deposit.status))}>
-                      {Number(deposit.amount).toLocaleString('pl-PL')} zł
-                    </span>
-                  </TableCell>
-
-                  {/* Paid */}
-                  <TableCell className="text-right">
-                    <div className="space-y-1">
-                      <span className={`font-semibold tabular-nums text-sm ${paidAmount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-300 dark:text-neutral-400'}`}>
-                        {paidAmount > 0 ? `${paidAmount.toLocaleString('pl-PL')} zł` : `0 zł`}
-                      </span>
-                      {/* Payment progress bar */}
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex-1 bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5 min-w-[60px]">
-                          <div
-                            className={cn(
-                              "h-1.5 rounded-full transition-all duration-500",
-                              getProgressBarColor(deposit.status)
-                            )}
-                            style={{ width: `${Math.min((paidAmount / Number(deposit.amount)) * 100, 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
-                          {Number(deposit.amount) > 0 ? Math.round((paidAmount / Number(deposit.amount)) * 100) : 0}%
-                        </span>
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  {/* Due Date */}
-                  <TableCell>
-                    <div>
-                      <p className={`text-sm tabular-nums ${daysInfo && deposit.status === 'OVERDUE' ? 'text-red-600 dark:text-red-400 font-medium' : ''}`}>
-                        {new Date(deposit.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </p>
-                      {daysInfo && (
-                        <p className={`text-xs ${daysInfo.className}`}>{daysInfo.text}</p>
-                      )}
-                    </div>
-                  </TableCell>
-
-                  {/* Status */}
-                  <TableCell>
-                    <DepositStatusBadge status={deposit.status} />
-                  </TableCell>
-
-                  {/* Payment Method */}
-                  <TableCell>
-                    {deposit.paymentMethod ? (() => {
-                      const config = paymentMethodConfig[deposit.paymentMethod as PaymentMethod]
-                      if (!config) return <span className="text-sm text-neutral-500 dark:text-neutral-500">—</span>
-                      const Icon = config.icon
-                      return (
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`}>
-                          <Icon className="h-3 w-3" />
-                          {config.label}
-                        </span>
-                      )
-                    })() : (
-                      <span className="text-sm text-neutral-300 dark:text-neutral-400">—</span>
-                    )}
-                  </TableCell>
-
-                  {/* Actions */}
-                  <TableCell>
-                    <DepositActions deposit={deposit} onUpdate={onUpdate} />
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+  return (
+    <UnifiedDataTable
+      data={deposits}
+      columns={columns}
+      keyExtractor={(deposit) => deposit.id}
+      mobileCardRenderer={(deposit) => (
+        <MobileDepositCard deposit={deposit} onUpdate={onUpdate} />
+      )}
+      hoverAccent="teal"
+      tableContainerClassName="rounded-none border-0"
+    />
   )
 }
