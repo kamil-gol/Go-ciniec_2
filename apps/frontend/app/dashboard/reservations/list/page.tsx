@@ -1,22 +1,20 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Plus, Calendar, CheckCircle2, Clock, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ReservationsList } from '@/components/reservations/reservations-list'
-import { getReservations } from '@/lib/api/reservations'
+import { useReservations } from '@/lib/api/reservations'
 import { PageLayout, PageHero, StatCard, FilterTabs } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
-import { toast } from 'sonner'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
+import type { Reservation } from '@/types'
 
 export default function ReservationsListPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [reservations, setReservations] = useState<any[]>([])
-  const [, setLoading] = useState(true)
   const accent = moduleAccents.reservations
 
   const defaultHallId = searchParams.get('hallId') || undefined
@@ -31,34 +29,24 @@ export default function ReservationsListPage() {
     }
   }, [searchParams, defaultHallId, router])
 
-  const loadReservations = useCallback(async () => {
-    try {
-      setLoading(true)
-      const data = await getReservations()
-      setReservations(data)
-    } catch (error: unknown) {
-      console.error('Error loading reservations:', error)
-      toast.error('Nie udało się załadować rezerwacji')
-    } finally {
-      setLoading(false)
+  // Single data source for stats — same filters as the list component
+  // (non-archived, excluding RESERVED status which is filtered client-side)
+  const { data: statsResponse } = useReservations({ page: 1, pageSize: 200, archived: false })
+
+  const stats = useMemo(() => {
+    const all = (statsResponse?.data ?? []).filter((r: Reservation) => r.status !== 'RESERVED')
+    const now = new Date()
+    return {
+      total: all.length,
+      confirmed: all.filter((r: Reservation) => r.status === 'CONFIRMED').length,
+      pending: all.filter((r: Reservation) => r.status === 'PENDING').length,
+      thisMonth: all.filter((r: Reservation) => {
+        const date = r.startDateTime ? new Date(r.startDateTime) : r.date ? new Date(r.date) : null
+        if (!date) return false
+        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
+      }).length,
     }
-  }, [])
-
-  useEffect(() => {
-    loadReservations()
-  }, [loadReservations])
-
-  const stats = {
-    total: reservations.length,
-    confirmed: reservations.filter(r => r.status === 'CONFIRMED').length,
-    pending: reservations.filter(r => r.status === 'PENDING').length,
-    thisMonth: reservations.filter(r => {
-      const date = r.startDateTime ? new Date(r.startDateTime) : r.date ? new Date(r.date) : null
-      if (!date) return false
-      const now = new Date()
-      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
-    }).length,
-  }
+  }, [statsResponse])
 
   return (
     <PageLayout>

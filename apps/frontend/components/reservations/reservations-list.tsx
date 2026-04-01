@@ -324,7 +324,7 @@ export function ReservationsList() {
       {reservations.length > 0 && (
         <div className="flex items-center justify-between px-2 py-4">
           <p className="text-sm text-muted-foreground">
-            Pokazuję {Math.min((page - 1) * 20 + 1, data?.total || 0)}-{Math.min(page * 20, data?.total || 0)} z {data?.total || 0} rezerwacji
+            Pokazuję {Math.min((page - 1) * 20 + 1, reservations.length)}-{Math.min(page * 20, reservations.length)} z {reservations.length} rezerwacji
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
