@@ -44,8 +44,8 @@ vi.mock('@/components/shared', () => ({
   PageLayout: ({ children, narrowContent }: any) => (
     <div data-testid="page-layout" data-narrow={narrowContent ? 'true' : 'false'}>{children}</div>
   ),
-  PageHeader: ({ title, subtitle }: any) => (
-    <div data-testid="page-header">
+  PageHero: ({ title, subtitle }: any) => (
+    <div data-testid="page-hero">
       <h1>{title}</h1>
       <p>{subtitle}</p>
     </div>

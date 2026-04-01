@@ -27,11 +27,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { PageLayout, StatCard,
+import {
+  PageLayout,
+  PageHero,
+  StatCard,
   LoadingState,
   EmptyState,
- } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader';
+} from '@/components/shared';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import {
@@ -180,7 +182,8 @@ export default function DocumentTemplatesPage() {
   return (
     <PageLayout>
       {/* Hero */}
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Szablony Dokumentów"
         subtitle="Zarządzanie treścią szablonów PDF, e-mail i regulaminów"
         icon={ScrollText}

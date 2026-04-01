@@ -48,8 +48,8 @@ vi.mock('@/lib/design-tokens', () => ({
 
 vi.mock('@/components/shared', () => ({
   PageLayout: ({ children }: any) => <div data-testid="page-layout">{children}</div>,
-  PageHeader: ({ title, subtitle, action }: any) => (
-    <div data-testid="page-header">
+  PageHero: ({ title, subtitle, action }: any) => (
+    <div data-testid="page-hero">
       <h1>{title}</h1>
       <p>{subtitle}</p>
       {action}
@@ -102,7 +102,7 @@ describe('DailyViewPage', () => {
 
   it('renders subtitle with today label', () => {
     render(<DailyViewPage />)
-    const subtitle = screen.getByTestId('page-header').querySelector('p')
+    const subtitle = screen.getByTestId('page-hero').querySelector('p')
     expect(subtitle?.textContent).toContain('Dzisiaj')
   })
 

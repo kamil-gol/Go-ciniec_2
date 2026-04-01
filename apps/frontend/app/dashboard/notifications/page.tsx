@@ -6,8 +6,7 @@ import { Bell, CheckCheck, Calendar, CreditCard, ArrowUpFromLine, Users, Chevron
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { LoadingState, EmptyState  } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader'
+import { PageHero, LoadingState, EmptyState } from '@/components/shared'
 import { FilterTabs } from '@/components/shared/FilterTabs'
 import { moduleAccents } from '@/lib/design-tokens'
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useUnreadCount } from '@/hooks/use-notifications'
@@ -27,13 +26,13 @@ const typeIcons: Record<string, typeof Bell> = {
 }
 
 const typeColors: Record<string, string> = {
-  RESERVATION_CREATED: 'bg-success-50 text-success-600 dark:bg-success-900/30 dark:text-success-400',
-  RESERVATION_UPDATED: 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400',
-  STATUS_CHANGED: 'bg-warning-50 text-warning-600 dark:bg-warning-900/30 dark:text-warning-400',
-  DEPOSIT_OVERDUE: 'bg-error-50 text-error-600 dark:bg-error-900/30 dark:text-error-400',
-  DEPOSIT_REMINDER: 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400',
-  QUEUE_PROMOTED: 'bg-warning-50 text-warning-600 dark:bg-warning-900/30 dark:text-warning-400',
-  QUEUE_MATCH: 'bg-warning-50 text-warning-600 dark:bg-warning-900/30 dark:text-warning-400',
+  RESERVATION_CREATED: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+  RESERVATION_UPDATED: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+  STATUS_CHANGED: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+  DEPOSIT_OVERDUE: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+  DEPOSIT_REMINDER: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
+  QUEUE_PROMOTED: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
+  QUEUE_MATCH: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
 }
 
 function getNotificationLink(notif: Notification): string | null {
@@ -108,18 +107,19 @@ export default function NotificationsPage() {
   return (
     <div className="container mx-auto py-6 px-4 sm:py-8 sm:px-6 space-y-6 sm:space-y-8">
       {/* Hero */}
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Powiadomienia"
         subtitle="Bądź na bieżąco z rezerwacjami, zaliczkami i kolejką"
         icon={Bell}
         stats={unreadCount > 0 ? [
           { icon: Bell, label: 'Nieprzeczytane', value: unreadCount },
         ] : undefined}
-        actions={
+        action={
           unreadCount > 0 ? (
             <Button
               size="lg"
-              className="bg-white text-warning-600 hover:bg-white/90 shadow-xl"
+              className="bg-white text-amber-600 hover:bg-white/90 shadow-xl"
               onClick={() => markAllAsRead.mutate()}
             >
               <CheckCheck className="mr-2 h-5 w-5" />
@@ -177,7 +177,7 @@ export default function NotificationsPage() {
                   className={cn(
                     'flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:shadow-md',
                     !notif.read
-                      ? 'bg-white dark:bg-neutral-800 border-warning-200/60 dark:border-warning-800/40 shadow-sm'
+                      ? 'bg-white dark:bg-neutral-800 border-amber-200/60 dark:border-amber-800/40 shadow-sm'
                       : 'bg-neutral-50/50 dark:bg-neutral-800/50 border-neutral-200/50 dark:border-neutral-700/30'
                   )}
                 >
@@ -194,7 +194,7 @@ export default function NotificationsPage() {
                         {notif.title}
                       </p>
                       {!notif.read && (
-                        <span className="h-2 w-2 rounded-full bg-warning-500 flex-shrink-0" />
+                        <span className="h-2 w-2 rounded-full bg-amber-500 flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-0.5 line-clamp-2">

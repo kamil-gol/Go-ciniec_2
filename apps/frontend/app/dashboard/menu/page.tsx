@@ -9,8 +9,7 @@ import Link from 'next/link'
 import { useMenuTemplates } from '@/hooks/use-menu'
 import { useDishes } from '@/hooks/use-dishes'
 import { useDishCategories } from '@/hooks/use-menu-config'
-import { PageLayout } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader'
+import { PageLayout, PageHero } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { motion } from 'framer-motion'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -32,16 +31,17 @@ export default function MenuDashboardPage() {
   }
 
   const navCards = [
-    { href: '/dashboard/menu/templates', icon: FileText, title: 'Szablony Menu', desc: 'Konfiguruj szablony dla wydarzeń', stat: `${stats.templates} szablonów \u2022 ${stats.activeTemplates} aktywnych`, gradient: 'from-primary-500 to-primary-600', hoverText: 'text-primary-600 dark:text-primary-400' },
-    { href: '/dashboard/menu/packages', icon: Package, title: 'Pakiety', desc: 'Zarządzaj pakietami menu', stat: `${stats.packages} pakietów`, gradient: 'from-primary-500 to-primary-600', hoverText: 'text-primary-600 dark:text-primary-400' },
-    { href: '/dashboard/menu/categories', icon: Tags, title: 'Kategorie Dań', desc: 'Zarządzaj kategoriami dań', stat: `${stats.categories} kategorii`, gradient: 'from-primary-500 to-primary-600', hoverText: 'text-primary-600 dark:text-primary-400' },
-    { href: '/dashboard/menu/dishes', icon: ChefHat, title: 'Biblioteka Dań', desc: 'Zarządzaj daniami w systemie', stat: `${stats.dishes} dań \u2022 ${stats.categories} kategorii`, gradient: 'from-primary-500 to-primary-600', hoverText: 'text-primary-600 dark:text-primary-400' },
+    { href: '/dashboard/menu/templates', icon: FileText, title: 'Szablony Menu', desc: 'Konfiguruj szablony dla wydarzeń', stat: `${stats.templates} szablonów \u2022 ${stats.activeTemplates} aktywnych`, gradient: 'from-blue-500 to-indigo-500', hoverText: 'text-blue-600 dark:text-blue-400' },
+    { href: '/dashboard/menu/packages', icon: Package, title: 'Pakiety', desc: 'Zarządzaj pakietami menu', stat: `${stats.packages} pakietów`, gradient: 'from-amber-500 to-orange-500', hoverText: 'text-amber-600 dark:text-amber-400' },
+    { href: '/dashboard/menu/categories', icon: Tags, title: 'Kategorie Dań', desc: 'Zarządzaj kategoriami dań', stat: `${stats.categories} kategorii`, gradient: 'from-violet-500 to-purple-500', hoverText: 'text-violet-600 dark:text-violet-400' },
+    { href: '/dashboard/menu/dishes', icon: ChefHat, title: 'Biblioteka Dań', desc: 'Zarządzaj daniami w systemie', stat: `${stats.dishes} dań \u2022 ${stats.categories} kategorii`, gradient: 'from-emerald-500 to-teal-500', hoverText: 'text-emerald-600 dark:text-emerald-400' },
   ]
 
   return (
     <PageLayout>
       {/* Hero */}
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Moduł Menu"
         subtitle="Kompleksowe zarządzanie menu, pakietami i szablonami"
         icon={UtensilsCrossed}

@@ -68,7 +68,7 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
             </div>
             <div className="flex items-center gap-2">
               {isSelected && (
-                <Badge className="bg-success-500 text-white border-0 shadow-sm">
+                <Badge className="bg-green-500 text-white border-0 shadow-sm">
                   <CheckCircle2 className="h-3 w-3 mr-1" />
                   Wybrane
                 </Badge>
@@ -77,7 +77,7 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
                 className={cn(
                   'border-0 shadow-none',
                   isActive
-                    ? 'bg-success-50 dark:bg-success-900/30 text-success-700 dark:text-success-400'
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                     : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
                 )}
               >
@@ -101,7 +101,7 @@ export function MenuCard({ template, isSelected, onSelect, className }: MenuCard
             <h3 className={cn(
               'text-xl font-bold transition-colors',
               isSelected
-                ? 'text-success-700 dark:text-success-400'
+                ? 'text-green-700 dark:text-green-400'
                 : 'text-neutral-900 dark:text-neutral-100',
               !isSelected && `group-hover:${accent.text} dark:group-hover:${accent.textDark}`
             )}>

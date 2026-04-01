@@ -1,4 +1,4 @@
-import { Users, Clock, ChefHat, User, Baby, Calendar } from 'lucide-react';
+import { Users, Clock, ChefHat } from 'lucide-react';
 import { SummaryCard, ReportLoadingState, ReportErrorState, ReportEmptyState } from './ReportSummaryCards';
 import { formatTime } from './chart-utils';
 import type { MenuPreparationsQueryResult } from './types';
@@ -12,14 +12,14 @@ function PortionTargetBadge({ target }: { target?: string }) {
   if (target === 'ADULTS_ONLY') {
     return (
       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 ml-1.5 normal-case tracking-normal">
-        <User className="h-3 w-3 inline" /> dorośli
+        👤 dorośli
       </span>
     );
   }
   if (target === 'CHILDREN_ONLY') {
     return (
       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 ml-1.5 normal-case tracking-normal">
-        <Baby className="h-3 w-3 inline" /> dzieci
+        🧒 dzieci
       </span>
     );
   }
@@ -65,7 +65,7 @@ export function MenuPreparationsTab({ query, view }: {
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Calendar className="h-4 w-4" /> {day.dateLabel}
+                  <span>{"📅"}</span> {day.dateLabel}
                 </h3>
                 <span className="text-xs text-neutral-300">
                   {day.totalReservations} {day.totalReservations === 1 ? 'rezerwacja' : 'rezerwacji'} &middot; {day.totalGuests} gości
@@ -150,7 +150,7 @@ export function MenuPreparationsTab({ query, view }: {
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Calendar className="h-4 w-4" /> {day.dateLabel}
+                  <span>{"📅"}</span> {day.dateLabel}
                 </h3>
                 <span className="text-xs text-neutral-300">
                   {day.totalReservations} rez. &middot; {day.totalGuests} gości
@@ -178,9 +178,9 @@ export function MenuPreparationsTab({ query, view }: {
                         <tr>
                           <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase truncate">Danie</th>
                           <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase">Porcje</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden sm:table-column">{"Dorosłe"}</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden sm:table-column">Dziecięce</th>
-                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden sm:table-column">Maluchy</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden sm:table-cell">{"Dorosłe"}</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden sm:table-cell">Dziecięce</th>
+                          <th className="px-3 sm:px-4 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden sm:table-cell">Maluchy</th>
                           <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase hidden lg:table-cell">Klienci</th>
                         </tr>
                       </thead>

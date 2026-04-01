@@ -7,8 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
-import { StatCard, LoadingState  } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader'
+import { PageHero, StatCard, LoadingState } from '@/components/shared'
 import { FilterTabs } from '@/components/shared/FilterTabs'
 import { ClientsList } from '@/components/clients/clients-list'
 import { CreateClientForm } from '@/components/clients/create-client-form'
@@ -55,11 +54,12 @@ export default function ClientsPage() {
     <div className="container mx-auto py-6 px-4 sm:py-8 sm:px-6 space-y-6 sm:space-y-8">
       <Breadcrumb />
       {/* Hero */}
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Klienci"
         subtitle="Zarządzaj bazą klientów"
         icon={Users}
-        actions={
+        action={
           <Button
             size="lg"
             className="bg-white text-violet-600 hover:bg-white/90 shadow-xl"

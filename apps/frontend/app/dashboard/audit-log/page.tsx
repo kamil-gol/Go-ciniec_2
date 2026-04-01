@@ -9,8 +9,7 @@ import { AuditLogFilters } from '@/components/audit-log/AuditLogFilters';
 import { AuditLogTable } from '@/components/audit-log/AuditLogTable';
 import { useAuditLogs, useAuditLogStatistics } from '@/hooks/use-audit-log';
 import type { AuditLogFilters as Filters } from '@/types/audit-log.types';
-import { PageLayout, StatCard, EmptyState  } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader';
+import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared';
 import { Skeleton } from '@/components/ui/skeleton';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -100,7 +99,8 @@ export default function AuditLogPage() {
   return (
     <PageLayout>
       <Breadcrumb />
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Dziennik Audytu"
         subtitle="Historia wszystkich zmian w systemie"
         icon={FileText}

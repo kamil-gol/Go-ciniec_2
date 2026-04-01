@@ -12,7 +12,7 @@ import { useCreateDish, useUpdateDish } from '@/hooks/use-dishes'
 import { useDishCategories } from '@/hooks/use-menu-config'
 import { toast } from 'sonner'
 import type { Dish } from '@/lib/api/dishes-api'
-import { Loader2, AlertTriangle } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 interface DishDialogProps {
   open: boolean
@@ -131,7 +131,7 @@ export function DishDialog({ open, onOpenChange, dish }: DishDialogProps) {
             </Select>
             {categories.length === 0 && (
               <p className="text-xs text-amber-600">
-                <AlertTriangle className="h-4 w-4 inline mr-1" /> Brak kategorii. Dodaj kategorię w sekcji &quot;Kategorie Dań&quot;.
+                ⚠️ Brak kategorii. Dodaj kategorię w sekcji &quot;Kategorie Dań&quot;.
               </p>
             )}
           </div>

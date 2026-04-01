@@ -32,8 +32,8 @@ export function ClientHeroSection({ client, isCompany, isDeleted, stats }: Clien
   return (
     <DetailHero
       gradient={isCompany
-        ? 'from-primary-600 to-primary-700'
-        : 'from-primary-600 to-primary-700'
+        ? 'from-purple-600 via-indigo-600 to-blue-600'
+        : 'from-indigo-600 via-purple-600 to-pink-600'
       }
       backHref="/dashboard/clients"
       backLabel="Powrót do listy"
@@ -44,7 +44,7 @@ export function ClientHeroSection({ client, isCompany, isDeleted, stats }: Clien
       badges={
         <>
           {isCompany && (
-            <Badge className="bg-primary-500/80 backdrop-blur-sm border-primary-300/30 text-white">
+            <Badge className="bg-purple-500/80 backdrop-blur-sm border-purple-300/30 text-white">
               <Building2 className="h-3 w-3 mr-1" />
               Firma
             </Badge>

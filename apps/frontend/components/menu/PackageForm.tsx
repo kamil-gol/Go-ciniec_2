@@ -68,11 +68,11 @@ export default function PackageForm({
   }, [initialData]);
 
   async function loadCategories() {
-    const loadingToast = toast.loading('Ładowanie kategorii...');
+    const loadingToast = toast.loading('📁 Ładowanie kategorii...');
     try {
       const data = await getDishCategories();
       setCategories(data);
-      toast.success('Kategorie załadowane', { id: loadingToast });
+      toast.success('✅ Kategorie załadowane', { id: loadingToast });
     } catch (error) {
       console.error('Failed to load categories:', error);
       toast.error('❌ Błąd ładowania kategorii', { 
@@ -135,7 +135,7 @@ export default function PackageForm({
 
     setLoading(true);
     const savingToast = toast.loading(
-      initialData ? 'Aktualizacja pakietu...' : 'Tworzenie pakietu...'
+      initialData ? '💾 Aktualizacja pakietu...' : '✨ Tworzenie pakietu...'
     );
 
     try {
@@ -179,7 +179,7 @@ export default function PackageForm({
         // Update category settings
         await saveCategorySettings(initialData.id);
         
-        toast.success('Pakiet zaktualizowany!', {
+        toast.success('🎉 Pakiet zaktualizowany!', {
           id: savingToast,
           description: `Pakiet "${formData.name}" został pomyślnie zaktualizowany`,
           duration: 5000,
@@ -191,7 +191,7 @@ export default function PackageForm({
         // Save category settings for newly created package
         await saveCategorySettings(createdOrUpdatedPackage.id);
         
-        toast.success('Pakiet utworzony!', {
+        toast.success('✨ Pakiet utworzony!', {
           id: savingToast,
           description: `Nowy pakiet "${formData.name}" został dodany do menu`,
           duration: 5000,

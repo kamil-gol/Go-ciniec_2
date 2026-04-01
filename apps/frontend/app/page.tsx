@@ -19,10 +19,10 @@ export default function HomePage() {
 
   // Show loading state while redirecting
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 dark:from-neutral-900 dark:to-neutral-800">
       <div className="text-center">
-        <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent" />
-        <p className="mt-4 text-muted-foreground">Przekierowywanie...</p>
+        <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-violet-600 border-r-transparent" />
+        <p className="mt-4 text-neutral-600 dark:text-neutral-300">Przekierowywanie...</p>
       </div>
     </div>
   )

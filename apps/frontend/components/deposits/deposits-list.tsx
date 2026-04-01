@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { StatusBadge } from '@/components/shared/StatusBadge'
+import { DepositStatusBadge } from './deposit-status-badge'
 import { DepositActions } from './deposit-actions'
 import type { Deposit, PaymentMethod } from '@/lib/api/deposits'
 import Link from 'next/link'
@@ -144,7 +144,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
               {/* Row 2: Status + Due Date + Method + Actions */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <StatusBadge type="deposit" status={deposit.status} />
+                  <DepositStatusBadge status={deposit.status} />
                   {deposit.paymentMethod && (() => {
                     const config = paymentMethodConfig[deposit.paymentMethod as PaymentMethod]
                     if (!config) return null
@@ -314,7 +314,7 @@ export function DepositsList({ deposits, onUpdate }: DepositsListProps) {
 
                   {/* Status */}
                   <TableCell>
-                    <StatusBadge type="deposit" status={deposit.status} />
+                    <DepositStatusBadge status={deposit.status} />
                   </TableCell>
 
                   {/* Payment Method */}

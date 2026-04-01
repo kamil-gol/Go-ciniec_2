@@ -15,8 +15,8 @@ export function CompanyInfoCard({ client }: { client: any }) {
     <GradientCard
       title="Dane firmy"
       icon={<Building2 className="h-5 w-5 text-white" />}
-      iconGradient="from-primary-500 to-primary-600"
-      headerGradient="from-primary-50 to-primary-100 dark:from-primary-950/30 dark:to-primary-900/20"
+      iconGradient="from-purple-500 to-indigo-500"
+      headerGradient="from-purple-50 via-indigo-50 to-blue-50 dark:from-purple-950/30 dark:via-indigo-950/30 dark:to-blue-950/30"
     >
       <div className="space-y-4">
         <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">
@@ -66,7 +66,7 @@ export function CompanyInfoCard({ client }: { client: any }) {
                 href={client.website.startsWith('http') ? client.website : `https://${client.website}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-base font-semibold text-primary-600 dark:text-primary-400 hover:underline break-all"
+                className="text-base font-semibold text-indigo-600 dark:text-indigo-400 hover:underline break-all"
               >
                 {client.website}
               </a>
@@ -93,8 +93,8 @@ export function ContactInfoCard({ client, isCompany }: ClientInfoCardsProps) {
     <GradientCard
       title={isCompany ? 'Osoba reprezentująca' : 'Dane kontaktowe'}
       icon={<User className="h-5 w-5 text-white" />}
-      iconGradient="from-primary-500 to-primary-600"
-      headerGradient="from-primary-50 to-primary-100 dark:from-primary-950/30 dark:to-primary-900/20"
+      iconGradient="from-indigo-500 to-purple-500"
+      headerGradient="from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950/30 dark:via-purple-950/30 dark:to-pink-950/30"
     >
       <div className="space-y-4">
         <div className="flex items-start gap-3 p-3 bg-white dark:bg-black/20 rounded-lg">

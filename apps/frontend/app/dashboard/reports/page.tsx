@@ -26,8 +26,7 @@ import type {
   MenuPreparationsReportFilters,
   GroupByPeriod,
 } from '@/types/reports.types';
-import { PageLayout } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader';
+import { PageLayout, PageHero } from '@/components/shared';
 import { moduleAccents } from '@/lib/design-tokens';
 import { toast } from 'sonner';
 
@@ -159,11 +158,12 @@ export default function ReportsPage() {
   return (
     <PageLayout>
       <Breadcrumb />
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Raporty"
         subtitle={"Analityka przychodów, zajętości sal, przygotowań i menu"}
         icon={BarChart3}
-        actions={
+        action={
           <div className="flex gap-2">
             <Button onClick={handleExportExcel} disabled={exportingExcel} size="sm"
               className="bg-green-600 hover:bg-green-700 text-white shadow-lg">

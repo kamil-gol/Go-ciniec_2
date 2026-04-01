@@ -4,8 +4,7 @@ import { useState } from 'react'
 import { ChefHat } from 'lucide-react'
 import { DishLibraryManager } from '@/components/menu/DishLibraryManager'
 import { useDishes } from '@/hooks/use-dishes'
-import { PageLayout } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader'
+import { PageLayout, PageHero } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
@@ -17,7 +16,8 @@ export default function DishesPage() {
   return (
     <PageLayout>
       <Breadcrumb />
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Biblioteka Dań"
         subtitle="Zarządzaj wszystkimi daniami w systemie"
         icon={ChefHat}

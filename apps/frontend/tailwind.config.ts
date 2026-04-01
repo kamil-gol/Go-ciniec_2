@@ -118,20 +118,6 @@ const config: Config = {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
-  			},
-  			/* Design System v2 — Chalk & Stone */
-  			ds: {
-  				bg: 'hsl(var(--ds-bg))',
-  				surface: 'hsl(var(--ds-surface))',
-  				'surface-2': 'hsl(var(--ds-surface-2))',
-  				'surface-elevated': 'hsl(var(--ds-surface-elevated))',
-  				text: 'hsl(var(--ds-text))',
-  				'text-muted': 'hsl(var(--ds-text-muted))',
-  				'text-faint': 'hsl(var(--ds-text-faint))',
-  				accent: 'hsl(var(--ds-accent))',
-  				'accent-hover': 'hsl(var(--ds-accent-hover))',
-  				border: 'hsl(var(--ds-border))',
-  				'border-subtle': 'hsl(var(--ds-border-subtle))',
   			}
   		},
   		fontFamily: {

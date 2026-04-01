@@ -15,7 +15,7 @@ export function EditContactSection({ form, set }: EditContactSectionProps) {
       icon={User}
       title="Kontakt do zamówienia"
       subtitle="Dane kontaktowe osoby odpowiedzialnej"
-      colorFrom="from-primary-50"
+      colorFrom="from-indigo-50"
       colorTo="to-blue-50"
       borderColor="border-indigo-200 dark:border-indigo-800"
     >

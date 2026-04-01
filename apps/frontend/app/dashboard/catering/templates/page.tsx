@@ -12,11 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { PageLayout, StatCard,
+import {
+  PageLayout,
+  PageHero,
+  StatCard,
   LoadingState,
   EmptyState,
- } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader';
+} from '@/components/shared';
 import { CateringTemplateList } from './components/CateringTemplateList';
 import { CateringTemplateForm } from './components/CateringTemplateForm';
 import type { CateringTemplate } from '@/types/catering.types';
@@ -56,13 +58,14 @@ export default function CateringTemplatesPage() {
     <PageLayout>
       <Breadcrumb />
       {/* Hero */}
-      <PageHeader
+      <PageHero
+        accent={CATERING_ACCENT}
         title="Szablony cateringowe"
         subtitle="Konfiguruj szablony pakietów i dań dla oferty cateringu"
         icon={LayoutTemplate}
         backHref="/dashboard/catering"
         backLabel="Powrót do Cateringu"
-        actions={
+        action={
           <Button
             size="lg"
             onClick={handleCreate}

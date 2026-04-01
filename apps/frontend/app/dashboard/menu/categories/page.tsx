@@ -12,8 +12,7 @@ import { useDishCategories, useCreateDishCategory, useUpdateDishCategory, useDel
 import { toast } from 'sonner'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import type { DishCategory } from '@/types'
-import { PageLayout, LoadingState, EmptyState  } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader'
+import { PageLayout, PageHero, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
@@ -131,13 +130,14 @@ export default function DishCategoriesPage() {
     <PageLayout>
       <Breadcrumb />
       {ConfirmDialog}
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Kategorie Dań"
         subtitle="Zarządzaj kategoriami w systemie"
         icon={Tags}
         backHref="/dashboard/menu"
         backLabel="Powrót do Menu"
-        actions={
+        action={
           <Button
             size="lg"
             onClick={handleCreate}
@@ -178,7 +178,7 @@ export default function DishCategoriesPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="icon">Ikona (emoji)</Label>
-              <Input id="icon" placeholder="🥣" value={formData.icon} onChange={(e) => setFormData({ ...formData, icon: e.target.value })} />
+              <Input id="icon" placeholder="\ud83c\udf5c" value={formData.icon} onChange={(e) => setFormData({ ...formData, icon: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Kolor</Label>
@@ -203,7 +203,7 @@ export default function DishCategoriesPage() {
               <p className="text-xs text-muted-foreground">Obecne kolejności: {sortedCategories.map(c => `${c.name} (${c.displayOrder})`).join(', ')}</p>
             </div>
             <div className="flex gap-2 pt-4">
-              <Button className="flex-1 bg-primary-600 hover:bg-primary-700" onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
+              <Button className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500" onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
                 {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {editingCategory ? 'Zapisz zmiany' : 'Dodaj'}
               </Button>
@@ -229,7 +229,7 @@ export default function DishCategoriesPage() {
           {sortedCategories.map((category, index) => (
             <Card key={category.id} className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden group">
               <div className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 to-primary-600/10 group-hover:from-primary-500/20 group-hover:to-primary-600/20 transition-all" />
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-rose-500/10 group-hover:from-purple-500/20 group-hover:via-pink-500/20 group-hover:to-rose-500/20 transition-all" />
                 <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
                   <Badge className="bg-purple-600 text-white font-bold">#{index + 1}</Badge>
                 </div>

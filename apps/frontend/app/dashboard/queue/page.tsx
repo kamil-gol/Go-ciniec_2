@@ -17,8 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { PageLayout, StatCard, LoadingState, EmptyState  } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader'
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
@@ -190,11 +189,12 @@ export default function QueuePage() {
     <PageLayout>
       <Breadcrumb />
       {/* Hero */}
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Kolejka rezerwacji"
         subtitle="Zarządzaj kolejką oczekujących klientów"
         icon={Clock}
-        actions={
+        action={
           <div className="flex flex-wrap gap-2 sm:gap-3">
             <Button
               variant="ghost"
@@ -208,7 +208,7 @@ export default function QueuePage() {
             </Button>
             <Button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="bg-white text-warning-600 hover:bg-white/90 shadow-xl text-sm"
+              className="bg-white text-amber-600 hover:bg-white/90 shadow-xl text-sm"
             >
               <Plus className="h-4 w-4 mr-1.5 sm:mr-2" />
               <span className="hidden sm:inline">Dodaj do kolejki</span>
@@ -293,9 +293,9 @@ export default function QueuePage() {
 
           {/* Info Alert */}
           {isDragDropDisabled && queues.length > 0 && (
-            <Alert className="mb-4 border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-950/30">
-              <Info className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-              <AlertDescription className="text-primary-800 dark:text-primary-300 text-sm">
+            <Alert className="mb-4 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-blue-800 dark:text-blue-300 text-sm">
                 Zmiana kolejności dostępna tylko w widoku pojedynczej daty. Wybierz konkretną datę aby przeciągać karty.
               </AlertDescription>
             </Alert>
@@ -335,15 +335,15 @@ export default function QueuePage() {
       }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-warning-600 dark:text-warning-400">
+            <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
               <AlertTriangle className="h-6 w-6" />
               Przebuduj numerację kolejki
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <Alert className="border-warning-200 dark:border-warning-800 bg-warning-50 dark:bg-warning-950/30">
-              <AlertTriangle className="h-4 w-4 text-warning-600 dark:text-warning-400" />
-              <AlertDescription className="text-warning-800 dark:text-warning-300 font-medium">
+            <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertDescription className="text-amber-800 dark:text-amber-300 font-medium">
                 UWAGA: Ta operacja jest nieodwracalna i spowoduje utratę wszystkich ręcznych modyfikacji kolejności!
               </AlertDescription>
             </Alert>
@@ -353,20 +353,20 @@ export default function QueuePage() {
                 <li>Wszystkie rezerwacje w kolejce zostaną ponumerowane od nowa</li>
                 <li>Każda data będzie miała numerację od 1</li>
                 <li>Sortowanie według daty dodania (starsze rezerwacje pierwsze)</li>
-                <li><strong className="text-warning-600 dark:text-warning-400">Wszystkie ręczne ustawienia kolejności zostaną usunięte</strong></li>
+                <li><strong className="text-amber-600 dark:text-amber-400">Wszystkie ręczne ustawienia kolejności zostaną usunięte</strong></li>
               </ul>
             </div>
             {stats && stats.manualOrderCount > 0 && (
-              <Alert className="border-error-200 dark:border-error-800 bg-error-50 dark:bg-error-950/30">
-                <AlertTriangle className="h-4 w-4 text-error-600 dark:text-error-400" />
-                <AlertDescription className="text-error-800 dark:text-error-300 text-sm">
+              <Alert className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
+                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                <AlertDescription className="text-red-800 dark:text-red-300 text-sm">
                   <strong>Uwaga!</strong> Obecnie masz {stats.manualOrderCount} {stats.manualOrderCount === 1 ? 'rezerwację' : 'rezerwacji'} z ręcznie ustawioną kolejnością. Wszystkie te zmiany zostaną utracone!
                 </AlertDescription>
               </Alert>
             )}
-            <Alert className="border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-950/30">
-              <Info className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-              <AlertDescription className="text-primary-800 dark:text-primary-300 text-sm">
+            <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-blue-800 dark:text-blue-300 text-sm">
                 <strong>Uwaga:</strong> Ta funkcja jest dostępna tylko dla administratorów.
               </AlertDescription>
             </Alert>
@@ -392,7 +392,7 @@ export default function QueuePage() {
             <Button variant="outline" onClick={() => { setShowRebuildDialog(false); setRebuildConfirmed(false) }} disabled={isRebuilding}>
               Anuluj
             </Button>
-            <Button onClick={handleRebuildPositions} disabled={isRebuilding || !rebuildConfirmed} className="bg-warning-600 hover:bg-warning-700 text-white">
+            <Button onClick={handleRebuildPositions} disabled={isRebuilding || !rebuildConfirmed} className="bg-amber-600 hover:bg-amber-700 text-white">
               {isRebuilding ? (
                 <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Przebudowywanie...</>
               ) : (

@@ -11,8 +11,7 @@ import { DishAssignmentDialog } from '@/components/menu/DishAssignmentDialog'
 import { useMenuCourses, useDeleteMenuCourse } from '@/hooks/use-menu-config'
 import { useMenuTemplates, useMenuPackages } from '@/hooks/use-menu'
 import type { MenuCourse } from '@/types/menu.types'
-import { PageLayout, EmptyState, LoadingState  } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader'
+import { PageLayout, PageHero, EmptyState, LoadingState } from '@/components/shared'
 import { moduleAccents } from '@/lib/design-tokens'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -75,7 +74,8 @@ export default function CoursesPage() {
 
       <PageLayout>
         <Breadcrumb />
-        <PageHeader
+        <PageHero
+          accent={accent}
           title="Kursy Menu"
           subtitle={heroSubtitle}
           icon={Book}
@@ -84,7 +84,7 @@ export default function CoursesPage() {
           stats={[
             { icon: Book, label: 'Kursy', value: selectedPackageId ? courses.length : 0 },
           ]}
-          actions={
+          action={
             selectedPackageId ? (
               <Button
                 size="lg"

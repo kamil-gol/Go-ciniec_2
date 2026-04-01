@@ -1,4 +1,4 @@
-import { Clock, Calendar } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { SummaryCard, ReportLoadingState, ReportErrorState, ReportEmptyState } from './ReportSummaryCards';
 import { formatTime } from './chart-utils';
 import type { PreparationsQueryResult } from './types';
@@ -38,7 +38,7 @@ export function PreparationsTab({ query, view }: {
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Calendar className="h-4 w-4" /> {day.dateLabel}
+                  <span>{"📅"}</span> {day.dateLabel}
                 </h3>
                 <span className="text-xs text-neutral-300">
                   {day.totalItems} {day.totalItems === 1 ? 'usługa' : 'usług'}
@@ -106,7 +106,7 @@ export function PreparationsTab({ query, view }: {
             <div key={day.date} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               <div className="px-4 py-3 bg-neutral-800 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Calendar className="h-4 w-4" /> {day.dateLabel}
+                  <span>{"📅"}</span> {day.dateLabel}
                 </h3>
                 <span className="text-xs text-neutral-300">
                   {day.totalItems} {day.totalItems === 1 ? 'usługa' : 'usług'} &middot; {day.totalReservations} rez.

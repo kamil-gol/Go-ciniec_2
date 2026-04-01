@@ -8,8 +8,7 @@ import { Card } from '@/components/ui/card'
 import { getHalls, type Hall } from '@/lib/api/halls'
 import Link from 'next/link'
 import { HallCard } from '@/components/halls/hall-card'
-import { PageLayout, StatCard, LoadingState, EmptyState  } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader'
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { toast } from 'sonner'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -54,11 +53,12 @@ export default function HallsPage() {
     <PageLayout>
       <Breadcrumb />
       {/* Hero */}
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Zarządzanie Salami"
         subtitle="System rezerwacji sal weselnych Gościniec Rodzinny"
         icon={Building2}
-        actions={
+        action={
           <Link href="/dashboard/halls/new">
             <Button size="lg" className="bg-white text-sky-700 hover:bg-white/90 shadow-xl">
               <Plus className="mr-2 h-5 w-5" />

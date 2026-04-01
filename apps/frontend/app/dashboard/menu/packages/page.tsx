@@ -9,8 +9,7 @@ import { toast } from 'sonner';
 import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { PageLayout, StatCard, LoadingState, EmptyState  } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader';
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -70,13 +69,14 @@ export default function PackagesListPage() {
     <PageLayout>
       <Breadcrumb />
       {ConfirmDialog}
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Pakiety Menu"
         subtitle={templateId ? 'Pakiety dla wybranego szablonu' : 'Zarządzaj wszystkimi pakietami menu'}
         icon={Package}
         backHref="/dashboard/menu"
         backLabel="Powrót do Menu"
-        actions={
+        action={
           <Link href="/dashboard/menu/packages/new">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-white/90 shadow-xl">
               <Package className="h-5 w-5 sm:mr-2" />
@@ -170,7 +170,7 @@ export default function PackagesListPage() {
                     <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                       <div className="min-w-0 bg-white dark:bg-neutral-900 rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-sm">
                         <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-2 overflow-hidden">
-                          <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-primary-500 to-primary-600 rounded sm:rounded-lg flex-shrink-0">
+                          <div className="p-0.5 sm:p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded sm:rounded-lg flex-shrink-0">
                             <Users className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-white" />
                           </div>
                           <span className="text-[9px] sm:text-xs font-medium text-neutral-600 dark:text-neutral-300 truncate">Dorośli</span>

@@ -25,7 +25,7 @@ export function EditDiscountSection({ form, set, totals }: EditDiscountSectionPr
       icon={Percent}
       title="Rabat"
       subtitle={totals && totals.discountAmount > 0 ? `Aktywny rabat: −${fmt(totals.discountAmount)}` : 'Opcjonalny rabat na zamówienie'}
-      colorFrom="from-primary-50"
+      colorFrom="from-violet-50"
       colorTo="to-purple-50"
       borderColor="border-violet-200 dark:border-violet-800"
     >

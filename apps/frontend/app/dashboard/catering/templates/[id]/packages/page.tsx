@@ -16,11 +16,11 @@ import {
 } from '@/components/ui/dialog';
 import {
   PageLayout,
+  PageHero,
   StatCard,
   LoadingState,
   EmptyState,
 } from '@/components/shared';
-import { PageHeader } from '@/components/shared/PageHeader';
 import { PackageCard } from './components/PackageCard';
 import { PackageForm } from './components/PackageForm';
 import type { CateringPackage } from '@/types/catering.types';
@@ -67,13 +67,14 @@ export default function PackagesPage() {
     <PageLayout>
       <Breadcrumb />
       {/* Hero */}
-      <PageHeader
+      <PageHero
+        accent={CATERING_ACCENT}
         title={template ? `Pakiety — ${template.name}` : 'Pakiety cateringowe'}
         subtitle="Zarządzaj pakietami, cenami i sekcjami dań"
         icon={Package}
         backHref="/dashboard/catering/templates"
         backLabel="Powrót do Szablonów"
-        actions={
+        action={
           <Button
             size="lg"
             onClick={handleCreate}

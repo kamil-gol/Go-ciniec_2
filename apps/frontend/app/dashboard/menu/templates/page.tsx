@@ -39,8 +39,7 @@ import { MenuTemplateDialog } from '@/components/menu/MenuTemplateDialog'
 import { downloadMenuTemplatePDF } from '@/lib/api/menu-templates-api'
 import type { MenuTemplate } from '@/lib/api/menu-templates-api'
 import { toast } from 'sonner'
-import { PageLayout, StatCard, LoadingState, EmptyState  } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader'
+import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
@@ -114,13 +113,14 @@ export default function MenuTemplatesPage() {
   return (
     <PageLayout>
       <Breadcrumb />
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Szablony Menu"
         subtitle="Konfiguruj szablony menu dla typów wydarzeń"
         icon={FileText}
         backHref="/dashboard/menu"
         backLabel="Powrót do Menu"
-        actions={
+        action={
           <Button
             size="lg"
             onClick={handleCreate}

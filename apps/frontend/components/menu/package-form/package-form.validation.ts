@@ -19,7 +19,7 @@ export interface PackageFormData {
 export function validateForm(formData: PackageFormData, categorySettings: CategorySettingInput[]): boolean {
   // Name validation
   if (!formData.name || formData.name.trim().length < 3) {
-    toast.error('Błąd walidacji', {
+    toast.error('⚠️ Błąd walidacji', {
       description: 'Nazwa pakietu musi mieć co najmniej 3 znaki',
       duration: 4000,
     });
@@ -29,7 +29,7 @@ export function validateForm(formData: PackageFormData, categorySettings: Catego
   // Price validation
   const adultPrice = parseFloat(formData.pricePerAdult);
   if (isNaN(adultPrice) || adultPrice <= 0) {
-    toast.error('Błąd walidacji', {
+    toast.error('⚠️ Błąd walidacji', {
       description: 'Cena dla dorosłych musi być większa od 0',
       duration: 4000,
     });
@@ -38,7 +38,7 @@ export function validateForm(formData: PackageFormData, categorySettings: Catego
 
   const childPrice = parseFloat(formData.pricePerChild);
   if (isNaN(childPrice) || childPrice < 0) {
-    toast.error('Błąd walidacji', {
+    toast.error('⚠️ Błąd walidacji', {
       description: 'Cena dla dzieci nie może być ujemna',
       duration: 4000,
     });
@@ -47,7 +47,7 @@ export function validateForm(formData: PackageFormData, categorySettings: Catego
 
   // Color validation
   if (formData.color && !/^[0-9A-Fa-f]{6}$/.test(formData.color.replace('#', ''))) {
-    toast.warning('Nieprawidłowy kolor', {
+    toast.warning('⚠️ Nieprawidłowy kolor', {
       description: 'Kolor musi być w formacie HEX (np. 3b82f6)',
       duration: 4000,
     });

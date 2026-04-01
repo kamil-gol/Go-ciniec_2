@@ -33,7 +33,7 @@ export function OrderClientCard({ order, onViewProfile }: OrderClientCardProps) 
       title="Klient"
     >
       <div className="flex items-center gap-3 mb-4">
-        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0 ${isCompany ? 'bg-gradient-to-br from-primary-500 to-primary-600' : 'bg-gradient-to-br from-primary-500 to-primary-600'}`}>
+        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0 ${isCompany ? 'bg-gradient-to-br from-violet-500 to-purple-600' : 'bg-gradient-to-br from-indigo-500 to-blue-600'}`}>
           {initials}
         </div>
         <div className="flex-1 min-w-0">

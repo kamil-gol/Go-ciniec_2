@@ -96,7 +96,7 @@ export default function EventTypeDetailPage() {
       <Breadcrumb />
       <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Hero */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600 to-primary-700 p-8 text-white shadow-2xl">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-fuchsia-600 via-fuchsia-500 to-pink-600 p-8 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
 
           <div className="relative z-10 space-y-6">
@@ -166,7 +166,7 @@ export default function EventTypeDetailPage() {
                 </Button>
                 <Button
                   size="lg"
-                  className="bg-white text-primary-600 hover:bg-white/90 shadow-xl"
+                  className="bg-white text-fuchsia-600 hover:bg-white/90 shadow-xl"
                   onClick={() => setFormOpen(true)}
                 >
                   <Edit className="mr-2 h-5 w-5" />
@@ -186,7 +186,7 @@ export default function EventTypeDetailPage() {
           <Card className="border-0 shadow-xl overflow-hidden">
             <div className="bg-gradient-to-br from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10 p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-lg">
+                <div className="p-2 bg-gradient-to-br from-fuchsia-500 to-pink-500 rounded-lg shadow-lg">
                   <Theater className="h-5 w-5 text-white" />
                 </div>
                 <h2 className="text-xl font-bold">Informacje</h2>
@@ -264,10 +264,10 @@ export default function EventTypeDetailPage() {
                 </div>
 
                 {/* Extra hour rate */}
-                <div className="rounded-xl bg-gradient-to-br from-primary-500/5 to-primary-600/5 border border-primary-100 dark:border-primary-900/30 p-5">
+                <div className="rounded-xl bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border border-emerald-100 dark:border-emerald-900/30 p-5">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg">
+                      <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
                         <Timer className="h-4 w-4 text-white" />
                       </div>
                       <span className="font-semibold">Stawka za dodatkową godzinę</span>
@@ -301,26 +301,26 @@ export default function EventTypeDetailPage() {
           <Card className="border-0 shadow-xl overflow-hidden md:col-span-2">
             <div className="bg-gradient-to-br from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10 p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-lg">
+                <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg shadow-lg">
                   <Calendar className="h-5 w-5 text-white" />
                 </div>
                 <h2 className="text-xl font-bold">Powiązania</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Reservations */}
-                <div className="rounded-xl bg-gradient-to-br from-primary-500/5 to-primary-600/5 border border-primary-100 dark:border-primary-900/30 p-5">
+                <div className="rounded-xl bg-gradient-to-br from-violet-500/5 to-purple-500/5 border border-violet-100 dark:border-violet-900/30 p-5">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg">
+                      <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg">
                         <Calendar className="h-4 w-4 text-white" />
                       </div>
                       <span className="font-semibold">Rezerwacje</span>
                     </div>
-                    <span className="text-3xl font-bold text-primary-600 dark:text-primary-400">{reservationCount}</span>
+                    <span className="text-3xl font-bold text-violet-600 dark:text-violet-400">{reservationCount}</span>
                   </div>
                   {reservationCount > 0 ? (
                     <Link href={`/dashboard/reservations?eventType=${eventType.id}`}>
-                      <Button variant="outline" size="sm" className="w-full border-primary-200 dark:border-primary-800 hover:bg-primary-50 dark:hover:bg-primary-950/50">
+                      <Button variant="outline" size="sm" className="w-full border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-950/50">
                         Zobacz rezerwacje
                       </Button>
                     </Link>
@@ -330,10 +330,10 @@ export default function EventTypeDetailPage() {
                 </div>
 
                 {/* Menu Templates */}
-                <div className="rounded-xl bg-gradient-to-br from-primary-500/5 to-primary-600/5 border border-primary-100 dark:border-primary-900/30 p-5">
+                <div className="rounded-xl bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-100 dark:border-amber-900/30 p-5">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg">
+                      <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
                         <FileText className="h-4 w-4 text-white" />
                       </div>
                       <span className="font-semibold">Szablony menu</span>

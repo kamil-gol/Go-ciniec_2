@@ -18,8 +18,7 @@ import { DepositsList } from '@/components/deposits/deposits-list'
 import { CreateDepositForm } from '@/components/deposits/create-deposit-form'
 import { depositsApi } from '@/lib/api/deposits'
 import type { Deposit, DepositStats, DepositStatus } from '@/lib/api/deposits'
-import { PageLayout, StatCard, EmptyState  } from '@/components/shared'
-import { PageHeader } from '@/components/shared/PageHeader'
+import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FilterTabs } from '@/components/shared/FilterTabs'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
@@ -100,11 +99,12 @@ export default function DepositsPage() {
   return (
     <PageLayout>
       <Breadcrumb />
-      <PageHeader
+      <PageHero
+        accent={accent}
         title="Zaliczki"
         subtitle="Zarządzaj zaliczkami i płatnościami"
         icon={DollarSign}
-        actions={
+        action={
           <Button
             size="lg"
             onClick={() => setShowCreateForm(!showCreateForm)}

@@ -48,19 +48,6 @@
     --info: 217 91% 60%;
     --info-foreground: 0 0% 100%;
 
-    /* === Design System v2: Chalk & Stone palette === */
-    --ds-bg: 40 10% 98%;             /* #fafaf8 warm white */
-    --ds-surface: 0 0% 100%;         /* #ffffff */
-    --ds-surface-2: 40 8% 96%;       /* #f6f5f3 */
-    --ds-surface-elevated: 0 0% 100%;
-    --ds-text: 240 25% 10%;          /* #1a1a2e deep navy ink */
-    --ds-text-muted: 240 5% 40%;     /* #6b6b80 */
-    --ds-text-faint: 240 4% 58%;     /* #9898a8 */
-    --ds-accent: 155 40% 35%;        /* #2d6a4f sage green */
-    --ds-accent-hover: 155 43% 30%;  /* #245840 */
-    --ds-border: 40 5% 88%;          /* #e5e4e1 warm gray */
-    --ds-border-subtle: 40 4% 93%;   /* #ededeb */
-
     /* === Sidebar === */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
@@ -118,19 +105,6 @@
     --warning-foreground: 0 0% 0%;
     --info: 217 91% 65%;
     --info-foreground: 0 0% 100%;
-
-    /* === Design System v2: Chalk & Stone palette (Dark) === */
-    --ds-bg: 240 12% 10%;            /* #1a1a24 */
-    --ds-surface: 240 10% 13%;       /* #24242e */
-    --ds-surface-2: 240 11% 11%;     /* #1f1f29 */
-    --ds-surface-elevated: 240 10% 15%; /* #2a2a36 */
-    --ds-text: 40 5% 93%;            /* #ececea */
-    --ds-text-muted: 240 4% 62%;     /* #9898a5 */
-    --ds-text-faint: 240 4% 46%;     /* #6e6e7a */
-    --ds-accent: 155 35% 52%;        /* #5aad80 lighter sage */
-    --ds-accent-hover: 155 33% 57%;  /* #6bc092 */
-    --ds-border: 240 8% 22%;         /* #3a3a48 */
-    --ds-border-subtle: 240 9% 18%;  /* #303040 */
 
     /* === Sidebar (Dark) === */
     --sidebar-background: 224 71% 4%;
