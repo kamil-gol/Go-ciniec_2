@@ -34,7 +34,7 @@ export function FilterTabs({ tabs, activeKey, onChange, className, width = 'auto
   return (
     <div className={cn(
       'inline-flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1',
-      width === 'full' && 'w-full sm:w-auto',
+      width === 'full' && 'w-full sm:w-fit',
       className
     )}>
       {tabs.map((tab) => {

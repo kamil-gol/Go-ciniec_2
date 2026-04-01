@@ -46,12 +46,13 @@ describe('FilterTabs', () => {
     expect(svgs.length).toBe(2)
   })
 
-  it('should apply full width mode', () => {
+  it('should apply full width mode with sm:w-fit', () => {
     const { container } = render(
       <FilterTabs tabs={baseTabs} activeKey="a" onChange={() => {}} width="full" />
     )
     const wrapper = container.firstChild as HTMLElement
     expect(wrapper.className).toContain('w-full')
+    expect(wrapper.className).toContain('sm:w-fit')
   })
 
   it('should apply active style to selected tab', () => {
