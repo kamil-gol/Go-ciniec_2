@@ -63,9 +63,20 @@ import DashboardLayout from '@/components/layout/DashboardLayout'
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('DashboardLayout', () => {
+  let mockLocalStorage: Record<string, string>
+
   beforeEach(() => {
     vi.clearAllMocks()
-    localStorage.clear()
+    mockLocalStorage = {}
+    Object.defineProperty(window, 'localStorage', {
+      value: {
+        getItem: vi.fn((key: string) => mockLocalStorage[key] ?? null),
+        setItem: vi.fn((key: string, val: string) => { mockLocalStorage[key] = val }),
+        removeItem: vi.fn((key: string) => { delete mockLocalStorage[key] }),
+        clear: vi.fn(() => { mockLocalStorage = {} }),
+      },
+      writable: true,
+    })
   })
 
   it('redirects to login when no auth token', async () => {
@@ -76,14 +87,14 @@ describe('DashboardLayout', () => {
   })
 
   it('shows loading spinner initially', () => {
-    localStorage.setItem('auth_token', 'test-token')
+    mockLocalStorage['auth_token'] = 'test-token'
     mockGet.mockReturnValue(new Promise(() => {})) // Never resolves
     render(<DashboardLayout><div>Page</div></DashboardLayout>)
     expect(screen.getByText('Ładowanie...')).toBeInTheDocument()
   })
 
   it('renders children after successful auth', async () => {
-    localStorage.setItem('auth_token', 'test-token')
+    mockLocalStorage['auth_token'] = 'test-token'
     mockGet.mockResolvedValue({ data: { data: { user: { name: 'Test User' } } } })
 
     render(<DashboardLayout><div>Page Content</div></DashboardLayout>)
@@ -94,7 +105,7 @@ describe('DashboardLayout', () => {
   })
 
   it('renders sidebar and header with user data', async () => {
-    localStorage.setItem('auth_token', 'test-token')
+    mockLocalStorage['auth_token'] = 'test-token'
     mockGet.mockResolvedValue({ data: { data: { user: { name: 'Jan Kowalski' } } } })
 
     render(<DashboardLayout><div>Content</div></DashboardLayout>)
@@ -106,7 +117,7 @@ describe('DashboardLayout', () => {
   })
 
   it('renders AnimatePresence wrapper for page transitions', async () => {
-    localStorage.setItem('auth_token', 'test-token')
+    mockLocalStorage['auth_token'] = 'test-token'
     mockGet.mockResolvedValue({ data: { data: { user: { name: 'User' } } } })
 
     render(<DashboardLayout><div>Content</div></DashboardLayout>)
@@ -117,7 +128,7 @@ describe('DashboardLayout', () => {
   })
 
   it('renders SessionTimeoutModal', async () => {
-    localStorage.setItem('auth_token', 'test-token')
+    mockLocalStorage['auth_token'] = 'test-token'
     mockGet.mockResolvedValue({ data: { data: { user: { name: 'User' } } } })
 
     render(<DashboardLayout><div>Content</div></DashboardLayout>)
@@ -128,7 +139,7 @@ describe('DashboardLayout', () => {
   })
 
   it('renders main content area with correct id', async () => {
-    localStorage.setItem('auth_token', 'test-token')
+    mockLocalStorage['auth_token'] = 'test-token'
     mockGet.mockResolvedValue({ data: { data: { user: { name: 'User' } } } })
 
     render(<DashboardLayout><div>Content</div></DashboardLayout>)
@@ -139,7 +150,7 @@ describe('DashboardLayout', () => {
   })
 
   it('redirects to login on API error', async () => {
-    localStorage.setItem('auth_token', 'test-token')
+    mockLocalStorage['auth_token'] = 'test-token'
     mockGet.mockRejectedValue(new Error('Unauthorized'))
 
     render(<DashboardLayout><div>Content</div></DashboardLayout>)
