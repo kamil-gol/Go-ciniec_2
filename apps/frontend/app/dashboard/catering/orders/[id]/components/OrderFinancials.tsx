@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import {
-  Receipt,
   Utensils,
   Star,
   Plus,
@@ -122,9 +121,6 @@ function EditDepositDialog({ orderId, deposit, open, onClose }: EditDepositDialo
 
 interface CateringDepositsSectionProps {
   deposits: CateringDeposit[];
-  totalPaid: number;
-  remaining: number;
-  fullyPaid: boolean;
   isDeletingDeposit: boolean;
   onOpenDepositDialog: () => void;
   onDeleteDeposit: (depositId: string, isPaid?: boolean) => void;
@@ -134,9 +130,6 @@ interface CateringDepositsSectionProps {
 
 function CateringDepositsSection({
   deposits,
-  totalPaid,
-  remaining,
-  fullyPaid,
   isDeletingDeposit,
   onOpenDepositDialog,
   onDeleteDeposit,
@@ -216,29 +209,6 @@ function CateringDepositsSection({
         </div>
       )}
 
-      {/* Podsumowanie rozliczeń */}
-      {deposits.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-dashed border-neutral-200 dark:border-neutral-700 space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-neutral-400 dark:text-neutral-500">Wpłacono</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-              {formatPrice(totalPaid)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className={`font-semibold ${fullyPaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-              Pozostało do zapłaty
-            </span>
-            <span className={`font-bold ${
-              fullyPaid
-                ? 'text-emerald-600 dark:text-emerald-400'
-                : 'text-amber-600 dark:text-amber-400'
-            }`}>
-              {fullyPaid ? 'Opłacone ✓' : formatPrice(remaining)}
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -280,8 +250,25 @@ export function OrderFinancials({
   const totalPaid = deposits
     .filter(d => d.paid || d.status === 'PAID')
     .reduce((sum, d) => sum + Number(d.paidAmount ?? d.amount), 0);
-  const remaining = Math.max(0, Number(order.totalPrice) - totalPaid);
-  const fullyPaid = deposits.length > 0 && remaining === 0;
+  const totalPending = deposits
+    .filter(d => !d.paid && d.status !== 'PAID')
+    .reduce((sum, d) => sum + Number(d.amount), 0);
+  const totalPrice = Number(order.totalPrice);
+  const remaining = Math.max(0, totalPrice - totalPaid);
+  const percentPaid = totalPrice > 0 ? Math.round((totalPaid / totalPrice) * 100) : 0;
+  const percentCommitted = totalPrice > 0
+    ? Math.min(100, Math.round(((totalPaid + totalPending) / totalPrice) * 100))
+    : 0;
+
+  const balance: FinancialBalance | null = deposits.length > 0 ? {
+    totalPaid,
+    totalCommitted: totalPaid + totalPending,
+    totalPending,
+    remaining,
+    percentPaid,
+    percentCommitted,
+    depositsCount: deposits.length,
+  } : null;
 
   // Build line items for UnifiedFinancialSummary
   const lineItems: FinancialLineItem[] = [];
@@ -354,9 +341,10 @@ export function OrderFinancials({
         title="Rozliczenie"
         lineItems={lineItems}
         discount={discount}
-        totalPrice={Number(order.totalPrice)}
+        totalPrice={totalPrice}
         pricePerPerson={pricePerGuest}
         pricePerPersonLabel="/ osobę"
+        balance={balance}
         discountSlot={discountSlot}
         headerAction={
           !hasDiscount ? (
@@ -372,9 +360,6 @@ export function OrderFinancials({
         depositsSlot={
           <CateringDepositsSection
             deposits={deposits}
-            totalPaid={totalPaid}
-            remaining={remaining}
-            fullyPaid={fullyPaid}
             isDeletingDeposit={isDeletingDeposit}
             onOpenDepositDialog={onOpenDepositDialog}
             onDeleteDeposit={onDeleteDeposit}
