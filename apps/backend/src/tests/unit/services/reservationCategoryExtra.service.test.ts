@@ -110,37 +110,88 @@ describe('ReservationCategoryExtraService', () => {
 
   describe('upsertExtras', () => {
     it('should validate category supports extras', async () => {
-      mockCategoryFind.mockResolvedValue({
-        id: 'cat-001',
-        extraItemPrice: null, // Does NOT support extras
-        maxExtra: 10,
+      const mockReservationFind = mock.reservation.findUnique as jest.Mock;
+      mockReservationFind.mockResolvedValue({
+        id: 'res-001',
+        adults: 10,
+        children: 5,
+        toddlers: 2,
       });
+
+      const mockCategoryFindMany = mock.packageCategorySettings.findMany || (jest.fn() as jest.Mock);
+      mock.packageCategorySettings.findMany = jest.fn().mockResolvedValue([
+        {
+          id: 'cat-001',
+          extraItemPrice: null, // Does NOT support extras
+          maxExtra: 10,
+          portionTarget: 'ALL',
+        },
+      ]);
 
       const { reservationCategoryExtraService } = await import(
         '../../../services/reservationCategoryExtra.service'
       );
 
-      // TODO: [AUDIT] uzupełnij — oczekiwany błąd dla kategorii bez extraItemPrice
-      expect(mockCategoryFind).toBeDefined();
+      await expect(
+        reservationCategoryExtraService.upsertExtras('res-001', [
+          { packageCategoryId: 'cat-001', quantity: 2 },
+        ])
+      ).rejects.toThrow('Ta kategoria nie wspiera dodatkowych pozycji');
     });
 
     it('should calculate per-person pricing correctly', async () => {
-      mockCategoryFind.mockResolvedValue({
-        id: 'cat-001',
-        extraItemPrice: 50,
-        maxExtra: 20,
+      const mockReservationFind = mock.reservation.findUnique as jest.Mock;
+      mockReservationFind.mockResolvedValue({
+        id: 'res-001',
+        adults: 10,
+        children: 5,
+        toddlers: 2,
       });
+
+      const mockCategoryFindMany = mock.packageCategorySettings.findMany as jest.Mock;
+      mockCategoryFindMany.mockResolvedValue([
+        {
+          id: 'cat-001',
+          extraItemPrice: 50,
+          maxExtra: 20,
+          portionTarget: 'ALL',
+        },
+      ]);
       mockFindMany.mockResolvedValue([]);
       mockUpsert.mockResolvedValue({
         id: 'extra-001',
+        packageCategoryId: 'cat-001',
         quantity: 5,
-        guestCount: 60,
-        totalPrice: 15000, // 5 * 50 * 60
+        pricePerItem: 50,
+        guestCount: 17, // 10 + 5 + 2
+        portionTarget: 'ALL',
+        totalPrice: 4250, // 5 * 50 * 17
       });
       mockDeleteMany.mockResolvedValue({ count: 0 });
 
-      // TODO: [AUDIT] uzupełnij wywołanie upsertExtras z guestCounts
-      expect(mockUpsert).toBeDefined();
+      const { reservationCategoryExtraService } = await import(
+        '../../../services/reservationCategoryExtra.service'
+      );
+
+      const result = await reservationCategoryExtraService.upsertExtras(
+        'res-001',
+        [{ packageCategoryId: 'cat-001', quantity: 5 }],
+        'user-123'
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].guestCount).toBe(17);
+      expect(result[0].totalPrice).toBe(4250);
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            reservationId_packageCategoryId: {
+              reservationId: 'res-001',
+              packageCategoryId: 'cat-001',
+            },
+          },
+        })
+      );
     });
   });
 });

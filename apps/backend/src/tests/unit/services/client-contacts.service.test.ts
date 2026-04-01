@@ -59,9 +59,25 @@ describe('ClientContactsService', () => {
         clientId: 'client-001',
       });
 
-      const service = new (ClientContactsService.constructor || ClientContactsService)();
-      // TODO: [AUDIT] uzupełnij wywołanie addContact z prawidłowym DTO
-      expect(mockClientFindUnique).toBeDefined();
+      const result = await ClientContactsService.addContact('client-001', {
+        firstName: 'Jan',
+        lastName: 'Kowalski',
+        email: 'jan@test.pl',
+        phone: '123456789',
+        isPrimary: false,
+      }, 'user-123');
+
+      expect(result.id).toBe('contact-001');
+      expect(result.firstName).toBe('Jan');
+      expect(mockContactCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            clientId: 'client-001',
+            firstName: 'Jan',
+            lastName: 'Kowalski',
+          }),
+        })
+      );
     });
 
     it('should reject contact for non-COMPANY client', async () => {
@@ -70,8 +86,12 @@ describe('ClientContactsService', () => {
         clientType: 'INDIVIDUAL',
       });
 
-      // TODO: [AUDIT] uzupełnij test — oczekiwany AppError
-      expect(true).toBe(true);
+      await expect(
+        ClientContactsService.addContact('client-001', {
+          firstName: 'Jan',
+          lastName: 'Kowalski',
+        }, 'user-123')
+      ).rejects.toThrow('Osoby kontaktowe można dodawać tylko do klientów firmowych');
     });
 
     it('should unset other primaries when adding isPrimary contact', async () => {
@@ -83,25 +103,50 @@ describe('ClientContactsService', () => {
         clientId: 'client-001',
       });
 
-      // TODO: [AUDIT] uzupełnij — sprawdź czy updateMany wywołane z isPrimary: false
-      expect(mockContactUpdateMany).toBeDefined();
+      await ClientContactsService.addContact('client-001', {
+        firstName: 'Jan',
+        lastName: 'Nowy',
+        isPrimary: true,
+      }, 'user-123');
+
+      expect(mockContactUpdateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { clientId: 'client-001', isPrimary: true },
+          data: { isPrimary: false },
+        })
+      );
     });
   });
 
   describe('removeContact', () => {
-    it('should soft-delete a contact', async () => {
-      mockContactFindUnique.mockResolvedValue({
+    it('should delete a contact', async () => {
+      const mockClientContactDelete = prisma.clientContact.delete as jest.Mock;
+      mockClientContactDelete.mockResolvedValue({
         id: 'contact-001',
-        clientId: 'client-001',
-        deletedAt: null,
-      });
-      mockContactUpdate.mockResolvedValue({
-        id: 'contact-001',
-        deletedAt: new Date(),
+        firstName: 'Jan',
+        lastName: 'Kowalski',
       });
 
-      // TODO: [AUDIT] uzupełnij wywołanie removeContact
-      expect(mockContactFindUnique).toBeDefined();
+      // Mock findFirst instead of findUnique for removeContact
+      const mockContactFindFirst = jest.fn().mockResolvedValue({
+        id: 'contact-001',
+        clientId: 'client-001',
+        firstName: 'Jan',
+        lastName: 'Kowalski',
+        email: 'jan@test.pl',
+        phone: '123456789',
+        role: null,
+        client: {
+          companyName: 'Test Sp. z o.o.',
+        },
+      });
+      (prisma.clientContact as any).findFirst = mockContactFindFirst;
+
+      await ClientContactsService.removeContact('client-001', 'contact-001', 'user-123');
+
+      expect(mockClientContactDelete).toHaveBeenCalledWith({
+        where: { id: 'contact-001' },
+      });
     });
   });
 });
