@@ -5,7 +5,8 @@ import { Plus, Search, Theater, Calendar, FileText, Eye, EyeOff, TrendingUp } fr
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
+import { PageLayout, StatCard, LoadingState, EmptyState  } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { getEventTypes, getEventTypeStats, type EventType, type EventTypeStats } from '@/lib/api/event-types-api'
 import { EventTypeCard } from '@/components/event-types/event-type-card'
@@ -81,12 +82,11 @@ export default function EventTypesPage() {
     <PageLayout>
       <Breadcrumb />
       {/* Hero */}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Typy Wydarzeń"
         subtitle="Konfiguruj rodzaje imprez i ich parametry"
         icon={Theater}
-        action={
+        actions={
           <Button
             size="lg"
             className="bg-white text-fuchsia-600 hover:bg-white/90 shadow-xl"

@@ -17,7 +17,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared'
+import { PageLayout, StatCard, LoadingState, EmptyState  } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
@@ -189,12 +190,11 @@ export default function QueuePage() {
     <PageLayout>
       <Breadcrumb />
       {/* Hero */}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Kolejka rezerwacji"
         subtitle="Zarządzaj kolejką oczekujących klientów"
         icon={Clock}
-        action={
+        actions={
           <div className="flex flex-wrap gap-2 sm:gap-3">
             <Button
               variant="ghost"

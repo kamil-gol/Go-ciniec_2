@@ -12,7 +12,8 @@ import { useDishCategories, useCreateDishCategory, useUpdateDishCategory, useDel
 import { toast } from 'sonner'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import type { DishCategory } from '@/types'
-import { PageLayout, PageHero, LoadingState, EmptyState } from '@/components/shared'
+import { PageLayout, LoadingState, EmptyState  } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { moduleAccents } from '@/lib/design-tokens'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
@@ -130,14 +131,13 @@ export default function DishCategoriesPage() {
     <PageLayout>
       <Breadcrumb />
       {ConfirmDialog}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Kategorie Dań"
         subtitle="Zarządzaj kategoriami w systemie"
         icon={Tags}
         backHref="/dashboard/menu"
         backLabel="Powrót do Menu"
-        action={
+        actions={
           <Button
             size="lg"
             onClick={handleCreate}

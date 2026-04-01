@@ -25,13 +25,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  PageLayout,
-  PageHero,
-  StatCard,
+import { PageLayout, StatCard,
   LoadingState,
   EmptyState,
-} from '@/components/shared';
+ } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import type { ServiceCategory, ServiceItem } from '@/types/service-extra.types';
@@ -129,12 +127,11 @@ export default function ServiceExtrasPage() {
     <PageLayout>
       <Breadcrumb />
       {/* Hero */}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Usługi Dodatkowe"
         subtitle="Zarządzanie usługami — tort, muzyka, wystrój, fotografia i inne"
         icon={Gift}
-        action={
+        actions={
           <div className="flex gap-2">
             <Button
               size="lg"

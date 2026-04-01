@@ -3,7 +3,8 @@
 import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CalendarDays, ChevronLeft, ChevronRight, CalendarCheck, TrendingUp } from 'lucide-react'
-import { PageLayout, PageHero } from '@/components/shared'
+import { PageLayout } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { moduleAccents } from '@/lib/design-tokens'
 import { useReservations } from '@/lib/api/reservations'
 import DailyReservationsSection from './components/DailyReservationsSection'
@@ -116,12 +117,11 @@ export default function DailyViewPage() {
     <PageLayout>
       <Breadcrumb />
       {/* Hero z nawigacją dat */}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Widok Dzienny"
         subtitle={subtitle}
         icon={CalendarDays}
-        action={
+        actions={
           <div className="flex items-center gap-2">
             {/* Przycisk Dziś — widoczny tylko gdy nie jesteśmy na dziś */}
             {!isToday && (

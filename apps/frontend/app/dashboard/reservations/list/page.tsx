@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ReservationsList } from '@/components/reservations/reservations-list'
 import { getReservations } from '@/lib/api/reservations'
-import { PageLayout, PageHero, StatCard } from '@/components/shared'
+import { PageLayout, StatCard  } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { toast } from 'sonner'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -65,12 +66,11 @@ export default function ReservationsListPage() {
     <PageLayout>
       <Breadcrumb />
       {/* Hero */}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Rezerwacje"
         subtitle="Zarządzaj rezerwacjami sal weselnych"
         icon={Calendar}
-        action={
+        actions={
           <Button
             size="lg"
             onClick={() => {

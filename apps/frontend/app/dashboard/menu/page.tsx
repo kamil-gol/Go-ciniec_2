@@ -9,7 +9,8 @@ import Link from 'next/link'
 import { useMenuTemplates } from '@/hooks/use-menu'
 import { useDishes } from '@/hooks/use-dishes'
 import { useDishCategories } from '@/hooks/use-menu-config'
-import { PageLayout, PageHero } from '@/components/shared'
+import { PageLayout } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { moduleAccents } from '@/lib/design-tokens'
 import { motion } from 'framer-motion'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -40,8 +41,7 @@ export default function MenuDashboardPage() {
   return (
     <PageLayout>
       {/* Hero */}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Moduł Menu"
         subtitle="Kompleksowe zarządzanie menu, pakietami i szablonami"
         icon={UtensilsCrossed}

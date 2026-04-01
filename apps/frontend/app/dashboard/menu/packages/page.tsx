@@ -9,7 +9,8 @@ import { toast } from 'sonner';
 import { Package, Edit, Trash2, TrendingUp, Star, Users, Baby, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
+import { PageLayout, StatCard, LoadingState, EmptyState  } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -69,14 +70,13 @@ export default function PackagesListPage() {
     <PageLayout>
       <Breadcrumb />
       {ConfirmDialog}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Pakiety Menu"
         subtitle={templateId ? 'Pakiety dla wybranego szablonu' : 'Zarządzaj wszystkimi pakietami menu'}
         icon={Package}
         backHref="/dashboard/menu"
         backLabel="Powrót do Menu"
-        action={
+        actions={
           <Link href="/dashboard/menu/packages/new">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-white/90 shadow-xl">
               <Package className="h-5 w-5 sm:mr-2" />

@@ -6,7 +6,8 @@ import { Bell, CheckCheck, Calendar, CreditCard, ArrowUpFromLine, Users, Chevron
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { PageHero, LoadingState, EmptyState } from '@/components/shared'
+import { LoadingState, EmptyState  } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { FilterTabs } from '@/components/shared/FilterTabs'
 import { moduleAccents } from '@/lib/design-tokens'
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useUnreadCount } from '@/hooks/use-notifications'
@@ -107,15 +108,14 @@ export default function NotificationsPage() {
   return (
     <div className="container mx-auto py-6 px-4 sm:py-8 sm:px-6 space-y-6 sm:space-y-8">
       {/* Hero */}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Powiadomienia"
         subtitle="Bądź na bieżąco z rezerwacjami, zaliczkami i kolejką"
         icon={Bell}
         stats={unreadCount > 0 ? [
           { icon: Bell, label: 'Nieprzeczytane', value: unreadCount },
         ] : undefined}
-        action={
+        actions={
           unreadCount > 0 ? (
             <Button
               size="lg"

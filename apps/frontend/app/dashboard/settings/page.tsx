@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Settings, Users, Shield, Building2, Archive } from 'lucide-react'
-import { PageLayout, PageHero } from '@/components/shared'
+import { PageLayout } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { moduleAccents } from '@/lib/design-tokens'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { UsersTab } from '@/components/settings/UsersTab'
@@ -18,8 +19,7 @@ export default function SettingsPage() {
   return (
     <PageLayout>
       <Breadcrumb />
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Ustawienia"
         subtitle="Zarządzanie użytkownikami, rolami, uprawnieniami i danymi firmy"
         icon={Settings}

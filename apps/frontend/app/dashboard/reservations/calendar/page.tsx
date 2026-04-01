@@ -22,7 +22,8 @@ import {
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { PageLayout, PageHero, StatCard, ErrorState } from '@/components/shared'
+import { PageLayout, StatCard, ErrorState  } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { getReservations } from '@/lib/api/reservations'
 import {
@@ -246,12 +247,11 @@ export default function CalendarPage() {
   return (
     <PageLayout>
       {/* Hero */}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Rezerwacje"
         subtitle="Zarządzaj rezerwacjami sal weselnych"
         icon={CalendarIcon}
-        action={
+        actions={
           <Button
             size="lg"
             onClick={() => router.push('/dashboard/reservations/new')}

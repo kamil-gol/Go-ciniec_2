@@ -23,7 +23,8 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
-import { PageLayout, PageHero, StatCard, EmptyState } from '@/components/shared'
+import { PageLayout, StatCard, EmptyState  } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { Skeleton } from '@/components/ui/skeleton'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -67,12 +68,11 @@ export default function ArchivePage() {
     <PageLayout>
       <Breadcrumb />
       {/* Hero */}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Archiwum Rezerwacji"
         subtitle="Przeglądaj i zarządzaj zarchiwizowanymi rezerwacjami"
         icon={Archive}
-        action={
+        actions={
           <Link href="/dashboard/reservations">
             <Button
               size="lg"

@@ -15,7 +15,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { OrdersTable } from './components/OrdersTable';
 import { OrdersFilters } from './components/OrdersFilters';
 import { NewOrderWizard } from './components/NewOrderWizard';
-import { PageLayout, PageHero, StatCard, LoadingState, EmptyState } from '@/components/shared';
+import { PageLayout, StatCard, LoadingState, EmptyState  } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader';
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens';
 import type { CateringOrdersFilter } from '@/types/catering-order.types';
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
@@ -70,12 +71,11 @@ export default function CateringOrdersPage() {
     <PageLayout>
       <Breadcrumb />
       {/* Hero */}
-      <PageHero
-        accent={CATERING_ACCENT}
+      <PageHeader
         title="Zamówienia cateringowe"
         subtitle="Zarządzaj zamówieniami, logistyką i klientami cateringu"
         icon={ShoppingBag}
-        action={
+        actions={
           <Button
             size="lg"
             onClick={() => setShowWizard(prev => !prev)}

@@ -4,7 +4,8 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CreateReservationForm } from '@/components/reservations/create-reservation-form'
-import { PageLayout, PageHero } from '@/components/shared'
+import { PageLayout } from '@/components/shared'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { moduleAccents } from '@/lib/design-tokens'
 import { Breadcrumb } from '@/components/shared/Breadcrumb'
 
@@ -28,8 +29,7 @@ export default function NewReservationPage() {
       </Button>
 
       {/* Hero */}
-      <PageHero
-        accent={accent}
+      <PageHeader
         title="Nowa Rezerwacja"
         subtitle="Wypełnij formularz krok po kroku aby utworzyć nową rezerwację"
         icon={Calendar}
