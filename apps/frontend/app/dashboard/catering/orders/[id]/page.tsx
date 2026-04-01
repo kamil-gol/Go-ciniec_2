@@ -19,7 +19,7 @@ import {
   useUpdateCateringOrder,
   useDeleteCateringDeposit,
 } from '@/hooks/use-catering-orders';
-import { LoadingState, EmptyState, DetailHero } from '@/components/shared';
+import { LoadingState, EmptyState, DetailHero, AnimatedSection } from '@/components/shared';
 import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { ChangeStatusDialog } from '../components/ChangeStatusDialog';
 import { DiscountDialog } from '../components/DiscountDialog';
@@ -191,30 +191,40 @@ export default function CateringOrderDetailPage() {
 
           {/* LEFT COLUMN */}
           <div className="lg:col-span-2 space-y-6">
-            <OrderItems order={order} />
-            <OrderDelivery order={order} />
+            <AnimatedSection index={0}>
+              <OrderItems order={order} />
+            </AnimatedSection>
+            <AnimatedSection index={1}>
+              <OrderDelivery order={order} />
+            </AnimatedSection>
           </div>
 
           {/* RIGHT COLUMN */}
           <div className="space-y-6">
-            <OrderClientCard
-              order={order}
-              onViewProfile={() => router.push(`/dashboard/clients/${order.client.id}`)}
-            />
-            <OrderFinancials
-              order={order}
-              orderId={id}
-              pricePerGuest={pricePerGuest}
-              hasDiscount={hasDiscount}
-              isRemovingDiscount={removeDiscountMutation.isPending}
-              isDeletingDeposit={deleteDepositMutation.isPending}
-              onOpenDiscountDialog={() => setDiscountDialogOpen(true)}
-              onRemoveDiscount={handleRemoveDiscount}
-              onOpenDepositDialog={() => setDepositDialogOpen(true)}
-              onDeleteDeposit={handleDeleteDeposit}
-              onPayDeposit={setPayingDeposit}
-            />
-            <OrderNotes order={order} orderId={id} />
+            <AnimatedSection index={0}>
+              <OrderClientCard
+                order={order}
+                onViewProfile={() => router.push(`/dashboard/clients/${order.client.id}`)}
+              />
+            </AnimatedSection>
+            <AnimatedSection index={1}>
+              <OrderFinancials
+                order={order}
+                orderId={id}
+                pricePerGuest={pricePerGuest}
+                hasDiscount={hasDiscount}
+                isRemovingDiscount={removeDiscountMutation.isPending}
+                isDeletingDeposit={deleteDepositMutation.isPending}
+                onOpenDiscountDialog={() => setDiscountDialogOpen(true)}
+                onRemoveDiscount={handleRemoveDiscount}
+                onOpenDepositDialog={() => setDepositDialogOpen(true)}
+                onDeleteDeposit={handleDeleteDeposit}
+                onPayDeposit={setPayingDeposit}
+              />
+            </AnimatedSection>
+            <AnimatedSection index={2}>
+              <OrderNotes order={order} orderId={id} />
+            </AnimatedSection>
           </div>
         </div>
       </div>

@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingState } from '@/components/shared/LoadingState'
 import { DetailHero } from '@/components/shared/DetailHero'
 import { StatCard } from '@/components/shared/StatCard'
+import { AnimatedSection } from '@/components/shared/AnimatedSection'
 import { statGradients, layout, moduleAccents } from '@/lib/design-tokens'
 import { getClientById, deleteClient } from '@/lib/api/clients'
 import type { Client, Reservation } from '@/types'
@@ -225,104 +226,120 @@ export default function ClientDetailsPage() {
             {/* Left Column - Contact Info + Company Info */}
             <div className="lg:col-span-1 space-y-6 min-w-0">
               {/* Company Info Card */}
-              {isCompany && <CompanyInfoCard client={client} />}
+              {isCompany && (
+                <AnimatedSection index={0}>
+                  <CompanyInfoCard client={client} />
+                </AnimatedSection>
+              )}
 
               {/* Contact Info Card */}
-              <ContactInfoCard client={client} isCompany={isCompany} />
+              <AnimatedSection index={isCompany ? 1 : 0}>
+                <ContactInfoCard client={client} isCompany={isCompany} />
+              </AnimatedSection>
 
               {/* Contacts Manager - for COMPANY clients */}
               {isCompany && (
-                <ContactsManager
-                  clientId={client.id}
-                  contacts={contacts}
-                  readOnly={isDeleted}
-                  onUpdate={loadClient}
-                />
+                <AnimatedSection index={2}>
+                  <ContactsManager
+                    clientId={client.id}
+                    contacts={contacts}
+                    readOnly={isDeleted}
+                    onUpdate={loadClient}
+                  />
+                </AnimatedSection>
               )}
 
               {client.notes && (
-                <Card className="border-0 shadow-xl overflow-hidden">
-                  <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-lg">
-                        <FileText className="h-5 w-5 text-white" />
+                <AnimatedSection index={isCompany ? 3 : 1}>
+                  <Card className="border-0 shadow-xl overflow-hidden">
+                    <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 p-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-lg">
+                          <FileText className="h-5 w-5 text-white" />
+                        </div>
+                        <h2 className="text-xl font-bold">Notatki</h2>
                       </div>
-                      <h2 className="text-xl font-bold">Notatki</h2>
+                      <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
+                        <p className="text-muted-foreground leading-relaxed">{client.notes}</p>
+                      </div>
                     </div>
-                    <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
-                      <p className="text-muted-foreground leading-relaxed">{client.notes}</p>
-                    </div>
-                  </div>
-                </Card>
+                  </Card>
+                </AnimatedSection>
               )}
 
-              <SectionCard
-                variant="gradient"
-                title="Szybkie akcje"
-                icon={<Sparkles className="h-5 w-5 text-white" />}
-                iconGradient="from-amber-500 to-orange-500"
-                headerGradient="from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-red-950/30"
-              >
-                  <div className="space-y-3">
-                    {!isDeleted && (
-                      <>
-                        <Link href={`/dashboard/reservations/new?clientId=${client.id}`}>
-                          <Button variant="outline" className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md" size="lg">
-                            <Calendar className="mr-2 h-4 w-4 flex-shrink-0" />
-                            Nowa rezerwacja
+              <AnimatedSection index={isCompany ? 4 : 2}>
+                <SectionCard
+                  variant="gradient"
+                  title="Szybkie akcje"
+                  icon={<Sparkles className="h-5 w-5 text-white" />}
+                  iconGradient="from-amber-500 to-orange-500"
+                  headerGradient="from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-red-950/30"
+                >
+                    <div className="space-y-3">
+                      {!isDeleted && (
+                        <>
+                          <Link href={`/dashboard/reservations/new?clientId=${client.id}`}>
+                            <Button variant="outline" className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md" size="lg">
+                              <Calendar className="mr-2 h-4 w-4 flex-shrink-0" />
+                              Nowa rezerwacja
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md"
+                            size="lg"
+                            onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
+                          >
+                            <Edit className="mr-2 h-4 w-4 flex-shrink-0" />
+                            Edytuj dane
                           </Button>
-                        </Link>
+                        </>
+                      )}
+                      {!isDeleted && (
                         <Button
                           variant="outline"
-                          className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md"
+                          className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md text-red-600 hover:text-red-700"
                           size="lg"
-                          onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}
+                          disabled={deleting}
+                          onClick={() => setShowDeleteModal(true)}
                         >
-                          <Edit className="mr-2 h-4 w-4 flex-shrink-0" />
-                          Edytuj dane
+                          <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
+                          Usuń klienta
                         </Button>
-                      </>
-                    )}
-                    {!isDeleted && (
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start bg-white dark:bg-black/20 border-0 shadow-sm hover:shadow-md text-red-600 hover:text-red-700"
-                        size="lg"
-                        disabled={deleting}
-                        onClick={() => setShowDeleteModal(true)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
-                        Usuń klienta
-                      </Button>
-                    )}
-                  </div>
-              </SectionCard>
+                      )}
+                    </div>
+                </SectionCard>
+              </AnimatedSection>
             </div>
 
             {/* Right Column - Reservations History + Attachments */}
             <div className="lg:col-span-2 space-y-6 min-w-0">
-              <SectionCard
-                variant="gradient"
-                title="Historia rezerwacji"
-                icon={<Sparkles className="h-5 w-5 text-white" />}
-                iconGradient="from-blue-500 to-cyan-500"
-                headerGradient="from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30"
-              >
-                  <ClientReservationsHistory
-                    reservations={reservations}
-                    clientId={client.id}
-                    isDeleted={isDeleted}
-                  />
-              </SectionCard>
+              <AnimatedSection index={0}>
+                <SectionCard
+                  variant="gradient"
+                  title="Historia rezerwacji"
+                  icon={<Sparkles className="h-5 w-5 text-white" />}
+                  iconGradient="from-blue-500 to-cyan-500"
+                  headerGradient="from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/30 dark:via-cyan-950/30 dark:to-teal-950/30"
+                >
+                    <ClientReservationsHistory
+                      reservations={reservations}
+                      clientId={client.id}
+                      isDeleted={isDeleted}
+                    />
+                </SectionCard>
+              </AnimatedSection>
 
               {/* Attachments Panel */}
-              <AttachmentPanel
-                entityType="CLIENT"
-                entityId={client.id}
-                title="Załączniki klienta"
-                className="shadow-xl"
-                readOnly={isDeleted}
-              />
+              <AnimatedSection index={1}>
+                <AttachmentPanel
+                  entityType="CLIENT"
+                  entityId={client.id}
+                  title="Załączniki klienta"
+                  className="shadow-xl"
+                  readOnly={isDeleted}
+                />
+              </AnimatedSection>
             </div>
           </div>
         )}

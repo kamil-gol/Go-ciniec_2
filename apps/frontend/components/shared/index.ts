@@ -1,3 +1,4 @@
+export { AnimatedSection } from './AnimatedSection'
 export { PageLayout } from './PageLayout'
 export { PageHero } from './PageHero'
 export { StatCard } from './StatCard'

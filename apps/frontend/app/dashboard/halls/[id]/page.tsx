@@ -10,6 +10,7 @@ import { getHallById, type Hall } from '@/lib/api/halls'
 import { HallReservationsCalendar } from '@/components/halls/hall-reservations-calendar'
 import { DetailHero } from '@/components/shared/DetailHero'
 import { SectionCard } from '@/components/shared/SectionCard'
+import { AnimatedSection } from '@/components/shared/AnimatedSection'
 import { moduleAccents } from '@/lib/design-tokens'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -113,47 +114,52 @@ export default function HallDetailsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Description */}
           {hall.description && (
-            <SectionCard
-              variant="gradient"
-              title="Opis"
-              icon={<Sparkles className="h-5 w-5 text-white" />}
-              iconGradient="from-blue-500 to-cyan-500"
-              headerGradient="from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10"
-              headerSpacing="mb-4"
-            >
-              <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
-                <p className="text-muted-foreground leading-relaxed">{hall.description}</p>
-              </div>
-            </SectionCard>
+            <AnimatedSection index={0}>
+              <SectionCard
+                variant="gradient"
+                title="Opis"
+                icon={<Sparkles className="h-5 w-5 text-white" />}
+                iconGradient="from-blue-500 to-cyan-500"
+                headerGradient="from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10"
+                headerSpacing="mb-4"
+              >
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
+                  <p className="text-muted-foreground leading-relaxed">{hall.description}</p>
+                </div>
+              </SectionCard>
+            </AnimatedSection>
           )}
 
           {/* Amenities */}
           {hall.amenities && hall.amenities.length > 0 && (
-            <SectionCard
-              variant="gradient"
-              title="Udogodnienia"
-              icon={<CheckCircle2 className="h-5 w-5 text-white" />}
-              iconGradient="from-purple-500 to-pink-500"
-              headerGradient="from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10"
-              headerSpacing="mb-4"
-            >
-              <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
-                <div className="flex flex-wrap gap-2">
-                  {hall.amenities.map((amenity, idx) => (
-                    <Badge
-                      key={idx}
-                      className="text-sm py-2 px-3 border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300"
-                    >
-                      {amenity}
-                    </Badge>
-                  ))}
+            <AnimatedSection index={1}>
+              <SectionCard
+                variant="gradient"
+                title="Udogodnienia"
+                icon={<CheckCircle2 className="h-5 w-5 text-white" />}
+                iconGradient="from-purple-500 to-pink-500"
+                headerGradient="from-neutral-800/5 via-slate-700/5 to-neutral-800/5 dark:from-neutral-800/10 dark:via-slate-700/10 dark:to-neutral-800/10"
+                headerSpacing="mb-4"
+              >
+                <div className="p-3 bg-white dark:bg-black/20 rounded-lg">
+                  <div className="flex flex-wrap gap-2">
+                    {hall.amenities.map((amenity, idx) => (
+                      <Badge
+                        key={idx}
+                        className="text-sm py-2 px-3 border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300"
+                      >
+                        {amenity}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </SectionCard>
+              </SectionCard>
+            </AnimatedSection>
           )}
         </div>
 
         {/* Calendar Section */}
+        <AnimatedSection index={2}>
         <Card className="border-0 shadow-xl overflow-hidden">
           <div className={`bg-gradient-to-r ${moduleAccents.halls.gradient} p-6 text-white`}>
             <div className="flex items-center gap-3">
@@ -180,8 +186,10 @@ export default function HallDetailsPage() {
             />
           </CardContent>
         </Card>
+        </AnimatedSection>
 
         {/* Quick Stats */}
+        <AnimatedSection index={3}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
             <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6">
@@ -230,6 +238,7 @@ export default function HallDetailsPage() {
             </div>
           </Card>
         </div>
+        </AnimatedSection>
       </div>
     </div>
   )
