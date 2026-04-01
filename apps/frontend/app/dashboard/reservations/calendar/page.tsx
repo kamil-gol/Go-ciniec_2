@@ -22,7 +22,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { PageLayout, PageHero, StatCard, ErrorState } from '@/components/shared'
+import { PageLayout, PageHero, StatCard, ErrorState, FilterTabs } from '@/components/shared'
 import { moduleAccents, statGradients, layout } from '@/lib/design-tokens'
 import { getReservations } from '@/lib/api/reservations'
 import {
@@ -274,19 +274,16 @@ export default function CalendarPage() {
       {/* Controls bar */}
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">
-            <Link
-              href="/dashboard/reservations/list"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-sm font-medium text-neutral-500 dark:text-neutral-300 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
-            >
-              <List className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Lista</span>
-            </Link>
-            <span className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md bg-white dark:bg-neutral-700 text-sm font-medium text-neutral-900 dark:text-neutral-100 shadow-sm">
-              <CalendarDays className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Kalendarz</span>
-            </span>
-          </div>
+          <FilterTabs
+            tabs={[
+              { key: 'list', label: 'Lista', icon: List },
+              { key: 'calendar', label: 'Kalendarz', icon: CalendarDays },
+            ]}
+            activeKey="calendar"
+            onChange={(key) => {
+              if (key === 'list') router.push('/dashboard/reservations/list')
+            }}
+          />
 
           <div className="flex items-center gap-1 sm:gap-2 ml-auto sm:ml-0">
             <button onClick={goToPrevMonth} className="p-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors shadow-sm">
